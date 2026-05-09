@@ -1,108 +1,138 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { updateSubmissionStatus } from '@/app/actions/homework'
+import { updateAllSubmissionStatuses, updateSubmissionStatus } from '@/app/actions/homework'
 import type { SubmissionStatus } from '@/lib/types'
 
-const CYCLE: SubmissionStatus[] = ['yapilmadi', 'yapildi', 'eksik']
+const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
 
 const LABELS: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı',
   eksik: 'Eksik',
   yapilmadi: 'Yapılmadı',
+  gec: 'Geç',
+  mazeretli: 'Mazeretli',
 }
 
 const STYLES: Record<SubmissionStatus, string> = {
-  yapildi: 'bg-green-100 text-green-700 hover:bg-green-200',
-  eksik: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-  yapilmadi: 'bg-red-100 text-red-700 hover:bg-red-200',
+  yapildi: 'bg-green-100 text-green-700 border-green-200',
+  eksik: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  yapilmadi: 'bg-red-100 text-red-700 border-red-200',
+  gec: 'bg-orange-100 text-orange-700 border-orange-200',
+  mazeretli: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
-type Sub = {
-  id: string
-  homework_id: string
+type StatusItem = {
   student_id: string
-  status: string
-  note: string | null
-  students: { full_name: string; student_number: string | null } | null
+  full_name: string
+  student_number: string | null
+  status: SubmissionStatus
 }
 
 export default function StatusBoard({
   homeworkId,
-  submissions,
+  items,
 }: {
   homeworkId: string
-  submissions: Sub[]
+  items: StatusItem[]
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
-    Object.fromEntries(
-      submissions.map((s) => [s.student_id, s.status as SubmissionStatus])
-    )
+    Object.fromEntries(items.map((item) => [item.student_id, item.status]))
   )
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
 
-  function toggle(studentId: string) {
-    const cur = statuses[studentId] ?? 'yapilmadi'
-    const next = CYCLE[(CYCLE.indexOf(cur) + 1) % CYCLE.length]
+  function setStatus(studentId: string, next: SubmissionStatus) {
     setStatuses((prev) => ({ ...prev, [studentId]: next }))
     startTransition(() => {
       updateSubmissionStatus(homeworkId, studentId, next)
     })
   }
 
-  const counts = CYCLE.reduce(
-    (acc, s) => ({ ...acc, [s]: Object.values(statuses).filter((v) => v === s).length }),
+  function setAllStatuses(next: SubmissionStatus) {
+    const studentIds = items.map((item) => item.student_id)
+    setStatuses(Object.fromEntries(studentIds.map((studentId) => [studentId, next])))
+    startTransition(() => {
+      updateAllSubmissionStatuses(homeworkId, studentIds, next)
+    })
+  }
+
+  const counts = STATUS_OPTIONS.reduce(
+    (acc, status) => ({
+      ...acc,
+      [status]: Object.values(statuses).filter((value) => value === status).length,
+    }),
     {} as Record<SubmissionStatus, number>
   )
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {([['yapildi', 'Yapıldı', 'green'], ['eksik', 'Eksik', 'yellow'], ['yapilmadi', 'Yapılmadı', 'red']] as const).map(
-          ([key, label, color]) => (
-            <div
-              key={key}
-              className={`bg-${color}-50 border border-${color}-200 rounded-xl p-3 text-center`}
-            >
-              <p className={`text-2xl font-bold text-${color}-700`}>{counts[key]}</p>
-              <p className={`text-xs text-${color}-600 mt-0.5`}>{label}</p>
-            </div>
-          )
-        )}
+      <div className="bg-white border border-gray-200 rounded-xl p-3 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900">Toplu güncelle</p>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Tüm öğrencileri aynı duruma çek, sonra istisnaları tek tek düzelt.
+          </p>
+        </div>
+        <select
+          defaultValue=""
+          disabled={isPending}
+          onChange={(event) => {
+            if (!event.target.value) return
+            setAllStatuses(event.target.value as SubmissionStatus)
+            event.target.value = ''
+          }}
+          className="w-full sm:w-48 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Durum seç</option>
+          {STATUS_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {LABELS[option]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+        {STATUS_OPTIONS.map((status) => (
+          <div key={status} className={`border rounded-xl p-3 text-center ${STYLES[status]}`}>
+            <p className="text-2xl font-bold">{counts[status]}</p>
+            <p className="text-xs mt-0.5">{LABELS[status]}</p>
+          </div>
+        ))}
       </div>
 
       <div className="space-y-2">
-        {submissions.map((sub) => {
-          const status = statuses[sub.student_id] ?? 'yapilmadi'
+        {items.map((item) => {
+          const status = statuses[item.student_id] ?? 'yapilmadi'
+
           return (
             <div
-              key={sub.id}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3"
+              key={item.student_id}
+              className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {sub.students?.full_name ?? '—'}
-                </p>
-                {sub.students?.student_number && (
-                  <p className="text-xs text-gray-400">{sub.students.student_number}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{item.full_name}</p>
+                {item.student_number && (
+                  <p className="text-xs text-gray-400">No: {item.student_number}</p>
                 )}
               </div>
-              <button
-                onClick={() => toggle(sub.student_id)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-colors shrink-0 ${STYLES[status]}`}
+
+              <select
+                value={status}
+                disabled={isPending}
+                onChange={(event) => setStatus(item.student_id, event.target.value as SubmissionStatus)}
+                className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${STYLES[status]}`}
               >
-                {LABELS[status]}
-              </button>
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option} value={option}>
+                    {LABELS[option]}
+                  </option>
+                ))}
+              </select>
             </div>
           )
         })}
       </div>
-
-      {submissions.length === 0 && (
-        <p className="text-center py-16 text-gray-400 text-sm">
-          Bu sınıfta öğrenci yok. Önce sınıfa öğrenci ekleyin.
-        </p>
-      )}
     </div>
   )
 }

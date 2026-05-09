@@ -28,7 +28,7 @@ export async function deleteClass(classId: string) {
     .from('homeworks')
     .select('id')
     .eq('class_id', classId)
-
+    
   if (homeworks?.length) {
     const homeworkIds = homeworks.map((h) => h.id)
     await supabase.from('homework_submissions').delete().in('homework_id', homeworkIds)
@@ -76,7 +76,25 @@ export async function deleteStudent(studentId: string, classId: string) {
   if (!user) redirect('/login')
 
   await supabase.from('homework_submissions').delete().eq('student_id', studentId)
+  await supabase.from('student_notes').delete().eq('student_id', studentId)
   await supabase.from('students').delete().eq('id', studentId)
 
   revalidatePath(`/siniflar/${classId}`)
+}
+
+export async function addStudentNote(studentId: string, classId: string, formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const body = String(formData.get('body') ?? '').trim()
+  if (!body) return
+
+  await supabase.from('student_notes').insert({
+    teacher_id: user.id,
+    student_id: studentId,
+    body,
+  })
+
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }

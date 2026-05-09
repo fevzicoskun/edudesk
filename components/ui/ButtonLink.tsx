@@ -3,13 +3,12 @@ import type { ComponentProps, ReactNode } from 'react'
 import { cn } from './cn'
 import { BUTTON_BASE, BUTTON_SIZES, BUTTON_VARIANTS, type ButtonSize, type ButtonVariant } from './buttonStyles'
 
-interface ButtonLinkProps extends Omit<ComponentProps<typeof Link>, 'className'> {
+interface ButtonLinkProps extends ComponentProps<typeof Link> {
   variant?: ButtonVariant
   size?: ButtonSize
   fullWidth?: boolean
   leftIcon?: ReactNode
   rightIcon?: ReactNode
-  className?: string
 }
 
 export default function ButtonLink({

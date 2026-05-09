@@ -52,7 +52,7 @@ CREATE TABLE homework_submissions (
   homework_id UUID NOT NULL REFERENCES homeworks(id) ON DELETE CASCADE,
   student_id  UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
   status      TEXT NOT NULL DEFAULT 'yapilmadi'
-                CHECK (status IN ('yapildi', 'eksik', 'yapilmadi')),
+                CHECK (status IN ('yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli')),
   note        TEXT,
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (homework_id, student_id)
@@ -81,8 +81,11 @@ CREATE TABLE curriculum_progress (
   id              UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   teacher_id      UUID NOT NULL REFERENCES profiles(id),
   class_id        UUID NOT NULL REFERENCES classes(id),
+  outcome_id      TEXT,
   topic           TEXT NOT NULL,
   week_number     INTEGER,
+  status          TEXT NOT NULL DEFAULT 'tamamlandi'
+                    CHECK (status IN ('tamamlandi', 'tekrar_gerekli', 'eksik_kaldi')),
   completed       BOOLEAN NOT NULL DEFAULT FALSE,
   completion_date DATE,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()

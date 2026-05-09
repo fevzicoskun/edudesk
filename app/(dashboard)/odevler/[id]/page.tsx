@@ -4,6 +4,7 @@ import Link from 'next/link'
 import StatusBoard from './StatusBoard'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import type { SubmissionStatus } from '@/lib/types'
 
 export default async function OdevDetayPage({
   params,
@@ -13,26 +14,38 @@ export default async function OdevDetayPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const [hwResult, subsResult] = await Promise.all([
-    supabase.from('homeworks').select('*, classes(name)').eq('id', id).single(),
+  const { data: hw } = await supabase
+    .from('homeworks')
+    .select('*, classes(name)')
+    .eq('id', id)
+    .single()
+
+  if (!hw) notFound()
+
+  const [studentsResult, subsResult] = await Promise.all([
     supabase
-      .from('homework_submissions')
-      .select('id, homework_id, student_id, status, note, students(full_name, student_number)')
-      .eq('homework_id', id),
+      .from('students')
+      .select('id, full_name, student_number')
+      .eq('class_id', hw.class_id),
+    supabase.from('homework_submissions').select('student_id, status').eq('homework_id', id),
   ])
 
-  if (!hwResult.data) notFound()
-  const hw = hwResult.data
-  const cls = hw.classes as { name: string } | null
-  const submissions = subsResult.data ?? []
+  const students = studentsResult.data ?? []
+  const subs = subsResult.data ?? []
+  const subMap = new Map(subs.map((s) => [s.student_id, s.status as SubmissionStatus]))
 
-  const sorted = [...submissions].sort((a, b) => {
-    const sa = a.students as unknown as { student_number: string | null } | null
-    const sb = b.students as unknown as { student_number: string | null } | null
-    const na = sa?.student_number ?? ''
-    const nb = sb?.student_number ?? ''
-    return na.localeCompare(nb, 'tr', { numeric: true })
-  })
+  const items = students
+    .map((student) => ({
+      student_id: student.id,
+      full_name: student.full_name,
+      student_number: student.student_number,
+      status: (subMap.get(student.id) ?? 'yapilmadi') as SubmissionStatus,
+    }))
+    .sort((a, b) =>
+      (a.student_number ?? '').localeCompare(b.student_number ?? '', 'tr', { numeric: true })
+    )
+
+  const cls = hw.classes as { name: string } | null
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
@@ -53,8 +66,13 @@ export default async function OdevDetayPage({
         )}
       </div>
 
-      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <StatusBoard homeworkId={id} submissions={sorted as any} />
+      {items.length === 0 ? (
+        <p className="text-center text-gray-400 text-sm py-12">
+          Bu sınıfta henüz öğrenci yok.
+        </p>
+      ) : (
+        <StatusBoard homeworkId={id} items={items} />
+      )}
     </div>
   )
 }

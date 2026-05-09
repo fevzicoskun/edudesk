@@ -85,7 +85,12 @@ export default async function SinifDetayPage({
             >
               <span className="text-xs text-gray-400 w-6 text-right shrink-0">{i + 1}</span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{s.full_name}</p>
+                <Link
+                  href={`/siniflar/${id}/ogrenciler/${s.id}`}
+                  className="text-sm font-medium text-gray-900 hover:text-blue-700"
+                >
+                  {s.full_name}
+                </Link>
                 {s.student_number && (
                   <p className="text-xs text-gray-400">No: {s.student_number}</p>
                 )}

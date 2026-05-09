@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+import MufredatImportForm from './MufredatImportForm'
 import {
   createMeeting,
   createExam,
   createCurriculumProgress,
-  toggleCurriculumDone,
+  updateCurriculumStatus,
   deleteMeeting,
   deleteExam,
   deleteCurriculumProgress,
@@ -13,6 +14,19 @@ import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
 type Tab = 'toplanti' | 'sinav' | 'mufredat'
+type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
+
+const CURRICULUM_LABELS: Record<CurriculumStatus, string> = {
+  tamamlandi: 'Tamamlandı',
+  tekrar_gerekli: 'Tekrar Gerekli',
+  eksik_kaldi: 'Eksik Kaldı',
+}
+
+const CURRICULUM_STYLES: Record<CurriculumStatus, string> = {
+  tamamlandi: 'bg-green-100 text-green-700 hover:bg-green-200',
+  tekrar_gerekli: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
+  eksik_kaldi: 'bg-red-100 text-red-700 hover:bg-red-200',
+}
 
 export default async function ZumrePage({
   searchParams,
@@ -29,17 +43,18 @@ export default async function ZumrePage({
     supabase.from('common_exams').select('*').order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
-      .select('*, classes(name)')
+      .select('*, classes(grade)')
       .eq('teacher_id', user.id)
       .order('week_number', { nullsFirst: true })
       .order('created_at'),
-    supabase.from('classes').select('id, name').order('grade').order('name'),
+    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
   ])
 
   const meetings = meetingsResult.data ?? []
   const exams = examsResult.data ?? []
   const curriculum = curriculumResult.data ?? []
   const classes = classesResult.data ?? []
+  const grades = [9, 10, 11, 12]
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'toplanti', label: 'Toplantılar' },
@@ -185,18 +200,19 @@ export default async function ZumrePage({
 
       {tab === 'mufredat' && (
         <div className="space-y-4">
+          <MufredatImportForm grades={grades} />
           <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Konu Ekle</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Manuel Konu Ekle</h2>
             <form action={createCurriculumProgress} className="space-y-3">
               <select
-                name="class_id"
+                name="grade"
                 required
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Sınıf seçin</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
+                <option value="">Sınıf seviyesi seçin</option>
+                {grades.map((g) => (
+                  <option key={g} value={g}>
+                    {g}. Sınıf
                   </option>
                 ))}
               </select>
@@ -217,6 +233,15 @@ export default async function ZumrePage({
                   className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+              <select
+                name="status"
+                defaultValue="tamamlandi"
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="tamamlandi">Tamamlandı</option>
+                <option value="tekrar_gerekli">Tekrar gerekli</option>
+                <option value="eksik_kaldi">Eksik kaldı</option>
+              </select>
               <button
                 type="submit"
                 className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
@@ -230,32 +255,40 @@ export default async function ZumrePage({
             <p className="text-center py-12 text-gray-400 text-sm">Henüz konu eklenmemiş.</p>
           ) : (
             curriculum.map((c) => {
-              const cls = c.classes as { name: string } | null
+              const cls = c.classes as { grade: number } | null
+              const status = (c.status ??
+                (c.completed ? 'tamamlandi' : 'eksik_kaldi')) as CurriculumStatus
               return (
                 <div
                   key={c.id}
-                  className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3"
+                  className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900">{c.topic}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {cls?.name}
+                      {cls?.grade ? `${cls.grade}. Sınıf` : ''}
                       {c.week_number ? ` · Hafta ${c.week_number}` : ''}
                     </p>
                   </div>
-                  <form action={toggleCurriculumDone.bind(null, c.id, !c.completed)}>
-                    <button
-                      type="submit"
-                      className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors shrink-0 ${
-                        c.completed
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                      }`}
-                    >
-                      {c.completed ? 'Tamamlandı' : 'Devam Ediyor'}
-                    </button>
-                  </form>
-                  <form action={deleteCurriculumProgress.bind(null, c.id)}>
+                  <div className="flex flex-wrap gap-2">
+                    {(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'] as CurriculumStatus[]).map(
+                      (nextStatus) => (
+                        <form key={nextStatus} action={updateCurriculumStatus.bind(null, c.id, nextStatus)}>
+                          <button
+                            type="submit"
+                            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors shrink-0 ${
+                              status === nextStatus
+                                ? CURRICULUM_STYLES[nextStatus]
+                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                            }`}
+                          >
+                            {CURRICULUM_LABELS[nextStatus]}
+                          </button>
+                        </form>
+                      )
+                    )}
+                  </div>
+                  <form action={deleteCurriculumProgress.bind(null, c.id)} className="self-start sm:self-auto">
                     <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
                       Sil
                     </button>

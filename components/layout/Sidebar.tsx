@@ -8,6 +8,15 @@ import { getEgitimYili } from '../../lib/utils';
 
 const navItems = [
   {
+    href: '/anasayfa',
+    label: 'Anasayfa',
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" />
+      </svg>
+    ),
+  },
+  {
     href: '/odevler',
     label: 'Ödevler',
     icon: (
@@ -48,8 +57,7 @@ export default function Sidebar({ profile }: { profile: Profile | null }) {
       <aside className="hidden md:flex w-60 bg-white border-r border-gray-200 flex-col shrink-0">
         <div className="px-5 py-5 border-b border-gray-200">
           <p className="font-bold text-gray-900 text-base">Zümre Takip</p>
-<p className="text-xs text-gray-400 mt-0.5">{getEgitimYili()}</p>
-
+          <p className="text-xs text-gray-400 mt-0.5">{getEgitimYili()}</p>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5">

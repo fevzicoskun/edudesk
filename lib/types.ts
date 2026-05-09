@@ -1,5 +1,6 @@
 export type Role = 'zumre_baskani' | 'ogretmen'
-export type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi'
+export type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
+export type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
 
 export interface Profile {
   id: string
@@ -69,9 +70,11 @@ export interface CurriculumProgress {
   id: string
   teacher_id: string
   class_id: string
+  outcome_id: string | null
   topic: string
   week_number: number | null
   completed: boolean
+  status: CurriculumStatus
   completion_date: string | null
   created_at: string
 }

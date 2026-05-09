@@ -47,6 +47,34 @@ export async function updateSubmissionStatus(
   return { success: true }
 }
 
+export async function updateAllSubmissionStatuses(
+  homeworkId: string,
+  studentIds: string[],
+  status: SubmissionStatus
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  const rows = studentIds.map((studentId) => ({
+    homework_id: homeworkId,
+    student_id: studentId,
+    status,
+    updated_at: new Date().toISOString(),
+  }))
+
+  if (rows.length === 0) return { success: true }
+
+  const { error } = await supabase
+    .from('homework_submissions')
+    .upsert(rows, { onConflict: 'homework_id,student_id' })
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/odevler/${homeworkId}`)
+  return { success: true }
+}
+
 export async function deleteHomework(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
