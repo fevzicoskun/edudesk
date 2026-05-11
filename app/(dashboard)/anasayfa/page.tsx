@@ -18,7 +18,6 @@ type HwLite = {
   class_id: string
   classes: ClassRel
 }
-type Tone = 'blue' | 'indigo'
 
 export default async function AnasayfaPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
@@ -48,6 +47,7 @@ export default async function AnasayfaPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
+      {/* Başlık */}
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Anasayfa</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
@@ -55,15 +55,20 @@ export default async function AnasayfaPage() {
         </p>
       </div>
 
-      {/* Hemen gösterilen özet kartları (sadece homeworks lazım) */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        <SummaryCard label="Bugünkü ödev" value={todayHws.length} tone="blue" />
-        <SummaryCard label="Yaklaşan (7 gün)" value={upcomingHws.length} tone="indigo" />
-      </div>
+      {/* Submissions gerektiren her şey stream ile gelir:
+          4 özet kart + takip listesi + sınıf özeti */}
+      <Suspense fallback={<SubmissionsPanelSkeleton />}>
+        <SubmissionsPanel
+          hwIds={hwIds}
+          homeworks={homeworks}
+          todayCount={todayHws.length}
+          upcomingCount={upcomingHws.length}
+        />
+      </Suspense>
 
-      {/* Hemen görünen: bugün/yaklaşan listesi + takvim */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+      {/* Bugün/Yaklaşan + Takvim — hemen görünür (sadece homeworks lazım) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+        <section className="lg:col-span-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bugün ve Yaklaşan</h2>
             <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
@@ -105,24 +110,6 @@ export default async function AnasayfaPage() {
 
         <CalendarWidget />
       </div>
-
-      {/* Streamed: eksik/yapılmadı sayıları + takip listesi + sınıf özeti */}
-      <Suspense fallback={<SubmissionsPanelSkeleton />}>
-        <SubmissionsPanel hwIds={hwIds} homeworks={homeworks} />
-      </Suspense>
-    </div>
-  )
-}
-
-function SummaryCard({ label, value, tone }: { label: string; value: number; tone: Tone }) {
-  const TONE: Record<Tone, string> = {
-    blue:   'bg-blue-50 text-blue-700 border-blue-200',
-    indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-  }
-  return (
-    <div className={`border rounded-xl p-3 ${TONE[tone]}`}>
-      <p className="text-2xl font-bold">{value}</p>
-      <p className="text-xs mt-0.5 opacity-90">{label}</p>
     </div>
   )
 }

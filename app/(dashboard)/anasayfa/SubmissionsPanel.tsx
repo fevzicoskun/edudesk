@@ -37,9 +37,13 @@ function SummaryCard({ label, value, tone }: { label: string; value: number; ton
 export default async function SubmissionsPanel({
   hwIds,
   homeworks,
+  todayCount,
+  upcomingCount,
 }: {
   hwIds: string[]
   homeworks: HwLite[]
+  todayCount: number
+  upcomingCount: number
 }) {
   const supabase = await createClient()
 
@@ -55,7 +59,7 @@ export default async function SubmissionsPanel({
   const missingCount = allSubs.filter((s) => s.status === 'eksik').length
   const notDoneCount = allSubs.filter((s) => s.status === 'yapilmadi').length
 
-  // Watchlist: last 5 homeworks, students with ≥2 negatives out of ≥3
+  // Watchlist: son 5 ödev, ≥3 ödevden ≥2 eksiği olan öğrenciler
   const lastHwIds = new Set(hwIds.slice(0, 5))
   type Bucket = { student: StudentRel; neg: number; total: number }
   const buckets = new Map<string, Bucket>()
@@ -72,7 +76,7 @@ export default async function SubmissionsPanel({
     .sort((a, b) => b.neg - a.neg)
     .slice(0, 10)
 
-  // Class summary
+  // Sınıf özeti
   type ClassEntry = { name: string; grade: number; hwCount: number; total: number; done: number }
   const classMap = new Map<string, ClassEntry>()
   for (const hw of homeworks) {
@@ -96,14 +100,16 @@ export default async function SubmissionsPanel({
 
   return (
     <>
-      {/* 4 özet kart */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <SummaryCard label="Eksik" value={missingCount} tone="yellow" />
-        <SummaryCard label="Yapılmadı" value={notDoneCount} tone="rose" />
+      {/* 4 özet kart — tam satır, hepsi bir arada */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <SummaryCard label="Bugünkü ödev"    value={todayCount}    tone="blue" />
+        <SummaryCard label="Yaklaşan (7 gün)" value={upcomingCount} tone="indigo" />
+        <SummaryCard label="Eksik"            value={missingCount}  tone="yellow" />
+        <SummaryCard label="Yapılmadı"        value={notDoneCount}  tone="rose" />
       </div>
 
+      {/* Takip listesi + sınıf özeti */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        {/* Ödev Takip Listesi */}
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Ödev Takip Listesi</h2>
@@ -126,7 +132,6 @@ export default async function SubmissionsPanel({
           )}
         </section>
 
-        {/* Sınıf Bazlı Özet */}
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Sınıf Bazlı Özet</h2>
@@ -165,14 +170,16 @@ function Sk({ className }: { className?: string }) {
 export function SubmissionsPanelSkeleton() {
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        {Array.from({ length: 2 }).map((_, i) => (
+      {/* 4 kart iskeleti */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
             <Sk className="h-8 w-10" />
             <Sk className="h-3 w-20" />
           </div>
         ))}
       </div>
+      {/* 2 kolon iskeleti */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
