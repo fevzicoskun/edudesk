@@ -7,6 +7,8 @@ import { tr } from 'date-fns/locale'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import OdevlerFilterBar from './FilterBar'
 
+export const revalidate = 30
+
 export default async function OdevlerPage({
   searchParams,
 }: {

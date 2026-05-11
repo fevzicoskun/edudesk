@@ -11,9 +11,9 @@ export default function AnasayfaLoading() {
         <Sk className="h-4 w-56" />
       </div>
 
-      {/* 4 özet kart */}
+      {/* 2 hızlı kart */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-        {Array.from({ length: 4 }).map((_, i) => (
+        {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
             <Sk className="h-8 w-10" />
             <Sk className="h-3 w-20" />
@@ -21,9 +21,9 @@ export default function AnasayfaLoading() {
         ))}
       </div>
 
-      {/* 3 kolon */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        {Array.from({ length: 3 }).map((_, i) => (
+      {/* 2 kolon: liste + takvim */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        {Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
             <Sk className="h-4 w-32" />
             {Array.from({ length: 4 }).map((_, j) => (
@@ -33,11 +33,23 @@ export default function AnasayfaLoading() {
         ))}
       </div>
 
-      {/* Sınıf bazlı özet */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
-        <Sk className="h-4 w-36" />
-        {Array.from({ length: 3 }).map((_, i) => (
-          <Sk key={i} className="h-9 w-full" />
+      {/* Submissions panel skeleton */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="border border-gray-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
+            <Sk className="h-8 w-10" />
+            <Sk className="h-3 w-20" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div key={i} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3">
+            <Sk className="h-4 w-32" />
+            {Array.from({ length: 3 }).map((_, j) => (
+              <Sk key={j} className="h-10 w-full" />
+            ))}
+          </div>
         ))}
       </div>
     </div>

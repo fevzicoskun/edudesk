@@ -97,6 +97,15 @@ CREATE TABLE user_notes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ─── INDEXES ──────────────────────────────────────────────────────────────────
+
+CREATE INDEX idx_homeworks_teacher_id  ON homeworks(teacher_id);
+CREATE INDEX idx_homeworks_due_date    ON homeworks(due_date DESC);
+CREATE INDEX idx_homeworks_class_id    ON homeworks(class_id);
+CREATE INDEX idx_students_class_id     ON students(class_id);
+-- homework_submissions(homework_id) already covered by UNIQUE(homework_id, student_id)
+CREATE INDEX idx_hw_submissions_student ON homework_submissions(student_id);
+
 -- ─── TRIGGERS ─────────────────────────────────────────────────────────────────
 
 -- Auto-create profile when user signs up
