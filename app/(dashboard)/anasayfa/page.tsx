@@ -5,7 +5,7 @@ import { addDays, format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import CalendarWidget from './CalendarWidget'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 60
 
 type ClassRel = { name: string; grade: number } | null
 type StudentRel = {
