@@ -4,6 +4,8 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import type { Profile } from '@/lib/types'
+
+type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 import { getEgitimYili } from '../../lib/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -46,7 +48,7 @@ const navItems = [
   },
 ]
 
-export default function Sidebar({ profile, email }: { profile: Profile | null; email: string }) {
+export default function Sidebar({ profile, email }: { profile: SidebarProfile | null; email: string }) {
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)

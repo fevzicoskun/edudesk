@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
 import Link from 'next/link'
 import { deleteHomework } from '@/app/actions/homework'
 import { format, isPast, parseISO } from 'date-fns'
@@ -19,18 +20,33 @@ export default async function OdevlerPage({
   }>
 }) {
   const params = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
   const isZumreBaskani = profile?.role === 'zumre_baskani'
+  const supabase = await createClient()
 
+  // Phase 1: durumIds (only if filter active) + supporting data — all in parallel
+  const subjectsQuery = isZumreBaskani
+    ? supabase.from('homeworks').select('subject')
+    : supabase.from('homeworks').select('subject').eq('teacher_id', user.id)
+
+  const [durumResult, classesResult, subjectsResult, teachersResult] = await Promise.all([
+    params.durum
+      ? supabase.from('homework_submissions').select('homework_id').eq('status', params.durum)
+      : Promise.resolve({ data: null as { homework_id: string }[] | null }),
+    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
+    subjectsQuery,
+    isZumreBaskani
+      ? supabase.from('profiles').select('id, full_name').order('full_name')
+      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
+  ])
+
+  const durumIds = durumResult.data
+    ? [...new Set(durumResult.data.map((s) => s.homework_id))]
+    : null
+
+  // Phase 2: main homeworks query with all filters applied
   let query = supabase
     .from('homeworks')
     .select('*, classes(id, name, grade), teacher:profiles(full_name)')
@@ -46,33 +62,11 @@ export default async function OdevlerPage({
   if (params.baslangic) query = query.gte('due_date', params.baslangic)
   if (params.bitis) query = query.lte('due_date', params.bitis)
   if (params.ders) query = query.eq('subject', params.ders)
-
-  let durumIds: string[] | null = null
-  if (params.durum) {
-    const { data: subs } = await supabase
-      .from('homework_submissions')
-      .select('homework_id')
-      .eq('status', params.durum)
-    durumIds = [...new Set((subs ?? []).map((s) => s.homework_id))]
-  }
-
   if (durumIds !== null) {
     query = query.in('id', durumIds.length > 0 ? durumIds : ['00000000-0000-0000-0000-000000000000'])
   }
 
   const homeworksResult = await query
-
-  const subjectsQuery = isZumreBaskani
-    ? supabase.from('homeworks').select('subject')
-    : supabase.from('homeworks').select('subject').eq('teacher_id', user.id)
-
-  const [classesResult, subjectsResult, teachersResult] = await Promise.all([
-    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
-    subjectsQuery,
-    isZumreBaskani
-      ? supabase.from('profiles').select('id, full_name').order('full_name')
-      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
-  ])
 
   const homeworks = homeworksResult.data ?? []
   const classes = classesResult.data ?? []

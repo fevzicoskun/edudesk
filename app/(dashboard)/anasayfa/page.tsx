@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
 import Link from 'next/link'
 import { addDays, format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -33,19 +34,11 @@ type SubLite = {
 type Tone = 'blue' | 'indigo' | 'yellow' | 'rose'
 
 export default async function AnasayfaPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) return null
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role, full_name')
-    .eq('id', user.id)
-    .single()
-
   const isZumreBaskani = profile?.role === 'zumre_baskani'
+  const supabase = await createClient()
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
