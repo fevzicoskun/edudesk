@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import { addDays, format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import CalendarWidget from './CalendarWidget'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +30,7 @@ type SubLite = {
   students: StudentRel
 }
 
-type Tone = 'blue' | 'indigo' | 'yellow' | 'red'
+type Tone = 'blue' | 'indigo' | 'yellow' | 'rose'
 
 export default async function AnasayfaPage() {
   const supabase = await createClient()
@@ -46,12 +47,10 @@ export default async function AnasayfaPage() {
 
   const isZumreBaskani = profile?.role === 'zumre_baskani'
 
-  // ─── Tarih sınırları ────────────────────────────────────────────────
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
 
-  // ─── Görünür ödevler ────────────────────────────────────────────────
   let hwQuery = supabase
     .from('homeworks')
     .select('id, title, subject, due_date, class_id, classes(name, grade)')
@@ -63,7 +62,6 @@ export default async function AnasayfaPage() {
   const homeworks = (hwData ?? []) as unknown as HwLite[]
   const hwIds = homeworks.map((h) => h.id)
 
-  // ─── Submission'ları tek seferde çek ────────────────────────────────
   let allSubs: SubLite[] = []
   if (hwIds.length) {
     const { data: subData } = await supabase
@@ -75,18 +73,15 @@ export default async function AnasayfaPage() {
     allSubs = (subData ?? []) as unknown as SubLite[]
   }
 
-  // ─── Bugün / yaklaşan ───────────────────────────────────────────────
   const todayHws = homeworks.filter((h) => h.due_date === todayStr)
   const upcomingHws = homeworks
     .filter((h) => h.due_date > todayStr && h.due_date <= next7Str)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
-  // ─── Eksik / yapılmadı sayıları ─────────────────────────────────────
   const missingCount = allSubs.filter((s) => s.status === 'eksik').length
   const notDoneCount = allSubs.filter((s) => s.status === 'yapilmadi').length
 
-  // ─── Riskli öğrenciler (son 5 ödevde ≥2 olumsuz) ────────────────────
-  const lastHwIds = homeworks.slice(0, 5).map((h) => h.id) // due_date desc sıralı
+  const lastHwIds = homeworks.slice(0, 5).map((h) => h.id)
   const recentSubs = allSubs.filter((s) => lastHwIds.includes(s.homework_id))
 
   type Bucket = { student: StudentRel; neg: number; total: number }
@@ -107,12 +102,11 @@ export default async function AnasayfaPage() {
     studentBuckets.set(s.student_id, prev)
   }
 
-  const risky = [...studentBuckets.values()]
+  const watchlist = [...studentBuckets.values()]
     .filter((b) => b.total >= 3 && b.neg >= 2 && b.student)
     .sort((a, b) => b.neg - a.neg)
     .slice(0, 10)
 
-  // ─── Sınıf bazlı özet ───────────────────────────────────────────────
   type ClassEntry = {
     name: string
     grade: number
@@ -155,13 +149,12 @@ export default async function AnasayfaPage() {
     }))
     .sort((a, b) => a.grade - b.grade || a.name.localeCompare(b.name, 'tr'))
 
-  // ─── Render ─────────────────────────────────────────────────────────
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900">Anasayfa</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Merhaba {profile?.full_name ?? ''} · hızlı bir özet aşağıda.
+          Merhaba {profile?.full_name ?? ''} · hızlı özet aşağıda.
         </p>
       </div>
 
@@ -170,16 +163,14 @@ export default async function AnasayfaPage() {
         <SummaryCard label="Bugünkü ödev" value={todayHws.length} tone="blue" />
         <SummaryCard label="Yaklaşan (7 gün)" value={upcomingHws.length} tone="indigo" />
         <SummaryCard label="Eksik" value={missingCount} tone="yellow" />
-        <SummaryCard label="Yapılmadı" value={notDoneCount} tone="red" />
+        <SummaryCard label="Yapılmadı" value={notDoneCount} tone="rose" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
         {/* Bugün ve yaklaşan ödevler */}
         <section className="bg-white border border-gray-200 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700">Bugün ve Yaklaşan</h2>
-            <Link href="/anasayfa">Anasayfa</Link>
-            
             <Link
               href="/odevler"
               className="text-xs text-blue-600 font-medium hover:underline"
@@ -230,20 +221,20 @@ export default async function AnasayfaPage() {
           )}
         </section>
 
-        {/* Riskli öğrenciler */}
+        {/* Ödev Takip Listesi */}
         <section className="bg-white border border-gray-200 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700">Riskli Öğrenciler</h2>
-            <span className="text-[10px] text-gray-400">son 5 ödev · ≥2 olumsuz</span>
+            <h2 className="text-sm font-semibold text-gray-700">Ödev Takip Listesi</h2>
+            <span className="text-[10px] text-gray-400">son 5 ödev · ≥2 eksik/yapılmadı</span>
           </header>
 
-          {risky.length === 0 ? (
+          {watchlist.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">
-              Şu an risk altında öğrenci yok.
+              Tüm öğrenciler ödevlerini tamamlıyor.
             </p>
           ) : (
             <ul className="space-y-1.5">
-              {risky.map((r, i) => (
+              {watchlist.map((r, i) => (
                 <li
                   key={r.student?.id ?? i}
                   className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200"
@@ -264,6 +255,8 @@ export default async function AnasayfaPage() {
             </ul>
           )}
         </section>
+
+        <CalendarWidget />
       </div>
 
       {/* Sınıf bazlı özet */}
@@ -299,7 +292,7 @@ export default async function AnasayfaPage() {
                   <div className="flex-1 hidden sm:block">
                     <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-green-500"
+                        className="h-full bg-emerald-500"
                         style={{ width: `${c.percent}%` }}
                       />
                     </div>
@@ -327,10 +320,10 @@ function SummaryCard({
   tone: Tone
 }) {
   const TONE: Record<Tone, string> = {
-    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    blue:  'bg-blue-50 text-blue-700 border-blue-200',
     indigo: 'bg-indigo-50 text-indigo-700 border-indigo-200',
     yellow: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    red: 'bg-red-50 text-red-700 border-red-200',
+    rose:  'bg-rose-50 text-rose-700 border-rose-200',
   }
   return (
     <div className={`border rounded-xl p-3 ${TONE[tone]}`}>

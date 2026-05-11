@@ -15,6 +15,9 @@ type FilterParams = {
   ogretmen?: string
 }
 
+const selectCls =
+  'px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all cursor-pointer'
+
 export default function OdevlerFilterBar({
   classes,
   subjects,
@@ -61,40 +64,48 @@ export default function OdevlerFilterBar({
     currentParams.ogretmen
 
   return (
-    <div className="mb-5 space-y-2">
+    <div className="mb-5 space-y-2.5">
       <div className="flex flex-wrap gap-2">
+        {/* Filter icon with tooltip */}
+        <div className="relative group">
+          <div className="flex items-center justify-center w-9 h-9 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all cursor-default">
+            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+            </svg>
+          </div>
+          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+            Filtrele
+          </span>
+        </div>
+
         <select
           value={currentParams.sinif ?? ''}
           onChange={(e) => update('sinif', e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className={selectCls}
         >
           <option value="">Tüm sınıflar</option>
           {classes.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
+            <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
 
         <select
           value={currentParams.ders ?? ''}
           onChange={(e) => update('ders', e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className={selectCls}
         >
           <option value="">Tüm dersler</option>
           {subjects.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
+            <option key={s} value={s}>{s}</option>
           ))}
         </select>
 
         <select
           value={currentParams.durum ?? ''}
           onChange={(e) => update('durum', e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className={selectCls}
         >
-          <option value="">Tümü</option>
+          <option value="">Tüm durumlar</option>
           <option value="yapildi">Yapıldı</option>
           <option value="eksik">Eksik</option>
           <option value="yapilmadi">Yapılmadı</option>
@@ -104,13 +115,11 @@ export default function OdevlerFilterBar({
           <select
             value={currentParams.ogretmen ?? ''}
             onChange={(e) => update('ogretmen', e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className={selectCls}
           >
             <option value="">Tüm öğretmenler</option>
             {teachers.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.full_name}
-              </option>
+              <option key={t.id} value={t.id}>{t.full_name}</option>
             ))}
           </select>
         )}
@@ -121,22 +130,25 @@ export default function OdevlerFilterBar({
           type="date"
           value={currentParams.baslangic ?? ''}
           onChange={(e) => update('baslangic', e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className={selectCls}
         />
-        <span className="text-sm text-gray-400">—</span>
+        <span className="text-sm text-gray-300">—</span>
         <input
           type="date"
           value={currentParams.bitis ?? ''}
           onChange={(e) => update('bitis', e.target.value)}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          className={selectCls}
         />
         {hasFilters && (
           <button
             type="button"
             onClick={() => router.push(pathname)}
-            className="text-sm text-gray-500 hover:text-gray-700 font-medium"
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all"
           >
-            Filtreleri Temizle
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Temizle
           </button>
         )}
       </div>

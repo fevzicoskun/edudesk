@@ -91,6 +91,12 @@ CREATE TABLE curriculum_progress (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE user_notes (
+  user_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE PRIMARY KEY,
+  content    TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ─── TRIGGERS ─────────────────────────────────────────────────────────────────
 
 -- Auto-create profile when user signs up
@@ -139,6 +145,7 @@ ALTER TABLE homework_submissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE zumre_meetings      ENABLE ROW LEVEL SECURITY;
 ALTER TABLE common_exams        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE curriculum_progress ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_notes           ENABLE ROW LEVEL SECURITY;
 
 -- Profiles
 CREATE POLICY "profiles_read_all"  ON profiles FOR SELECT TO authenticated USING (true);
@@ -166,3 +173,6 @@ CREATE POLICY "sub_update" ON homework_submissions FOR UPDATE TO authenticated U
 CREATE POLICY "meetings_all"   ON zumre_meetings      FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "exams_all"      ON common_exams         FOR ALL TO authenticated USING (true) WITH CHECK (true);
 CREATE POLICY "curriculum_all" ON curriculum_progress  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- User notes: users can only read/write their own
+CREATE POLICY "notes_own" ON user_notes FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
