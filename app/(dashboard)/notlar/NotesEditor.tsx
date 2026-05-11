@@ -40,7 +40,7 @@ function ToolBtn({
 
 export default function NotesEditor({ initialContent }: { initialContent: string }) {
   const editorRef = useRef<HTMLDivElement>(null)
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout>>()
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('saved')
   const [showColors, setShowColors] = useState(false)
 
