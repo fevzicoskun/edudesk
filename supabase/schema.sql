@@ -92,10 +92,15 @@ CREATE TABLE curriculum_progress (
 );
 
 CREATE TABLE user_notes (
-  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  title      TEXT NOT NULL DEFAULT 'Yeni Not',
   content    TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+CREATE INDEX idx_user_notes_user ON user_notes(user_id, updated_at DESC);
 
 -- ─── INDEXES ──────────────────────────────────────────────────────────────────
 
