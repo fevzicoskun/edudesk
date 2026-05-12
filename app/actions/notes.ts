@@ -1,5 +1,6 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export async function saveNote(content: string): Promise<void> {
@@ -15,4 +16,6 @@ export async function saveNote(content: string): Promise<void> {
     )
 
   if (error) throw new Error(error.message)
+
+  revalidatePath('/notlar')
 }
