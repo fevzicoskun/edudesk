@@ -23,10 +23,12 @@ const CURRICULUM_LABELS: Record<CurriculumStatus, string> = {
 }
 
 const CURRICULUM_STYLES: Record<CurriculumStatus, string> = {
-  tamamlandi: 'bg-green-100 text-green-700 hover:bg-green-200',
-  tekrar_gerekli: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200',
-  eksik_kaldi: 'bg-red-100 text-red-700 hover:bg-red-200',
+  tamamlandi: 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300',
+  tekrar_gerekli: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300',
+  eksik_kaldi: 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300',
 }
+
+const inputCls = 'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400'
 
 export default async function ZumrePage({
   searchParams,
@@ -43,7 +45,7 @@ export default async function ZumrePage({
     supabase.from('common_exams').select('*').order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
-      .select('*, classes(grade)')
+      .select('*, classes(grade, name)')
       .eq('teacher_id', user.id)
       .order('week_number', { nullsFirst: true })
       .order('created_at'),
@@ -56,6 +58,13 @@ export default async function ZumrePage({
   const classes = classesResult.data ?? []
   const grades = [9, 10, 11, 12]
 
+  // Müfredat → sınıf seviyesine göre grupla
+  type CurriculumItem = typeof curriculum[number]
+  const byGrade = grades.reduce<Record<number, CurriculumItem[]>>((acc, g) => {
+    acc[g] = curriculum.filter(c => (c.classes as { grade: number } | null)?.grade === g)
+    return acc
+  }, {})
+
   const tabs: { key: Tab; label: string }[] = [
     { key: 'toplanti', label: 'Toplantılar' },
     { key: 'sinav', label: 'Ortak Sınavlar' },
@@ -64,17 +73,17 @@ export default async function ZumrePage({
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-5">Zümre</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-5">Zümre</h1>
 
-      <div className="flex border-b border-gray-200 mb-6">
+      <div className="flex border-b border-gray-200 dark:border-slate-700 mb-6">
         {tabs.map(({ key, label }) => (
           <Link
             key={key}
             href={`/zumre?tab=${key}`}
             className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                ? 'border-blue-600 text-blue-600 dark:text-blue-400'
+                : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300'
             }`}
           >
             {label}
@@ -82,58 +91,38 @@ export default async function ZumrePage({
         ))}
       </div>
 
+      {/* ── TOPLANTI ── */}
       {tab === 'toplanti' && (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Yeni Toplantı</h2>
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Toplantı</h2>
             <form action={createMeeting} className="space-y-3">
-              <input
-                name="title"
-                type="text"
-                required
-                placeholder="Toplantı başlığı"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                name="meeting_date"
-                type="date"
-                required
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                name="notes"
-                rows={3}
-                placeholder="Toplantı notları..."
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-              />
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
+              <input name="title" type="text" required placeholder="Toplantı başlığı" className={inputCls} />
+              <input name="meeting_date" type="date" required className={inputCls} />
+              <textarea name="notes" rows={3} placeholder="Toplantı notları..." className={inputCls + ' resize-none'} />
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 Ekle
               </button>
             </form>
           </div>
 
           {meetings.length === 0 ? (
-            <p className="text-center py-12 text-gray-400 text-sm">Henüz toplantı eklenmemiş.</p>
+            <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz toplantı eklenmemiş.</p>
           ) : (
             meetings.map((m) => (
-              <div key={m.id} className="bg-white border border-gray-200 rounded-xl p-4">
+              <div key={m.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">{m.title}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
+                    <p className="font-medium text-gray-900 dark:text-slate-100">{m.title}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       {format(parseISO(m.meeting_date), 'd MMMM yyyy', { locale: tr })}
                     </p>
                     {m.notes && (
-                      <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{m.notes}</p>
+                      <p className="text-sm text-gray-600 dark:text-slate-300 mt-2 whitespace-pre-wrap">{m.notes}</p>
                     )}
                   </div>
                   <form action={deleteMeeting.bind(null, m.id)}>
-                    <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
-                      Sil
-                    </button>
+                    <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">Sil</button>
                   </form>
                 </div>
               </div>
@@ -142,55 +131,34 @@ export default async function ZumrePage({
         </div>
       )}
 
+      {/* ── SINAV ── */}
       {tab === 'sinav' && (
         <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Yeni Ortak Sınav</h2>
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Ortak Sınav</h2>
             <form action={createExam} className="space-y-3">
-              <input
-                name="title"
-                type="text"
-                required
-                placeholder="Sınav başlığı"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                name="subject"
-                type="text"
-                required
-                placeholder="Ders"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                name="exam_date"
-                type="date"
-                required
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
+              <input name="title" type="text" required placeholder="Sınav başlığı" className={inputCls} />
+              <input name="subject" type="text" required placeholder="Ders" className={inputCls} />
+              <input name="exam_date" type="date" required className={inputCls} />
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 Ekle
               </button>
             </form>
           </div>
 
           {exams.length === 0 ? (
-            <p className="text-center py-12 text-gray-400 text-sm">Henüz sınav eklenmemiş.</p>
+            <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz sınav eklenmemiş.</p>
           ) : (
             exams.map((e) => (
-              <div key={e.id} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between gap-3">
+              <div key={e.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium text-gray-900">{e.title}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">
+                  <p className="font-medium text-gray-900 dark:text-slate-100">{e.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                     {e.subject} · {format(parseISO(e.exam_date), 'd MMMM yyyy', { locale: tr })}
                   </p>
                 </div>
                 <form action={deleteExam.bind(null, e.id)}>
-                  <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
-                    Sil
-                  </button>
+                  <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">Sil</button>
                 </form>
               </div>
             ))
@@ -198,101 +166,91 @@ export default async function ZumrePage({
         </div>
       )}
 
+      {/* ── MÜFREDAT ── */}
       {tab === 'mufredat' && (
         <div className="space-y-4">
           <MufredatImportForm grades={grades} />
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Manuel Konu Ekle</h2>
+
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Manuel Konu Ekle</h2>
             <form action={createCurriculumProgress} className="space-y-3">
-              <select
-                name="grade"
-                required
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+              <select name="grade" required className={inputCls}>
                 <option value="">Sınıf seviyesi seçin</option>
                 {grades.map((g) => (
-                  <option key={g} value={g}>
-                    {g}. Sınıf
-                  </option>
+                  <option key={g} value={g}>{g}. Sınıf</option>
                 ))}
               </select>
               <div className="flex gap-2">
-                <input
-                  name="week_number"
-                  type="number"
-                  placeholder="Hafta"
-                  min="1"
-                  max="40"
-                  className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <input
-                  name="topic"
-                  type="text"
-                  required
-                  placeholder="İşlenen konu"
-                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <input name="week_number" type="number" placeholder="Hafta" min="1" max="40"
+                  className="w-24 px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input name="topic" type="text" required placeholder="İşlenen konu" className={inputCls} />
               </div>
-              <select
-                name="status"
-                defaultValue="tamamlandi"
-                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
+              <select name="status" defaultValue="tamamlandi" className={inputCls}>
                 <option value="tamamlandi">Tamamlandı</option>
                 <option value="tekrar_gerekli">Tekrar gerekli</option>
                 <option value="eksik_kaldi">Eksik kaldı</option>
               </select>
-              <button
-                type="submit"
-                className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
+              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                 Ekle
               </button>
             </form>
           </div>
 
           {curriculum.length === 0 ? (
-            <p className="text-center py-12 text-gray-400 text-sm">Henüz konu eklenmemiş.</p>
+            <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz konu eklenmemiş.</p>
           ) : (
-            curriculum.map((c) => {
-              const cls = c.classes as { grade: number } | null
-              const status = (c.status ??
-                (c.completed ? 'tamamlandi' : 'eksik_kaldi')) as CurriculumStatus
+            grades.map((g) => {
+              const items = byGrade[g]
+              if (items.length === 0) return null
+              const done = items.filter(c => c.status === 'tamamlandi').length
+              const pct = Math.round((done / items.length) * 100)
               return (
-                <div
-                  key={c.id}
-                  className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">{c.topic}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {cls?.grade ? `${cls.grade}. Sınıf` : ''}
-                      {c.week_number ? ` · Hafta ${c.week_number}` : ''}
-                    </p>
+                <div key={g} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                  {/* Başlık */}
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
+                    <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{g}. Sınıf</h3>
+                    <div className="flex items-center gap-3">
+                      <div className="hidden sm:flex items-center gap-2">
+                        <div className="w-24 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        <span className="text-xs text-gray-500 dark:text-slate-400">{done}/{items.length}</span>
+                      </div>
+                      <span className="text-xs font-medium text-green-600 dark:text-green-400">{pct}%</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'] as CurriculumStatus[]).map(
-                      (nextStatus) => (
-                        <form key={nextStatus} action={updateCurriculumStatus.bind(null, c.id, nextStatus)}>
-                          <button
-                            type="submit"
-                            className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors shrink-0 ${
-                              status === nextStatus
-                                ? CURRICULUM_STYLES[nextStatus]
-                                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                            }`}
-                          >
-                            {CURRICULUM_LABELS[nextStatus]}
-                          </button>
-                        </form>
+                  {/* Konular */}
+                  <div className="divide-y divide-gray-100 dark:divide-slate-700">
+                    {items.map((c) => {
+                      const status = (c.status ?? (c.completed ? 'tamamlandi' : 'eksik_kaldi')) as CurriculumStatus
+                      return (
+                        <div key={c.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-gray-900 dark:text-slate-100">{c.topic}</p>
+                            {c.week_number && (
+                              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Hafta {c.week_number}</p>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'] as CurriculumStatus[]).map((s) => (
+                              <form key={s} action={updateCurriculumStatus.bind(null, c.id, s)}>
+                                <button type="submit"
+                                  className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                                    status === s ? CURRICULUM_STYLES[s] : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600'
+                                  }`}
+                                >
+                                  {CURRICULUM_LABELS[s]}
+                                </button>
+                              </form>
+                            ))}
+                          </div>
+                          <form action={deleteCurriculumProgress.bind(null, c.id)}>
+                            <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">Sil</button>
+                          </form>
+                        </div>
                       )
-                    )}
+                    })}
                   </div>
-                  <form action={deleteCurriculumProgress.bind(null, c.id)} className="self-start sm:self-auto">
-                    <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">
-                      Sil
-                    </button>
-                  </form>
                 </div>
               )
             })
