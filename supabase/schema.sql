@@ -92,7 +92,7 @@ CREATE TABLE curriculum_progress (
 );
 
 CREATE TABLE user_notes (
-  user_id    UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE PRIMARY KEY,
+  user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   content    TEXT NOT NULL DEFAULT '',
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
