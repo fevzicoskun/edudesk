@@ -57,7 +57,7 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
   if (!studentResult.data) notFound()
 
   const student = studentResult.data
-  const cls = student.classes as { name: string; grade: number } | null
+  const cls = student.classes as unknown as { name: string; grade: number } | null
   const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
