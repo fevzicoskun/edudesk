@@ -10,12 +10,13 @@ export async function updateProfile(formData: FormData): Promise<{ error?: strin
 
   const full_name = (formData.get('full_name') as string).trim()
   const subject = (formData.get('subject') as string).trim() || null
+  const okul_adi = (formData.get('okul_adi') as string).trim() || null
 
   if (!full_name) return { error: 'Ad Soyad boş olamaz' }
 
   const { error } = await supabase
     .from('profiles')
-    .update({ full_name, subject })
+    .update({ full_name, subject, okul_adi })
     .eq('id', user.id)
 
   if (error) return { error: error.message }

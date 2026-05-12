@@ -77,18 +77,22 @@ export async function updateCurriculumStatus(id: string, status: CurriculumStatu
   revalidatePath('/zumre')
 }
 
-export async function toggleCurriculumDone(id: string, completed: boolean, _: FormData) {
+export async function updateMeeting(id: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase
-    .from('curriculum_progress')
-    .update({ completed, completion_date: completed ? new Date().toISOString().split('T')[0] : null })
+    .from('zumre_meetings')
+    .update({
+      title: formData.get('title') as string,
+      meeting_date: formData.get('meeting_date') as string,
+      notes: (formData.get('notes') as string) || null,
+    })
     .eq('id', id)
-    .eq('teacher_id', user.id)
 
   revalidatePath('/zumre')
+  redirect('/zumre?tab=toplanti')
 }
 
 export async function deleteMeeting(id: string, _: FormData) {

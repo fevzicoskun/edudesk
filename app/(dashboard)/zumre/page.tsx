@@ -115,6 +115,12 @@ export default async function ZumrePage({
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     <Link
+                      href={`/zumre/toplanti/${m.id}/duzenle`}
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+                    >
+                      Düzenle
+                    </Link>
+                    <Link
                       href={`/tutanak/${m.id}`}
                       className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
                     >
