@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import MufredatImportForm from './MufredatImportForm'
 import TutanakForm from './TutanakForm'
 import TYMMImportForm from './TYMMImportForm'
+import { parseTopicString } from '@/lib/tymm-data'
 import {
   createMeeting,
   createExam,
@@ -174,8 +174,6 @@ export default async function ZumrePage({
         <div className="space-y-4">
           <TYMMImportForm classes={classes} />
 
-          <MufredatImportForm grades={grades} />
-
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Manuel Konu Ekle</h2>
             <form action={createCurriculumProgress} className="space-y-3">
@@ -240,10 +238,24 @@ export default async function ZumrePage({
                       return (
                         <div key={c.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-900 dark:text-slate-100">{c.topic}</p>
-                            {c.week_number && (
-                              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">Hafta {c.week_number}</p>
-                            )}
+                            {(() => {
+                              const { code, topic } = parseTopicString(c.topic)
+                              return (
+                                <>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    {code && (
+                                      <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded shrink-0">
+                                        {code}
+                                      </span>
+                                    )}
+                                    <p className="text-sm text-gray-900 dark:text-slate-100">{topic}</p>
+                                  </div>
+                                  {c.week_number && (
+                                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 ml-0.5">Hafta {c.week_number}</p>
+                                  )}
+                                </>
+                              )
+                            })()}
                           </div>
                           <div className="flex flex-wrap gap-1.5">
                             {(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'] as CurriculumStatus[]).map((s) => (
