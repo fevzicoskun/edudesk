@@ -6,22 +6,80 @@ const TEMPLATES = [
   {
     label: 'Dönem Başı',
     title: 'Dönem Başı Zümre Toplantısı',
-    notes: 'Dönem hedefleri ve takvim belirlendi. Ortak sınav tarihleri kararlaştırıldı. Ödev takip sistemi gözden geçirildi. Müfredat uyum planı yapıldı.',
+    notes: `GÜNDEM MADDELERİ
+
+1. Açılış ve yoklama
+2. Geçen dönem/yılın genel değerlendirilmesi
+3. Öğretim programlarının (TYMM) incelenmesi ve yıllık plan hazırlığı
+4. Ölçme-değerlendirme yöntemleri ve ortak sınav takviminin belirlenmesi
+5. Ödev ve proje politikasının belirlenmesi
+6. Araç-gereç ve kaynak ihtiyacının tespiti
+7. Destekleme ve Yetiştirme Kursu (DYK) planlaması
+8. Bireysel farklılıkları olan öğrencilerin değerlendirilmesi
+9. Dilek, öneri ve kapanış
+
+ALINAN KARARLAR
+-
+-
+
+Toplantı saat ___'de sona erdi.`,
   },
   {
     label: 'Ölçme-Değerlendirme',
-    title: 'Ölçme ve Değerlendirme Toplantısı',
-    notes: 'Sınav sonuçları analiz edildi. Sınıf bazlı başarı yüzdeleri değerlendirildi. Yetersiz kalan konular için ek çalışma planlandı. Bir sonraki sınav takvimi belirlendi.',
+    title: 'Ölçme ve Değerlendirme Zümre Toplantısı',
+    notes: `GÜNDEM MADDELERİ
+
+1. Açılış ve yoklama
+2. Yapılan sınavların sınıf/şube bazında sonuçlarının değerlendirilmesi
+3. Başarı düzeyi düşük konuların tespiti ve analizi
+4. Telafi ve ek çalışma planlaması
+5. Soru tipleri ve sınav formatının gözden geçirilmesi
+6. Bir sonraki ölçme-değerlendirme takviminin belirlenmesi
+7. Dilek, öneri ve kapanış
+
+ALINAN KARARLAR
+-
+-
+
+Toplantı saat ___'de sona erdi.`,
   },
   {
     label: 'Müfredat',
-    title: 'Müfredat Değerlendirme Toplantısı',
-    notes: 'İşlenen konular ve kazanımlar değerlendirildi. Eksik kalan konular için telafi planı oluşturuldu. Bir sonraki dönem müfredat dağılımı belirlendi.',
+    title: 'Müfredat Değerlendirme Zümre Toplantısı',
+    notes: `GÜNDEM MADDELERİ
+
+1. Açılış ve yoklama
+2. İşlenen konuların ve TYMM kazanımlarının değerlendirilmesi
+3. Müfredat aksaklıklarının ve eksik kalan konuların tespiti
+4. Telafi planı ve konu dağılımının güncellenmesi
+5. Öğrencilerin konu bazlı başarı durumlarının değerlendirilmesi
+6. Bir sonraki dönem müfredat dağılımının belirlenmesi
+7. Dilek, öneri ve kapanış
+
+ALINAN KARARLAR
+-
+-
+
+Toplantı saat ___'de sona erdi.`,
   },
   {
-    label: 'Rehberlik',
-    title: 'Öğrenci Rehberlik ve Veli Toplantısı',
-    notes: 'Başarı durumu düşük öğrenciler görüşüldü. Veli bilgilendirme planı yapıldı. Destekleme ve yetiştirme kursu ihtiyacı değerlendirildi.',
+    label: 'Dönem Sonu',
+    title: 'Dönem Sonu Zümre Toplantısı',
+    notes: `GÜNDEM MADDELERİ
+
+1. Açılış ve yoklama
+2. Dönemin genel değerlendirmesi; işlenen konu ve kazanım başarı oranları
+3. Sınıf ve şube başarılarının karşılaştırılması
+4. Genel sınav başarı oranları ve analizi
+5. Bir sonraki döneme yönelik öneri ve hedefler
+6. Gelecek dönem ortak sınav takvimi
+7. Dilek, öneri ve kapanış
+
+ALINAN KARARLAR
+-
+-
+
+Toplantı saat ___'de sona erdi.`,
   },
 ]
 
