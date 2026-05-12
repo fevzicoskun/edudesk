@@ -66,10 +66,10 @@ export default function StatusBoard({
 
   return (
     <div>
-      <div className="bg-white border border-gray-200 rounded-xl p-3 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-gray-900">Toplu güncelle</p>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Toplu güncelle</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
             Tüm öğrencileri aynı duruma çek, sonra istisnaları tek tek düzelt.
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function StatusBoard({
             setAllStatuses(event.target.value as SubmissionStatus)
             event.target.value = ''
           }}
-          className="w-full sm:w-48 px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full sm:w-48 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Durum seç</option>
           {STATUS_OPTIONS.map((option) => (
@@ -108,12 +108,12 @@ export default function StatusBoard({
           return (
             <div
               key={item.student_id}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{item.full_name}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{item.full_name}</p>
                 {item.student_number && (
-                  <p className="text-xs text-gray-400">No: {item.student_number}</p>
+                  <p className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</p>
                 )}
               </div>
 

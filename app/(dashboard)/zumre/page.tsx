@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
 import MufredatImportForm from './MufredatImportForm'
+import TutanakForm from './TutanakForm'
 import {
   createMeeting,
   createExam,
@@ -94,17 +95,7 @@ export default async function ZumrePage({
       {/* ── TOPLANTI ── */}
       {tab === 'toplanti' && (
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Toplantı</h2>
-            <form action={createMeeting} className="space-y-3">
-              <input name="title" type="text" required placeholder="Toplantı başlığı" className={inputCls} />
-              <input name="meeting_date" type="date" required className={inputCls} />
-              <textarea name="notes" rows={3} placeholder="Toplantı notları..." className={inputCls + ' resize-none'} />
-              <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                Ekle
-              </button>
-            </form>
-          </div>
+          <TutanakForm action={createMeeting} inputCls={inputCls} />
 
           {meetings.length === 0 ? (
             <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz toplantı eklenmemiş.</p>
@@ -174,11 +165,20 @@ export default async function ZumrePage({
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Manuel Konu Ekle</h2>
             <form action={createCurriculumProgress} className="space-y-3">
-              <select name="grade" required className={inputCls}>
-                <option value="">Sınıf seviyesi seçin</option>
-                {grades.map((g) => (
-                  <option key={g} value={g}>{g}. Sınıf</option>
-                ))}
+              <select name="class_id" required className={inputCls}>
+                <option value="">Sınıf seçin</option>
+                {classes.length === 0 && <option disabled>Henüz sınıf eklenmemiş</option>}
+                {grades.map((g) => {
+                  const gradeClasses = classes.filter(c => c.grade === g)
+                  if (gradeClasses.length === 0) return null
+                  return (
+                    <optgroup key={g} label={`${g}. Sınıf`}>
+                      {gradeClasses.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </optgroup>
+                  )
+                })}
               </select>
               <div className="flex gap-2">
                 <input name="week_number" type="number" placeholder="Hafta" min="1" max="40"

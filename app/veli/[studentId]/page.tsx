@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+import PrintButton from './PrintButton'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -81,11 +82,14 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">EduDesk · Veli Görünümü</p>
             <p className="text-base font-bold text-gray-900 mt-0.5">{student.full_name}</p>
           </div>
-          <div className="text-right">
-            <p className="text-sm font-semibold text-gray-700">{cls?.name ?? '—'}</p>
-            {student.student_number && (
-              <p className="text-xs text-gray-400 mt-0.5">No: {student.student_number}</p>
-            )}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <p className="text-sm font-semibold text-gray-700">{cls?.name ?? '—'}</p>
+              {student.student_number && (
+                <p className="text-xs text-gray-400 mt-0.5">No: {student.student_number}</p>
+              )}
+            </div>
+            <PrintButton />
           </div>
         </div>
       </header>

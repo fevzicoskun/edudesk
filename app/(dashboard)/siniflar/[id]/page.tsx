@@ -42,13 +42,13 @@ export default async function SinifDetayPage({
       </Link>
 
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">{cls.name}</h1>
-        <p className="text-sm text-gray-500">{students.length} öğrenci · {egitimYili}</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{cls.name}</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400">{students.length} öğrenci · {egitimYili}</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700">Öğrenci Ekle</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğrenci Ekle</h2>
           <BulkStudentModal classId={id} maxNumber={maxNumber} />
         </div>
         <form action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
@@ -57,13 +57,13 @@ export default async function SinifDetayPage({
             type="text"
             required
             placeholder="Ad Soyad"
-            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             name="student_number"
             type="text"
             placeholder="Numara"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-24 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm w-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
@@ -81,13 +81,13 @@ export default async function SinifDetayPage({
           {students.map((s, i) => (
             <div
               key={s.id}
-              className="bg-white border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3"
+              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3"
             >
               <span className="text-xs text-gray-400 w-6 text-right shrink-0">{i + 1}</span>
               <div className="flex-1 min-w-0">
                 <Link
                   href={`/siniflar/${id}/ogrenciler/${s.id}`}
-                  className="text-sm font-medium text-gray-900 hover:text-blue-700"
+                  className="text-sm font-medium text-gray-900 dark:text-slate-100 hover:text-blue-700 dark:hover:text-blue-400"
                 >
                   {s.full_name}
                 </Link>

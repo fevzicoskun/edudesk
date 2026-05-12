@@ -79,14 +79,14 @@ export default async function OdevlerPage({
   const overdueCount = homeworks.length - activeCount
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/10 to-slate-50">
+    <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/10 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
 
         {/* Page header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Ödevler</h1>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ödevler</h1>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
               {homeworks.length} ödev · {activeCount} aktif
             </p>
           </div>
@@ -108,7 +108,7 @@ export default async function OdevlerPage({
             { label: 'Aktif', value: activeCount, color: 'text-emerald-600' },
             { label: 'Geçmiş', value: overdueCount, color: 'text-red-500' },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-xl border border-gray-100 px-4 py-3.5 shadow-sm">
+            <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 shadow-sm">
               <p className={`text-2xl font-bold ${color}`}>{value}</p>
               <p className="text-xs text-gray-500 mt-0.5">{label}</p>
             </div>
@@ -159,7 +159,7 @@ export default async function OdevlerPage({
               return (
                 <div
                   key={hw.id}
-                  className="group bg-white rounded-2xl border border-gray-100 hover:border-gray-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+                  className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
                 >
                   {/* Status bar */}
                   <div className={`h-0.5 ${overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
@@ -169,7 +169,7 @@ export default async function OdevlerPage({
                     <div className="flex items-start justify-between gap-3 mb-2.5">
                       <Link
                         href={`/odevler/${hw.id}`}
-                        className="font-semibold text-gray-900 hover:text-red-700 transition-colors leading-snug text-base"
+                        className="font-semibold text-gray-900 dark:text-slate-100 hover:text-red-700 dark:hover:text-red-400 transition-colors leading-snug text-base"
                       >
                         {hw.title}
                       </Link>
@@ -190,8 +190,8 @@ export default async function OdevlerPage({
                       <span className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
                         {cls?.name ?? '—'}
                       </span>
-                      <span className="text-gray-300">·</span>
-                      <span className="text-xs text-gray-500">{hw.subject}</span>
+                      <span className="text-gray-300 dark:text-slate-600">·</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400">{hw.subject}</span>
                     </div>
 
                     {/* Description preview */}
@@ -202,7 +202,7 @@ export default async function OdevlerPage({
                     )}
 
                     {/* Bottom: meta + actions */}
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-50">
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-xs text-gray-400">
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -42,19 +42,12 @@ export async function createCurriculumProgress(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const grade = Number(formData.get('grade'))
-  const { data: cls } = await supabase
-    .from('classes')
-    .select('id')
-    .eq('grade', grade)
-    .order('name')
-    .limit(1)
-    .single()
-  if (!cls) redirect('/zumre?tab=mufredat')
+  const class_id = formData.get('class_id') as string
+  if (!class_id) redirect('/zumre?tab=mufredat&error=sinif')
 
   await supabase.from('curriculum_progress').insert({
     teacher_id: user.id,
-    class_id: cls.id,
+    class_id,
     topic: formData.get('topic') as string,
     week_number: formData.get('week_number') ? Number(formData.get('week_number')) : null,
     status: (formData.get('status') as CurriculumStatus) || 'tamamlandi',

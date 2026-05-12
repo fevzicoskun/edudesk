@@ -18,19 +18,19 @@ export default async function SiniflarPage() {
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900">Sınıflar</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{egitimYili} Eğitim Yılı</p>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Sınıflar</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{egitimYili} Eğitim Yılı</p>
       </div>
 
-      <div className="bg-white border border-gray-200 rounded-xl p-5 mb-5">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3">Yeni Sınıf Ekle</h2>
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Sınıf Ekle</h2>
         <form action={createClass} className="flex gap-2 flex-wrap">
           <input
             name="name"
             type="text"
             required
             placeholder="9-A"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             name="grade"
@@ -39,7 +39,7 @@ export default async function SiniflarPage() {
             placeholder="Sınıf (9)"
             min="1"
             max="12"
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-28 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm w-28 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
@@ -59,12 +59,12 @@ export default async function SiniflarPage() {
             return (
               <div
                 key={c.id}
-                className="bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-sm transition-all"
+                className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all"
               >
                 <div className="flex items-start justify-between gap-2">
                   <Link href={`/siniflar/${c.id}`} className="flex-1 min-w-0">
-                    <p className="font-bold text-gray-900 text-lg">{c.name}</p>
-                    <p className="text-sm text-gray-500 mt-0.5">{studentCount} öğrenci</p>
+                    <p className="font-bold text-gray-900 dark:text-slate-100 text-lg">{c.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{studentCount} öğrenci</p>
                   </Link>
                   <ConfirmDeleteButton
                     action={deleteClass.bind(null, c.id)}
