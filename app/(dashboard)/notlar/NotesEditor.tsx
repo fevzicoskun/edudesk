@@ -63,7 +63,8 @@ export default function NotesEditor({ initialContent }: { initialContent: string
       try {
         await saveNote(editorRef.current?.innerHTML ?? '')
         setSaveStatus('saved')
-      } catch {
+      } catch (err) {
+        console.error('saveNote error:', err)
         setSaveStatus('unsaved')
       }
     }, 1200)
