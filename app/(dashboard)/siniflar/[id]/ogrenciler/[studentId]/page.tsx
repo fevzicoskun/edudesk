@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
+
+export const revalidate = 60
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'

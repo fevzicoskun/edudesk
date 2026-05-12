@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useMemo } from 'react'
 import { updateAllSubmissionStatuses, updateSubmissionStatus } from '@/app/actions/homework'
 import type { SubmissionStatus } from '@/lib/types'
 
@@ -56,13 +56,13 @@ export default function StatusBoard({
     })
   }
 
-  const counts = STATUS_OPTIONS.reduce(
+  const counts = useMemo(() => STATUS_OPTIONS.reduce(
     (acc, status) => ({
       ...acc,
       [status]: Object.values(statuses).filter((value) => value === status).length,
     }),
     {} as Record<SubmissionStatus, number>
-  )
+  ), [statuses])
 
   return (
     <div>

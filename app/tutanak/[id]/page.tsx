@@ -15,7 +15,7 @@ export default async function TutanakPrintPage({
   if (!user) redirect('/login')
 
   const { id } = await params
-  const [supabase, profile] = [await (await import('@/lib/supabase/server')).createClient(), await getCurrentProfile()]
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
 
   const { data: meeting } = await supabase
     .from('zumre_meetings')
@@ -26,7 +26,7 @@ export default async function TutanakPrintPage({
   if (!meeting) notFound()
 
   const dateStr = format(parseISO(meeting.meeting_date), 'd MMMM yyyy', { locale: tr })
-  const okulAdi = (profile as unknown as { okul_adi?: string })?.okul_adi ?? ''
+  const okulAdi = profile?.okul_adi ?? ''
   const ogretmenAdi = profile?.full_name ?? ''
 
   return (

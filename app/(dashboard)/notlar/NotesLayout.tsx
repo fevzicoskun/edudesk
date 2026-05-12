@@ -54,12 +54,14 @@ export default function NotesLayout({ notes: initial }: { notes: Note[] }) {
 
   const handleDelete = async (id: string) => {
     await deleteNote(id)
-    setNotes(prev => prev.filter(n => n.id !== id))
-    if (selectedId === id) {
-      const remaining = notes.filter(n => n.id !== id)
-      setSelectedId(remaining[0]?.id ?? null)
-      if (remaining.length === 0) setShowEditor(false)
-    }
+    setNotes(prev => {
+      const remaining = prev.filter(n => n.id !== id)
+      if (selectedId === id) {
+        setSelectedId(remaining[0]?.id ?? null)
+        if (remaining.length === 0) setShowEditor(false)
+      }
+      return remaining
+    })
   }
 
   const handleNoteUpdate = useCallback((updated: Partial<Note> & { id: string }) => {

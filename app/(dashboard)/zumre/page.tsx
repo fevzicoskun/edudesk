@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
+
+export const revalidate = 60
 import TutanakForm from './TutanakForm'
 import TYMMImportForm from './TYMMImportForm'
 import { parseTopicString } from '@/lib/tymm-data'
