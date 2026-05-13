@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, usePathname } from 'next/navigation'
-import { useCallback } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 
 type ClassItem = { id: string; name: string; grade: number }
 type TeacherItem = { id: string; full_name: string }
@@ -32,17 +32,49 @@ export default function OdevlerFilterBar({
 }) {
   const router = useRouter()
   const pathname = usePathname()
+  const [localQ, setLocalQ] = useState(currentParams.q ?? '')
+  const paramsRef = useRef(currentParams)
+  paramsRef.current = currentParams
+  const localQRef = useRef(localQ)
+  localQRef.current = localQ
+
+  // Sync search box when q cleared externally (e.g. Temizle button)
+  useEffect(() => {
+    setLocalQ(currentParams.q ?? '')
+  }, [currentParams.q])
+
+  // Debounced search: wait 400ms after last keystroke before navigating
+  useEffect(() => {
+    const p = paramsRef.current
+    if (localQ === (p.q ?? '')) return
+    const timer = setTimeout(() => {
+      const pr = paramsRef.current
+      const current: Record<string, string> = {}
+      if (pr.sinif) current.sinif = pr.sinif
+      if (pr.baslangic) current.baslangic = pr.baslangic
+      if (pr.bitis) current.bitis = pr.bitis
+      if (pr.ders) current.ders = pr.ders
+      if (pr.durum) current.durum = pr.durum
+      if (pr.ogretmen) current.ogretmen = pr.ogretmen
+      if (localQ) current.q = localQ
+      const qs = new URLSearchParams(current).toString()
+      router.replace(qs ? `${pathname}?${qs}` : pathname)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [localQ, router, pathname])
 
   const update = useCallback(
     (key: string, value: string) => {
+      const p = paramsRef.current
       const current: Record<string, string> = {}
-      if (currentParams.sinif) current.sinif = currentParams.sinif
-      if (currentParams.baslangic) current.baslangic = currentParams.baslangic
-      if (currentParams.bitis) current.bitis = currentParams.bitis
-      if (currentParams.ders) current.ders = currentParams.ders
-      if (currentParams.durum) current.durum = currentParams.durum
-      if (currentParams.ogretmen) current.ogretmen = currentParams.ogretmen
-      if (currentParams.q) current.q = currentParams.q
+      if (p.sinif) current.sinif = p.sinif
+      if (p.baslangic) current.baslangic = p.baslangic
+      if (p.bitis) current.bitis = p.bitis
+      if (p.ders) current.ders = p.ders
+      if (p.durum) current.durum = p.durum
+      if (p.ogretmen) current.ogretmen = p.ogretmen
+      // use latest localQ (may not be pushed to URL yet)
+      if (localQRef.current) current.q = localQRef.current
 
       if (value) {
         current[key] = value
@@ -52,9 +84,9 @@ export default function OdevlerFilterBar({
 
       const params = new URLSearchParams(current)
       const qs = params.toString()
-      router.push(qs ? `${pathname}?${qs}` : pathname)
+      router.replace(qs ? `${pathname}?${qs}` : pathname)
     },
-    [currentParams, router, pathname]
+    [router, pathname]
   )
 
   const hasFilters =
@@ -75,8 +107,8 @@ export default function OdevlerFilterBar({
         <input
           type="text"
           placeholder="Ödev başlığında ara..."
-          value={currentParams.q ?? ''}
-          onChange={e => update('q', e.target.value)}
+          value={localQ}
+          onChange={e => setLocalQ(e.target.value)}
           className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
         />
       </div>
@@ -157,7 +189,7 @@ export default function OdevlerFilterBar({
         {hasFilters && (
           <button
             type="button"
-            onClick={() => router.push(pathname)}
+            onClick={() => router.replace(pathname)}
             className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
