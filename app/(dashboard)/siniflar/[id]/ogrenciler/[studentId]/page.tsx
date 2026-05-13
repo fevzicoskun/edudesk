@@ -15,6 +15,7 @@ import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { addStudentNote, deleteStudentNote } from '@/app/actions/class'
 import CopyVeliLink from './CopyVeliLink'
+import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/lib/types'
 
 const LABELS: Record<SubmissionStatus, string> = {
@@ -60,6 +61,7 @@ export default async function OgrenciDetayPage({
   const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
+  const studentNotesTableExists = notesResult.error?.code !== '42P01'
   const notes = (notesResult.data ?? []) as NoteRow[]
 
   const statusCounts = submissions.reduce((acc, s) => ({ ...acc, [s.status]: (acc[s.status] ?? 0) + 1 }), {} as Record<SubmissionStatus, number>)
@@ -176,36 +178,44 @@ export default async function OgrenciDetayPage({
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>
-          <form action={addStudentNote.bind(null, studentId, classId)} className="mb-4">
-            <textarea
-              name="body"
-              required
-              placeholder="Kısa not yaz..."
-              className="w-full min-h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+          {!studentNotesTableExists ? (
+            <SetupBanner
+              title="Kurulum gerekiyor — student_notes tablosu eksik"
+              sql={`CREATE TABLE IF NOT EXISTS student_notes (\n  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,\n  teacher_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,\n  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,\n  body       TEXT NOT NULL,\n  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()\n);\nCREATE INDEX IF NOT EXISTS idx_student_notes_student ON student_notes(student_id, created_at DESC);\nALTER TABLE student_notes ENABLE ROW LEVEL SECURITY;\nCREATE POLICY "student_notes_read"   ON student_notes FOR SELECT TO authenticated USING (true);\nCREATE POLICY "student_notes_insert" ON student_notes FOR INSERT TO authenticated WITH CHECK (auth.uid() = teacher_id);\nCREATE POLICY "student_notes_delete" ON student_notes FOR DELETE TO authenticated USING (auth.uid() = teacher_id);`}
             />
-            <button type="submit" className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-              Not Ekle
-            </button>
-          </form>
-
-          {notes.length === 0 ? (
-            <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">Henüz not yok.</p>
           ) : (
-            <div className="space-y-2">
-              {notes.map((n) => (
-                <div key={n.id} className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap flex-1">{n.body}</p>
-                    <form action={deleteStudentNote.bind(null, n.id, studentId, classId)} className="shrink-0">
-                      <button type="submit" className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
-                    </form>
-                  </div>
-                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                    {format(parseISO(n.created_at), 'd MMM yyyy HH:mm', { locale: tr })}
-                  </p>
+            <>
+              <form action={addStudentNote.bind(null, studentId, classId)} className="mb-4">
+                <textarea
+                  name="body"
+                  required
+                  placeholder="Kısa not yaz..."
+                  className="w-full min-h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400"
+                />
+                <button type="submit" className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                  Not Ekle
+                </button>
+              </form>
+              {notes.length === 0 ? (
+                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">Henüz not yok.</p>
+              ) : (
+                <div className="space-y-2">
+                  {notes.map((n) => (
+                    <div key={n.id} className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap flex-1">{n.body}</p>
+                        <form action={deleteStudentNote.bind(null, n.id, studentId, classId)} className="shrink-0">
+                          <button type="submit" className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
+                        </form>
+                      </div>
+                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+                        {format(parseISO(n.created_at), 'd MMM yyyy HH:mm', { locale: tr })}
+                      </p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </section>
       </div>

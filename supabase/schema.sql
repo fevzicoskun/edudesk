@@ -10,6 +10,7 @@ CREATE TABLE profiles (
   full_name  TEXT NOT NULL,
   role       TEXT NOT NULL DEFAULT 'ogretmen' CHECK (role IN ('zumre_baskani', 'ogretmen')),
   subject    TEXT,
+  okul_adi   TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -108,6 +109,15 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "attendance_own" ON attendance FOR ALL TO authenticated
   USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 CREATE POLICY "attendance_public_read" ON attendance FOR SELECT TO anon USING (true);
+
+CREATE TABLE student_notes (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES students(id) ON DELETE CASCADE,
+  body       TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_student_notes_student ON student_notes(student_id, created_at DESC);
 
 CREATE TABLE user_notes (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -208,3 +218,9 @@ CREATE POLICY "curriculum_all" ON curriculum_progress  FOR ALL TO authenticated 
 
 -- User notes: users can only read/write their own
 CREATE POLICY "notes_own" ON user_notes FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- Student notes: all teachers can read, only owner can write/delete
+ALTER TABLE student_notes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "student_notes_read"   ON student_notes FOR SELECT TO authenticated USING (true);
+CREATE POLICY "student_notes_insert" ON student_notes FOR INSERT TO authenticated WITH CHECK (auth.uid() = teacher_id);
+CREATE POLICY "student_notes_delete" ON student_notes FOR DELETE TO authenticated USING (auth.uid() = teacher_id);
