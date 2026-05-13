@@ -65,46 +65,43 @@ export default async function YoklamaPage({
   const selectedId = classId ?? classes?.[0]?.id
   const selectedClass = classes?.find(c => c.id === selectedId)
 
-  let tableExists = true
+  // Tablo varlığını her zaman kontrol et (sınıf seçili olmasa bile)
+  const tableProbe = await supabase.from('attendance').select('id').limit(1)
+  let tableExists = tableProbe.error?.code !== '42P01'
+
   let students: { id: string; full_name: string; student_number: string | null }[] = []
   let existing: Record<string, AttendanceStatus> = {}
   let allRecords: { student_id: string; date: string; status: string }[] = []
 
-  if (selectedId) {
-    // Tablo varlığını attendance sorgusuyla test et
+  if (tableExists && selectedId) {
     const probeRes = await supabase
       .from('attendance')
       .select('student_id, status')
       .eq('class_id', selectedId)
       .eq('date', today)
 
-    if (probeRes.error?.code === '42P01') {
-      tableExists = false
-    } else {
-      const studentsRes = await supabase
-        .from('students')
-        .select('id, full_name, student_number')
-        .eq('class_id', selectedId)
-        .order('student_number', { nullsFirst: false })
-        .order('full_name')
+    const studentsRes = await supabase
+      .from('students')
+      .select('id, full_name, student_number')
+      .eq('class_id', selectedId)
+      .order('student_number', { nullsFirst: false })
+      .order('full_name')
 
-      students = studentsRes.data ?? []
+    students = studentsRes.data ?? []
 
-      if (tab === 'yoklama') {
-        for (const r of probeRes.data ?? []) {
-          existing[r.student_id] = r.status as AttendanceStatus
-        }
-      } else {
-        // Tüm yıl kayıtları
-        const histRes = await supabase
-          .from('attendance')
-          .select('student_id, date, status')
-          .eq('class_id', selectedId)
-          .gte('date', schoolYearStart())
-          .order('date', { ascending: false })
-
-        allRecords = histRes.data ?? []
+    if (tab === 'yoklama') {
+      for (const r of probeRes.data ?? []) {
+        existing[r.student_id] = r.status as AttendanceStatus
       }
+    } else {
+      const histRes = await supabase
+        .from('attendance')
+        .select('student_id, date, status')
+        .eq('class_id', selectedId)
+        .gte('date', schoolYearStart())
+        .order('date', { ascending: false })
+
+      allRecords = histRes.data ?? []
     }
   }
 
