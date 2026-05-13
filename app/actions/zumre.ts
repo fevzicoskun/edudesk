@@ -59,6 +59,33 @@ export async function createCurriculumProgress(formData: FormData) {
   revalidatePath('/zumre')
 }
 
+export async function setCurriculumStatus(id: string, status: CurriculumStatus) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase
+    .from('curriculum_progress')
+    .update({
+      status,
+      completed: status !== 'eksik_kaldi',
+      completion_date: status === 'tamamlandi' ? new Date().toISOString().split('T')[0] : null,
+    })
+    .eq('id', id)
+    .eq('teacher_id', user.id)
+
+  revalidatePath('/zumre')
+}
+
+export async function removeCurriculumProgress(id: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase.from('curriculum_progress').delete().eq('id', id).eq('teacher_id', user.id)
+  revalidatePath('/zumre')
+}
+
 export async function updateCurriculumStatus(id: string, status: CurriculumStatus, _: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

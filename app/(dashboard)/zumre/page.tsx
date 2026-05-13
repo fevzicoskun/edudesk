@@ -4,33 +4,18 @@ import Link from 'next/link'
 export const revalidate = 60
 import TutanakForm from './TutanakForm'
 import TYMMImportForm from './TYMMImportForm'
-import { parseTopicString } from '@/lib/tymm-data'
+import MufredatBoard from './MufredatBoard'
 import {
   createMeeting,
   createExam,
   createCurriculumProgress,
-  updateCurriculumStatus,
   deleteMeeting,
   deleteExam,
-  deleteCurriculumProgress,
 } from '@/app/actions/zumre'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
 type Tab = 'toplanti' | 'sinav' | 'mufredat'
-type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
-
-const CURRICULUM_LABELS: Record<CurriculumStatus, string> = {
-  tamamlandi: 'Tamamlandı',
-  tekrar_gerekli: 'Tekrar Gerekli',
-  eksik_kaldi: 'Eksik Kaldı',
-}
-
-const CURRICULUM_STYLES: Record<CurriculumStatus, string> = {
-  tamamlandi: 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-300',
-  tekrar_gerekli: 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-300',
-  eksik_kaldi: 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-300',
-}
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400'
 
@@ -62,12 +47,6 @@ export default async function ZumrePage({
   const classes = classesResult.data ?? []
   const grades = [9, 10, 11, 12]
 
-  // Müfredat → sınıf seviyesine göre grupla
-  type CurriculumItem = typeof curriculum[number]
-  const byGrade = grades.reduce<Record<number, CurriculumItem[]>>((acc, g) => {
-    acc[g] = curriculum.filter(c => (c.classes as { grade: number } | null)?.grade === g)
-    return acc
-  }, {})
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'toplanti', label: 'Toplantılar' },
@@ -216,79 +195,7 @@ export default async function ZumrePage({
             </form>
           </div>
 
-          {curriculum.length === 0 ? (
-            <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz konu eklenmemiş.</p>
-          ) : (
-            grades.map((g) => {
-              const items = byGrade[g]
-              if (items.length === 0) return null
-              const done = items.filter(c => c.status === 'tamamlandi').length
-              const pct = Math.round((done / items.length) * 100)
-              return (
-                <div key={g} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                  {/* Başlık */}
-                  <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-200">{g}. Sınıf</h3>
-                    <div className="flex items-center gap-3">
-                      <div className="hidden sm:flex items-center gap-2">
-                        <div className="w-24 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                          <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
-                        </div>
-                        <span className="text-xs text-gray-500 dark:text-slate-400">{done}/{items.length}</span>
-                      </div>
-                      <span className="text-xs font-medium text-green-600 dark:text-green-400">{pct}%</span>
-                    </div>
-                  </div>
-                  {/* Konular */}
-                  <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                    {items.map((c) => {
-                      const status = (c.status ?? (c.completed ? 'tamamlandi' : 'eksik_kaldi')) as CurriculumStatus
-                      return (
-                        <div key={c.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-2">
-                          <div className="flex-1 min-w-0">
-                            {(() => {
-                              const { code, topic } = parseTopicString(c.topic)
-                              return (
-                                <>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    {code && (
-                                      <span className="font-mono text-[10px] font-semibold px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded shrink-0">
-                                        {code}
-                                      </span>
-                                    )}
-                                    <p className="text-sm text-gray-900 dark:text-slate-100">{topic}</p>
-                                  </div>
-                                  {c.week_number && (
-                                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5 ml-0.5">Hafta {c.week_number}</p>
-                                  )}
-                                </>
-                              )
-                            })()}
-                          </div>
-                          <div className="flex flex-wrap gap-1.5">
-                            {(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'] as CurriculumStatus[]).map((s) => (
-                              <form key={s} action={updateCurriculumStatus.bind(null, c.id, s)}>
-                                <button type="submit"
-                                  className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
-                                    status === s ? CURRICULUM_STYLES[s] : 'bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-600'
-                                  }`}
-                                >
-                                  {CURRICULUM_LABELS[s]}
-                                </button>
-                              </form>
-                            ))}
-                          </div>
-                          <form action={deleteCurriculumProgress.bind(null, c.id)}>
-                            <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">Sil</button>
-                          </form>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )
-            })
-          )}
+          <MufredatBoard curriculum={curriculum} classes={classes} />
         </div>
       )}
     </div>
