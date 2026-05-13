@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useCallback, useEffect } from 'react'
-import { setCurriculumStatus, removeCurriculumProgress } from '@/app/actions/zumre'
+import { setCurriculumStatus, removeCurriculumProgress, clearClassCurriculum } from '@/app/actions/zumre'
 import { parseTopicString } from '@/lib/tymm-data'
 
 type Status = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
@@ -94,6 +94,12 @@ export default function MufredatBoard({ curriculum, classes }: Props) {
     startTransition(() => { removeCurriculumProgress(id) })
   }, [startTransition])
 
+  const clearClass = useCallback((classId: string, ids: string[]) => {
+    if (!confirm('Bu sınıfın tüm konuları silinecek. Emin misin?')) return
+    setDeleted(d => { const n = new Set(d); ids.forEach(id => n.add(id)); return n })
+    startTransition(() => { clearClassCurriculum(classId) })
+  }, [startTransition])
+
   const visible = curriculum.filter(c => !deleted.has(c.id))
 
   const total = visible.length
@@ -169,14 +175,22 @@ export default function MufredatBoard({ curriculum, classes }: Props) {
           <div key={classId} className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between bg-gray-50 dark:bg-slate-800">
               <h3 className="text-sm font-semibold text-gray-800 dark:text-slate-100">{clsName}</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-20 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full transition-all duration-300"
-                    style={{ width: `${clsPct}%` }}
-                  />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-20 h-1.5 bg-gray-200 dark:bg-slate-600 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 rounded-full transition-all duration-300"
+                      style={{ width: `${clsPct}%` }}
+                    />
+                  </div>
+                  <span className="text-xs text-gray-500 dark:text-slate-400">{clsDone}/{items.length}</span>
                 </div>
-                <span className="text-xs text-gray-500 dark:text-slate-400">{clsDone}/{items.length}</span>
+                <button
+                  onClick={() => clearClass(classId, items.map(i => i.id))}
+                  className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium transition-colors"
+                >
+                  Tümünü sil
+                </button>
               </div>
             </div>
 

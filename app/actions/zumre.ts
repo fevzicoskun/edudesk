@@ -86,6 +86,20 @@ export async function removeCurriculumProgress(id: string) {
   revalidatePath('/zumre')
 }
 
+export async function clearClassCurriculum(classId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return
+
+  await supabase
+    .from('curriculum_progress')
+    .delete()
+    .eq('class_id', classId)
+    .eq('teacher_id', user.id)
+
+  revalidatePath('/zumre')
+}
+
 export async function updateCurriculumStatus(id: string, status: CurriculumStatus, _: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
