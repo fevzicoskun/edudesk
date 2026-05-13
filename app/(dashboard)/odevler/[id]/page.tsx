@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 
-export const revalidate = 60
+export const revalidate = 0
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
 import { format, parseISO } from 'date-fns'
@@ -29,20 +29,24 @@ export default async function OdevDetayPage({
       .from('students')
       .select('id, full_name, student_number')
       .eq('class_id', hw.class_id),
-    supabase.from('homework_submissions').select('student_id, status').eq('homework_id', id),
+    supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
   ])
 
   const students = studentsResult.data ?? []
   const subs = subsResult.data ?? []
-  const subMap = new Map(subs.map((s) => [s.student_id, s.status as SubmissionStatus]))
+  const subMap = new Map(subs.map((s) => [s.student_id, s]))
 
   const items = students
-    .map((student) => ({
-      student_id: student.id,
-      full_name: student.full_name,
-      student_number: student.student_number,
-      status: (subMap.get(student.id) ?? 'yapilmadi') as SubmissionStatus,
-    }))
+    .map((student) => {
+      const sub = subMap.get(student.id)
+      return {
+        student_id: student.id,
+        full_name: student.full_name,
+        student_number: student.student_number,
+        status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
+        note: sub?.note ?? null,
+      }
+    })
     .sort((a, b) =>
       (a.student_number ?? '').localeCompare(b.student_number ?? '', 'tr', { numeric: true })
     )

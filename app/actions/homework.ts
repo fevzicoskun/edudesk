@@ -75,6 +75,23 @@ export async function updateAllSubmissionStatuses(
   return { success: true }
 }
 
+export async function updateSubmissionNote(
+  homeworkId: string,
+  studentId: string,
+  note: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  await supabase
+    .from('homework_submissions')
+    .upsert(
+      { homework_id: homeworkId, student_id: studentId, note: note.trim() || null, updated_at: new Date().toISOString() },
+      { onConflict: 'homework_id,student_id' }
+    )
+}
+
 export async function deleteHomework(id: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
