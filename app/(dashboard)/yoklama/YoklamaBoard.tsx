@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { saveAttendance, type AttendanceStatus } from '@/app/actions/yoklama'
+import { useState, useTransition, useEffect, useRef } from 'react'
+import Link from 'next/link'
+import { saveAttendance, getAttendanceForDate, type AttendanceStatus } from '@/app/actions/yoklama'
 
 interface Student { id: string; full_name: string; student_number: string | null }
 
@@ -25,6 +26,20 @@ export default function YoklamaBoard({ students, classId, className, todayStr, e
   const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(existing)
   const [saved, setSaved] = useState(false)
   const [, startTransition] = useTransition()
+  const isFirstRender = useRef(true)
+
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    let cancelled = false
+    getAttendanceForDate(classId, date).then(({ data }) => {
+      if (cancelled) return
+      const next: Record<string, AttendanceStatus> = {}
+      for (const r of data ?? []) next[r.student_id] = r.status as AttendanceStatus
+      setStatuses(next)
+      setSaved(false)
+    })
+    return () => { cancelled = true }
+  }, [date, classId])
 
   const setAll = (status: AttendanceStatus) => {
     const next: Record<string, AttendanceStatus> = {}
@@ -93,12 +108,21 @@ export default function YoklamaBoard({ students, classId, className, todayStr, e
             {o.label} yap
           </button>
         ))}
-        <button
-          onClick={save}
-          className="ml-auto bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-        >
-          {saved ? '✅ Kaydedildi' : 'Kaydet'}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <Link
+            href={`/yoklama-yazdir?classId=${classId}&date=${date}`}
+            target="_blank"
+            className="text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 transition-colors"
+          >
+            Yazdır
+          </Link>
+          <button
+            onClick={save}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            {saved ? '✅ Kaydedildi' : 'Kaydet'}
+          </button>
+        </div>
       </div>
 
       {/* Öğrenci listesi */}

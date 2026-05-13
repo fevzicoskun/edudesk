@@ -82,6 +82,14 @@ export async function deleteStudent(studentId: string, classId: string) {
   revalidatePath(`/siniflar/${classId}`)
 }
 
+export async function deleteStudentNote(noteId: string, studentId: string, classId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+  await supabase.from('student_notes').delete().eq('id', noteId)
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+}
+
 export async function addStudentNote(studentId: string, classId: string, formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

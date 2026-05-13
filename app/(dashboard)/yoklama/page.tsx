@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import YoklamaBoard from './YoklamaBoard'
 import YoklamaGecmis from './YoklamaGecmis'
+import CopySqlButton from './CopySqlButton'
 import type { AttendanceStatus } from '@/app/actions/yoklama'
 
 export const revalidate = 0
@@ -128,11 +129,16 @@ export default async function YoklamaPage({
           <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-3">
             Yoklama tablosu henüz oluşturulmamış. Supabase Dashboard › SQL Editor'de çalıştır:
           </p>
-          <pre className="bg-gray-900 text-green-400 text-xs p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
-            {MIGRATION_SQL}
-          </pre>
+          <div className="relative">
+            <pre className="bg-gray-900 text-green-400 text-xs p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
+              {MIGRATION_SQL}
+            </pre>
+            <div className="absolute top-2 right-2">
+              <CopySqlButton sql={MIGRATION_SQL} />
+            </div>
+          </div>
           <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-3">
-            Çalıştırdıktan sonra sayfayı yenile.
+            Kopyala → Supabase Dashboard › SQL Editor&apos;e yapıştır → Çalıştır → Sayfayı yenile.
           </p>
         </div>
       ) : (

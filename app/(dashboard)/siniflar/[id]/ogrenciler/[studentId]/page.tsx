@@ -13,7 +13,7 @@ function schoolYearStart(): string {
 const MEB_LIMIT = 20
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { addStudentNote } from '@/app/actions/class'
+import { addStudentNote, deleteStudentNote } from '@/app/actions/class'
 import CopyVeliLink from './CopyVeliLink'
 import type { SubmissionStatus } from '@/lib/types'
 
@@ -194,7 +194,12 @@ export default async function OgrenciDetayPage({
             <div className="space-y-2">
               {notes.map((n) => (
                 <div key={n.id} className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2">
-                  <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap">{n.body}</p>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap flex-1">{n.body}</p>
+                    <form action={deleteStudentNote.bind(null, n.id, studentId, classId)} className="shrink-0">
+                      <button type="submit" className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
+                    </form>
+                  </div>
                   <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
                     {format(parseISO(n.created_at), 'd MMM yyyy HH:mm', { locale: tr })}
                   </p>
