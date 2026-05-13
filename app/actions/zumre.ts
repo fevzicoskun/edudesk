@@ -86,6 +86,25 @@ export async function removeCurriculumProgress(id: string) {
   revalidatePath('/zumre')
 }
 
+export async function updateExamGrades(id: string, gradesStr: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Giriş gerekli' }
+
+  const grades = gradesStr
+    .split(/[,\s]+/)
+    .map(s => parseInt(s.trim(), 10))
+    .filter(n => !isNaN(n) && n >= 0 && n <= 100)
+
+  const { error } = await supabase
+    .from('common_exams')
+    .update({ grades })
+    .eq('id', id)
+
+  revalidatePath('/zumre')
+  return { error: error?.message }
+}
+
 export async function clearClassCurriculum(classId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

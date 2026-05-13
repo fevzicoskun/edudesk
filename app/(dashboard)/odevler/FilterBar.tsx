@@ -13,6 +13,7 @@ type FilterParams = {
   ders?: string
   durum?: string
   ogretmen?: string
+  q?: string
 }
 
 const selectCls =
@@ -41,6 +42,7 @@ export default function OdevlerFilterBar({
       if (currentParams.ders) current.ders = currentParams.ders
       if (currentParams.durum) current.durum = currentParams.durum
       if (currentParams.ogretmen) current.ogretmen = currentParams.ogretmen
+      if (currentParams.q) current.q = currentParams.q
 
       if (value) {
         current[key] = value
@@ -61,10 +63,23 @@ export default function OdevlerFilterBar({
     currentParams.bitis ||
     currentParams.ders ||
     currentParams.durum ||
-    currentParams.ogretmen
+    currentParams.ogretmen ||
+    currentParams.q
 
   return (
     <div className="mb-5 space-y-2.5">
+      <div className="relative">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+        </svg>
+        <input
+          type="text"
+          placeholder="Ödev başlığında ara..."
+          value={currentParams.q ?? ''}
+          onChange={e => update('q', e.target.value)}
+          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
+        />
+      </div>
       <div className="flex flex-wrap gap-2">
         {/* Filter icon with tooltip */}
         <div className="relative group">

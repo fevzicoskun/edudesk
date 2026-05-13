@@ -6,6 +6,7 @@ import { addDays, format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import CalendarWidget from './CalendarWidget'
 import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
+import MufredatWidget from './MufredatWidget'
 
 export const revalidate = 60
 
@@ -36,8 +37,16 @@ export default async function AnasayfaPage() {
     .order('due_date', { ascending: false })
   if (!isZumreBaskani) hwQuery = hwQuery.eq('teacher_id', user.id)
 
-  const { data: hwData } = await hwQuery
+  const [{ data: hwData }, { data: curriculumRaw }] = await Promise.all([
+    hwQuery,
+    supabase
+      .from('curriculum_progress')
+      .select('class_id, status, classes(name, grade)')
+      .eq('teacher_id', user.id),
+  ])
   const homeworks = (hwData ?? []) as unknown as HwLite[]
+  type CurrRaw = { class_id: string; status: string; classes: { name: string; grade: number } | null }
+  const curriculum = (curriculumRaw ?? []) as unknown as CurrRaw[]
   const hwIds = homeworks.map((h) => h.id)
 
   const todayHws = homeworks.filter((h) => h.due_date === todayStr)
@@ -65,6 +74,8 @@ export default async function AnasayfaPage() {
           upcomingCount={upcomingHws.length}
         />
       </Suspense>
+
+      {curriculum.length > 0 && <MufredatWidget curriculum={curriculum} />}
 
       {/* Bugün/Yaklaşan + Takvim — hemen görünür (sadece homeworks lazım) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">

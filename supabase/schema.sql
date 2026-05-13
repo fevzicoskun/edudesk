@@ -91,6 +91,23 @@ CREATE TABLE curriculum_progress (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Çalıştırmak için: Supabase Dashboard > SQL Editor
+CREATE TABLE IF NOT EXISTS attendance (
+  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  teacher_id UUID NOT NULL REFERENCES profiles(id),
+  class_id   UUID NOT NULL REFERENCES classes(id),
+  student_id UUID NOT NULL REFERENCES students(id),
+  date       DATE NOT NULL,
+  status     TEXT NOT NULL DEFAULT 'present'
+               CHECK (status IN ('present', 'absent', 'late', 'excused')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (class_id, student_id, date)
+);
+CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date);
+ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "attendance_own" ON attendance FOR ALL TO authenticated
+  USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
+
 CREATE TABLE user_notes (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id    UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

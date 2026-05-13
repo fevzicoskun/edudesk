@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, useCallback, useEffect } from 'react'
+import Link from 'next/link'
 import { setCurriculumStatus, removeCurriculumProgress, clearClassCurriculum } from '@/app/actions/zumre'
 import { parseTopicString } from '@/lib/tymm-data'
 
@@ -185,6 +186,13 @@ export default function MufredatBoard({ curriculum, classes }: Props) {
                   </div>
                   <span className="text-xs text-gray-500 dark:text-slate-400">{clsDone}/{items.length}</span>
                 </div>
+                <Link
+                  href={`/mufredat/${classId}`}
+                  target="_blank"
+                  className="text-xs text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 font-medium transition-colors"
+                >
+                  Yazdır
+                </Link>
                 <button
                   onClick={() => clearClass(classId, items.map(i => i.id))}
                   className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 font-medium transition-colors"

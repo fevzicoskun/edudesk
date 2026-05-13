@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { updateProfile } from '@/app/actions/profile'
+import { logout } from '@/app/actions/auth'
 
 const initialState = { error: undefined as string | undefined, success: false }
 
@@ -104,6 +105,18 @@ export default function ProfilForm({
             className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-60 transition-colors"
           >
             {pending ? 'Kaydediliyor...' : 'Kaydet'}
+          </button>
+        </form>
+      </div>
+
+      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
+        <form action={logout}>
+          <button
+            type="submit"
+            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 hover:text-red-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Çıkış Yap
           </button>
         </form>
       </div>

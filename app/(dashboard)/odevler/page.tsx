@@ -19,6 +19,7 @@ export default async function OdevlerPage({
     ders?: string
     durum?: string
     ogretmen?: string
+    q?: string
   }>
 }) {
   const params = await searchParams
@@ -64,6 +65,7 @@ export default async function OdevlerPage({
   if (params.baslangic) query = query.gte('due_date', params.baslangic)
   if (params.bitis) query = query.lte('due_date', params.bitis)
   if (params.ders) query = query.eq('subject', params.ders)
+  if (params.q) query = query.ilike('title', `%${params.q}%`)
   if (durumIds !== null) {
     query = query.in('id', durumIds.length > 0 ? durumIds : ['00000000-0000-0000-0000-000000000000'])
   }

@@ -5,12 +5,12 @@ export const revalidate = 60
 import TutanakForm from './TutanakForm'
 import TYMMImportForm from './TYMMImportForm'
 import MufredatBoard from './MufredatBoard'
+import SinavListesi from './SinavListesi'
 import {
   createMeeting,
   createExam,
   createCurriculumProgress,
   deleteMeeting,
-  deleteExam,
 } from '@/app/actions/zumre'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
@@ -136,23 +136,7 @@ export default async function ZumrePage({
             </form>
           </div>
 
-          {exams.length === 0 ? (
-            <p className="text-center py-12 text-gray-400 dark:text-slate-500 text-sm">Henüz sınav eklenmemiş.</p>
-          ) : (
-            exams.map((e) => (
-              <div key={e.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium text-gray-900 dark:text-slate-100">{e.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                    {e.subject} · {format(parseISO(e.exam_date), 'd MMMM yyyy', { locale: tr })}
-                  </p>
-                </div>
-                <form action={deleteExam.bind(null, e.id)}>
-                  <button type="submit" className="text-xs text-red-500 hover:text-red-700 font-medium shrink-0">Sil</button>
-                </form>
-              </div>
-            ))
-          )}
+          <SinavListesi exams={exams} />
         </div>
       )}
 
