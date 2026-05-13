@@ -105,6 +105,27 @@ export async function updateExamGrades(id: string, gradesStr: string) {
   return { error: error?.message }
 }
 
+export async function saveExamEntries(
+  id: string,
+  entries: { name: string; grade: string }[]
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Giriş gerekli' }
+
+  const grades = entries
+    .map(e => parseInt(e.grade))
+    .filter(n => !isNaN(n) && n >= 0 && n <= 100)
+
+  const { error } = await supabase
+    .from('common_exams')
+    .update({ grades, grade_map: entries })
+    .eq('id', id)
+
+  revalidatePath('/zumre')
+  return { error: error?.message }
+}
+
 export async function clearClassCurriculum(classId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { updateExamGrades } from '@/app/actions/zumre'
+import { saveExamEntries } from '@/app/actions/zumre'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -11,6 +11,7 @@ interface Exam {
   subject: string
   exam_date: string
   grades: number[] | null
+  grade_map: { name: string; grade: string }[] | null
 }
 
 type Entry = { name: string; grade: string }
@@ -38,13 +39,17 @@ export default function SinavCard({ exam, onDelete }: { exam: Exam; onDelete: ()
   const [entries, setEntries] = useState<Entry[]>([])
   const [, startTransition] = useTransition()
 
-  // Load entries from localStorage on mount
+  // Load entries: prefer DB grade_map, fall back to localStorage
   useEffect(() => {
+    if (exam.grade_map && exam.grade_map.length > 0) {
+      setEntries(exam.grade_map)
+      return
+    }
     try {
       const stored = localStorage.getItem(lsKey(exam.id))
       if (stored) setEntries(JSON.parse(stored))
     } catch {}
-  }, [exam.id])
+  }, [exam.id, exam.grade_map])
 
   const switchToPerStudent = () => {
     const nums = parseInput(input)
@@ -73,18 +78,17 @@ export default function SinavCard({ exam, onDelete }: { exam: Exam; onDelete: ()
   const removeRow = (i: number) => setEntries(prev => prev.filter((_, idx) => idx !== i))
 
   const save = () => {
-    let grades: number[]
     if (perStudent) {
-      grades = entries.map(e => parseInt(e.grade)).filter(n => !isNaN(n) && n >= 0 && n <= 100)
-      const gradeStr = grades.join(', ')
-      setInput(gradeStr)
+      const grades = entries.map(e => parseInt(e.grade)).filter(n => !isNaN(n) && n >= 0 && n <= 100)
+      setInput(grades.join(', '))
       try { localStorage.setItem(lsKey(exam.id), JSON.stringify(entries)) } catch {}
       setSaved(grades)
-      startTransition(() => { updateExamGrades(exam.id, gradeStr) })
+      startTransition(() => { saveExamEntries(exam.id, entries) })
     } else {
-      grades = parseInput(input)
+      const grades = parseInput(input)
+      const simpleEntries = grades.map(g => ({ name: '', grade: String(g) }))
       setSaved(grades)
-      startTransition(() => { updateExamGrades(exam.id, input) })
+      startTransition(() => { saveExamEntries(exam.id, simpleEntries) })
     }
   }
 

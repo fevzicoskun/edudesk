@@ -2,6 +2,7 @@ import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import ProfilForm from './ProfilForm'
+import PasswordForm from './PasswordForm'
 import SetupBanner from '@/components/SetupBanner'
 
 const OKUL_ADI_SQL = `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS okul_adi TEXT;`
@@ -29,6 +30,9 @@ export default async function ProfilPage() {
         defaultOkulAdi={(profile as unknown as { okul_adi?: string })?.okul_adi ?? ''}
         email={user.email ?? ''}
       />
+      <div className="px-4 md:px-6 pb-6 max-w-lg mx-auto">
+        <PasswordForm />
+      </div>
     </div>
   )
 }

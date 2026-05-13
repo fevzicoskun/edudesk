@@ -10,6 +10,7 @@ interface Exam {
   subject: string
   exam_date: string
   grades: number[] | null
+  grade_map: { name: string; grade: string }[] | null
 }
 
 export default function SinavListesi({ exams: initial }: { exams: Exam[] }) {

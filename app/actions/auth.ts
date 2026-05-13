@@ -25,3 +25,20 @@ export async function logout() {
   await supabase.auth.signOut()
   redirect('/login')
 }
+
+export async function changePassword(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Giriş gerekli' }
+
+  const password = formData.get('password') as string
+  const confirm = formData.get('confirm') as string
+
+  if (!password || password.length < 6) return { error: 'Şifre en az 6 karakter olmalı' }
+  if (password !== confirm) return { error: 'Şifreler eşleşmiyor' }
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) return { error: error.message }
+
+  return { error: undefined }
+}
