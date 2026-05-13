@@ -3,6 +3,14 @@ import { notFound } from 'next/navigation'
 
 export const revalidate = 60
 import Link from 'next/link'
+
+function schoolYearStart(): string {
+  const now = new Date()
+  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
+  return `${year}-09-01`
+}
+
+const MEB_LIMIT = 20
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { addStudentNote } from '@/app/actions/class'
@@ -37,11 +45,12 @@ export default async function OgrenciDetayPage({
   const { id: classId, studentId } = await params
   const supabase = await createClient()
 
-  const [classResult, studentResult, submissionsResult, notesResult] = await Promise.all([
+  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id').eq('id', studentId).eq('class_id', classId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).order('created_at', { ascending: false }),
+    supabase.from('attendance').select('date, status').eq('student_id', studentId).gte('date', schoolYearStart()).order('date', { ascending: false }),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
@@ -54,6 +63,17 @@ export default async function OgrenciDetayPage({
   const notes = (notesResult.data ?? []) as NoteRow[]
 
   const statusCounts = submissions.reduce((acc, s) => ({ ...acc, [s.status]: (acc[s.status] ?? 0) + 1 }), {} as Record<SubmissionStatus, number>)
+
+  const attendanceTableExists = attendanceRes.error?.code !== '42P01'
+  const attendanceRecords = (attendanceRes.data ?? []) as { date: string; status: string }[]
+  const absentDays = attendanceRecords.reduce((sum, r) => {
+    if (r.status === 'absent') return sum + 1
+    if (r.status === 'late') return sum + 0.5
+    return sum
+  }, 0)
+  const absentPct = Math.min((absentDays / MEB_LIMIT) * 100, 100)
+  const absenceDanger = absentDays >= MEB_LIMIT
+  const absenceWarn = absentDays >= 15 && !absenceDanger
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -79,6 +99,55 @@ export default async function OgrenciDetayPage({
           </div>
         ))}
       </div>
+
+      {/* Devamsızlık */}
+      {attendanceTableExists && (
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-4">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yıl İçi Devamsızlık</h2>
+            <span className={`text-sm font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-500 dark:text-slate-400'}`}>
+              {absentDays} / {MEB_LIMIT} gün
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+            <div
+              className={`h-full rounded-full transition-all ${absenceDanger ? 'bg-red-500' : absenceWarn ? 'bg-yellow-400' : 'bg-green-400'}`}
+              style={{ width: `${absentPct}%` }}
+            />
+          </div>
+          <div className="flex gap-4 text-xs text-gray-500 dark:text-slate-400">
+            <span className="text-red-500 dark:text-red-400">{attendanceRecords.filter(r => r.status === 'absent').length} gün yok</span>
+            <span className="text-yellow-500 dark:text-yellow-400">{attendanceRecords.filter(r => r.status === 'late').length} geç</span>
+            <span className="text-blue-500 dark:text-blue-400">{attendanceRecords.filter(r => r.status === 'excused').length} mazeretli</span>
+            {absenceDanger && <span className="text-red-600 dark:text-red-400 font-semibold ml-auto">Sınır aşıldı!</span>}
+            {absenceWarn && <span className="text-yellow-600 dark:text-yellow-400 font-semibold ml-auto">Sınıra yakın</span>}
+          </div>
+          {attendanceRecords.length > 0 && (
+            <div className="mt-3 space-y-1">
+              <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">Son Kayıtlar</p>
+              {attendanceRecords.slice(0, 8).map((r, i) => {
+                const statusLabel: Record<string, string> = { present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli' }
+                const statusColor: Record<string, string> = {
+                  present: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+                  absent: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                  late: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+                  excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                }
+                return (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-600 dark:text-slate-400">
+                      {format(parseISO(r.date), 'd MMM yyyy', { locale: tr })}
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
+                      {statusLabel[r.status] ?? r.status}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
