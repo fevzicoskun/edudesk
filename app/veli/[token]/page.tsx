@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import PrintButton from './PrintButton'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { verifyPublicToken, looksLikeToken } from '@/lib/public-tokens'
 import { UUID } from '@/lib/validation'
 
 function schoolYearStart(): string {
@@ -43,11 +44,40 @@ type HomeworkRel = { title: string; subject: string; due_date: string; descripti
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 
-export default async function VeliPage({ params }: { params: Promise<{ studentId: string }> }) {
-  const { studentId } = await params
+function TokenExpiredPage() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-sm w-full bg-white rounded-2xl border border-gray-200 p-8 text-center">
+        <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h1 className="text-lg font-bold text-gray-900 mb-2">Link Geçersiz veya Süresi Dolmuş</h1>
+        <p className="text-sm text-gray-500 leading-relaxed">
+          Bu veli portalı linkinin süresi dolmuş ya da geçersiz. Güncel bir link için lütfen öğretmeninizle iletişime geçin.
+        </p>
+      </div>
+    </div>
+  )
+}
 
-  // Validate UUID format to prevent malformed queries
-  if (!UUID.safeParse(studentId).success) notFound()
+export default async function VeliPage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+
+  let studentId: string
+
+  if (looksLikeToken(token)) {
+    // Yeni HMAC token sistemi
+    const result = await verifyPublicToken(token, 'veli')
+    if (!result.ok) return <TokenExpiredPage />
+    studentId = result.payload.id
+  } else if (UUID.safeParse(token).success) {
+    // Eski UUID tabanlı link — geçersiz sayıyoruz (yeni link almaları gerekiyor)
+    return <TokenExpiredPage />
+  } else {
+    notFound()
+  }
 
   const supabase = await createClient()
 
@@ -105,7 +135,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
@@ -125,7 +154,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        {/* Özet kartlar */}
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
             <p className="text-3xl font-bold text-gray-900">{total}</p>
@@ -141,7 +169,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
           </div>
         </div>
 
-        {/* Tamamlanma oranı */}
         <div className="bg-white border border-gray-200 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-semibold text-gray-700">Ödev Tamamlanma Oranı</p>
@@ -153,12 +180,9 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
               style={{ width: `${rate}%` }}
             />
           </div>
-          <p className="text-xs text-gray-400 mt-2">
-            {done} ödev tamamlandı · {total - done} ödev bekliyor veya eksik
-          </p>
+          <p className="text-xs text-gray-400 mt-2">{done} ödev tamamlandı · {total - done} ödev bekliyor veya eksik</p>
         </div>
 
-        {/* Yaklaşan ödevler */}
         {upcoming.length > 0 && (
           <section className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Güncel ve Yaklaşan Ödevler</h2>
@@ -189,7 +213,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
           </section>
         )}
 
-        {/* Geçmiş ödevler */}
         {past.length > 0 && (
           <section className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Geçmiş Ödevler</h2>
@@ -214,7 +237,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
           </section>
         )}
 
-        {/* Öğretmen notları */}
         {notes.length > 0 && (
           <section className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Öğretmen Notları</h2>
@@ -229,7 +251,6 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
           </section>
         )}
 
-        {/* Devamsızlık */}
         {attendanceTableExists && (
           <section className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-1">Yıl İçi Devamsızlık</h2>
@@ -245,12 +266,8 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
                 {absentDays} / {MEB_LIMIT} gün
               </span>
             </div>
-            {absenceDanger && (
-              <p className="text-xs text-red-600 font-medium mb-2">Devamsızlık sınırı aşıldı — lütfen okulla iletişime geçin.</p>
-            )}
-            {absenceWarn && (
-              <p className="text-xs text-yellow-600 font-medium mb-2">Devamsızlık sınırına yaklaşılıyor.</p>
-            )}
+            {absenceDanger && <p className="text-xs text-red-600 font-medium mb-2">Devamsızlık sınırı aşıldı — lütfen okulla iletişime geçin.</p>}
+            {absenceWarn && <p className="text-xs text-yellow-600 font-medium mb-2">Devamsızlık sınırına yaklaşılıyor.</p>}
             <div className="grid grid-cols-3 gap-2 mt-3">
               {[
                 { label: 'Yok', count: attendanceRecords.filter(r => r.status === 'absent').length, color: 'text-red-600' },
@@ -277,9 +294,7 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
                     }
                     return (
                       <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">
-                          {format(parseISO(r.date), 'd MMMM yyyy', { locale: tr })}
-                        </span>
+                        <span className="text-gray-600">{format(parseISO(r.date), 'd MMMM yyyy', { locale: tr })}</span>
                         <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
                           {statusLabel[r.status] ?? r.status}
                         </span>
@@ -292,10 +307,7 @@ export default async function VeliPage({ params }: { params: Promise<{ studentId
           </section>
         )}
 
-        {/* Footer */}
-        <p className="text-center text-xs text-gray-400 py-4">
-          Bu sayfa yalnızca bilgi amaçlıdır · EduDesk
-        </p>
+        <p className="text-center text-xs text-gray-400 py-4">Bu sayfa yalnızca bilgi amaçlıdır · EduDesk</p>
       </main>
     </div>
   )

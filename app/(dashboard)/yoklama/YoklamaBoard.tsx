@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
-import Link from 'next/link'
 import { saveAttendance, getAttendanceForDate, type AttendanceStatus } from '@/app/actions/yoklama'
+import { generateYoklamaToken } from '@/app/actions/tokens'
 
 interface Student { id: string; full_name: string; student_number: string | null }
 
@@ -109,13 +109,22 @@ export default function YoklamaBoard({ students, classId, className, todayStr, e
           </button>
         ))}
         <div className="ml-auto flex items-center gap-2">
-          <Link
-            href={`/yoklama-yazdir?classId=${classId}&date=${date}`}
-            target="_blank"
+          <button
+            onClick={() => {
+              startTransition(async () => {
+                try {
+                  const token = await generateYoklamaToken(classId, date)
+                  window.open(`/yoklama-yazdir/${token}`, '_blank')
+                } catch {
+                  alert('Yazdırma linki oluşturulamadı.')
+                }
+              })
+            }}
+            disabled={false}
             className="text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 transition-colors"
           >
             Yazdır
-          </Link>
+          </button>
           <button
             onClick={save}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"

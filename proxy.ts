@@ -1,7 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const PUBLIC_PATHS = ['/login', '/veli', '/tutanak', '/yoklama-yazdir']
+// /veli/[token], /yoklama-yazdir/[token] → token-based public routes
+// /veli/[studentId] → shows "link expired" (not truly public data anymore)
+// /tutanak/[id] → auth-required (no change)
+const PUBLIC_PATHS = ['/login', '/veli', '/yoklama-yazdir']
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
