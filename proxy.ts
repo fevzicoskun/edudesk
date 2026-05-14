@@ -33,8 +33,13 @@ function buildCsp(nonce: string): string {
 }
 
 // ─── Rate limiting ────────────────────────────────────────────
-type RateLimiter = (key: string, limit: number, windowMs: number) => Promise<boolean>
+// RATE_LIMIT_FAIL_MODE=closed → Redis down ise hassas endpoint'leri reddet (default)
+// RATE_LIMIT_FAIL_MODE=open   → Redis down ise geçir (availability öncelikli)
+const FAIL_CLOSED = process.env.RATE_LIMIT_FAIL_MODE !== 'open'
+
+type RateLimiter = (key: string, limit: number) => Promise<boolean>
 let redisLimiter: RateLimiter | null = null
+let redisInitialized = false
 
 async function getRedisLimiter(): Promise<RateLimiter | null> {
   if (!process.env.UPSTASH_REDIS_REST_URL || !process.env.UPSTASH_REDIS_REST_TOKEN) return null
@@ -51,12 +56,20 @@ async function getRedisLimiter(): Promise<RateLimiter | null> {
       const { success } = await (limit <= 10 ? loginLimit : publicLimit).limit(key)
       return success
     }
-  } catch { return null }
+  } catch (e) {
+    console.error('[rate-limit] Redis bağlantısı kurulamadı:', e)
+    return null
+  }
 }
 
-const redisLimiterPromise = getRedisLimiter().then(l => { redisLimiter = l; return l })
+const redisLimiterPromise = getRedisLimiter().then(l => {
+  redisLimiter = l
+  redisInitialized = true
+  return l
+})
 void redisLimiterPromise
 
+// Sadece development ortamında in-memory fallback — serverless'ta instance başına ayrı olduğu için production'da güvenilmez
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 function inMemoryLimit(key: string, limit: number, windowMs: number): boolean {
   const now = Date.now()
@@ -67,8 +80,30 @@ function inMemoryLimit(key: string, limit: number, windowMs: number): boolean {
   return true
 }
 
-async function checkRateLimit(key: string, limit: number, windowMs: number): Promise<boolean> {
-  return redisLimiter ? redisLimiter(key, limit, windowMs) : inMemoryLimit(key, limit, windowMs)
+/**
+ * isSensitive=true → Redis down ise FAIL_CLOSED modunda reddet
+ * isSensitive=false → Redis down ise izin ver (public read endpoint'leri)
+ */
+async function checkRateLimit(key: string, limit: number, windowMs: number, isSensitive = false): Promise<boolean> {
+  if (redisLimiter) return redisLimiter(key, limit)
+
+  // Development: in-memory fallback
+  if (process.env.NODE_ENV === 'development') return inMemoryLimit(key, limit, windowMs)
+
+  // Production, Redis yok/down
+  if (!redisInitialized) {
+    // Init henüz tamamlanmadı — başlatılana kadar bekle (max 1sn)
+    await Promise.race([redisLimiterPromise, new Promise(r => setTimeout(r, 1000))])
+    const limiter = redisLimiter as RateLimiter | null
+    if (limiter) return limiter(key, limit)
+  }
+
+  // Redis env var hiç tanımlı değil veya bağlantı başarısız
+  if (isSensitive && FAIL_CLOSED) {
+    console.error(`[rate-limit] Redis yok, hassas endpoint reddediliyor (fail-closed): ${key}`)
+    return false
+  }
+  return true
 }
 
 // ─── Middleware ───────────────────────────────────────────────
@@ -79,12 +114,17 @@ export async function proxy(request: NextRequest) {
 
   // Rate limits
   if (pathname === '/login' && request.method === 'POST') {
-    if (!(await checkRateLimit(`login:${ip}`, 10, 60_000))) {
+    if (!(await checkRateLimit(`login:${ip}`, 10, 60_000, true))) {
       return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
     }
   }
+  if (pathname.startsWith('/api/')) {
+    if (!(await checkRateLimit(`api:${ip}`, 30, 60_000, true))) {
+      return new NextResponse('Çok fazla istek.', { status: 429 })
+    }
+  }
   if (isPublicPath(pathname) && pathname !== '/login') {
-    if (!(await checkRateLimit(`public:${ip}`, 60, 60_000))) {
+    if (!(await checkRateLimit(`public:${ip}`, 60, 60_000, false))) {
       return new NextResponse('Çok fazla istek.', { status: 429 })
     }
   }
