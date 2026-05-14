@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
 import { getEgitimYili } from '@/lib/utils'
 import { UUID, createClassSchema, addStudentSchema, studentNoteSchema } from '@/lib/validation'
+import { logAudit } from '@/lib/audit'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
@@ -32,6 +33,7 @@ export async function createClass(formData: FormData) {
     academic_year: getEgitimYili(),
   })
 
+  await logAudit({ user_id: user.id, action: 'class.create', table_name: 'classes', new_data: { name: parsed.data.name, grade: parsed.data.grade } })
   revalidatePath('/siniflar')
 }
 
@@ -57,6 +59,7 @@ export async function deleteClass(classId: string) {
   await supabase.from('students').delete().eq('class_id', classId)
   await supabase.from('classes').delete().eq('id', classId)
 
+  await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId })
   revalidatePath('/siniflar')
 }
 

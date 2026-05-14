@@ -13,6 +13,7 @@ import {
   createCurriculumProgressSchema,
   curriculumStatusSchema,
 } from '@/lib/validation'
+import { logAudit } from '@/lib/audit'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
@@ -39,6 +40,7 @@ export async function createMeeting(formData: FormData) {
     created_by: user.id,
   })
 
+  await logAudit({ user_id: user.id, action: 'meeting.create', table_name: 'zumre_meetings', new_data: { title: parsed.data.title } })
   revalidatePath('/zumre')
 }
 
@@ -60,6 +62,7 @@ export async function createExam(formData: FormData) {
     created_by: user.id,
   })
 
+  await logAudit({ user_id: user.id, action: 'exam.create', table_name: 'common_exams', new_data: { title: parsed.data.title } })
   revalidatePath('/zumre')
 }
 
@@ -245,6 +248,7 @@ export async function deleteMeeting(id: string, _: FormData) {
 
   await supabase.from('zumre_meetings').delete().eq('id', id)
 
+  await logAudit({ user_id: user.id, action: 'meeting.delete', table_name: 'zumre_meetings', record_id: id })
   revalidatePath('/zumre')
 }
 
@@ -258,6 +262,7 @@ export async function deleteExam(id: string, _: FormData) {
 
   await supabase.from('common_exams').delete().eq('id', id)
 
+  await logAudit({ user_id: user.id, action: 'exam.delete', table_name: 'common_exams', record_id: id })
   revalidatePath('/zumre')
 }
 
