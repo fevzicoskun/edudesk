@@ -14,11 +14,12 @@ export async function generateVeliToken(studentId: string): Promise<string> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: student } = await supabase
     .from('students')
     .select('id, full_name')
     .eq('id', studentId)
+    .eq('school_id', school_id)
     .single()
   if (!student) throw new Error('Öğrenci bulunamadı')
 

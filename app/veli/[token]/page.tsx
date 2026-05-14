@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import PrintButton from './PrintButton'
 import { format, parseISO } from 'date-fns'
@@ -68,7 +68,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   let studentId: string
 
   if (looksLikeToken(token)) {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const result = await verifyPublicToken(token, 'veli')
     if (!result.ok) return <TokenExpiredPage />
     if (result.payload.jti && await isTokenRevoked(result.payload.jti, supabase)) {
@@ -82,7 +82,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
     notFound()
   }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     supabase
       .from('students')
