@@ -47,7 +47,8 @@ export async function setupSchool(formData: FormData): Promise<{ error?: string 
 
   const { error } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, school_id: school.id, role: 'zumre_baskani' }, { onConflict: 'id' })
+    .update({ school_id: school.id, role: 'zumre_baskani' })
+    .eq('id', user.id)
 
   if (error) return { error: error.message }
   redirect('/anasayfa')
@@ -79,7 +80,8 @@ export async function joinSchool(formData: FormData): Promise<{ error?: string }
 
   const { error } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, school_id: school.id }, { onConflict: 'id' })
+    .update({ school_id: school.id })
+    .eq('id', user.id)
 
   if (error) return { error: error.message }
   redirect('/anasayfa')
