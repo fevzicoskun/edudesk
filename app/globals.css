@@ -73,6 +73,12 @@ body {
 .dark .text-gray-500 { color: #64748b; }
 .dark .text-gray-400 { color: #475569; }
 
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.toast-enter { animation: toast-in 0.25s ease forwards; }
+
 .notes-editor:empty::before {
   content: attr(data-placeholder);
   color: #9ca3af;
