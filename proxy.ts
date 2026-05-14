@@ -120,14 +120,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/anasayfa', request.url))
   }
 
-  // Onboarding: authenticated users without a school go to /onboarding
+  // Onboarding: profili olmayan veya okula bağlı olmayan kullanıcılar
   if (user && !isPublicPath(pathname) && pathname !== '/onboarding') {
     const { data: profile } = await supabase
       .from('profiles')
       .select('school_id')
       .eq('id', user.id)
       .single()
-    if (profile && !profile.school_id) {
+    if (!profile || !profile.school_id) {
       return NextResponse.redirect(new URL('/onboarding', request.url))
     }
   }
