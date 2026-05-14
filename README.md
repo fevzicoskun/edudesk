@@ -1,37 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EduDesk — Zümre Takip Sistemi
 
-## Getting Started
+Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı zümre yönetim platformu.
 
-First, run the development server:
+## Özellikler
+
+- **Sınıf & Öğrenci Yönetimi** — Toplu öğrenci ekleme, sınıf bazlı listeleme
+- **Ödev Takibi** — Durum board, notlar, toplu güncelleme, filtreler, Excel export
+- **Yoklama** — Günlük devam takibi, yıllık devamsızlık istatistikleri, Excel export
+- **Zümre Toplantıları** — Gündem oluşturma, tutanak yazdırma (Zümre Başkanı)
+- **Ortak Sınavlar** — Sınav planlaması, öğrenci bazlı not girişi (Zümre Başkanı)
+- **Müfredat Takibi** — TYMM import, konu bazlı ilerleme, durum güncelleme
+- **Veli Portalı** — QR/link ile salt okunur öğrenci özeti
+- **Öğretmen Dosyası** — MEB belge kontrol listesi
+- **Kişisel Notlar** — Zengin metin editörü
+- **Rol Sistemi** — Zümre Başkanı / Öğretmen ayrımı (RLS tabanlı)
+- **Dark Mode** — Sistem teması veya manuel geçiş
+
+## Kurulum
+
+### Gereksinimler
+
+- Node.js 18+
+- Supabase hesabı (ücretsiz plan yeterli)
+
+### 1. Klonla ve bağımlılıkları yükle
+
+```bash
+git clone https://github.com/fevzicoskun/zumre-takip.git
+cd zumre-takip
+npm install
+```
+
+### 2. Ortam değişkenlerini ayarla
+
+```bash
+cp .env.example .env.local
+```
+
+`.env.local` dosyasını Supabase proje ayarlarından doldur:
+
+- **URL**: Supabase Dashboard → Settings → API → Project URL
+- **Publishable Key**: Supabase Dashboard → Settings → API → `anon` public key
+
+### 3. Veritabanını kur
+
+Supabase Dashboard → SQL Editor'de sırayla çalıştır:
+
+1. `supabase/schema.sql` — tablo ve trigger'lar
+2. `supabase/rls_update.sql` — rol bazlı RLS politikaları
+
+### 4. Geliştirme sunucusunu başlat
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Uygulama `http://localhost:3000` adresinde açılır.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Rol Sistemi
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Özellik | Öğretmen | Zümre Başkanı |
+|---|---|---|
+| Kendi ödevlerini yönetme | ✅ | ✅ |
+| Tüm ödevleri görme | ❌ | ✅ |
+| Yoklama alma | ✅ | ✅ |
+| Sınıf oluşturma/silme | ❌ | ✅ |
+| Zümre toplantısı oluşturma | ❌ | ✅ |
+| Ortak sınav oluşturma | ❌ | ✅ |
+| Müfredat takibi | ✅ (kendi) | ✅ (tümü) |
 
-## Learn More
+**Rol atama:** Supabase Dashboard → Table Editor → `profiles` → `role` alanını `zumre_baskani` yap.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy (Vercel)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Repo'yu Vercel'e import et
+2. Ortam değişkenlerini ekle:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+3. Deploy — her `main` push'unda otomatik
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Teknik Yığın
 
-## Deploy on Vercel
+| Katman | Teknoloji |
+|---|---|
+| Framework | Next.js 16 (App Router, Server Actions) |
+| UI | React 19, Tailwind CSS v4 |
+| Veritabanı | Supabase (PostgreSQL + RLS) |
+| Auth | Supabase SSR (@supabase/ssr) |
+| Excel | SheetJS (xlsx 0.18) |
+| Tarih | date-fns v4 (tr locale) |
+| Dil | TypeScript 5 |
+| Deploy | Vercel |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Proje Yapısı
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-    
+```
+app/
+├── (auth)/          # Giriş ekranı
+├── (dashboard)/     # Korumalı sayfalar
+│   ├── anasayfa/    # Dashboard
+│   ├── odevler/     # Ödev yönetimi
+│   ├── siniflar/    # Sınıf & öğrenci
+│   ├── yoklama/     # Yoklama & devamsızlık
+│   ├── zumre/       # Toplantı, sınav, müfredat
+│   ├── notlar/      # Kişisel notlar
+│   └── profil/
+├── actions/         # Server Actions (auth, class, homework, yoklama, zumre)
+├── tutanak/         # Tutanak yazdırma (public)
+└── veli/            # Veli portalı (public)
+components/layout/   # Sidebar, SidebarCalendar
+lib/                 # auth, supabase client/server, types, utils
+supabase/            # schema.sql, rls_update.sql
+```

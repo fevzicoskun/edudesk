@@ -12,7 +12,7 @@ interface Cls {
   students: { id: string }[]
 }
 
-export default function SinifArama({ classes }: { classes: Cls[] }) {
+export default function SinifArama({ classes, isBaskan }: { classes: Cls[]; isBaskan: boolean }) {
   const [q, setQ] = useState('')
   const filtered = q.trim()
     ? classes.filter(c => c.name.toLowerCase().includes(q.toLowerCase()))
@@ -48,10 +48,12 @@ export default function SinifArama({ classes }: { classes: Cls[] }) {
                     <p className="font-bold text-gray-900 dark:text-slate-100 text-lg">{c.name}</p>
                     <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{studentCount} öğrenci</p>
                   </Link>
-                  <ConfirmDeleteButton
-                    action={deleteClass.bind(null, c.id)}
-                    message="Bu sınıfı ve tüm öğrencilerini, ödevlerini silmek istediğine emin misin?"
-                  />
+                  {isBaskan && (
+                    <ConfirmDeleteButton
+                      action={deleteClass.bind(null, c.id)}
+                      message="Bu sınıfı ve tüm öğrencilerini, ödevlerini silmek istediğine emin misin?"
+                    />
+                  )}
                 </div>
               </div>
             )

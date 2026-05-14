@@ -3,11 +3,19 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentProfile } from '@/lib/auth'
 import { TYMM_DATA, topicToString } from '@/lib/tymm-data'
+import type { CurriculumStatus } from '@/lib/types'
 
-type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
+async function requireBaskan() {
+  const profile = await getCurrentProfile()
+  if (profile?.role !== 'zumre_baskani') {
+    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
+  }
+}
 
 export async function createMeeting(formData: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -23,6 +31,7 @@ export async function createMeeting(formData: FormData) {
 }
 
 export async function createExam(formData: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -159,6 +168,7 @@ export async function updateCurriculumStatus(id: string, status: CurriculumStatu
 }
 
 export async function updateMeeting(id: string, formData: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -177,6 +187,7 @@ export async function updateMeeting(id: string, formData: FormData) {
 }
 
 export async function deleteMeeting(id: string, _: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -187,6 +198,7 @@ export async function deleteMeeting(id: string, _: FormData) {
 }
 
 export async function deleteExam(id: string, _: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -229,7 +241,6 @@ export async function importFromTYMM(
   if (!tymmTopics || tymmTopics.length === 0)
     return { error: 'Bu ders/sınıf için TYMM verisi bulunamadı' }
 
-  // Mevcut konuları çek — duplicate atlamak için
   const { data: existing } = await supabase
     .from('curriculum_progress')
     .select('topic')

@@ -4,10 +4,10 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
 import type { Profile } from '@/lib/types'
-
-type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 import { getEgitimYili } from '../../lib/utils'
 import ThemeToggle from '@/components/ThemeToggle'
+
+type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 
 function formatName(raw: string): string {
   return raw
@@ -75,12 +75,20 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)
+  const isBaskan = profile?.role === 'zumre_baskani'
 
   return (
     <>
       {/* Mobile header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4">
-        <p className="font-bold text-gray-900 dark:text-slate-100">EduDesk</p>
+        <div className="flex items-center gap-2">
+          <p className="font-bold text-gray-900 dark:text-slate-100">EduDesk</p>
+          {isBaskan && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold">
+              Başkan
+            </span>
+          )}
+        </div>
         <ThemeToggle />
       </header>
 
@@ -117,10 +125,20 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         {/* User + logout */}
         <div className="p-3 border-t border-gray-200 dark:border-slate-700">
           <div className="px-3 py-2 mb-1 rounded-lg bg-gray-50 dark:bg-slate-800">
-            <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{displayName}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>
+              {isBaskan && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold shrink-0">
+                  Başkan
+                </span>
+              )}
+            </div>
             {profile?.subject && (
               <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
             )}
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+              {isBaskan ? 'Zümre Başkanı' : 'Öğretmen'}
+            </p>
           </div>
           <form action={logout}>
             <button
@@ -134,7 +152,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         </div>
       </aside>
 
-      {/* Mobile bottom nav — sadece mobile:true öğeler */}
+      {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex">
         {navItems.filter(i => i.mobile).map(({ href, label, icon }) => {
           const active = pathname.startsWith(href)

@@ -31,7 +31,7 @@ function parseInput(raw: string): number[] {
 
 const lsKey = (id: string) => `exam_entries_${id}`
 
-export default function SinavCard({ exam, onDelete }: { exam: Exam; onDelete: () => void }) {
+export default function SinavCard({ exam, onDelete, isBaskan }: { exam: Exam; onDelete: () => void; isBaskan: boolean }) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState((exam.grades ?? []).join(', '))
   const [saved, setSaved] = useState(exam.grades ?? [])
@@ -113,7 +113,9 @@ export default function SinavCard({ exam, onDelete }: { exam: Exam; onDelete: ()
           <button onClick={() => setOpen(o => !o)} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 transition-colors">
             {open ? 'Kapat' : (saved.length ? 'Notlar' : '+ Not gir')}
           </button>
-          <button onClick={onDelete} className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
+          {isBaskan && (
+            <button onClick={onDelete} className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
+          )}
         </div>
       </div>
 

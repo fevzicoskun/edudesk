@@ -1,5 +1,6 @@
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import YoklamaExcelExport from './YoklamaExcelExport'
 
 const STATUS_COLORS: Record<string, string> = {
   present: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
@@ -15,35 +16,30 @@ const MEB_LIMIT = 20
 const MEB_WARN  = 15
 
 interface Student { id: string; full_name: string; student_number: string | null }
-interface Record_  { student_id: string; date: string; status: string }
+interface AttRec   { student_id: string; date: string; status: string }
 interface Props {
   students: Student[]
-  allRecords: Record_[]  // tüm yıl — devamsızlık hesabı için
-  gridDates: string[]    // son 14 gün — tablo için
+  allRecords: AttRec[]
+  gridDates: string[]
   className: string
 }
 
 export default function YoklamaGecmis({ students, allRecords, gridDates, className }: Props) {
-  // lookup: studentId → date → status (sadece grid tarihleri)
   const lookup = new Map<string, Map<string, string>>()
-  // devamsızlık: tüm yıl
-  const absent = new Map<string, number>() // full days (late = 0.5)
+  const absent = new Map<string, number>()
 
   for (const r of allRecords) {
-    // devamsızlık sayacı
     if (r.status === 'absent') {
       absent.set(r.student_id, (absent.get(r.student_id) ?? 0) + 1)
     } else if (r.status === 'late') {
       absent.set(r.student_id, (absent.get(r.student_id) ?? 0) + 0.5)
     }
-    // grid lookup
     if (gridDates.includes(r.date)) {
       if (!lookup.has(r.student_id)) lookup.set(r.student_id, new Map())
       lookup.get(r.student_id)!.set(r.date, r.status)
     }
   }
 
-  // En çok devamsızı üste koy
   const sorted = [...students].sort(
     (a, b) => (absent.get(b.id) ?? 0) - (absent.get(a.id) ?? 0)
   )
@@ -52,9 +48,12 @@ export default function YoklamaGecmis({ students, allRecords, gridDates, classNa
     <div className="space-y-5">
       {/* Devamsızlık özeti */}
       <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">
-          {className} — Yıl İçi Devamsızlık
-        </h2>
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+            {className} — Yıl İçi Devamsızlık
+          </h2>
+          <YoklamaExcelExport students={students} allRecords={allRecords} className={className} />
+        </div>
         <p className="text-xs text-gray-400 dark:text-slate-500 mb-4">
           MEB sınırı: {MEB_LIMIT} gün · Geç giriş = 0,5 gün
         </p>

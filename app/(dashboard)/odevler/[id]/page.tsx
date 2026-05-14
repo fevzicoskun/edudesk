@@ -77,7 +77,7 @@ export default async function OdevDetayPage({
           Bu sınıfta henüz öğrenci yok.
         </p>
       ) : (
-        <StatusBoard homeworkId={id} items={items} />
+        <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} />
       )}
     </div>
   )

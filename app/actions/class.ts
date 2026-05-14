@@ -3,9 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentProfile } from '@/lib/auth'
 import { getEgitimYili } from '@/lib/utils'
 
+async function requireBaskan() {
+  const profile = await getCurrentProfile()
+  if (profile?.role !== 'zumre_baskani') {
+    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
+  }
+}
+
 export async function createClass(formData: FormData) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -20,6 +29,7 @@ export async function createClass(formData: FormData) {
 }
 
 export async function deleteClass(classId: string) {
+  await requireBaskan()
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -28,7 +38,7 @@ export async function deleteClass(classId: string) {
     .from('homeworks')
     .select('id')
     .eq('class_id', classId)
-    
+
   if (homeworks?.length) {
     const homeworkIds = homeworks.map((h) => h.id)
     await supabase.from('homework_submissions').delete().in('homework_id', homeworkIds)
