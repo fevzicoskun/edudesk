@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
+import { getCurrentProfile, requireSchoolId } from '@/lib/auth'
 import { TYMM_DATA, topicToString } from '@/lib/tymm-data'
 import type { CurriculumStatus } from '@/lib/types'
 import {
@@ -31,16 +31,17 @@ export async function createMeeting(formData: FormData) {
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('zumre_meetings').insert({
     ...parsed.data,
     created_by: user.id,
+    school_id,
   })
 
-  await logAudit({ user_id: user.id, action: 'meeting.create', table_name: 'zumre_meetings', new_data: { title: parsed.data.title } })
+  await logAudit({ user_id: user.id, action: 'meeting.create', table_name: 'zumre_meetings', new_data: { title: parsed.data.title }, school_id })
   revalidatePath('/zumre')
 }
 
@@ -53,16 +54,17 @@ export async function createExam(formData: FormData) {
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('common_exams').insert({
     ...parsed.data,
     created_by: user.id,
+    school_id,
   })
 
-  await logAudit({ user_id: user.id, action: 'exam.create', table_name: 'common_exams', new_data: { title: parsed.data.title } })
+  await logAudit({ user_id: user.id, action: 'exam.create', table_name: 'common_exams', new_data: { title: parsed.data.title }, school_id })
   revalidatePath('/zumre')
 }
 
@@ -77,7 +79,7 @@ export async function createCurriculumProgress(formData: FormData) {
     redirect('/zumre?tab=mufredat&error=' + encodeURIComponent(parsed.error.issues[0]?.message ?? 'hata'))
   }
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -91,6 +93,7 @@ export async function createCurriculumProgress(formData: FormData) {
     status,
     completed: status !== 'eksik_kaldi',
     completion_date: status === 'tamamlandi' ? new Date().toISOString().split('T')[0] : null,
+    school_id,
   })
 
   revalidatePath('/zumre')
@@ -284,7 +287,7 @@ export async function importFromTYMM(
   _prev: ImportState,
   formData: FormData
 ): Promise<ImportState> {
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
@@ -324,6 +327,7 @@ export async function importFromTYMM(
     status: 'tamamlandi' as const,
     completed: true,
     completion_date: null,
+    school_id,
   }))
 
   const { error } = await supabase.from('curriculum_progress').insert(rows)

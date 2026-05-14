@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { requireSchoolId } from '@/lib/auth'
 import type { SubmissionStatus } from '@/lib/types'
 import { UUID, createHomeworkSchema, submissionStatusSchema } from '@/lib/validation'
 
@@ -16,12 +17,13 @@ export async function createHomework(_: unknown, formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { error } = await supabase.from('homeworks').insert({
     teacher_id: user.id,
+    school_id,
     ...parsed.data,
   })
 
@@ -40,14 +42,14 @@ export async function updateSubmissionStatus(
   UUID.parse(studentId)
   submissionStatusSchema.parse(status)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { error } = await supabase
     .from('homework_submissions')
     .upsert(
-      { homework_id: homeworkId, student_id: studentId, status, updated_at: new Date().toISOString() },
+      { homework_id: homeworkId, student_id: studentId, status, school_id, updated_at: new Date().toISOString() },
       { onConflict: 'homework_id,student_id' }
     )
 
@@ -67,13 +69,14 @@ export async function updateAllSubmissionStatuses(
   if (studentIds.length > 200) throw new Error('Çok fazla öğrenci')
   studentIds.forEach(id => UUID.parse(id))
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const rows = studentIds.map((studentId) => ({
     homework_id: homeworkId,
     student_id: studentId,
+    school_id,
     status,
     updated_at: new Date().toISOString(),
   }))
@@ -99,14 +102,14 @@ export async function updateSubmissionNote(
   UUID.parse(studentId)
   const sanitizedNote = String(note).slice(0, 1000).trim() || null
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase
     .from('homework_submissions')
     .upsert(
-      { homework_id: homeworkId, student_id: studentId, note: sanitizedNote, updated_at: new Date().toISOString() },
+      { homework_id: homeworkId, student_id: studentId, note: sanitizedNote, school_id, updated_at: new Date().toISOString() },
       { onConflict: 'homework_id,student_id' }
     )
 }

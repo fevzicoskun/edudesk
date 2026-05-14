@@ -17,6 +17,7 @@ export type AuditAction =
   | 'attendance.save'
   | 'profile.update'
   | 'password.change'
+  | 'token.revoke'
 
 interface AuditEntry {
   user_id: string
@@ -24,6 +25,7 @@ interface AuditEntry {
   table_name?: string
   record_id?: string
   new_data?: Record<string, unknown>
+  school_id?: string
 }
 
 export async function logAudit(entry: AuditEntry): Promise<void> {
@@ -33,8 +35,9 @@ export async function logAudit(entry: AuditEntry): Promise<void> {
       user_id: entry.user_id,
       action: entry.action,
       table_name: entry.table_name ?? null,
-      record_id: entry.record_id ? entry.record_id as unknown as string : null,
+      record_id: entry.record_id ?? null,
       new_data: entry.new_data ?? null,
+      school_id: entry.school_id ?? null,
     })
   } catch {
     // Audit log hatası hiçbir zaman iş akışını durdurmamalı

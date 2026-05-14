@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { requireSchoolId } from '@/lib/auth'
 import { UUID, attendanceStatusSchema, saveAttendanceSchema } from '@/lib/validation'
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'
@@ -14,7 +15,7 @@ export async function saveAttendance(
   const parsed = saveAttendanceSchema.safeParse({ classId, date, records })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
@@ -24,6 +25,7 @@ export async function saveAttendance(
     student_id: r.studentId,
     date: parsed.data.date,
     status: r.status,
+    school_id,
   }))
 
   const { error } = await supabase

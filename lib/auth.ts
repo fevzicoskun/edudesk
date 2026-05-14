@@ -14,8 +14,15 @@ export const getCurrentProfile = cache(async () => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
-    .select('full_name, subject, role, okul_adi')
+    .select('full_name, subject, role, okul_adi, school_id')
     .eq('id', user.id)
     .single()
-  return data as Pick<Profile, 'full_name' | 'subject' | 'role' | 'okul_adi'> | null
+  return data as Pick<Profile, 'full_name' | 'subject' | 'role' | 'okul_adi'> & { school_id: string } | null
 })
+
+/** Returns school_id for the current user — throws if not found. */
+export async function requireSchoolId(): Promise<string> {
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) throw new Error('Okul bilgisi bulunamadı')
+  return profile.school_id
+}

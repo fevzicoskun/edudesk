@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import PrintButton from './PrintButton'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
-import { verifyPublicToken, looksLikeToken } from '@/lib/public-tokens'
+import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
 import { UUID } from '@/lib/validation'
 
 function schoolYearStart(): string {
@@ -68,9 +68,12 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   let studentId: string
 
   if (looksLikeToken(token)) {
-    // Yeni HMAC token sistemi
+    const supabase = await createClient()
     const result = await verifyPublicToken(token, 'veli')
     if (!result.ok) return <TokenExpiredPage />
+    if (result.payload.jti && await isTokenRevoked(result.payload.jti, supabase)) {
+      return <TokenExpiredPage />
+    }
     studentId = result.payload.id
   } else if (UUID.safeParse(token).success) {
     // Eski UUID tabanlı link — geçersiz sayıyoruz (yeni link almaları gerekiyor)
@@ -80,7 +83,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   }
 
   const supabase = await createClient()
-
   const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     supabase
       .from('students')

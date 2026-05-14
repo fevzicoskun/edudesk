@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import PrintBtn from './PrintBtn'
-import { verifyPublicToken, looksLikeToken } from '@/lib/public-tokens'
+import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
 
 const STATUS_LABEL: Record<string, string> = {
   present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli',
@@ -30,14 +30,16 @@ export default async function YoklamaYazdirTokenPage({
 
   if (!looksLikeToken(token)) notFound()
 
+  const supabase = await createClient()
   const result = await verifyPublicToken(token, 'yoklama')
   if (!result.ok) return <TokenExpiredPage />
+  if (result.payload.jti && await isTokenRevoked(result.payload.jti, supabase)) {
+    return <TokenExpiredPage />
+  }
 
   const classId = result.payload.id
   const date = result.payload.m?.date
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return <TokenExpiredPage />
-
-  const supabase = await createClient()
   const [classRes, studentsRes, attendanceRes] = await Promise.all([
     supabase.from('classes').select('name, grade').eq('id', classId).single(),
     supabase.from('students').select('id, full_name, student_number').eq('class_id', classId)

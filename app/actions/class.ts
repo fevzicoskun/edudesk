@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
+import { getCurrentProfile, requireSchoolId } from '@/lib/auth'
 import { getEgitimYili } from '@/lib/utils'
 import { UUID, createClassSchema, addStudentSchema, studentNoteSchema } from '@/lib/validation'
 import { logAudit } from '@/lib/audit'
@@ -23,7 +23,7 @@ export async function createClass(formData: FormData) {
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -31,9 +31,10 @@ export async function createClass(formData: FormData) {
     name: parsed.data.name,
     grade: parsed.data.grade,
     academic_year: getEgitimYili(),
+    school_id,
   })
 
-  await logAudit({ user_id: user.id, action: 'class.create', table_name: 'classes', new_data: { name: parsed.data.name, grade: parsed.data.grade } })
+  await logAudit({ user_id: user.id, action: 'class.create', table_name: 'classes', new_data: { name: parsed.data.name, grade: parsed.data.grade }, school_id })
   revalidatePath('/siniflar')
 }
 
@@ -71,7 +72,7 @@ export async function addStudent(classId: string, formData: FormData) {
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -79,6 +80,7 @@ export async function addStudent(classId: string, formData: FormData) {
     class_id: classId,
     full_name: parsed.data.full_name,
     student_number: parsed.data.student_number ?? null,
+    school_id,
   })
 
   revalidatePath(`/siniflar/${classId}`)
@@ -91,7 +93,7 @@ export async function addStudentsBulk(
   UUID.parse(classId)
   if (students.length > 100) throw new Error('En fazla 100 öğrenci eklenebilir')
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -100,7 +102,7 @@ export async function addStudentsBulk(
     .filter(s => s.full_name.length >= 2)
 
   await supabase.from('students').insert(
-    valid.map((s) => ({ class_id: classId, ...s }))
+    valid.map((s) => ({ class_id: classId, school_id, ...s }))
   )
 
   revalidatePath(`/siniflar/${classId}`)
@@ -139,7 +141,7 @@ export async function addStudentNote(studentId: string, classId: string, formDat
   const parsed = studentNoteSchema.safeParse({ body: formData.get('body') })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -147,6 +149,7 @@ export async function addStudentNote(studentId: string, classId: string, formDat
     teacher_id: user.id,
     student_id: studentId,
     body: parsed.data.body,
+    school_id,
   })
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)

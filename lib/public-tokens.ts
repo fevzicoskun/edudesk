@@ -1,7 +1,7 @@
 /**
  * HMAC-SHA256 signed tokens for public (unauthenticated) access to student/class data.
  * Token format: v1.{b64url_payload}.{b64url_hmac_sig}
- * Stateless — no DB lookup needed for verification.
+ * Stateless — payload contains jti for revocation support.
  */
 
 export type TokenType = 'veli' | 'yoklama' | 'tutanak'
@@ -11,6 +11,8 @@ interface TokenPayload {
   t: TokenType
   /** primary entity UUID */
   id: string
+  /** unique token ID — used for revocation */
+  jti: string
   /** unix expiration timestamp */
   exp: number
   /** optional metadata (e.g. date for yoklama) */
@@ -39,13 +41,11 @@ async function importKey(secret: string): Promise<CryptoKey> {
   )
 }
 
-/** base64url encode a string */
 function strToB64url(s: string): string {
   return btoa(unescape(encodeURIComponent(s)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
-/** base64url encode an ArrayBuffer */
 function abToB64url(ab: ArrayBuffer): string {
   const bytes = new Uint8Array(ab)
   let binary = ''
@@ -53,7 +53,6 @@ function abToB64url(ab: ArrayBuffer): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
 }
 
-/** base64url decode to Uint8Array backed by a plain ArrayBuffer (TypeScript 5.x compat) */
 function b64urlToUint8(s: string): Uint8Array<ArrayBuffer> {
   const padded = s.replace(/-/g, '+').replace(/_/g, '/') + '=='.slice((s.length * 3) % 4 || 4)
   const binary = atob(padded)
@@ -63,10 +62,15 @@ function b64urlToUint8(s: string): Uint8Array<ArrayBuffer> {
   return bytes
 }
 
-/** base64url decode to UTF-8 string */
 function b64urlToStr(s: string): string {
-  const bytes = b64urlToUint8(s)
-  return new TextDecoder().decode(bytes)
+  return new TextDecoder().decode(b64urlToUint8(s))
+}
+
+/** Generates a URL-safe random ID (16 bytes → 22 chars base64url) */
+function generateJti(): string {
+  const bytes = new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  return abToB64url(bytes.buffer)
 }
 
 /**
@@ -83,7 +87,8 @@ export async function createPublicToken(
   meta?: Record<string, string>
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + ttlDays * 86400
-  const payload: TokenPayload = { t: type, id, exp, ...(meta ? { m: meta } : {}) }
+  const jti = generateJti()
+  const payload: TokenPayload = { t: type, id, jti, exp, ...(meta ? { m: meta } : {}) }
   const payloadB64 = strToB64url(JSON.stringify(payload))
   const message = `v1.${payloadB64}`
 
@@ -93,13 +98,26 @@ export async function createPublicToken(
   return `${message}.${abToB64url(sigAb)}`
 }
 
+/** Extract jti from a token without verifying the signature — for revocation UI. */
+export function extractJti(token: string): string | null {
+  try {
+    const parts = token.split('.')
+    if (parts.length < 3 || parts[0] !== 'v1') return null
+    const payloadB64 = parts.slice(1, -1).join('.')
+    const payload = JSON.parse(b64urlToStr(payloadB64)) as TokenPayload
+    return payload.jti ?? null
+  } catch {
+    return null
+  }
+}
+
 export type VerifyResult =
   | { ok: true; payload: TokenPayload }
-  | { ok: false; reason: 'invalid_format' | 'bad_signature' | 'expired' | 'wrong_type' }
+  | { ok: false; reason: 'invalid_format' | 'bad_signature' | 'expired' | 'wrong_type' | 'revoked' }
 
 /**
- * Verify a token. Returns the payload on success, or an error reason on failure.
- * Never throws.
+ * Verify a token. Checks signature, expiration, and type.
+ * Never throws. Call isTokenRevoked() separately if revocation checking is needed.
  */
 export async function verifyPublicToken(
   token: string,
@@ -107,7 +125,6 @@ export async function verifyPublicToken(
 ): Promise<VerifyResult> {
   try {
     const parts = token.split('.')
-    // format: v1 · payload · sig  (3 parts minimum)
     if (parts.length < 3 || parts[0] !== 'v1') {
       return { ok: false, reason: 'invalid_format' }
     }
@@ -133,6 +150,26 @@ export async function verifyPublicToken(
     return { ok: true, payload }
   } catch {
     return { ok: false, reason: 'invalid_format' }
+  }
+}
+
+/**
+ * Check if a token's jti has been revoked.
+ * Requires a Supabase client. Returns false on any DB error (fail-open for availability).
+ */
+export async function isTokenRevoked(
+  jti: string,
+  supabase: { from: (t: string) => unknown }
+): Promise<boolean> {
+  try {
+    type Q = { select: (c: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: unknown }> } } }
+    const { data } = await (supabase.from('revoked_tokens') as Q)
+      .select('jti')
+      .eq('jti', jti)
+      .maybeSingle()
+    return data !== null
+  } catch {
+    return false
   }
 }
 
