@@ -6,6 +6,13 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
 import { TYMM_DATA, topicToString } from '@/lib/tymm-data'
 import type { CurriculumStatus } from '@/lib/types'
+import {
+  UUID,
+  createMeetingSchema,
+  createExamSchema,
+  createCurriculumProgressSchema,
+  curriculumStatusSchema,
+} from '@/lib/validation'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
@@ -16,14 +23,19 @@ async function requireBaskan() {
 
 export async function createMeeting(formData: FormData) {
   await requireBaskan()
+  const parsed = createMeetingSchema.safeParse({
+    title: formData.get('title'),
+    meeting_date: formData.get('meeting_date'),
+    notes: formData.get('notes') || null,
+  })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('zumre_meetings').insert({
-    title: formData.get('title') as string,
-    meeting_date: formData.get('meeting_date') as string,
-    notes: (formData.get('notes') as string) || null,
+    ...parsed.data,
     created_by: user.id,
   })
 
@@ -32,14 +44,19 @@ export async function createMeeting(formData: FormData) {
 
 export async function createExam(formData: FormData) {
   await requireBaskan()
+  const parsed = createExamSchema.safeParse({
+    title: formData.get('title'),
+    subject: formData.get('subject'),
+    exam_date: formData.get('exam_date'),
+  })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('common_exams').insert({
-    title: formData.get('title') as string,
-    subject: formData.get('subject') as string,
-    exam_date: formData.get('exam_date') as string,
+    ...parsed.data,
     created_by: user.id,
   })
 
@@ -47,28 +64,39 @@ export async function createExam(formData: FormData) {
 }
 
 export async function createCurriculumProgress(formData: FormData) {
+  const parsed = createCurriculumProgressSchema.safeParse({
+    class_id: formData.get('class_id'),
+    topic: formData.get('topic'),
+    week_number: formData.get('week_number') || null,
+    status: formData.get('status') || 'tamamlandi',
+  })
+  if (!parsed.success) {
+    redirect('/zumre?tab=mufredat&error=' + encodeURIComponent(parsed.error.issues[0]?.message ?? 'hata'))
+  }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const class_id = formData.get('class_id') as string
-  if (!class_id) redirect('/zumre?tab=mufredat&error=sinif')
+  const { class_id, topic, week_number, status } = parsed.data
 
   await supabase.from('curriculum_progress').insert({
     teacher_id: user.id,
     class_id,
-    topic: formData.get('topic') as string,
-    week_number: formData.get('week_number') ? Number(formData.get('week_number')) : null,
-    status: (formData.get('status') as CurriculumStatus) || 'tamamlandi',
-    completed: formData.get('status') !== 'eksik_kaldi',
-    completion_date:
-      formData.get('status') === 'tamamlandi' ? new Date().toISOString().split('T')[0] : null,
+    topic,
+    week_number: week_number ?? null,
+    status,
+    completed: status !== 'eksik_kaldi',
+    completion_date: status === 'tamamlandi' ? new Date().toISOString().split('T')[0] : null,
   })
 
   revalidatePath('/zumre')
 }
 
 export async function setCurriculumStatus(id: string, status: CurriculumStatus) {
+  UUID.parse(id)
+  curriculumStatusSchema.parse(status)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -87,6 +115,8 @@ export async function setCurriculumStatus(id: string, status: CurriculumStatus) 
 }
 
 export async function removeCurriculumProgress(id: string) {
+  UUID.parse(id)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -96,6 +126,8 @@ export async function removeCurriculumProgress(id: string) {
 }
 
 export async function updateExamGrades(id: string, gradesStr: string) {
+  UUID.parse(id)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
@@ -118,6 +150,9 @@ export async function saveExamEntries(
   id: string,
   entries: { name: string; grade: string }[]
 ) {
+  UUID.parse(id)
+  if (entries.length > 200) throw new Error('Çok fazla giriş')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
@@ -126,9 +161,14 @@ export async function saveExamEntries(
     .map(e => parseInt(e.grade))
     .filter(n => !isNaN(n) && n >= 0 && n <= 100)
 
+  const safeEntries = entries.map(e => ({
+    name: String(e.name).slice(0, 120),
+    grade: String(e.grade).slice(0, 4),
+  }))
+
   const { error } = await supabase
     .from('common_exams')
-    .update({ grades, grade_map: entries })
+    .update({ grades, grade_map: safeEntries })
     .eq('id', id)
 
   revalidatePath('/zumre')
@@ -136,6 +176,8 @@ export async function saveExamEntries(
 }
 
 export async function clearClassCurriculum(classId: string) {
+  UUID.parse(classId)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return
@@ -150,6 +192,9 @@ export async function clearClassCurriculum(classId: string) {
 }
 
 export async function updateCurriculumStatus(id: string, status: CurriculumStatus, _: FormData) {
+  UUID.parse(id)
+  curriculumStatusSchema.parse(status)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -169,17 +214,21 @@ export async function updateCurriculumStatus(id: string, status: CurriculumStatu
 
 export async function updateMeeting(id: string, formData: FormData) {
   await requireBaskan()
+  UUID.parse(id)
+  const parsed = createMeetingSchema.safeParse({
+    title: formData.get('title'),
+    meeting_date: formData.get('meeting_date'),
+    notes: formData.get('notes') || null,
+  })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase
     .from('zumre_meetings')
-    .update({
-      title: formData.get('title') as string,
-      meeting_date: formData.get('meeting_date') as string,
-      notes: (formData.get('notes') as string) || null,
-    })
+    .update(parsed.data)
     .eq('id', id)
 
   revalidatePath('/zumre')
@@ -188,6 +237,8 @@ export async function updateMeeting(id: string, formData: FormData) {
 
 export async function deleteMeeting(id: string, _: FormData) {
   await requireBaskan()
+  UUID.parse(id)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -199,6 +250,8 @@ export async function deleteMeeting(id: string, _: FormData) {
 
 export async function deleteExam(id: string, _: FormData) {
   await requireBaskan()
+  UUID.parse(id)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -209,6 +262,8 @@ export async function deleteExam(id: string, _: FormData) {
 }
 
 export async function deleteCurriculumProgress(id: string, _: FormData) {
+  UUID.parse(id)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -228,11 +283,12 @@ export async function importFromTYMM(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
-  const subject = formData.get('subject') as string
-  const class_id = formData.get('class_id') as string
+  const subject = String(formData.get('subject') ?? '').trim()
+  const class_id = String(formData.get('class_id') ?? '').trim()
 
   if (!subject) return { error: 'Ders seçilmedi' }
-  if (!class_id) return { error: 'Sınıf seçilmedi' }
+  const uuidResult = UUID.safeParse(class_id)
+  if (!uuidResult.success) return { error: 'Geçersiz sınıf ID' }
 
   const { data: cls } = await supabase.from('classes').select('grade').eq('id', class_id).single()
   if (!cls) return { error: 'Sınıf bulunamadı' }

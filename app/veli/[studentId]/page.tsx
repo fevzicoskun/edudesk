@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import PrintButton from './PrintButton'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import { UUID } from '@/lib/validation'
 
 function schoolYearStart(): string {
   const now = new Date()
@@ -44,6 +45,10 @@ type NoteRow = { id: string; body: string; created_at: string }
 
 export default async function VeliPage({ params }: { params: Promise<{ studentId: string }> }) {
   const { studentId } = await params
+
+  // Validate UUID format to prevent malformed queries
+  if (!UUID.safeParse(studentId).success) notFound()
+
   const supabase = await createClient()
 
   const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([

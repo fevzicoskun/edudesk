@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { UUID, attendanceStatusSchema, saveAttendanceSchema } from '@/lib/validation'
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'
 
@@ -10,15 +11,18 @@ export async function saveAttendance(
   date: string,
   records: { studentId: string; status: AttendanceStatus }[]
 ) {
+  const parsed = saveAttendanceSchema.safeParse({ classId, date, records })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
-  const rows = records.map(r => ({
+  const rows = parsed.data.records.map(r => ({
     teacher_id: user.id,
-    class_id: classId,
+    class_id: parsed.data.classId,
     student_id: r.studentId,
-    date,
+    date: parsed.data.date,
     status: r.status,
   }))
 
@@ -31,6 +35,7 @@ export async function saveAttendance(
 }
 
 export async function getAttendanceForDate(classId: string, date: string) {
+  UUID.parse(classId)
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('attendance')
@@ -42,9 +47,12 @@ export async function getAttendanceForDate(classId: string, date: string) {
 }
 
 export async function getAttendanceHistory(classId: string, days = 14) {
+  UUID.parse(classId)
+  const safeDays = Math.min(Math.max(1, days), 90)
+
   const supabase = await createClient()
   const since = new Date()
-  since.setDate(since.getDate() - days)
+  since.setDate(since.getDate() - safeDays)
   const sinceStr = since.toISOString().split('T')[0]
 
   const { data, error } = await supabase

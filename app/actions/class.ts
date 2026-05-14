@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
 import { getEgitimYili } from '@/lib/utils'
+import { UUID, createClassSchema, addStudentSchema, studentNoteSchema } from '@/lib/validation'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
@@ -15,13 +16,19 @@ async function requireBaskan() {
 
 export async function createClass(formData: FormData) {
   await requireBaskan()
+  const parsed = createClassSchema.safeParse({
+    name: formData.get('name'),
+    grade: formData.get('grade'),
+  })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('classes').insert({
-    name: formData.get('name') as string,
-    grade: Number(formData.get('grade')),
+    name: parsed.data.name,
+    grade: parsed.data.grade,
     academic_year: getEgitimYili(),
   })
 
@@ -30,6 +37,8 @@ export async function createClass(formData: FormData) {
 
 export async function deleteClass(classId: string) {
   await requireBaskan()
+  UUID.parse(classId)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -52,14 +61,21 @@ export async function deleteClass(classId: string) {
 }
 
 export async function addStudent(classId: string, formData: FormData) {
+  UUID.parse(classId)
+  const parsed = addStudentSchema.safeParse({
+    full_name: formData.get('full_name'),
+    student_number: formData.get('student_number') || null,
+  })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   await supabase.from('students').insert({
     class_id: classId,
-    full_name: formData.get('full_name') as string,
-    student_number: (formData.get('student_number') as string) || null,
+    full_name: parsed.data.full_name,
+    student_number: parsed.data.student_number ?? null,
   })
 
   revalidatePath(`/siniflar/${classId}`)
@@ -69,18 +85,28 @@ export async function addStudentsBulk(
   classId: string,
   students: { full_name: string; student_number: string | null }[]
 ) {
+  UUID.parse(classId)
+  if (students.length > 100) throw new Error('En fazla 100 öğrenci eklenebilir')
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const valid = students
+    .map(s => ({ full_name: s.full_name.trim().slice(0, 120), student_number: s.student_number?.slice(0, 20) ?? null }))
+    .filter(s => s.full_name.length >= 2)
+
   await supabase.from('students').insert(
-    students.map((s) => ({ class_id: classId, ...s }))
+    valid.map((s) => ({ class_id: classId, ...s }))
   )
 
   revalidatePath(`/siniflar/${classId}`)
 }
 
 export async function deleteStudent(studentId: string, classId: string) {
+  UUID.parse(studentId)
+  UUID.parse(classId)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -93,6 +119,10 @@ export async function deleteStudent(studentId: string, classId: string) {
 }
 
 export async function deleteStudentNote(noteId: string, studentId: string, classId: string) {
+  UUID.parse(noteId)
+  UUID.parse(studentId)
+  UUID.parse(classId)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -101,17 +131,19 @@ export async function deleteStudentNote(noteId: string, studentId: string, class
 }
 
 export async function addStudentNote(studentId: string, classId: string, formData: FormData) {
+  UUID.parse(studentId)
+  UUID.parse(classId)
+  const parsed = studentNoteSchema.safeParse({ body: formData.get('body') })
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const body = String(formData.get('body') ?? '').trim()
-  if (!body) return
-
   await supabase.from('student_notes').insert({
     teacher_id: user.id,
     student_id: studentId,
-    body,
+    body: parsed.data.body,
   })
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)

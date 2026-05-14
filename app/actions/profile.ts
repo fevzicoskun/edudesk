@@ -2,21 +2,23 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { profileSchema } from '@/lib/validation'
 
 export async function updateProfile(formData: FormData): Promise<{ error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
-  const full_name = (formData.get('full_name') as string).trim()
-  const subject = (formData.get('subject') as string).trim() || null
-  const okul_adi = (formData.get('okul_adi') as string).trim() || null
-
-  if (!full_name) return { error: 'Ad Soyad boş olamaz' }
+  const parsed = profileSchema.safeParse({
+    full_name: String(formData.get('full_name') ?? '').trim(),
+    subject: String(formData.get('subject') ?? '').trim() || null,
+    okul_adi: String(formData.get('okul_adi') ?? '').trim() || null,
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
   const { error } = await supabase
     .from('profiles')
-    .update({ full_name, subject, okul_adi })
+    .update(parsed.data)
     .eq('id', user.id)
 
   if (error) return { error: error.message }

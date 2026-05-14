@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import PrintBtn from './PrintBtn'
+import { UUID } from '@/lib/validation'
 
 const STATUS_LABEL: Record<string, string> = {
   present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli',
@@ -15,6 +16,8 @@ export default async function YoklamaYazdirPage({
 }) {
   const { classId, date } = await searchParams
   if (!classId || !date) return <p className="p-8">Geçersiz parametreler.</p>
+  if (!UUID.safeParse(classId).success) return <p className="p-8">Geçersiz sınıf ID.</p>
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return <p className="p-8">Geçersiz tarih formatı.</p>
 
   const supabase = await createClient()
   const [classRes, studentsRes, attendanceRes] = await Promise.all([
