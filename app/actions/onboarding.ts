@@ -70,13 +70,11 @@ export async function joinSchool(formData: FormData): Promise<{ error?: string }
     .single()
   if (existing?.school_id) redirect('/anasayfa')
 
-  // Okulu slug'a göre ara
-  const { data: school } = await supabase
-    .from('schools')
-    .select('id, name')
-    .eq('slug', parsed.data.code.toLowerCase().trim())
-    .single()
+  // Okulu slug'a göre ara (RLS bypass için SECURITY DEFINER fonksiyon)
+  const { data: schools } = await supabase
+    .rpc('find_school_by_slug', { p_slug: parsed.data.code.toLowerCase().trim() })
 
+  const school = schools?.[0] ?? null
   if (!school) return { error: 'Bu kod ile bir okul bulunamadı. Başkanınızdan doğru kodu alın.' }
 
   const { error } = await supabase
