@@ -13,7 +13,7 @@ const joinSchema = z.object({
   code: z.string().min(2, 'Geçersiz okul kodu').max(80).trim(),
 })
 
-/** Yeni okul oluştur ve profile ata */
+/** Yeni okul oluştur ve profile ata — kurucu otomatik zumre_baskani olur */
 export async function setupSchool(formData: FormData): Promise<{ error?: string }> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
@@ -47,7 +47,7 @@ export async function setupSchool(formData: FormData): Promise<{ error?: string 
 
   const { error } = await supabase
     .from('profiles')
-    .upsert({ id: user.id, school_id: school.id }, { onConflict: 'id' })
+    .upsert({ id: user.id, school_id: school.id, role: 'zumre_baskani' }, { onConflict: 'id' })
 
   if (error) return { error: error.message }
   redirect('/anasayfa')
