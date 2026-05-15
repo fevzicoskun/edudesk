@@ -15,10 +15,10 @@ export default async function SinifDetayPage({
   const supabase = await createClient()
 
   const [clsResult, studentsResult] = await Promise.all([
-    supabase.from('classes').select('*').eq('id', id).single(),
+    supabase.from('classes').select('name').eq('id', id).single(),
     supabase
       .from('students')
-      .select('*')
+      .select('id, full_name, student_number')
       .eq('class_id', id)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
