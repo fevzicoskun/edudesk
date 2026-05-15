@@ -44,10 +44,8 @@ function actionColor(action: string) {
 }
 
 export default async function AuditPage() {
-  const profile = await getCurrentProfile()
+  const [profile, supabase] = await Promise.all([getCurrentProfile(), createClient()])
   if (profile?.role !== 'zumre_baskani') notFound()
-
-  const supabase = await createClient()
 
   const [logsRes, profilesRes, revokedRes] = await Promise.all([
     supabase

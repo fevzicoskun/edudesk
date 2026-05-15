@@ -5,8 +5,7 @@ import { getEgitimYili } from '@/lib/utils'
 import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {
-  const supabase = await createClient()
-  const profile = await getCurrentProfile()
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   const isBaskan = profile?.role === 'zumre_baskani'
 
   const { data: classes } = await supabase

@@ -56,17 +56,13 @@ export default async function YoklamaPage({
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('id, name, grade')
-    .order('grade')
-    .order('name')
+  const [{ data: classes }, tableProbe] = await Promise.all([
+    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
+    supabase.from('attendance').select('id').limit(1),
+  ])
 
   const selectedId = classId ?? classes?.[0]?.id
   const selectedClass = classes?.find(c => c.id === selectedId)
-
-  // Tablo varlığını her zaman kontrol et (sınıf seçili olmasa bile)
-  const tableProbe = await supabase.from('attendance').select('id').limit(1)
   let tableExists = tableProbe.error?.code !== '42P01'
 
   let students: { id: string; full_name: string; student_number: string | null }[] = []
