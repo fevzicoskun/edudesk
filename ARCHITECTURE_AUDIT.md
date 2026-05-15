@@ -317,6 +317,10 @@ on_auth_user_created  →  handle_new_user()
 
 on_homework_created  →  create_submissions_for_homework()
   After INSERT on homeworks → inserts homework_submissions for all students in class
+  (homework_id, student_id, school_id) — school_id propagated via NEW.school_id
+
+profiles_role_lock  →  prevent_role_escalation()
+  Before UPDATE on profiles → blocks role changes except onboarding-time baskan assignment
 ```
 
 ---
@@ -593,6 +597,17 @@ The application uses only Server Actions and direct Supabase client calls. There
 | Dark mode theme script uses `dangerouslySetInnerHTML` | Low risk — static string, no user input | Acceptable; move to a separate `.js` file if CSP headers are added |
 | No CSP headers configured | XSS escalation risk if inline scripts are used | Add `Content-Security-Policy` headers in `next.config.ts` via `headers()` |
 | `xlsx.writeFile` runs in browser only | No server-side Excel generation possible | Acceptable for current use case; note for future server-export requirements |
+
+---
+
+## 12. Security Fixes Log
+
+Geriye dönük referans: hangi güvenlik açığı ne zaman kapandı.
+
+| # | Tarih | Açıklama | Dosyalar |
+|---|-------|----------|----------|
+| 1–16 | 2026-05-15 | Phase 3 güvenlik turu — school_id NOT NULL, RLS hardening, token revocation, rate limiting | supabase/migrations/20260515_* |
+| 17 | 2026-05-15 | **homework trigger school_id propagation** — `create_submissions_for_homework()` fonksiyonu `school_id` geçirmiyordu. Phase 3 NOT NULL migration'ı sonrası her yeni ödev oluşturmada `null value in column "school_id"` hatası veriyordu. `NEW.school_id`'yi de aktaracak şekilde düzeltildi. | `supabase/migrations/20260515_fix_homework_submissions_trigger.sql`, `supabase/schema.sql` |
 
 ---
 
