@@ -23,11 +23,10 @@ export default async function OdevlerPage({
   }>
 }) {
   const params = await searchParams
-  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+  const [user, profile, supabase] = await Promise.all([getCurrentUser(), getCurrentProfile(), createClient()])
   if (!user) return null
 
   const isZumreBaskani = profile?.role === 'zumre_baskani'
-  const supabase = await createClient()
 
   // Phase 1: durumIds (only if filter active) + supporting data — all in parallel
   const subjectsQuery = isZumreBaskani
