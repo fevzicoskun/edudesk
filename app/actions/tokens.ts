@@ -48,16 +48,6 @@ export async function generateYoklamaToken(classId: string, date: string): Promi
   return token
 }
 
-/** Tutanak yazdırma linki oluştur (7 günlük) */
-export async function generateTutanakToken(meetingId: string): Promise<string> {
-  UUID.parse(meetingId)
-  const user = await getCurrentUser()
-  if (!user) redirect('/login')
-
-  const token = await createPublicToken('tutanak', meetingId, 7)
-  return token
-}
-
 /**
  * Bir token'ı iptal et (baskan yetkisi gerekli).
  * token parametresi ya tam token string'i ya da bare jti olabilir.
