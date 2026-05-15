@@ -26,7 +26,7 @@ export default async function TutanakPrintPage({
   if (!meeting) notFound()
 
   const dateStr = format(parseISO(meeting.meeting_date), 'd MMMM yyyy', { locale: tr })
-  const okulAdi = profile?.okul_adi ?? ''
+  const okulAdi = profile?.schools?.name ?? ''
   const ogretmenAdi = profile?.full_name ?? ''
 
   return (

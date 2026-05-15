@@ -74,7 +74,6 @@ export const saveAttendanceSchema = z.object({
 export const profileSchema = z.object({
   full_name: z.string().min(2, 'Ad en az 2 karakter olmalı').max(120),
   subject: z.string().max(100).optional().nullable(),
-  okul_adi: z.string().max(200).optional().nullable(),
 })
 
 export function parseFormData<T>(schema: z.ZodSchema<T>, formData: FormData): T {

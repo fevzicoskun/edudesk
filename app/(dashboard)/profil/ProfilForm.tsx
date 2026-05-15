@@ -9,12 +9,12 @@ const initialState = { error: undefined as string | undefined, success: false }
 export default function ProfilForm({
   defaultFullName,
   defaultSubject,
-  defaultOkulAdi,
+  schoolName,
   email,
 }: {
   defaultFullName: string
   defaultSubject: string
-  defaultOkulAdi: string
+  schoolName: string | null
   email: string
 }) {
   const [state, action, pending] = useActionState(
@@ -79,13 +79,12 @@ export default function ProfilForm({
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
               Okul Adı
             </label>
-            <input
-              name="okul_adi"
-              type="text"
-              defaultValue={defaultOkulAdi}
-              placeholder="Örn: Atatürk Anadolu Lisesi"
-              className={inputCls}
-            />
+            <div className={inputCls + ' bg-gray-50 dark:bg-slate-700/50 opacity-75 cursor-not-allowed'}>
+              {schoolName ?? '—'}
+            </div>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+              Okul ismini değiştirmek için zümre başkanına başvurun.
+            </p>
           </div>
 
           {state.error && (

@@ -7,8 +7,8 @@ export interface Profile {
   full_name: string
   role: Role
   subject: string | null
-  okul_adi: string | null
   created_at: string
+  schools?: { name: string } | null
 }
 
 export interface Class {

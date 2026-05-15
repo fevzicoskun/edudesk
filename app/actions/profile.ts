@@ -13,7 +13,6 @@ export async function updateProfile(formData: FormData): Promise<{ error?: strin
   const parsed = profileSchema.safeParse({
     full_name: String(formData.get('full_name') ?? '').trim(),
     subject: String(formData.get('subject') ?? '').trim() || null,
-    okul_adi: String(formData.get('okul_adi') ?? '').trim() || null,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
