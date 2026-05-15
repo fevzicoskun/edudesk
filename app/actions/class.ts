@@ -57,6 +57,9 @@ export async function deleteClass(classId: string) {
     await supabase.from('homeworks').delete().in('id', homeworkIds)
   }
 
+  await supabase.from('attendance').delete().eq('class_id', classId)
+  await supabase.from('teacher_classes').delete().eq('class_id', classId)
+  await supabase.from('curriculum_progress').delete().eq('class_id', classId)
   await supabase.from('students').delete().eq('class_id', classId)
   await supabase.from('classes').delete().eq('id', classId)
 
