@@ -19,7 +19,7 @@ export default async function TutanakPrintPage({
 
   const { data: meeting } = await supabase
     .from('zumre_meetings')
-    .select('*')
+    .select('title, meeting_date, notes')
     .eq('id', id)
     .single()
 

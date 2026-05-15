@@ -34,8 +34,8 @@ export default async function ZumrePage({
   const isBaskan = profile?.role === 'zumre_baskani'
 
   const [meetingsResult, examsResult, curriculumResult, classesResult] = await Promise.all([
-    supabase.from('zumre_meetings').select('*').order('meeting_date', { ascending: false }),
-    supabase.from('common_exams').select('*').order('exam_date', { ascending: false }),
+    supabase.from('zumre_meetings').select('id, title, meeting_date, notes').order('meeting_date', { ascending: false }),
+    supabase.from('common_exams').select('id, title, subject, exam_date, grades, grade_map').order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
       .select('*, classes(grade, name)')
