@@ -79,7 +79,7 @@ export default async function OgrenciDetayPage({
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
-      <Link href={`/siniflar/${classId}`} className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mb-3 inline-block">
+      <Link href={`/siniflar/${classId}`} prefetch={true} className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mb-3 inline-block">
         ← {cls.name}
       </Link>
 
