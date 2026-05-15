@@ -141,7 +141,7 @@ export default async function YoklamaPage({
       ) : (
         <>
           {/* Tab bar */}
-          <div className="flex border-b border-gray-200 dark:border-slate-700 mb-5">
+          <div className="flex overflow-x-auto border-b border-gray-200 dark:border-slate-700 mb-5">
             {([
               { key: 'yoklama', label: 'Yoklama Al' },
               { key: 'gecmis',  label: 'Geçmiş & Devamsızlık' },
@@ -149,7 +149,7 @@ export default async function YoklamaPage({
               <Link
                 key={key}
                 href={tabLink(key)}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0 ${
                   tab === key
                     ? 'border-blue-600 text-blue-600 dark:text-blue-400'
                     : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 hover:border-gray-300'

@@ -6,11 +6,11 @@ import { generateYoklamaToken } from '@/app/actions/tokens'
 
 interface Student { id: string; full_name: string; student_number: string | null }
 
-const STATUS_OPTS: { value: AttendanceStatus; label: string; style: string; activeStyle: string }[] = [
-  { value: 'present',  label: 'Var',     style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
-  { value: 'absent',   label: 'Yok',     style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
-  { value: 'late',     label: 'Geç',     style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' },
-  { value: 'excused',  label: 'Mazeretli', style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
+const STATUS_OPTS: { value: AttendanceStatus; label: string; short: string; style: string; activeStyle: string }[] = [
+  { value: 'present',  label: 'Var',       short: 'Var', style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' },
+  { value: 'absent',   label: 'Yok',       short: 'Yok', style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' },
+  { value: 'late',     label: 'Geç',       short: 'Geç', style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300' },
+  { value: 'excused',  label: 'Mazeretli', short: 'Maz', style: 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300', activeStyle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' },
 ]
 
 interface Props {
@@ -151,16 +151,17 @@ export default function YoklamaBoard({ students, classId, className, todayStr, e
                       <span className="ml-1.5 text-xs text-gray-400 font-normal">#{s.student_number}</span>
                     )}
                   </span>
-                  <div className="flex gap-1 shrink-0">
+                  <div className="flex gap-0.5 sm:gap-1 shrink-0">
                     {STATUS_OPTS.map(o => (
                       <button
                         key={o.value}
                         onClick={() => toggle(s.id, o.value)}
-                        className={`text-xs px-2.5 py-1 rounded-full font-medium transition-colors ${
+                        className={`text-xs px-1.5 sm:px-2.5 py-1 rounded-full font-medium transition-colors ${
                           current === o.value ? o.activeStyle : o.style
                         }`}
                       >
-                        {o.label}
+                        <span className="sm:hidden">{o.short}</span>
+                        <span className="hidden sm:inline">{o.label}</span>
                       </button>
                     ))}
                   </div>

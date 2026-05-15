@@ -46,8 +46,8 @@ export default async function MufredatYazdirPage({ params }: { params: Promise<{
   })
 
   return (
-    <div className="max-w-3xl mx-auto p-8 print:p-4 font-sans text-sm text-gray-900">
-      <div className="flex items-center justify-between mb-1 print:hidden">
+    <div className="max-w-3xl mx-auto p-4 md:p-8 print:p-4 font-sans text-sm text-gray-900">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-1 print:hidden">
         <h1 className="text-xl font-bold">Müfredat Raporu — {cls.name}</h1>
         <button
           onClick={() => window.print()}
@@ -61,7 +61,7 @@ export default async function MufredatYazdirPage({ params }: { params: Promise<{
         <h1 className="text-xl font-bold">{cls.name} — Müfredat Takip Raporu</h1>
       </div>
 
-      <div className="flex gap-6 mb-6 text-xs text-gray-500">
+      <div className="flex flex-wrap gap-3 md:gap-6 mb-6 text-xs text-gray-500">
         <span>Toplam: <strong className="text-gray-900">{topics.length}</strong></span>
         <span>Tamamlanan: <strong className="text-green-700">{done}</strong></span>
         <span>Tamamlanma: <strong className="text-blue-700">%{pct}</strong></span>

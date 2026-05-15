@@ -177,14 +177,14 @@ export default function OdevlerFilterBar({
           type="date"
           value={currentParams.baslangic ?? ''}
           onChange={(e) => update('baslangic', e.target.value)}
-          className={selectCls}
+          className={`${selectCls} flex-1 sm:flex-none`}
         />
         <span className="text-sm text-gray-300">—</span>
         <input
           type="date"
           value={currentParams.bitis ?? ''}
           onChange={(e) => update('bitis', e.target.value)}
-          className={selectCls}
+          className={`${selectCls} flex-1 sm:flex-none`}
         />
         {hasFilters && (
           <button
