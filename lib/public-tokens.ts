@@ -25,6 +25,7 @@ function getSecret(): string {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('TOKEN_SECRET env var must be ≥32 characters in production')
     }
+    console.warn('[public-tokens] TOKEN_SECRET eksik veya kısa — dev fallback kullanılıyor. Production\'da TOKEN_SECRET set edilmeli.')
     return 'dev-fallback-secret-must-change-in-prod-min32'
   }
   return secret
