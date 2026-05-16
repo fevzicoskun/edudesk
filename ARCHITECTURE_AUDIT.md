@@ -139,8 +139,18 @@ zumre-takip/
 │       └── client.ts                 # createBrowserClient() — browser client
 │
 ├── supabase/
-│   ├── schema.sql                    # Full DB schema (tables, indexes, triggers, initial RLS)
-│   └── rls_update.sql                # Role-based RLS migration (applied 2026-05-14)
+│   ├── schema.sql                    # Referans şema (güncel değil — baseline migration kullan)
+│   ├── rls_update.sql                # Tarihsel RLS notu (migration-cleanup'tan sonra yerine geçildi)
+│   └── migrations/                   # Supabase CLI migration dosyaları (14 haneli timestamp)
+│       ├── 20260513000000_baseline.sql                           # Tam şema snapshot (idempotent)
+│       ├── 20260514211517_schools_isolation.sql
+│       ├── 20260514211611_rls_hardening.sql
+│       ├── 20260514213400_phase3_constraints_jobs_revocation.sql
+│       ├── 20260514231213_profiles_school_rls.sql
+│       ├── 20260514231512_cleanup_cron_jobs.sql
+│       ├── 20260515035423_drop_okul_adi_column.sql
+│       ├── 20260515144139_fix_homework_submissions_trigger.sql
+│       └── 20260515172052_fix_attendance_curriculum_delete_rls.sql
 │
 ├── public/                           # Static assets
 ├── proxy.ts                          # Next.js 16 middleware (auth guard + session refresh)
@@ -617,13 +627,46 @@ Geriye dönük referans: hangi güvenlik açığı ne zaman kapandı.
 
 | # | Tarih | Açıklama | Dosyalar |
 |---|-------|----------|----------|
-| 1–16 | 2026-05-15 | Phase 3 güvenlik turu — school_id NOT NULL, RLS hardening, token revocation, rate limiting | supabase/migrations/20260515_* |
-| 17 | 2026-05-15 | **homework trigger school_id propagation** — `create_submissions_for_homework()` fonksiyonu `school_id` geçirmiyordu. Phase 3 NOT NULL migration'ı sonrası her yeni ödev oluşturmada `null value in column "school_id"` hatası veriyordu. `NEW.school_id`'yi de aktaracak şekilde düzeltildi. | `supabase/migrations/20260515_fix_homework_submissions_trigger.sql`, `supabase/schema.sql` |
+| 1–16 | 2026-05-15 | Phase 3 güvenlik turu — school_id NOT NULL, RLS hardening, token revocation, rate limiting | `supabase/migrations/20260514211517_*` … `20260514231512_*` |
+| 17 | 2026-05-15 | **homework trigger school_id propagation** — `create_submissions_for_homework()` fonksiyonu `school_id` geçirmiyordu. Phase 3 NOT NULL migration'ı sonrası her yeni ödev oluşturmada `null value in column "school_id"` hatası veriyordu. `NEW.school_id`'yi de aktaracak şekilde düzeltildi. | `supabase/migrations/20260515144139_fix_homework_submissions_trigger.sql` |
 | 18 | 2026-05-15 | **deleteClass FK cascade hatası** — `attendance.student_id → students.id` ve `attendance.class_id → classes.id` FK kısıtları yüzünden sınıf silinemiyordu. `deleteClass` action'ına öğrencileri silmeden önce `attendance`, `teacher_classes` ve `curriculum_progress` temizleme adımları eklendi. | `app/actions/class.ts` |
-| 19 | 2026-05-15 | **attendance DELETE RLS eksikliği** — `attendance` tablosunda hiç DELETE policy yoktu; action kodun düzgün olmasına rağmen RLS silme işlemini sessizce engelliyordu. Öğretmenin kendi yoklamasını, başkanın okuldaki tüm yoklamaları silebileceği policy eklendi. `curriculum_progress` DELETE policy'si de başkanı kapsayacak şekilde genişletildi. | Supabase migration: `fix_attendance_curriculum_delete_rls` |
+| 19 | 2026-05-15 | **attendance DELETE RLS eksikliği** — `attendance` tablosunda hiç DELETE policy yoktu; action kodun düzgün olmasına rağmen RLS silme işlemini sessizce engelliyordu. Öğretmenin kendi yoklamasını, başkanın okuldaki tüm yoklamaları silebileceği policy eklendi. `curriculum_progress` DELETE policy'si de başkanı kapsayacak şekilde genişletildi. | `supabase/migrations/20260515172052_fix_attendance_curriculum_delete_rls.sql` |
 | 20 | 2026-05-16 | **service client server-only guard** — `lib/supabase/service.ts`'e `import 'server-only'` eklendi. `SUPABASE_SERVICE_ROLE_KEY`'in client bundle'a sızmasına karşı build-time güvence. | `lib/supabase/service.ts` |
 | 21 | 2026-05-16 | **TOKEN_SECRET dev uyarısı** — `getSecret()` development ortamında fallback'e düşerken sessiz kalıyordu. `console.warn` eklenerek fark edilmesi sağlandı. | `lib/public-tokens.ts` |
 | 22 | 2026-05-16 | **Token payload zorunlu alan kontrolü (kritik)** — İmzası geçerli ama `exp` alanı eksik olan bir token JS'te `undefined < number === false` değerlendirmesinden geçip süresi dolmamış sayılıyordu. `verifyPublicToken`'a `t`, `id`, `exp` (typeof number), `jti` varlık kontrolü eklendi; eksikse `invalid_format` döner. | `lib/public-tokens.ts` |
+
+---
+
+## 13. Migration Pipeline
+
+### Dosya formatı
+
+Supabase CLI `YYYYMMDDHHmmss_<isim>.sql` (14 haneli timestamp) formatını bekler. `supabase/migrations/` altındaki tüm dosyalar bu standarda uygun — `supabase db push` DB'deki kayıtlı versiyonlarla eşleştirir.
+
+### Dosya listesi ve DB eşleşmesi
+
+| Dosya | DB version | Kapsam |
+|---|---|---|
+| `20260513000000_baseline.sql` | — (referans) | Tam şema snapshot — taze kurulum için |
+| `20260514211517_schools_isolation.sql` | 20260514211517 | Multi-tenant school izolasyonu |
+| `20260514211611_rls_hardening.sql` | 20260514211611 | Least-privilege RLS sıkılaştırması |
+| `20260514213400_phase3_constraints_jobs_revocation.sql` | 20260514213400 | NOT NULL kısıtları, export_jobs, revoked_tokens |
+| `20260514231213_profiles_school_rls.sql` | 20260514231213 | profiles school_id izolasyonu |
+| `20260514231512_cleanup_cron_jobs.sql` | 20260514231512 | pg_cron temizlik job'ları |
+| `20260515035423_drop_okul_adi_column.sql` | 20260515035423 | profiles.okul_adi denormalizasyonu kaldırıldı |
+| `20260515144139_fix_homework_submissions_trigger.sql` | 20260515144139 | Trigger'da school_id propagation fix |
+| `20260515172052_fix_attendance_curriculum_delete_rls.sql` | 20260515172052 | attendance/curriculum DELETE policy eklendi |
+
+### Baseline hakkında
+
+`20260513000000_baseline.sql` DB'deki 17 migration'ın tamamını kapsayan idempotent bir snapshot'tır (`CREATE IF NOT EXISTS` / `CREATE OR REPLACE`). Taze bir Supabase projesinde tek başına çalıştırılabilir. Mevcut DB'ye karşı çalıştırılması güvenlidir — hiçbir şeyi değiştirmez.
+
+### Taze proje kurulumu
+
+```bash
+supabase link --project-ref <project-id>
+supabase db push
+```
 
 ---
 
