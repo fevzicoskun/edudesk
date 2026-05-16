@@ -126,7 +126,7 @@ export default async function SubmissionsPanel({
           {watchlist.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Tüm öğrenciler ödevlerini tamamlıyor.</p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-1.5 max-h-52 overflow-y-auto pr-1">
               {watchlist.map((r, i) => (
                 <li key={r.student?.id ?? i} className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700">
                   <div className="min-w-0">
@@ -148,7 +148,7 @@ export default async function SubmissionsPanel({
           {classSummary.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Henüz sınıf veya ödev kaydı yok.</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
               {classSummary.map((c) => (
                 <div key={c.class_id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700">
                   <div className="min-w-0 flex items-center gap-3 flex-1">
