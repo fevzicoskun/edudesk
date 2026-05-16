@@ -145,6 +145,9 @@ export async function verifyPublicToken(
 
     const payload: TokenPayload = JSON.parse(b64urlToStr(payloadB64))
 
+    if (!payload.t || !payload.id || typeof payload.exp !== 'number' || !payload.jti) {
+      return { ok: false, reason: 'invalid_format' }
+    }
     if (payload.t !== expectedType) return { ok: false, reason: 'wrong_type' }
     if (payload.exp < Math.floor(Date.now() / 1000)) return { ok: false, reason: 'expired' }
 
