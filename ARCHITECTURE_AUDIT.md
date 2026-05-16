@@ -1,6 +1,6 @@
 # EduDesk — Architecture Audit
 
-> Last updated: 2026-05-14  
+> Last updated: 2026-05-16  
 > Stack: Next.js 16.2.4 · React 19 · Supabase (PostgreSQL 17) · Tailwind CSS v4 · TypeScript 5  
 > Deploy: Vercel (auto-deploy on `main` push)
 
@@ -302,9 +302,11 @@ $$;
 | `common_exams` | UPDATE / DELETE | Creator OR `is_zumre_baskani()` |
 | `curriculum_progress` | SELECT | Own rows OR `is_zumre_baskani()` |
 | `curriculum_progress` | INSERT | Own (`teacher_id = auth.uid()`) |
-| `curriculum_progress` | UPDATE / DELETE | Own OR `is_zumre_baskani()` |
-| `attendance` | ALL | Own (`teacher_id = auth.uid()`) |
-| `attendance` | SELECT | anon (public read for parent portal) |
+| `curriculum_progress` | UPDATE | Own (`teacher_id = auth.uid()`) |
+| `curriculum_progress` | DELETE | Own (`teacher_id = auth.uid()`) OR `is_zumre_baskani()` |
+| `attendance` | SELECT | Any authenticated + anon (parent portal) |
+| `attendance` | INSERT / UPDATE | Own (`teacher_id = auth.uid()`) |
+| `attendance` | DELETE | Own (`teacher_id = auth.uid()`) OR `is_zumre_baskani()` |
 | `student_notes` | SELECT | Any authenticated |
 | `student_notes` | INSERT / DELETE | Own (`teacher_id = auth.uid()`) |
 | `user_notes` | ALL | Own (`user_id = auth.uid()`) |
@@ -584,6 +586,15 @@ The application uses only Server Actions and direct Supabase client calls. There
 **Parent portal isolation**  
 `/veli/[studentId]` reads only from `attendance` (which has `FOR SELECT TO anon USING (true)`) and `students`. No write access is possible from anon context.
 
+**`server-only` guard on service client**  
+`lib/supabase/service.ts` imports `server-only`. If any `'use client'` component ever imports it, Next.js throws a build-time error — `SUPABASE_SERVICE_ROLE_KEY` cannot leak into the browser bundle.
+
+**HMAC-SHA256 public tokens with timing-safe verification**  
+`lib/public-tokens.ts` signs stateless public-access tokens (veli/yoklama/tutanak) with HMAC-SHA256 via `crypto.subtle`. Signature verification uses `crypto.subtle.verify()` which is timing-safe by Web Crypto spec. Tokens carry `jti` for revocation. `TOKEN_SECRET` must be ≥32 characters; missing/short in production throws at startup, in development emits `console.warn`.
+
+**Token payload structural validation**  
+`verifyPublicToken` explicitly checks that `t`, `id`, `exp` (as `number`), and `jti` are all present before evaluating type and expiry. A crafted token with a missing `exp` field would otherwise pass JS's `undefined < number === false` check and be treated as non-expired.
+
 ### Known gaps / recommendations
 
 | Gap | Risk | Recommendation |
@@ -608,6 +619,11 @@ Geriye dönük referans: hangi güvenlik açığı ne zaman kapandı.
 |---|-------|----------|----------|
 | 1–16 | 2026-05-15 | Phase 3 güvenlik turu — school_id NOT NULL, RLS hardening, token revocation, rate limiting | supabase/migrations/20260515_* |
 | 17 | 2026-05-15 | **homework trigger school_id propagation** — `create_submissions_for_homework()` fonksiyonu `school_id` geçirmiyordu. Phase 3 NOT NULL migration'ı sonrası her yeni ödev oluşturmada `null value in column "school_id"` hatası veriyordu. `NEW.school_id`'yi de aktaracak şekilde düzeltildi. | `supabase/migrations/20260515_fix_homework_submissions_trigger.sql`, `supabase/schema.sql` |
+| 18 | 2026-05-15 | **deleteClass FK cascade hatası** — `attendance.student_id → students.id` ve `attendance.class_id → classes.id` FK kısıtları yüzünden sınıf silinemiyordu. `deleteClass` action'ına öğrencileri silmeden önce `attendance`, `teacher_classes` ve `curriculum_progress` temizleme adımları eklendi. | `app/actions/class.ts` |
+| 19 | 2026-05-15 | **attendance DELETE RLS eksikliği** — `attendance` tablosunda hiç DELETE policy yoktu; action kodun düzgün olmasına rağmen RLS silme işlemini sessizce engelliyordu. Öğretmenin kendi yoklamasını, başkanın okuldaki tüm yoklamaları silebileceği policy eklendi. `curriculum_progress` DELETE policy'si de başkanı kapsayacak şekilde genişletildi. | Supabase migration: `fix_attendance_curriculum_delete_rls` |
+| 20 | 2026-05-16 | **service client server-only guard** — `lib/supabase/service.ts`'e `import 'server-only'` eklendi. `SUPABASE_SERVICE_ROLE_KEY`'in client bundle'a sızmasına karşı build-time güvence. | `lib/supabase/service.ts` |
+| 21 | 2026-05-16 | **TOKEN_SECRET dev uyarısı** — `getSecret()` development ortamında fallback'e düşerken sessiz kalıyordu. `console.warn` eklenerek fark edilmesi sağlandı. | `lib/public-tokens.ts` |
+| 22 | 2026-05-16 | **Token payload zorunlu alan kontrolü (kritik)** — İmzası geçerli ama `exp` alanı eksik olan bir token JS'te `undefined < number === false` değerlendirmesinden geçip süresi dolmamış sayılıyordu. `verifyPublicToken`'a `t`, `id`, `exp` (typeof number), `jti` varlık kontrolü eklendi; eksikse `invalid_format` döner. | `lib/public-tokens.ts` |
 
 ---
 
