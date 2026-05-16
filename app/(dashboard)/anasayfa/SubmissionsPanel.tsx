@@ -59,12 +59,20 @@ export default async function SubmissionsPanel({
   const missingCount = allSubs.filter((s) => s.status === 'eksik').length
   const notDoneCount = allSubs.filter((s) => s.status === 'yapilmadi').length
 
-  // Watchlist: son 5 ödev, ≥3 ödevden ≥2 eksiği olan öğrenciler
-  const lastHwIds = new Set(hwIds.slice(0, 5))
+  // Watchlist: her sınıfın son 5 ödevi baz alınır (homeworks due_date DESC gelir)
+  const lastHwIdsByClass = new Map<string, Set<string>>()
+  const hwToClassId = new Map(homeworks.map((h) => [h.id, h.class_id]))
+  for (const hw of homeworks) {
+    const set = lastHwIdsByClass.get(hw.class_id) ?? new Set<string>()
+    if (set.size < 5) set.add(hw.id)
+    lastHwIdsByClass.set(hw.class_id, set)
+  }
   type Bucket = { student: StudentRel; neg: number; total: number }
   const buckets = new Map<string, Bucket>()
   for (const s of allSubs) {
-    if (!s.student_id || !lastHwIds.has(s.homework_id)) continue
+    if (!s.student_id) continue
+    const cid = hwToClassId.get(s.homework_id)
+    if (!cid || !lastHwIdsByClass.get(cid)?.has(s.homework_id)) continue
     const prev = buckets.get(s.student_id) ?? { student: s.students, neg: 0, total: 0 }
     prev.total += 1
     if (s.status === 'eksik' || s.status === 'yapilmadi' || s.status === 'gec') prev.neg += 1
