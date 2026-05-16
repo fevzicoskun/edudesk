@@ -68,6 +68,44 @@ export async function createExam(formData: FormData) {
   revalidatePath('/zumre')
 }
 
+export async function createExamReturning(formData: FormData): Promise<
+  { id: string; title: string; subject: string; exam_date: string; grades: number[] | null; grade_map: { name: string; grade: string }[] | null } | { error: string }
+> {
+  await requireBaskan()
+  const parsed = createExamSchema.safeParse({
+    title: formData.get('title'),
+    subject: formData.get('subject'),
+    exam_date: formData.get('exam_date'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Hata' }
+
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Giriş gerekli' }
+
+  const { data, error } = await supabase
+    .from('common_exams')
+    .insert({ ...parsed.data, created_by: user.id, school_id })
+    .select('id, title, subject, exam_date, grades, grade_map')
+    .single()
+
+  if (error || !data) return { error: error?.message ?? 'Eklenemedi' }
+  await logAudit({ user_id: user.id, action: 'exam.create', table_name: 'common_exams', new_data: { title: parsed.data.title }, school_id })
+  revalidatePath('/zumre')
+  return data as { id: string; title: string; subject: string; exam_date: string; grades: number[] | null; grade_map: { name: string; grade: string }[] | null }
+}
+
+export async function fetchClassStudents(classId: string): Promise<{ id: string; full_name: string }[]> {
+  UUID.parse(classId)
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('students')
+    .select('id, full_name')
+    .eq('class_id', classId)
+    .order('full_name')
+  return data ?? []
+}
+
 export async function createCurriculumProgress(formData: FormData) {
   const parsed = createCurriculumProgressSchema.safeParse({
     class_id: formData.get('class_id'),

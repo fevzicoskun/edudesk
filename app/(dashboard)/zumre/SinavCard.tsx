@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { saveExamEntries } from '@/app/actions/zumre'
+import { saveExamEntries, fetchClassStudents } from '@/app/actions/zumre'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
@@ -12,6 +12,12 @@ interface Exam {
   exam_date: string
   grades: number[] | null
   grade_map: { name: string; grade: string }[] | null
+}
+
+interface ClassInfo {
+  id: string
+  name: string
+  grade: number
 }
 
 type Entry = { name: string; grade: string }
@@ -31,15 +37,28 @@ function parseInput(raw: string): number[] {
 
 const lsKey = (id: string) => `exam_entries_${id}`
 
-export default function SinavCard({ exam, onDelete, isBaskan }: { exam: Exam; onDelete: () => void; isBaskan: boolean }) {
+const selectCls = 'px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500'
+
+export default function SinavCard({
+  exam,
+  onDelete,
+  isBaskan,
+  classes,
+}: {
+  exam: Exam
+  onDelete: () => void
+  isBaskan: boolean
+  classes: ClassInfo[]
+}) {
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState((exam.grades ?? []).join(', '))
   const [saved, setSaved] = useState(exam.grades ?? [])
   const [perStudent, setPerStudent] = useState(false)
   const [entries, setEntries] = useState<Entry[]>([])
+  const [selectedClassId, setSelectedClassId] = useState('')
+  const [loadingStudents, setLoadingStudents] = useState(false)
   const [, startTransition] = useTransition()
 
-  // Load entries: prefer DB grade_map, fall back to localStorage
   useEffect(() => {
     if (exam.grade_map && exam.grade_map.length > 0) {
       setEntries(exam.grade_map)
@@ -51,16 +70,31 @@ export default function SinavCard({ exam, onDelete, isBaskan }: { exam: Exam; on
     } catch {}
   }, [exam.id, exam.grade_map])
 
+  const loadStudentsForClass = async (classId: string) => {
+    if (!classId) return
+    setLoadingStudents(true)
+    const students = await fetchClassStudents(classId)
+    setLoadingStudents(false)
+    // Mevcut notları koru: aynı isimde kayıt varsa notunu aktar
+    const existingMap = new Map(entries.map(e => [e.name.trim(), e.grade]))
+    setEntries(students.map(s => ({
+      name: s.full_name,
+      grade: existingMap.get(s.full_name.trim()) ?? '',
+    })))
+  }
+
+  const handleClassChange = async (classId: string) => {
+    setSelectedClassId(classId)
+    await loadStudentsForClass(classId)
+  }
+
   const switchToPerStudent = () => {
     const nums = parseInput(input)
-    const existing = entries.length > 0 ? entries : nums.map(g => ({ name: '', grade: String(g) }))
-    // Pad or trim to match current input count if entries were empty
     if (entries.length === 0 && nums.length > 0) {
       setEntries(nums.map(g => ({ name: '', grade: String(g) })))
     } else if (entries.length === 0) {
       setEntries([{ name: '', grade: '' }])
     }
-    void existing
     setPerStudent(true)
   }
 
@@ -137,7 +171,24 @@ export default function SinavCard({ exam, onDelete, isBaskan }: { exam: Exam; on
 
           {perStudent ? (
             <div className="space-y-2">
-              <div className="text-xs text-gray-500 dark:text-slate-400 mb-1">Ad Soyad ve not (0–100)</div>
+              {/* Sınıf seç → öğrenciler otomatik yükle */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">Sınıf:</span>
+                <select
+                  value={selectedClassId}
+                  onChange={e => handleClassChange(e.target.value)}
+                  className={selectCls}
+                  disabled={loadingStudents}
+                >
+                  <option value="">Sınıf seç…</option>
+                  {classes.map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+                {loadingStudents && <span className="text-xs text-gray-400">Yükleniyor…</span>}
+              </div>
+
+              <div className="text-xs text-gray-500 dark:text-slate-400">Ad Soyad ve not (0–100)</div>
               <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                 {entries.map((e, i) => (
                   <div key={i} className="flex gap-2 items-center">

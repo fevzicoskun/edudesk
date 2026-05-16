@@ -9,7 +9,6 @@ import MufredatBoard from './MufredatBoard'
 import SinavListesi from './SinavListesi'
 import {
   createMeeting,
-  createExam,
   createCurriculumProgress,
   deleteMeeting,
 } from '@/app/actions/zumre'
@@ -145,29 +144,7 @@ export default async function ZumrePage({
 
       {/* ── SINAV ── */}
       {tab === 'sinav' && (
-        <div className="space-y-4">
-          {isBaskan ? (
-            <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Ortak Sınav</h2>
-              <form action={createExam} className="space-y-3">
-                <input name="title" type="text" required placeholder="Sınav başlığı" className={inputCls} />
-                <input name="subject" type="text" required placeholder="Ders" className={inputCls} />
-                <input name="exam_date" type="date" required className={inputCls} />
-                <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                  Ekle
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Ortak sınav oluşturma yetkisi Zümre Başkanı&apos;na aittir.
-              </p>
-            </div>
-          )}
-
-          <SinavListesi exams={exams} isBaskan={isBaskan} />
-        </div>
+        <SinavListesi exams={exams} isBaskan={isBaskan} classes={classes} />
       )}
 
       {/* ── MÜFREDAT ── */}
