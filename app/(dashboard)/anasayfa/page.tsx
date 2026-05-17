@@ -26,8 +26,8 @@ export default async function AnasayfaPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) return null
 
-  if (isMudurOrAbove(profile?.role)) {
-    return <MudurDashboard fullName={profile?.full_name ?? ''} />
+  if (profile?.role === 'mudur') {
+    return <MudurDashboard fullName={profile.full_name ?? ''} />
   }
 
   const isZumreBaskani = profile?.role === 'zumre_baskani'

@@ -29,6 +29,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
     studentsRes,
     classesRes,
     meetingsRes,
+    meetingCountRes,
     examsRes,
     sessionsRes,
     curriculumRes,
@@ -37,6 +38,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
     supabase.from('students').select('id', { count: 'exact', head: true }),
     supabase.from('classes').select('id, name, grade', { count: 'exact' }).order('grade').order('name'),
     supabase.from('zumre_meetings').select('id, title, meeting_date, branch').order('meeting_date', { ascending: false }).limit(5),
+    supabase.from('zumre_meetings').select('id', { count: 'exact', head: true }),
     supabase.from('common_exams').select('id, title, subject, exam_date').order('exam_date', { ascending: false }).limit(5),
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, duration_minutes'),
     supabase.from('curriculum_progress').select('class_id, status'),
@@ -46,6 +48,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   const studentCount = studentsRes.count ?? 0
   const classes = classesRes.data ?? []
   const meetings = meetingsRes.data ?? []
+  const meetingCount = meetingCountRes.count ?? 0
   const exams = examsRes.data ?? []
   const sessions = sessionsRes.data ?? []
   const curriculum = curriculumRes.data ?? []
@@ -111,9 +114,9 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
           color="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"
         />
         <StatCard
-          value={meetings.length > 0 ? meetings.length : 0}
+          value={meetingCount}
           label="Zümre Toplantısı"
-          sub="bu yıl"
+          sub="toplam"
           color="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
         />
         <StatCard

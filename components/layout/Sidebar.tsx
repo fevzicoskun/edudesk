@@ -119,7 +119,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {navItems.filter(item => !item.teacherOnly || !isMudur).map(({ href, label, icon }) => {
+          {navItems.filter(item => !item.teacherOnly || role !== 'mudur').map(({ href, label, icon }) => {
             const active = pathname.startsWith(href)
             return (
               <Link
@@ -197,7 +197,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex">
-        {navItems.filter(i => i.mobile && (!i.teacherOnly || !isMudur)).map(({ href, label, icon }) => {
+        {navItems.filter(i => i.mobile && (!i.teacherOnly || role !== 'mudur')).map(({ href, label, icon }) => {
           const active = pathname.startsWith(href)
           return (
             <Link
