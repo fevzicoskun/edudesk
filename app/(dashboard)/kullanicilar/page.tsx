@@ -28,13 +28,27 @@ export default async function KullanicilarPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, full_name, subject, role')
-    .order('role')
-    .order('full_name')
+  const [{ data }, { data: sessionsRaw }] = await Promise.all([
+    supabase.from('profiles').select('id, full_name, subject, role').order('role').order('full_name'),
+    supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes'),
+  ])
 
   const users = (data ?? []) as UserRow[]
+
+  // Kullanıcı başına oturum özeti
+  type SessionSummary = { count: number; totalMinutes: number; lastSeen: string | null }
+  const sessionMap = new Map<string, SessionSummary>()
+  for (const s of (sessionsRaw ?? [])) {
+    const prev = sessionMap.get(s.user_id) ?? { count: 0, totalMinutes: 0, lastSeen: null }
+    prev.count += 1
+    // Kapalı oturum: duration_minutes kullan. Açık: last_seen_at - login_at tahmini
+    const mins = s.duration_minutes ?? Math.round(
+      (new Date(s.last_seen_at).getTime() - new Date(s.login_at).getTime()) / 60000
+    )
+    prev.totalMinutes += Math.max(mins, 1)
+    if (!prev.lastSeen || s.last_seen_at > prev.lastSeen) prev.lastSeen = s.last_seen_at
+    sessionMap.set(s.user_id, prev)
+  }
   const canAssign = profile.role === 'mudur' || profile.role === 'mudur_yardimcisi'
 
   // Müdür yardımcısı mudur_yardimcisi atayamaz
@@ -58,14 +72,16 @@ export default async function KullanicilarPage() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ad Soyad</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Branş</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Kullanım</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
             {users.map((u) => {
               const isSelf = u.id === user.id
               const canEditThis = canAssign && !isSelf && assignableRoles.includes(u.role)
-              // mudur kendi rolünü ve diğer müdürü değiştiremez
               const editableRoles = assignableRoles.filter(r => r !== 'mudur' || profile.role === 'mudur')
+              const stats = sessionMap.get(u.id)
+              const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : null
 
               return (
                 <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
@@ -77,6 +93,20 @@ export default async function KullanicilarPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
                     {u.subject ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {stats ? (
+                      <div>
+                        <p className="text-xs font-medium text-gray-900 dark:text-slate-100">{stats.count} giriş · {totalHours} saat</p>
+                        {stats.lastSeen && (
+                          <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+                            Son: {new Date(stats.lastSeen).toLocaleDateString('tr-TR')}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     {canEditThis ? (

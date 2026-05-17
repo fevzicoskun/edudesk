@@ -86,9 +86,15 @@ Toplantı saat ___'de sona erdi.`,
 export default function TutanakForm({
   action,
   inputCls,
+  userSubject,
+  isMudurYrd,
+  branches,
 }: {
   action: (formData: FormData) => Promise<void>
   inputCls: string
+  userSubject?: string | null
+  isMudurYrd?: boolean
+  branches?: string[]
 }) {
   const titleRef = useRef<HTMLInputElement>(null)
   const notesRef = useRef<HTMLTextAreaElement>(null)
@@ -131,6 +137,15 @@ export default function TutanakForm({
       <form action={action} className="space-y-3">
         <input ref={titleRef} name="title" type="text" required placeholder="Toplantı başlığı" className={inputCls} />
         <input name="meeting_date" type="date" required className={inputCls} />
+        {/* Branş: müd.yrd. seçer, başkan kendi branşı (gizli) */}
+        {isMudurYrd ? (
+          <select name="branch" required className={inputCls}>
+            <option value="">Branş seçin</option>
+            {(branches ?? []).map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+        ) : (
+          <input type="hidden" name="branch" value={userSubject ?? ''} />
+        )}
         <textarea ref={notesRef} name="notes" rows={4} placeholder="Toplantı notları..." className={inputCls + ' resize-none'} />
         <button type="submit" className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
           Ekle

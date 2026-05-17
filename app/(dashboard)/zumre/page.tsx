@@ -32,8 +32,8 @@ export default async function ZumrePage({
   const profile = await getCurrentProfile()
   const isBaskan = profile?.role === 'zumre_baskani'
 
-  const [meetingsResult, examsResult, curriculumResult, classesResult] = await Promise.all([
-    supabase.from('zumre_meetings').select('id, title, meeting_date, notes').order('meeting_date', { ascending: false }),
+  const [meetingsResult, examsResult, curriculumResult, classesResult, branchesResult] = await Promise.all([
+    supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').order('meeting_date', { ascending: false }),
     supabase.from('common_exams').select('id, title, subject, exam_date, grades, grade_map').order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
@@ -42,6 +42,7 @@ export default async function ZumrePage({
       .order('week_number', { nullsFirst: true })
       .order('created_at'),
     supabase.from('classes').select('id, name, grade').order('grade').order('name'),
+    supabase.from('profiles').select('subject').not('subject', 'is', null).order('subject'),
   ])
 
   const meetings = meetingsResult.data ?? []
@@ -49,6 +50,10 @@ export default async function ZumrePage({
   const curriculum = curriculumResult.data ?? []
   const classes = classesResult.data ?? []
   const grades = [9, 10, 11, 12]
+  // Okuldaki benzersiz branşlar (müdür yardımcısı için)
+  const branches = [...new Set((branchesResult.data ?? []).map((r: { subject: string }) => r.subject))].sort()
+  const isMudurYrd = profile?.role === 'mudur_yardimcisi'
+  const userSubject = profile?.subject ?? null
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'toplanti', label: 'Toplantılar' },
@@ -86,12 +91,18 @@ export default async function ZumrePage({
       {/* ── TOPLANTI ── */}
       {tab === 'toplanti' && (
         <div className="space-y-4">
-          {isBaskan ? (
-            <TutanakForm action={createMeeting} inputCls={inputCls} />
+          {(isBaskan || isMudurYrd) ? (
+            <TutanakForm
+              action={createMeeting}
+              inputCls={inputCls}
+              userSubject={userSubject}
+              isMudurYrd={isMudurYrd}
+              branches={branches}
+            />
           ) : (
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3">
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                Toplantı oluşturma ve düzenleme yetkisi Zümre Başkanı&apos;na aittir.
+                Toplantı oluşturma yetkisi Zümre Başkanı veya Müdür Yardımcısı&apos;na aittir.
               </p>
             </div>
           )}
@@ -103,7 +114,12 @@ export default async function ZumrePage({
               <div key={m.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 dark:text-slate-100">{m.title}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-medium text-gray-900 dark:text-slate-100">{m.title}</p>
+                      {m.branch && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-semibold shrink-0">{m.branch}</span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
                       {format(parseISO(m.meeting_date), 'd MMMM yyyy', { locale: tr })}
                     </p>

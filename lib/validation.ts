@@ -41,6 +41,7 @@ export const createMeetingSchema = z.object({
   title: z.string().min(1, 'Başlık gerekli').max(200),
   meeting_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı'),
   notes: z.string().max(5000).optional().nullable(),
+  branch: z.string().max(100).optional().nullable(),
 })
 
 export const createExamSchema = z.object({

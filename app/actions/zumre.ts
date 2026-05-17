@@ -17,17 +17,19 @@ import { logAudit } from '@/lib/audit'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
-  if (profile?.role !== 'zumre_baskani') {
-    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
+  if (!profile || !['zumre_baskani', 'mudur_yardimcisi'].includes(profile.role)) {
+    throw new Error('Bu işlem için Zümre Başkanı veya Müdür Yardımcısı yetkisi gereklidir.')
   }
+  return profile
 }
 
 export async function createMeeting(formData: FormData) {
-  await requireBaskan()
+  const caller = await requireBaskan()
   const parsed = createMeetingSchema.safeParse({
     title: formData.get('title'),
     meeting_date: formData.get('meeting_date'),
     notes: formData.get('notes') || null,
+    branch: formData.get('branch') || caller.subject || null,
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 

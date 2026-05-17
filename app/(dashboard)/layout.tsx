@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
 import Sidebar from '@/components/layout/Sidebar'
 import { ToastProvider } from '@/components/Toast'
+import SessionTracker from '@/components/SessionTracker'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -15,6 +16,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <Sidebar profile={profile} email={user.email ?? ''} />
         <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0">{children}</main>
       </div>
+      <SessionTracker />
     </ToastProvider>
   )
 }

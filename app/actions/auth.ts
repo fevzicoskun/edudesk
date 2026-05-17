@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { loginSchema, changePasswordSchema } from '@/lib/validation'
+import { startSession, endSession } from './session'
 
 type AuthState = { error: string } | null
 
@@ -22,10 +23,12 @@ export async function login(prevState: AuthState, formData: FormData): Promise<A
     return { error: 'E-posta veya şifre hatalı.' }
   }
 
+  await startSession()
   redirect('/')
 }
 
 export async function logout() {
+  await endSession()
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/login')
