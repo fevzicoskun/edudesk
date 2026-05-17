@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { getCurrentUser } from '@/lib/auth'
 import { z } from 'zod'
 
@@ -45,10 +46,12 @@ export async function setupSchool(formData: FormData): Promise<{ error?: string 
 
   if (schoolErr || !school) return { error: schoolErr?.message ?? 'Okul oluşturulamadı' }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ school_id: school.id, role: 'zumre_baskani' })
-    .eq('id', user.id)
+  const admin = createServiceClient()
+  const { error } = await admin.rpc('admin_onboard_user', {
+    p_id:        user.id,
+    p_school_id: school.id,
+    p_role:      'zumre_baskani',
+  })
 
   if (error) return { error: error.message }
   redirect('/anasayfa')
@@ -78,10 +81,11 @@ export async function joinSchool(formData: FormData): Promise<{ error?: string }
   const school = schools?.[0] ?? null
   if (!school) return { error: 'Bu kod ile bir okul bulunamadı. Başkanınızdan doğru kodu alın.' }
 
-  const { error } = await supabase
-    .from('profiles')
-    .update({ school_id: school.id })
-    .eq('id', user.id)
+  const admin = createServiceClient()
+  const { error } = await admin.rpc('admin_onboard_user', {
+    p_id:        user.id,
+    p_school_id: school.id,
+  })
 
   if (error) return { error: error.message }
   redirect('/anasayfa')

@@ -1,16 +1,10 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
-import PrintButton from './PrintButton'
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import PrintButton from '@/components/PrintButton'
+import { format, parseISO } from '@/lib/date-utils'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
 import { UUID } from '@/lib/validation'
-
-function schoolYearStart(): string {
-  const now = new Date()
-  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
-  return `${year}-09-01`
-}
+import { schoolYearStart } from '@/lib/utils'
 
 const MEB_LIMIT = 20
 
@@ -200,7 +194,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
                       <p className="text-xs text-gray-500 mt-0.5">
                         {hw?.subject ?? '—'} ·{' '}
                         <span className={isOverdue ? 'text-red-500 font-medium' : ''}>
-                          {hw?.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy', { locale: tr }) : '—'}
+                          {hw?.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : '—'}
                           {isOverdue ? ' (Geçti)' : ''}
                         </span>
                       </p>
@@ -226,7 +220,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
                     <div className="min-w-0">
                       <p className="text-sm text-gray-800 truncate">{hw?.title ?? 'Ödev'}</p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {hw?.subject ?? '—'} · {hw?.due_date ? format(parseISO(hw.due_date), 'd MMM yyyy', { locale: tr }) : '—'}
+                        {hw?.subject ?? '—'} · {hw?.due_date ? format(parseISO(hw.due_date), 'd MMM yyyy') : '—'}
                       </p>
                     </div>
                     <span className={`border rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${BADGE_COLOR[s.status]}`}>
@@ -246,7 +240,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
               {notes.map(n => (
                 <div key={n.id} className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
                   <p className="text-sm text-gray-800 whitespace-pre-wrap">{n.body}</p>
-                  <p className="text-xs text-gray-400 mt-2">{format(parseISO(n.created_at), 'd MMM yyyy', { locale: tr })}</p>
+                  <p className="text-xs text-gray-400 mt-2">{format(parseISO(n.created_at), 'd MMM yyyy')}</p>
                 </div>
               ))}
             </div>
@@ -296,7 +290,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
                     }
                     return (
                       <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">{format(parseISO(r.date), 'd MMMM yyyy', { locale: tr })}</span>
+                        <span className="text-gray-600">{format(parseISO(r.date), 'd MMMM yyyy')}</span>
                         <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
                           {statusLabel[r.status] ?? r.status}
                         </span>

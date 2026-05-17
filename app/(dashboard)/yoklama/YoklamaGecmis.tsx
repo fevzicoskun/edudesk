@@ -1,5 +1,4 @@
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+﻿import { format, parseISO } from '@/lib/date-utils'
 import YoklamaExcelExport from './YoklamaExcelExport'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -109,9 +108,9 @@ export default function YoklamaGecmis({ students, allRecords, gridDates, classNa
                 </th>
                 {gridDates.map(d => (
                   <th key={d} className="px-1 py-2 text-center font-medium text-gray-500 dark:text-slate-400 min-w-[38px]">
-                    <div className="font-semibold">{format(parseISO(d), 'd', { locale: tr })}</div>
+                    <div className="font-semibold">{format(parseISO(d), 'd')}</div>
                     <div className="text-[10px] text-gray-400 dark:text-slate-500">
-                      {format(parseISO(d), 'EEE', { locale: tr })}
+                      {format(parseISO(d), 'EEE')}
                     </div>
                   </th>
                 ))}

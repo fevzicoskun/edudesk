@@ -109,13 +109,16 @@ cp .env.example .env.local
 
 `.env.local` dosyasını doldur:
 
-| Değişken | Nereden alınır |
-|----------|---------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → `anon` public key |
-| `TOKEN_SECRET` | `openssl rand -hex 32` komutuyla üret |
-| `UPSTASH_REDIS_REST_URL` | [console.upstash.com](https://console.upstash.com) → Redis DB → REST URL |
-| `UPSTASH_REDIS_REST_TOKEN` | Aynı sayfadan REST Token |
+| Değişken | Nereden alınır | Zorunlu |
+|----------|---------------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL | ✅ |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → `anon` public key | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` secret key | ✅ |
+| `TOKEN_SECRET` | `openssl rand -hex 32` komutuyla üret | ✅ |
+| `UPSTASH_REDIS_REST_URL` | [console.upstash.com](https://console.upstash.com) → Redis DB → REST URL | opsiyonel |
+| `UPSTASH_REDIS_REST_TOKEN` | Aynı sayfadan REST Token | opsiyonel |
+
+> **`SUPABASE_SERVICE_ROLE_KEY` kritik:** Bu key olmadan veli portalı, yoklama yazdırma, kullanıcı davet ve admin işlemleri runtime'da patlayarak 500 hatası verir. Vercel'e deploy ederken mutlaka ekle.
 
 ### 3. Veritabanını kur
 
@@ -174,6 +177,7 @@ npm run dev
 npx vercel link          # projeyi bağla
 npx vercel env add NEXT_PUBLIC_SUPABASE_URL production
 npx vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
+npx vercel env add SUPABASE_SERVICE_ROLE_KEY production   # zorunlu — veli/yoklama/admin
 npx vercel env add TOKEN_SECRET production
 npx vercel env add UPSTASH_REDIS_REST_URL production
 npx vercel env add UPSTASH_REDIS_REST_TOKEN production

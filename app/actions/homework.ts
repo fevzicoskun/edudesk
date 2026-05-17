@@ -53,6 +53,14 @@ export async function updateSubmissionStatus(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const { data: hw } = await supabase
+    .from('homeworks').select('teacher_id')
+    .eq('id', homeworkId).eq('school_id', school_id).single()
+  if (!hw) return { error: 'Ödev bulunamadı' }
+  if (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani') {
+    return { error: 'Bu ödev için yetkiniz yok' }
+  }
+
   const { error } = await supabase
     .from('homework_submissions')
     .upsert(
@@ -82,6 +90,14 @@ export async function updateAllSubmissionStatuses(
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: hw } = await supabase
+    .from('homeworks').select('teacher_id')
+    .eq('id', homeworkId).eq('school_id', school_id).single()
+  if (!hw) return { error: 'Ödev bulunamadı' }
+  if (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani') {
+    return { error: 'Bu ödev için yetkiniz yok' }
+  }
 
   const rows = studentIds.map((studentId) => ({
     homework_id: homeworkId,
@@ -118,6 +134,11 @@ export async function updateSubmissionNote(
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { data: hw } = await supabase
+    .from('homeworks').select('teacher_id')
+    .eq('id', homeworkId).eq('school_id', school_id).single()
+  if (!hw || (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani')) return
 
   await supabase
     .from('homework_submissions')

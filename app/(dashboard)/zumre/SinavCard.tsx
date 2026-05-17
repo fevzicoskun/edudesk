@@ -1,9 +1,8 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition, useEffect } from 'react'
 import { saveExamEntries, fetchClassStudents } from '@/app/actions/zumre'
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { format, parseISO } from '@/lib/date-utils'
 
 interface Exam {
   id: string
@@ -128,7 +127,7 @@ export default function SinavCard({
 
   const s = stats(saved)
   let dateStr = ''
-  try { dateStr = format(parseISO(exam.exam_date), 'd MMMM yyyy', { locale: tr }) } catch {}
+  try { dateStr = format(parseISO(exam.exam_date), 'd MMMM yyyy') } catch {}
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">

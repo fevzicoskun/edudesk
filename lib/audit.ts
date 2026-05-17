@@ -18,6 +18,7 @@ export type AuditAction =
   | 'profile.update'
   | 'password.change'
   | 'token.revoke'
+  | 'token.generate'
 
 interface AuditEntry {
   user_id: string

@@ -29,7 +29,12 @@ export default function RoleSelector({
   const handleOpen = () => {
     if (!open && btnRef.current) {
       const rect = btnRef.current.getBoundingClientRect()
-      setDropPos({ top: rect.bottom + 4, left: rect.left })
+      const approxHeight = assignableRoles.length * 32 + 8
+      const spaceBelow = window.innerHeight - rect.bottom
+      const top = spaceBelow < approxHeight + 8
+        ? rect.top - approxHeight - 4
+        : rect.bottom + 4
+      setDropPos({ top, left: rect.left })
     }
     setOpen(o => !o)
   }

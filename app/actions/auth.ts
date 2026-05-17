@@ -65,13 +65,16 @@ export async function register(prevState: AuthState, formData: FormData): Promis
   if (signUpError) return { error: signUpError.message }
   if (!authData.user) return { error: 'Kayıt başarısız, tekrar deneyin.' }
 
-  // Profili güncelle (service role — trigger yeni kaydı oluşturduktan sonra)
-  const { error: updateError } = await admin.from('profiles').update({
-    full_name: parsed.data.full_name,
-    subject:   parsed.data.subject,
-    school_id: school.id,
-  }).eq('id', authData.user.id)
-  if (updateError) return { error: 'Profil güncellenemedi: ' + updateError.message }
+  // Profili upsert ile oluştur: handle_new_user trigger henüz çalışmamış olsa
+  // bile INSERT eder, çalışmışsa UPDATE eder — race condition'ı ortadan kaldırır.
+  const { error: updateError } = await admin.rpc('admin_set_profile', {
+    p_id:        authData.user.id,
+    p_full_name: parsed.data.full_name,
+    p_subject:   parsed.data.subject ?? '',
+    p_role:      'ogretmen',
+    p_school_id: school.id,
+  })
+  if (updateError) return { error: 'Profil oluşturulamadı: ' + updateError.message }
 
   // Oturum hemen açıldıysa giriş yap, yoksa doğrulama bekliyor
   if (authData.session) {

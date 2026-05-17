@@ -6,7 +6,7 @@ import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
-  const isBaskan = profile?.role === 'zumre_baskani'
+  const isBaskan = profile?.role === 'zumre_baskani' || profile?.role === 'mudur_yardimcisi'
 
   const { data: classes } = await supabase
     .from('classes')
@@ -54,7 +54,7 @@ export default async function SiniflarPage() {
       ) : (
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 mb-5">
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            Sınıf oluşturma ve silme yetkisi Zümre Başkanı&apos;na aittir.
+            Sınıf oluşturma ve silme yetkisi Zümre Başkanı ve Müdür Yardımcısı&apos;na aittir.
           </p>
         </div>
       )}

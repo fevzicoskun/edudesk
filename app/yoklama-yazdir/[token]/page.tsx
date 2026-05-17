@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
-import PrintBtn from './PrintBtn'
+import PrintBtn from '../PrintBtn'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
 
 const STATUS_LABEL: Record<string, string> = {
@@ -30,7 +30,7 @@ export default async function YoklamaYazdirTokenPage({
 
   if (!looksLikeToken(token)) notFound()
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const result = await verifyPublicToken(token, 'yoklama')
   if (!result.ok) return <TokenExpiredPage />
   if (result.payload.jti && await isTokenRevoked(result.payload.jti, supabase)) {

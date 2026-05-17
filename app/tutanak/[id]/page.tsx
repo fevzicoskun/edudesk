@@ -1,8 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
 import { notFound, redirect } from 'next/navigation'
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { format, parseISO } from '@/lib/date-utils'
 import Link from 'next/link'
 import TutanakPrintClient from './TutanakPrintClient'
 
@@ -25,7 +24,7 @@ export default async function TutanakPrintPage({
 
   if (!meeting) notFound()
 
-  const dateStr = format(parseISO(meeting.meeting_date), 'd MMMM yyyy', { locale: tr })
+  const dateStr = format(parseISO(meeting.meeting_date), 'd MMMM yyyy')
   const okulAdi = profile?.schools?.name ?? ''
   const ogretmenAdi = profile?.full_name ?? ''
 

@@ -5,7 +5,9 @@ import Link from 'next/link'
 import YoklamaBoard from './YoklamaBoard'
 import YoklamaGecmis from './YoklamaGecmis'
 import CopySqlButton from './CopySqlButton'
+import PrintButton from '@/components/PrintButton'
 import type { AttendanceStatus } from '@/app/actions/yoklama'
+import { schoolYearStart } from '@/lib/utils'
 
 export const revalidate = 0
 
@@ -25,12 +27,6 @@ ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "attendance_own" ON attendance FOR ALL TO authenticated
   USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
 CREATE POLICY "attendance_public_read" ON attendance FOR SELECT TO anon USING (true);`
-
-function schoolYearStart(): string {
-  const now = new Date()
-  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
-  return `${year}-09-01`
-}
 
 function last14Days(): string[] {
   return Array.from({ length: 14 }, (_, i) => {
@@ -111,9 +107,12 @@ export default async function YoklamaPage({
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Günlük devam takibi ve devamsızlık istatistikleri</p>
+      <div className="mb-5 flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Günlük devam takibi ve devamsızlık istatistikleri</p>
+        </div>
+        <PrintButton />
       </div>
 
       {!tableExists ? (

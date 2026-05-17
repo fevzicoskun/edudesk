@@ -24,13 +24,26 @@ export async function generateVeliToken(studentId: string): Promise<string> {
   if (!student) throw new Error('Öğrenci bulunamadı')
 
   const token = await createPublicToken('veli', studentId, 7)
+  const jti = extractJti(token)
+  const expiresAt = new Date(Date.now() + 7 * 86400_000).toISOString()
+
+  if (jti) {
+    await supabase.from('veli_tokens').insert({
+      student_id: studentId,
+      school_id,
+      issued_by: user.id,
+      jti,
+      expires_at: expiresAt,
+    })
+  }
 
   await logAudit({
     user_id: user.id,
-    action: 'student.create',
+    action: 'token.generate',
     table_name: 'students',
     record_id: studentId,
-    new_data: { action: 'veli_token_generated', student_name: student.full_name },
+    new_data: { student_name: student.full_name },
+    school_id,
   })
 
   return token
@@ -58,8 +71,8 @@ export async function revokeToken(
   reason?: string
 ): Promise<{ ok: boolean; error?: string }> {
   const profile = await getCurrentProfile()
-  if (profile?.role !== 'zumre_baskani') {
-    return { ok: false, error: 'Bu işlem için Zümre Başkanı yetkisi gereklidir.' }
+  if (!profile || !['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(profile.role)) {
+    return { ok: false, error: 'Bu işlem için Zümre Başkanı veya Yönetici yetkisi gereklidir.' }
   }
 
   const user = await getCurrentUser()

@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
   const jobId: string = job.id
 
   try {
-    const { url, filename } = await processExportJob(jobType, params, user.id, supabase)
+    const { url, filename } = await processExportJob(jobType, params, user.id, school_id, supabase)
     await supabase
       .from('export_jobs')
       .update({ status: 'done', result_url: url, updated_at: new Date().toISOString() })
@@ -117,15 +117,16 @@ async function processExportJob(
   jobType: JobType,
   params: Record<string, string>,
   userId: string,
+  school_id: string,
   supabase: SupabaseClient
 ): Promise<{ url: string; filename: string }> {
   let rows: Record<string, unknown>[]
 
   switch (jobType) {
-    case 'excel_odevler':  rows = await fetchOdevler(supabase); break
-    case 'excel_yoklama':  rows = await fetchYoklama(supabase, params); break
-    case 'excel_mufredat': rows = await fetchMufredat(supabase); break
-    case 'excel_notlar':   rows = await fetchNotlar(supabase); break
+    case 'excel_odevler':  rows = await fetchOdevler(supabase, params, school_id); break
+    case 'excel_yoklama':  rows = await fetchYoklama(supabase, params, school_id); break
+    case 'excel_mufredat': rows = await fetchMufredat(supabase, params, school_id); break
+    case 'excel_notlar':   rows = await fetchNotlar(supabase, school_id); break
     default: throw new Error('Bilinmeyen iş türü')
   }
 
@@ -172,17 +173,19 @@ async function processExportJob(
 
 // ─── Data fetchers ────────────────────────────────────────────
 
-async function fetchOdevler(supabase: SupabaseClient) {
-  const { data } = await supabase
+async function fetchOdevler(supabase: SupabaseClient, params: Record<string, string>, school_id: string) {
+  let q = supabase
     .from('homeworks')
     .select('title, subject, due_date, classes(name)')
+    .eq('school_id', school_id)
     .order('due_date', { ascending: false })
     .limit(2000)
 
-  const statusLabel: Record<string, string> = {
-    yapildi: 'Yapıldı', eksik: 'Eksik', yapilmadi: 'Yapılmadı', gec: 'Geç Teslim', mazeretli: 'Mazeretli',
-  }
+  if (params.classId) { try { UUID.parse(params.classId); q = q.eq('class_id', params.classId) } catch { /**/ } }
+  if (params.since) q = q.gte('due_date', params.since)
+  if (params.until) q = q.lte('due_date', params.until)
 
+  const { data } = await q
   return (data ?? []).map(h => ({
     'Ödev Başlığı': h.title,
     'Ders': h.subject,
@@ -191,7 +194,7 @@ async function fetchOdevler(supabase: SupabaseClient) {
   }))
 }
 
-async function fetchYoklama(supabase: SupabaseClient, params: Record<string, string>) {
+async function fetchYoklama(supabase: SupabaseClient, params: Record<string, string>, school_id: string) {
   const since = params.since ?? new Date(Date.now() - 30 * 86400_000).toISOString().split('T')[0]
   const statusLabel: Record<string, string> = {
     present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli',
@@ -200,13 +203,13 @@ async function fetchYoklama(supabase: SupabaseClient, params: Record<string, str
   let query = supabase
     .from('attendance')
     .select('date, status, students(full_name, student_number), classes(name)')
+    .eq('school_id', school_id)
     .gte('date', since)
     .order('date', { ascending: false })
-    .limit(5000)
+    .limit(1000)
 
-  if (params.classId) {
-    try { UUID.parse(params.classId); query = query.eq('class_id', params.classId) } catch { /* ignore */ }
-  }
+  if (params.classId) { try { UUID.parse(params.classId); query = query.eq('class_id', params.classId) } catch { /**/ } }
+  if (params.until) query = query.lte('date', params.until)
 
   const { data } = await query
   return (data ?? []).map(r => {
@@ -222,15 +225,20 @@ async function fetchYoklama(supabase: SupabaseClient, params: Record<string, str
   })
 }
 
-async function fetchMufredat(supabase: SupabaseClient) {
+async function fetchMufredat(supabase: SupabaseClient, params: Record<string, string>, school_id: string) {
   const statusLabel: Record<string, string> = {
     tamamlandi: 'Tamamlandı', eksik_kaldi: 'Eksik Kaldı', islenmedi: 'İşlenmedi',
   }
-  const { data } = await supabase
+  let q = supabase
     .from('curriculum_progress')
     .select('topic, status, week_number, completion_date, classes(name)')
+    .eq('school_id', school_id)
     .order('week_number', { ascending: true })
     .limit(2000)
+
+  if (params.classId) { try { UUID.parse(params.classId); q = q.eq('class_id', params.classId) } catch { /**/ } }
+
+  const { data } = await q
 
   return (data ?? []).map(p => ({
     'Konu': p.topic,
@@ -241,10 +249,11 @@ async function fetchMufredat(supabase: SupabaseClient) {
   }))
 }
 
-async function fetchNotlar(supabase: SupabaseClient) {
+async function fetchNotlar(supabase: SupabaseClient, school_id: string) {
   const { data } = await supabase
     .from('student_notes')
     .select('body, created_at, students(full_name)')
+    .eq('school_id', school_id)
     .order('created_at', { ascending: false })
     .limit(2000)
 

@@ -10,8 +10,8 @@ import { logAudit } from '@/lib/audit'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
-  if (profile?.role !== 'zumre_baskani') {
-    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
+  if (profile?.role !== 'zumre_baskani' && profile?.role !== 'mudur_yardimcisi') {
+    throw new Error('Bu işlem için Zümre Başkanı veya Müdür Yardımcısı yetkisi gereklidir.')
   }
 }
 
@@ -27,12 +27,13 @@ export async function createClass(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase.from('classes').insert({
+  const { error: insertError } = await supabase.from('classes').insert({
     name: parsed.data.name,
     grade: parsed.data.grade,
     academic_year: getEgitimYili(),
     school_id,
   })
+  if (insertError) throw new Error(insertError.message)
 
   await logAudit({ user_id: user.id, action: 'class.create', table_name: 'classes', new_data: { name: parsed.data.name, grade: parsed.data.grade }, school_id })
   revalidatePath('/siniflar')

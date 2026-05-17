@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
 import Link from 'next/link'
 
@@ -12,8 +12,7 @@ import {
   createCurriculumProgress,
   deleteMeeting,
 } from '@/app/actions/zumre'
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { format, parseISO } from '@/lib/date-utils'
 
 type Tab = 'toplanti' | 'sinav' | 'mufredat'
 
@@ -121,7 +120,7 @@ export default async function ZumrePage({
                       )}
                     </div>
                     <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-                      {format(parseISO(m.meeting_date), 'd MMMM yyyy', { locale: tr })}
+                      {format(parseISO(m.meeting_date), 'd MMMM yyyy')}
                     </p>
                     {m.notes && (
                       <p className="text-sm text-gray-600 dark:text-slate-300 mt-2 whitespace-pre-wrap line-clamp-3">{m.notes}</p>

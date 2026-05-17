@@ -1,22 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
-
-export const revalidate = 60
 import Link from 'next/link'
-
-function schoolYearStart(): string {
-  const now = new Date()
-  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
-  return `${year}-09-01`
-}
-
-const MEB_LIMIT = 20
-import { format, parseISO } from 'date-fns'
-import { tr } from 'date-fns/locale'
+import { format, parseISO } from '@/lib/date-utils'
 import { addStudentNote, deleteStudentNote } from '@/app/actions/class'
 import CopyVeliLink from './CopyVeliLink'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/lib/types'
+import { schoolYearStart } from '@/lib/utils'
+
+export const revalidate = 60
+
+const MEB_LIMIT = 20
 
 const LABELS: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı',
@@ -138,7 +132,7 @@ export default async function OgrenciDetayPage({
                 return (
                   <div key={i} className="flex items-center justify-between text-xs">
                     <span className="text-gray-600 dark:text-slate-400">
-                      {format(parseISO(r.date), 'd MMM yyyy', { locale: tr })}
+                      {format(parseISO(r.date), 'd MMM yyyy')}
                     </span>
                     <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
                       {statusLabel[r.status] ?? r.status}
@@ -164,7 +158,7 @@ export default async function OgrenciDetayPage({
                     <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.homeworks?.title ?? 'Ödev'}</p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                       {s.homeworks?.subject ?? '—'} ·{' '}
-                      {s.homeworks?.due_date ? format(parseISO(s.homeworks.due_date), 'd MMM yyyy', { locale: tr }) : 'Tarih yok'}
+                      {s.homeworks?.due_date ? format(parseISO(s.homeworks.due_date), 'd MMM yyyy') : 'Tarih yok'}
                     </p>
                   </div>
                   <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${BADGE[s.status]}`}>
@@ -209,7 +203,7 @@ export default async function OgrenciDetayPage({
                         </form>
                       </div>
                       <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                        {format(parseISO(n.created_at), 'd MMM yyyy HH:mm', { locale: tr })}
+                        {format(parseISO(n.created_at), 'd MMM yyyy HH:mm')}
                       </p>
                     </div>
                   ))}

@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
 import { isMudurOrAbove, ROLE_LABELS, type Role } from '@/lib/types'
 import RoleSelector from './RoleSelector'
+import InviteUserForm from './InviteUserForm'
+import DeleteButton from './DeleteButton'
 
 export const revalidate = 0
 
@@ -29,7 +31,7 @@ export default async function KullanicilarPage() {
   if (!user) redirect('/login')
 
   const [{ data }, { data: sessionsRaw }] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, subject, role').order('role').order('full_name'),
+    supabase.from('profiles').select('id, full_name, subject, role').order('full_name'),
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes'),
   ])
 
@@ -57,15 +59,18 @@ export default async function KullanicilarPage() {
   // Müdür yardımcısı: yalnızca zumre_baskani → ogretmen
   const assignableRoles = (isMudur
     ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
-    : ['ogretmen']) as Role[]
+    : ['zumre_baskani', 'ogretmen']) as Role[]
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Kullanıcılar</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {users.length} kullanıcı · okul geneli
-        </p>
+      <div className="mb-5 flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Kullanıcılar</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {users.length} kullanıcı · okul geneli
+          </p>
+        </div>
+        {canAssign && <InviteUserForm canAssignRoles={assignableRoles} />}
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -76,6 +81,7 @@ export default async function KullanicilarPage() {
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Branş</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Kullanım</th>
+              <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -83,7 +89,7 @@ export default async function KullanicilarPage() {
               const isSelf = u.id === user.id
               // MY yalnızca zumre_baskani satırlarında rol düşürebilir
               const canEditThis = canAssign && !isSelf && (
-                isMudur ? assignableRoles.includes(u.role) : u.role === 'zumre_baskani'
+                isMudur ? assignableRoles.includes(u.role) : ['ogretmen', 'zumre_baskani'].includes(u.role)
               )
               const editableRoles = assignableRoles
               const stats = sessionMap.get(u.id)
@@ -125,6 +131,13 @@ export default async function KullanicilarPage() {
                       </div>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {canAssign && !isSelf && u.role !== 'mudur' && (
+                      isMudur || ['zumre_baskani', 'ogretmen'].includes(u.role)
+                    ) && (
+                      <DeleteButton userId={u.id} userName={u.full_name} />
                     )}
                   </td>
                 </tr>
