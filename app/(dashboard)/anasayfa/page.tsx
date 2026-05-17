@@ -24,7 +24,7 @@ export default async function AnasayfaPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) return null
 
-  const isZumreBaskani = profile?.role === 'zumre_baskani'
+  const isZumreBaskani = profile?.role === 'zumre_baskani' || profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
   const supabase = await createClient()
 
   const today = new Date()

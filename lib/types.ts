@@ -1,4 +1,21 @@
-export type Role = 'zumre_baskani' | 'ogretmen'
+export type Role = 'ogretmen' | 'zumre_baskani' | 'mudur_yardimcisi' | 'mudur'
+
+export const ROLE_LABELS: Record<Role, string> = {
+  ogretmen:         'Öğretmen',
+  zumre_baskani:    'Zümre Başkanı',
+  mudur_yardimcisi: 'Müdür Yardımcısı',
+  mudur:            'Müdür',
+}
+
+/** Müdür veya müdür yardımcısı */
+export function isMudurOrAbove(role: Role | string | null | undefined): boolean {
+  return role === 'mudur' || role === 'mudur_yardimcisi'
+}
+
+/** Herhangi bir yönetici rolü (müdür, müd. yrd., başkan) */
+export function isYonetici(role: Role | string | null | undefined): boolean {
+  return role === 'mudur' || role === 'mudur_yardimcisi' || role === 'zumre_baskani'
+}
 export type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 export type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
 

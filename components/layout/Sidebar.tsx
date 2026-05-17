@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/app/actions/auth'
-import type { Profile } from '@/lib/types'
+import type { Profile, Role } from '@/lib/types'
+import { ROLE_LABELS, isMudurOrAbove, isYonetici } from '@/lib/types'
 import { getEgitimYili } from '../../lib/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 
@@ -75,7 +76,11 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)
-  const isBaskan = profile?.role === 'zumre_baskani'
+  const role = profile?.role as Role | undefined
+  const isBaskan = role === 'zumre_baskani'
+  const isMudur = isMudurOrAbove(role)
+  const isYoneticiUser = isYonetici(role)
+  const roleLabel = role ? ROLE_LABELS[role] ?? 'Öğretmen' : 'Öğretmen'
 
   return (
     <>
@@ -83,9 +88,12 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <p className="font-bold text-gray-900 dark:text-slate-100">EduDesk</p>
-          {isBaskan && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold">
-              Başkan
+          {isYoneticiUser && (
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
+              isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+            }`}>
+              {roleLabel}
             </span>
           )}
         </div>
@@ -120,7 +128,20 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
               </Link>
             )
           })}
-          {isBaskan && (
+          {isMudur && (
+            <Link
+              href="/kullanicilar"
+              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                pathname.startsWith('/kullanicilar')
+                  ? 'bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                  : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+              Kullanıcılar
+            </Link>
+          )}
+          {isYoneticiUser && (
             <Link
               href="/audit"
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -140,18 +161,19 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           <div className="px-3 py-2 mb-1 rounded-lg bg-gray-50 dark:bg-slate-800">
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>
-              {isBaskan && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-semibold shrink-0">
-                  Başkan
+              {isYoneticiUser && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+                  isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                           : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                }`}>
+                  {isMudur ? (role === 'mudur' ? 'Müdür' : 'Müd.Yrd.') : 'Başkan'}
                 </span>
               )}
             </div>
             {profile?.subject && (
               <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
             )}
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
-              {isBaskan ? 'Zümre Başkanı' : 'Öğretmen'}
-            </p>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
           </div>
           <form action={logout}>
             <button
