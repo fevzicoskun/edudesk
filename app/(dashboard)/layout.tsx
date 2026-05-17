@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import { ToastProvider } from '@/components/Toast'
 import SessionTracker from '@/components/SessionTracker'
@@ -9,6 +10,21 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   const profile = await getCurrentProfile()
+
+  // Müdür için onboarding kontrolü — okul kurulmamışsa yönlendir
+  if (profile?.role === 'mudur' && profile.school_id) {
+    const supabase = await createClient()
+    const { data: school } = await supabase
+      .from('schools')
+      .select('slug')
+      .eq('id', profile.school_id)
+      .single()
+
+    const slug = school?.slug ?? ''
+    if (!/^[A-Z]{3}\d{3}$/.test(slug)) {
+      redirect('/onboarding')
+    }
+  }
 
   return (
     <ToastProvider>

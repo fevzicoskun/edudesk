@@ -18,12 +18,23 @@ export async function assignRole(targetId: string, newRole: string) {
     throw new Error('Yetki yok')
   }
 
-  // mudur_yardimcisi sadece ogretmen ve zumre_baskani atayabilir
-  if (profile.role === 'mudur_yardimcisi' && role === 'mudur_yardimcisi') {
-    throw new Error('Bu rolü atayamazsınız')
+  const supabase = await createClient()
+
+  // Müdür yardımcısı yalnızca zumre_baskani → ogretmen yapabilir
+  if (profile.role === 'mudur_yardimcisi') {
+    if (role !== 'ogretmen') throw new Error('Bu rolü atayamazsınız')
+
+    const { data: target } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', targetId)
+      .single()
+
+    if (!target || target.role !== 'zumre_baskani') {
+      throw new Error('Yalnızca Zümre Başkanını öğretmene dönüştürebilirsiniz')
+    }
   }
 
-  const supabase = await createClient()
   const { error } = await supabase.rpc('assign_user_role', {
     target_id: targetId,
     new_role: role,

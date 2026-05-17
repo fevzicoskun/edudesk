@@ -49,12 +49,15 @@ export default async function KullanicilarPage() {
     if (!prev.lastSeen || s.last_seen_at > prev.lastSeen) prev.lastSeen = s.last_seen_at
     sessionMap.set(s.user_id, prev)
   }
-  const canAssign = profile.role === 'mudur' || profile.role === 'mudur_yardimcisi'
+  const isMudur = profile.role === 'mudur'
+  const isMY = profile.role === 'mudur_yardimcisi'
+  const canAssign = isMudur || isMY
 
-  // Müdür yardımcısı mudur_yardimcisi atayamaz
-  const assignableRoles = (profile.role === 'mudur'
+  // Müdür: tüm rolleri atayabilir (mudur hariç)
+  // Müdür yardımcısı: yalnızca zumre_baskani → ogretmen
+  const assignableRoles = (isMudur
     ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
-    : ['zumre_baskani', 'ogretmen']) as Role[]
+    : ['ogretmen']) as Role[]
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -78,8 +81,11 @@ export default async function KullanicilarPage() {
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
             {users.map((u) => {
               const isSelf = u.id === user.id
-              const canEditThis = canAssign && !isSelf && assignableRoles.includes(u.role)
-              const editableRoles = assignableRoles.filter(r => r !== 'mudur' || profile.role === 'mudur')
+              // MY yalnızca zumre_baskani satırlarında rol düşürebilir
+              const canEditThis = canAssign && !isSelf && (
+                isMudur ? assignableRoles.includes(u.role) : u.role === 'zumre_baskani'
+              )
+              const editableRoles = assignableRoles
               const stats = sessionMap.get(u.id)
               const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : null
 
