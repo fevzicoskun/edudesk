@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { loginSchema, changePasswordSchema, registerSchema } from '@/lib/validation'
 import { startSession, endSession } from './session'
 
@@ -45,9 +46,10 @@ export async function register(prevState: AuthState, formData: FormData): Promis
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz bilgiler' }
 
   const supabase = await createClient()
+  const admin = createServiceClient()
 
-  // Okul kodunu doğrula
-  const { data: school } = await supabase
+  // Okul kodunu doğrula (RLS bypass — kayıt sırasında oturum yok)
+  const { data: school } = await admin
     .from('schools')
     .select('id')
     .ilike('slug', parsed.data.school_code.trim())
@@ -63,12 +65,13 @@ export async function register(prevState: AuthState, formData: FormData): Promis
   if (signUpError) return { error: signUpError.message }
   if (!authData.user) return { error: 'Kayıt başarısız, tekrar deneyin.' }
 
-  // Profili güncelle (trigger otomatik oluşturmuş olacak)
-  await supabase.from('profiles').update({
+  // Profili güncelle (service role — trigger yeni kaydı oluşturduktan sonra)
+  const { error: updateError } = await admin.from('profiles').update({
     full_name: parsed.data.full_name,
     subject:   parsed.data.subject,
     school_id: school.id,
   }).eq('id', authData.user.id)
+  if (updateError) return { error: 'Profil güncellenemedi: ' + updateError.message }
 
   // Oturum hemen açıldıysa giriş yap, yoksa doğrulama bekliyor
   if (authData.session) {
