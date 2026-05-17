@@ -129,7 +129,7 @@ export async function updateSubmissionNote(
   const sanitizedNote = String(note).slice(0, 1000).trim() || null
 
   const profile = await getCurrentProfile()
-  if (!profile || !isTeachingRole(profile.role)) return
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
 
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
@@ -138,21 +138,28 @@ export async function updateSubmissionNote(
   const { data: hw } = await supabase
     .from('homeworks').select('teacher_id')
     .eq('id', homeworkId).eq('school_id', school_id).single()
-  if (!hw || (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani')) return
+  if (!hw || (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani')) {
+    return { error: 'Ödev bulunamadı veya yetkiniz yok.' }
+  }
 
-  await supabase
+  const { error } = await supabase
     .from('homework_submissions')
     .upsert(
       { homework_id: homeworkId, student_id: studentId, note: sanitizedNote, school_id, updated_at: new Date().toISOString() },
       { onConflict: 'homework_id,student_id' }
     )
+
+  if (error) return { error: error.message }
+
+  revalidatePath(`/odevler/${homeworkId}`)
+  return { success: true }
 }
 
 export async function deleteHomework(id: string) {
   UUID.parse(id)
 
   const profile = await getCurrentProfile()
-  if (!profile || !isTeachingRole(profile.role)) return
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

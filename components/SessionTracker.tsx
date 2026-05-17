@@ -7,7 +7,7 @@ const INTERVAL_MS = 5 * 60 * 1000 // 5 dakika
 
 export default function SessionTracker() {
   useEffect(() => {
-    const id = setInterval(() => { heartbeat() }, INTERVAL_MS)
+    const id = setInterval(() => { heartbeat().catch(() => {}) }, INTERVAL_MS)
     return () => clearInterval(id)
   }, [])
 

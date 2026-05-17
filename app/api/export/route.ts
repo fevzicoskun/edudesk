@@ -185,7 +185,8 @@ async function fetchOdevler(supabase: SupabaseClient, params: Record<string, str
   if (params.since) q = q.gte('due_date', params.since)
   if (params.until) q = q.lte('due_date', params.until)
 
-  const { data } = await q
+  const { data, error } = await q
+  if (error) throw new Error(`Ödevler sorgu hatası: ${error.message}`)
   return (data ?? []).map(h => ({
     'Ödev Başlığı': h.title,
     'Ders': h.subject,
@@ -211,7 +212,8 @@ async function fetchYoklama(supabase: SupabaseClient, params: Record<string, str
   if (params.classId) { try { UUID.parse(params.classId); query = query.eq('class_id', params.classId) } catch { /**/ } }
   if (params.until) query = query.lte('date', params.until)
 
-  const { data } = await query
+  const { data, error } = await query
+  if (error) throw new Error(`Yoklama sorgu hatası: ${error.message}`)
   return (data ?? []).map(r => {
     const student = r.students as unknown as { full_name: string; student_number: string | null } | null
     const cls = r.classes as unknown as { name: string } | null
@@ -238,7 +240,8 @@ async function fetchMufredat(supabase: SupabaseClient, params: Record<string, st
 
   if (params.classId) { try { UUID.parse(params.classId); q = q.eq('class_id', params.classId) } catch { /**/ } }
 
-  const { data } = await q
+  const { data, error } = await q
+  if (error) throw new Error(`Müfredat sorgu hatası: ${error.message}`)
 
   return (data ?? []).map(p => ({
     'Konu': p.topic,
@@ -250,12 +253,13 @@ async function fetchMufredat(supabase: SupabaseClient, params: Record<string, st
 }
 
 async function fetchNotlar(supabase: SupabaseClient, school_id: string) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('student_notes')
     .select('body, created_at, students(full_name)')
     .eq('school_id', school_id)
     .order('created_at', { ascending: false })
     .limit(2000)
+  if (error) throw new Error(`Notlar sorgu hatası: ${error.message}`)
 
   return (data ?? []).map(n => ({
     'Öğrenci': (n.students as unknown as { full_name: string } | null)?.full_name ?? '—',

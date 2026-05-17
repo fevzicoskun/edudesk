@@ -174,7 +174,7 @@ export async function removeCurriculumProgress(id: string) {
 export async function updateExamGrades(id: string, gradesStr: string) {
   UUID.parse(id)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
@@ -187,6 +187,7 @@ export async function updateExamGrades(id: string, gradesStr: string) {
     .from('common_exams')
     .update({ grades })
     .eq('id', id)
+    .eq('school_id', school_id)
 
   revalidatePath('/zumre')
   return { error: error?.message }
@@ -199,7 +200,7 @@ export async function saveExamEntries(
   UUID.parse(id)
   if (entries.length > 200) throw new Error('Çok fazla giriş')
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Giriş gerekli' }
 
@@ -216,6 +217,7 @@ export async function saveExamEntries(
     .from('common_exams')
     .update({ grades, grade_map: safeEntries })
     .eq('id', id)
+    .eq('school_id', school_id)
 
   revalidatePath('/zumre')
   return { error: error?.message }
@@ -268,7 +270,7 @@ export async function updateMeeting(id: string, formData: FormData) {
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -276,6 +278,7 @@ export async function updateMeeting(id: string, formData: FormData) {
     .from('zumre_meetings')
     .update(parsed.data)
     .eq('id', id)
+    .eq('school_id', school_id)
 
   revalidatePath('/zumre')
   redirect('/zumre?tab=toplanti')
@@ -285,13 +288,13 @@ export async function deleteMeeting(id: string, _: FormData) {
   await requireBaskan()
   UUID.parse(id)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase.from('zumre_meetings').delete().eq('id', id)
+  await supabase.from('zumre_meetings').delete().eq('id', id).eq('school_id', school_id)
 
-  await logAudit({ user_id: user.id, action: 'meeting.delete', table_name: 'zumre_meetings', record_id: id })
+  await logAudit({ user_id: user.id, action: 'meeting.delete', table_name: 'zumre_meetings', record_id: id, school_id })
   revalidatePath('/zumre')
 }
 
@@ -299,13 +302,13 @@ export async function deleteExam(id: string, _: FormData) {
   await requireBaskan()
   UUID.parse(id)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  await supabase.from('common_exams').delete().eq('id', id)
+  await supabase.from('common_exams').delete().eq('id', id).eq('school_id', school_id)
 
-  await logAudit({ user_id: user.id, action: 'exam.delete', table_name: 'common_exams', record_id: id })
+  await logAudit({ user_id: user.id, action: 'exam.delete', table_name: 'common_exams', record_id: id, school_id })
   revalidatePath('/zumre')
 }
 
@@ -338,7 +341,7 @@ export async function importFromTYMM(
   const uuidResult = UUID.safeParse(class_id)
   if (!uuidResult.success) return { error: 'Geçersiz sınıf ID' }
 
-  const { data: cls } = await supabase.from('classes').select('grade').eq('id', class_id).single()
+  const { data: cls } = await supabase.from('classes').select('grade').eq('id', class_id).eq('school_id', school_id).single()
   if (!cls) return { error: 'Sınıf bulunamadı' }
 
   const tymmTopics = TYMM_DATA[subject]?.[cls.grade]

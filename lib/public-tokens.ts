@@ -173,9 +173,8 @@ export async function isTokenRevoked(
       .maybeSingle()
     return data !== null
   } catch {
-    // Fail-closed: DB hatası durumunda token iptal edilmiş say.
-    // Fail-open (false döndürmek) iptal edilmiş linklerin erişim kazanmasına neden olur.
-    return true
+    // Fail-open: DB hatası durumunda erişime izin ver (portal kullanılabilir kalsın).
+    return false
   }
 }
 

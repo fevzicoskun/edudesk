@@ -31,13 +31,15 @@ export default function YoklamaBoard({ students, classId, className, todayStr, e
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return }
     let cancelled = false
-    getAttendanceForDate(classId, date).then(({ data }) => {
-      if (cancelled) return
-      const next: Record<string, AttendanceStatus> = {}
-      for (const r of data ?? []) next[r.student_id] = r.status as AttendanceStatus
-      setStatuses(next)
-      setSaved(false)
-    })
+    getAttendanceForDate(classId, date)
+      .then(({ data }) => {
+        if (cancelled) return
+        const next: Record<string, AttendanceStatus> = {}
+        for (const r of data ?? []) next[r.student_id] = r.status as AttendanceStatus
+        setStatuses(next)
+        setSaved(false)
+      })
+      .catch(() => {})
     return () => { cancelled = true }
   }, [date, classId])
 

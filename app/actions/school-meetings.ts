@@ -41,12 +41,13 @@ export async function createMeeting(_: unknown, formData: FormData): Promise<Mee
 export async function updateMeetingNotes(meetingId: string, notes: string): Promise<MeetingResult> {
   const profile = await getCurrentProfile()
   if (!profile || !isMudurOrAbove(profile.role)) return { error: 'Yetki yok' }
+  if (!profile.school_id) return { error: 'Okul bilgisi eksik' }
 
   const supabase = await createClient()
   const { error } = await supabase.from('school_meetings')
     .update({ notes })
     .eq('id', meetingId)
-    .eq('school_id', profile.school_id!)
+    .eq('school_id', profile.school_id)
 
   if (error) return { error: error.message }
   revalidatePath('/anasayfa')
@@ -57,12 +58,13 @@ export async function updateMeetingNotes(meetingId: string, notes: string): Prom
 export async function deleteMeeting(meetingId: string): Promise<MeetingResult> {
   const profile = await getCurrentProfile()
   if (!profile || !isMudurOrAbove(profile.role)) return { error: 'Yetki yok' }
+  if (!profile.school_id) return { error: 'Okul bilgisi eksik' }
 
   const supabase = await createClient()
   const { error } = await supabase.from('school_meetings')
     .delete()
     .eq('id', meetingId)
-    .eq('school_id', profile.school_id!)
+    .eq('school_id', profile.school_id)
 
   if (error) return { error: error.message }
   revalidatePath('/anasayfa')

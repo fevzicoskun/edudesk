@@ -49,7 +49,7 @@ export async function endSession() {
   if (!session) return
 
   const logoutAt = new Date()
-  const loginAt = new Date(session.last_seen_at)
+  const loginAt = new Date(session.login_at)
   const durationMinutes = Math.round((logoutAt.getTime() - loginAt.getTime()) / 60000)
 
   await supabase
