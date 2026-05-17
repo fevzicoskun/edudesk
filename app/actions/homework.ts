@@ -159,7 +159,7 @@ export async function deleteHomework(id: string) {
   UUID.parse(id)
 
   const profile = await getCurrentProfile()
-  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+  if (!profile || !isTeachingRole(profile.role)) return
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
