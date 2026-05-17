@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { getCurrentProfile } from '@/lib/auth'
 import { createServiceClient } from '@/lib/supabase/service'
+import { z } from 'zod'
 import { isMudurOrAbove, type Role } from '@/lib/types'
 
 function randomTempPassword(): string {
@@ -20,7 +21,10 @@ export async function inviteUser(_: unknown, formData: FormData): Promise<Invite
   const email      = String(formData.get('email') ?? '').trim().toLowerCase()
   const full_name  = String(formData.get('full_name') ?? '').trim()
   const subject    = String(formData.get('subject') ?? '').trim() || null
-  const role       = String(formData.get('role') ?? '') as Role
+  const roleRaw    = String(formData.get('role') ?? '')
+  const roleResult = z.enum(['ogretmen', 'zumre_baskani', 'mudur_yardimcisi', 'mudur']).safeParse(roleRaw)
+  if (!roleResult.success) return { error: 'Geçersiz rol' }
+  const role = roleResult.data as Role
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Geçerli bir e-posta girin' }
   if (!full_name || full_name.length < 2) return { error: 'Ad soyad en az 2 karakter olmalı' }

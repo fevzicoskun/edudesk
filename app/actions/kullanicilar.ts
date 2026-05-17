@@ -19,6 +19,11 @@ export async function assignRole(targetId: string, newRole: string) {
   }
 
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (targetId === user?.id) {
+    throw new Error('Kendi rolünüzü değiştiremezsiniz')
+  }
 
   // Müdür yardımcısı: ogretmen ↔ zumre_baskani arası geçiş
   if (profile.role === 'mudur_yardimcisi') {

@@ -43,7 +43,7 @@ export async function deleteClass(classId: string) {
   await requireBaskan()
   UUID.parse(classId)
 
-  const supabase = await createClient()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
@@ -51,18 +51,19 @@ export async function deleteClass(classId: string) {
     .from('homeworks')
     .select('id')
     .eq('class_id', classId)
+    .eq('school_id', school_id)
 
   if (homeworks?.length) {
     const homeworkIds = homeworks.map((h) => h.id)
     await supabase.from('homework_submissions').delete().in('homework_id', homeworkIds)
-    await supabase.from('homeworks').delete().in('id', homeworkIds)
+    await supabase.from('homeworks').delete().in('id', homeworkIds).eq('school_id', school_id)
   }
 
-  await supabase.from('attendance').delete().eq('class_id', classId)
+  await supabase.from('attendance').delete().eq('class_id', classId).eq('school_id', school_id)
   await supabase.from('teacher_classes').delete().eq('class_id', classId)
-  await supabase.from('curriculum_progress').delete().eq('class_id', classId)
-  await supabase.from('students').delete().eq('class_id', classId)
-  await supabase.from('classes').delete().eq('id', classId)
+  await supabase.from('curriculum_progress').delete().eq('class_id', classId).eq('school_id', school_id)
+  await supabase.from('students').delete().eq('class_id', classId).eq('school_id', school_id)
+  await supabase.from('classes').delete().eq('id', classId).eq('school_id', school_id)
 
   await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId })
   revalidatePath('/siniflar')
