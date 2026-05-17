@@ -1,12 +1,14 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { isMudurOrAbove } from '@/lib/types'
 import Link from 'next/link'
 import { addDays, format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import CalendarWidget from './CalendarWidget'
 import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
 import MufredatWidget from './MufredatWidget'
+import MudurDashboard from './MudurDashboard'
 
 export const revalidate = 60
 
@@ -24,7 +26,11 @@ export default async function AnasayfaPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) return null
 
-  const isZumreBaskani = profile?.role === 'zumre_baskani' || profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
+  if (isMudurOrAbove(profile?.role)) {
+    return <MudurDashboard fullName={profile?.full_name ?? ''} />
+  }
+
+  const isZumreBaskani = profile?.role === 'zumre_baskani'
   const supabase = await createClient()
 
   const today = new Date()
@@ -56,7 +62,6 @@ export default async function AnasayfaPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
-      {/* Başlık */}
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Anasayfa</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
@@ -64,8 +69,6 @@ export default async function AnasayfaPage() {
         </p>
       </div>
 
-      {/* Submissions gerektiren her şey stream ile gelir:
-          4 özet kart + takip listesi + sınıf özeti */}
       <Suspense fallback={<SubmissionsPanelSkeleton />}>
         <SubmissionsPanel
           hwIds={hwIds}
@@ -77,7 +80,6 @@ export default async function AnasayfaPage() {
 
       {curriculum.length > 0 && <MufredatWidget curriculum={curriculum} />}
 
-      {/* Bugün/Yaklaşan + Takvim — hemen görünür (sadece homeworks lazım) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <section className="lg:col-span-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <header className="flex items-center justify-between mb-3">
