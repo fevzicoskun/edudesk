@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { loginSchema, changePasswordSchema } from '@/lib/validation'
+import { loginSchema, changePasswordSchema, registerSchema } from '@/lib/validation'
 import { startSession, endSession } from './session'
 
 type AuthState = { error: string } | null
@@ -32,6 +32,51 @@ export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+export async function register(prevState: AuthState, formData: FormData): Promise<AuthState> {
+  const parsed = registerSchema.safeParse({
+    full_name:   formData.get('full_name'),
+    email:       formData.get('email'),
+    password:    formData.get('password'),
+    subject:     formData.get('subject'),
+    school_code: formData.get('school_code'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz bilgiler' }
+
+  const supabase = await createClient()
+
+  // Okul kodunu doğrula
+  const { data: school } = await supabase
+    .from('schools')
+    .select('id')
+    .ilike('slug', parsed.data.school_code.trim())
+    .single()
+  if (!school) return { error: 'Geçersiz okul kodu. Müdürünüzden doğrulayın.' }
+
+  // Kullanıcı oluştur
+  const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    email:    parsed.data.email,
+    password: parsed.data.password,
+    options:  { data: { full_name: parsed.data.full_name } },
+  })
+  if (signUpError) return { error: signUpError.message }
+  if (!authData.user) return { error: 'Kayıt başarısız, tekrar deneyin.' }
+
+  // Profili güncelle (trigger otomatik oluşturmuş olacak)
+  await supabase.from('profiles').update({
+    full_name: parsed.data.full_name,
+    subject:   parsed.data.subject,
+    school_id: school.id,
+  }).eq('id', authData.user.id)
+
+  // Oturum hemen açıldıysa giriş yap, yoksa doğrulama bekliyor
+  if (authData.session) {
+    await startSession()
+    redirect('/anasayfa')
+  }
+
+  redirect('/login?registered=1')
 }
 
 export async function changePassword(formData: FormData) {

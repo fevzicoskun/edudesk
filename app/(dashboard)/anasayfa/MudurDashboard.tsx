@@ -1,8 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
+import { requireSchoolId } from '@/lib/auth'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { ROLE_LABELS, type Role } from '@/lib/types'
+import OkulAyarlari from './OkulAyarlari'
 
 const ROLE_BADGE: Record<Role, string> = {
   mudur:            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
@@ -24,7 +26,10 @@ function StatCard({ value, label, sub, color }: { value: number | string; label:
 export default async function MudurDashboard({ fullName }: { fullName: string }) {
   const supabase = await createClient()
 
+  const school_id = await requireSchoolId()
+
   const [
+    schoolRes,
     profilesRes,
     studentsRes,
     classesRes,
@@ -34,6 +39,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
     sessionsRes,
     curriculumRes,
   ] = await Promise.all([
+    supabase.from('schools').select('name, slug').eq('id', school_id).single(),
     supabase.from('profiles').select('id, full_name, role, subject'),
     supabase.from('students').select('id', { count: 'exact', head: true }),
     supabase.from('classes').select('id, name, grade', { count: 'exact' }).order('grade').order('name'),
@@ -44,6 +50,8 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
     supabase.from('curriculum_progress').select('class_id, status'),
   ])
 
+  const schoolName = schoolRes.data?.name ?? ''
+  const schoolCode = schoolRes.data?.slug ?? ''
   const profiles = profilesRes.data ?? []
   const studentCount = studentsRes.count ?? 0
   const classes = classesRes.data ?? []
@@ -217,6 +225,9 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
           )}
         </section>
       </div>
+
+      {/* Okul Ayarları */}
+      <OkulAyarlari initialName={schoolName} initialCode={schoolCode} />
 
       {/* Ortak sınavlar + Müfredat sınıf durumu */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

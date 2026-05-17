@@ -51,7 +51,9 @@ export default function LoginForm() {
       </button>
 
       <p className="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
-        Hesap oluşturmak için zümre başkanınızla iletişime geçin.
+        Hesabın yok mu?{' '}
+        <a href="/kayit" className="text-blue-600 hover:underline font-medium">Kayıt Ol</a>
+        {' '}· Okul kodunu müdürünüzden alın.
       </p>
     </form>
   )

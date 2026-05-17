@@ -77,6 +77,18 @@ export const profileSchema = z.object({
   subject: z.string().max(100).optional().nullable(),
 })
 
+export const registerSchema = z.object({
+  full_name:   z.string().min(2, 'Ad en az 2 karakter olmalı').max(120),
+  email:       z.string().email('Geçerli bir e-posta girin'),
+  password:    z.string().min(6, 'Şifre en az 6 karakter olmalı'),
+  subject:     z.string().min(1, 'Branş gerekli').max(100),
+  school_code: z.string().min(1, 'Okul kodu gerekli').max(50),
+})
+
+export const updateSchoolSchema = z.object({
+  name: z.string().min(2, 'Okul adı gerekli').max(200),
+})
+
 export function parseFormData<T>(schema: z.ZodSchema<T>, formData: FormData): T {
   const raw = Object.fromEntries(formData.entries())
   return schema.parse(raw)
