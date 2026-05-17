@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireSchoolId } from '@/lib/auth'
 import Link from 'next/link'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, subDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { ROLE_LABELS, type Role } from '@/lib/types'
 import OkulAyarlari from './OkulAyarlari'
@@ -28,26 +28,32 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
 
   const school_id = await requireSchoolId()
 
+  const twoWeeksAgo = subDays(new Date(), 14).toISOString()
+
   const [
     schoolRes,
     profilesRes,
     studentsRes,
     classesRes,
     meetingsRes,
-    meetingCountRes,
     examsRes,
     sessionsRes,
     curriculumRes,
+    attendanceRes,
+    homeworkRes,
+    submissionsRes,
   ] = await Promise.all([
     supabase.from('schools').select('name, slug').eq('id', school_id).single(),
     supabase.from('profiles').select('id, full_name, role, subject'),
     supabase.from('students').select('id', { count: 'exact', head: true }),
     supabase.from('classes').select('id, name, grade', { count: 'exact' }).order('grade').order('name'),
     supabase.from('zumre_meetings').select('id, title, meeting_date, branch').order('meeting_date', { ascending: false }).limit(5),
-    supabase.from('zumre_meetings').select('id', { count: 'exact', head: true }),
     supabase.from('common_exams').select('id, title, subject, exam_date').order('exam_date', { ascending: false }).limit(5),
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, duration_minutes'),
     supabase.from('curriculum_progress').select('class_id, status'),
+    supabase.from('attendance').select('date, status', { count: 'exact' }).gte('date', format(subDays(new Date(), 30), 'yyyy-MM-dd')),
+    supabase.from('homework').select('id', { count: 'exact', head: true }),
+    supabase.from('homework_submissions').select('status'),
   ])
 
   const schoolName = schoolRes.data?.name ?? ''
@@ -56,10 +62,12 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   const studentCount = studentsRes.count ?? 0
   const classes = classesRes.data ?? []
   const meetings = meetingsRes.data ?? []
-  const meetingCount = meetingCountRes.count ?? 0
   const exams = examsRes.data ?? []
   const sessions = sessionsRes.data ?? []
   const curriculum = curriculumRes.data ?? []
+  const attendanceRows = attendanceRes.data ?? []
+  const homeworkCount = homeworkRes.count ?? 0
+  const submissions = submissionsRes.data ?? []
 
   const teacherProfiles = profiles.filter(p => p.role === 'ogretmen' || p.role === 'zumre_baskani' || p.role === 'mudur_yardimcisi')
 
@@ -77,6 +85,12 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
     sessionMap.set(s.user_id, prev)
   }
 
+  // 14 gün içinde hiç giriş yapmayan öğretmenler
+  const inactiveTeachers = teacherProfiles.filter(t => {
+    const lastSeen = sessionMap.get(t.id)?.lastSeen
+    return !lastSeen || lastSeen < twoWeeksAgo
+  })
+
   // Müfredat tamamlanma oranı (sınıf bazında)
   type ClassStat = { done: number; total: number }
   const currMap = new Map<string, ClassStat>()
@@ -89,6 +103,16 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   const totalCurr = curriculum.length
   const doneCurr = curriculum.filter(c => c.status === 'tamamlandi').length
   const overallCurrPercent = totalCurr > 0 ? Math.round((doneCurr / totalCurr) * 100) : null
+
+  // Son 30 gün devam istatistiği
+  const totalAttendance = attendanceRows.length
+  const presentCount = attendanceRows.filter(a => a.status === 'present' || a.status === 'var').length
+  const attendanceRate = totalAttendance > 0 ? Math.round((presentCount / totalAttendance) * 100) : null
+
+  // Ödev tamamlanma oranı
+  const doneSubmissions = submissions.filter(s => s.status === 'yapildi').length
+  const totalSubmissions = submissions.length
+  const homeworkRate = totalSubmissions > 0 ? Math.round((doneSubmissions / totalSubmissions) * 100) : null
 
   // Öğretmenleri son aktiviteye göre sırala
   const sortedTeachers = [...teacherProfiles].sort((a, b) => {
@@ -122,16 +146,16 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
           color="border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-200"
         />
         <StatCard
-          value={meetingCount}
-          label="Zümre Toplantısı"
-          sub="toplam"
-          color="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
+          value={attendanceRate !== null ? `%${attendanceRate}` : '—'}
+          label="Devam Oranı"
+          sub="son 30 gün"
+          color="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
         />
         <StatCard
           value={overallCurrPercent !== null ? `%${overallCurrPercent}` : '—'}
           label="Müfredat Tamamlanma"
           sub={totalCurr > 0 ? `${doneCurr}/${totalCurr} konu` : 'veri yok'}
-          color="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200"
+          color="border-indigo-200 bg-indigo-50 text-indigo-800 dark:border-indigo-900 dark:bg-indigo-950/40 dark:text-indigo-200"
         />
       </div>
 
@@ -160,10 +184,16 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
                   </tr>
                 ) : sortedTeachers.map(t => {
                   const stats = sessionMap.get(t.id)
+                  const inactive = !stats?.lastSeen || stats.lastSeen < twoWeeksAgo
                   return (
-                    <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <tr key={t.id} className={`hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors ${inactive && stats === undefined ? 'opacity-60' : ''}`}>
                       <td className="px-4 py-2.5">
-                        <p className="font-medium text-gray-900 dark:text-slate-100">{t.full_name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-gray-900 dark:text-slate-100">{t.full_name}</p>
+                          {inactive && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 font-semibold shrink-0">Pasif</span>
+                          )}
+                        </div>
                         <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded-full mt-0.5 ${ROLE_BADGE[t.role as Role] ?? ROLE_BADGE.ogretmen}`}>
                           {ROLE_LABELS[t.role as Role] ?? t.role}
                         </span>
@@ -200,7 +230,6 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Son Toplantılar</h2>
-            <Link href="/zumre?tab=toplanti" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
           </div>
           {meetings.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Henüz toplantı yok.</p>
@@ -226,8 +255,70 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
         </section>
       </div>
 
-      {/* Okul Ayarları */}
-      <OkulAyarlari initialName={schoolName} initialCode={schoolCode} />
+      {/* Pasif öğretmen uyarısı */}
+      {inactiveTeachers.length > 0 && (
+        <section className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                {inactiveTeachers.length} öğretmen 14 gündür giriş yapmadı
+              </p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
+                {inactiveTeachers.slice(0, 3).map(t => t.full_name).join(', ')}
+                {inactiveTeachers.length > 3 && ` ve ${inactiveTeachers.length - 3} kişi daha`}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Ödev istatistiği + Okul Ayarları */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Ödev tamamlanma */}
+        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Ödev Tamamlanma</h2>
+          {totalSubmissions === 0 ? (
+            <p className="text-center text-gray-400 text-sm py-6">Henüz ödev verisi yok.</p>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500 dark:text-slate-400">Tamamlanan</span>
+                  <span className="text-xs font-semibold text-gray-700 dark:text-slate-300">%{homeworkRate}</span>
+                </div>
+                <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${(homeworkRate ?? 0) >= 70 ? 'bg-emerald-500' : (homeworkRate ?? 0) >= 40 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                    style={{ width: `${homeworkRate ?? 0}%` }}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 pt-1">
+                <div className="text-center">
+                  <p className="text-lg font-bold text-gray-900 dark:text-slate-100">{homeworkCount}</p>
+                  <p className="text-[11px] text-gray-400">Toplam Ödev</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-emerald-600">{doneSubmissions}</p>
+                  <p className="text-[11px] text-gray-400">Yapıldı</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-bold text-red-500">{totalSubmissions - doneSubmissions}</p>
+                  <p className="text-[11px] text-gray-400">Yapılmadı</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Okul Ayarları — geniş */}
+        <div className="lg:col-span-2">
+          <OkulAyarlari initialName={schoolName} initialCode={schoolCode} />
+        </div>
+      </div>
 
       {/* Ortak sınavlar + Müfredat sınıf durumu */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -235,7 +326,6 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Ortak Sınavlar</h2>
-            <Link href="/zumre?tab=sinav" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
           </div>
           {exams.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Henüz ortak sınav yok.</p>
@@ -260,7 +350,6 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Müfredat Durumu</h2>
-            <Link href="/zumre?tab=mufredat" className="text-xs text-blue-600 font-medium hover:underline">Detay →</Link>
           </div>
           {classes.length === 0 ? (
             <p className="text-center text-gray-400 text-sm py-8">Henüz sınıf kaydı yok.</p>
