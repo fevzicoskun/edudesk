@@ -17,8 +17,8 @@ import { logAudit } from '@/lib/audit'
 
 async function requireBaskan() {
   const profile = await getCurrentProfile()
-  if (!profile || !['zumre_baskani', 'mudur_yardimcisi'].includes(profile.role)) {
-    throw new Error('Bu işlem için Zümre Başkanı veya Müdür Yardımcısı yetkisi gereklidir.')
+  if (!profile || profile.role !== 'zumre_baskani') {
+    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
   }
   return profile
 }

@@ -16,6 +16,11 @@ export function isMudurOrAbove(role: Role | string | null | undefined): boolean 
 export function isYonetici(role: Role | string | null | undefined): boolean {
   return role === 'mudur' || role === 'mudur_yardimcisi' || role === 'zumre_baskani'
 }
+
+/** Öğretme rolü: ödev/yoklama oluşturabilir (öğretmen + zümre başkanı) */
+export function isTeachingRole(role: Role | string | null | undefined): boolean {
+  return role === 'ogretmen' || role === 'zumre_baskani'
+}
 export type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 export type CurriculumStatus = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
 

@@ -6,6 +6,7 @@ import { format, isPast, parseISO } from 'date-fns'
 import { tr } from 'date-fns/locale'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import OdevlerFilterBar from './FilterBar'
+import { isMudurOrAbove, isTeachingRole } from '@/lib/types'
 
 export const revalidate = 30
 
@@ -26,7 +27,8 @@ export default async function OdevlerPage({
   const [user, profile, supabase] = await Promise.all([getCurrentUser(), getCurrentProfile(), createClient()])
   if (!user) return null
 
-  const isZumreBaskani = profile?.role === 'zumre_baskani'
+  const isZumreBaskani = profile?.role === 'zumre_baskani' || isMudurOrAbove(profile?.role)
+  const canWrite = isTeachingRole(profile?.role)
 
   // Phase 1: durumIds (only if filter active) + supporting data — all in parallel
   const subjectsQuery = isZumreBaskani
@@ -91,15 +93,17 @@ export default async function OdevlerPage({
               {homeworks.length} ödev · {activeCount} aktif
             </p>
           </div>
-          <Link
-            href="/odevler/yeni"
-            className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Yeni Ödev
-          </Link>
+          {canWrite && (
+            <Link
+              href="/odevler/yeni"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              Yeni Ödev
+            </Link>
+          )}
         </div>
 
         {/* Stats */}
@@ -135,15 +139,17 @@ export default async function OdevlerPage({
             <p className="text-gray-400 text-sm mt-1 max-w-xs">
               Sınıflarınıza ödev tanımlamak için yeni bir ödev oluşturun.
             </p>
-            <Link
-              href="/odevler/yeni"
-              className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              İlk Ödevi Oluştur
-            </Link>
+            {canWrite && (
+              <Link
+                href="/odevler/yeni"
+                className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                İlk Ödevi Oluştur
+              </Link>
+            )}
           </div>
         ) : (
           <div className="space-y-3">
@@ -231,11 +237,13 @@ export default async function OdevlerPage({
                             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                           </svg>
                         </Link>
-                        <ConfirmDeleteButton
-                          action={deleteHomework.bind(null, hw.id)}
-                          message={`"${hw.title}" ödevini silmek istediğine emin misin?`}
-                          className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors disabled:opacity-50"
-                        />
+                        {canWrite && (
+                          <ConfirmDeleteButton
+                            action={deleteHomework.bind(null, hw.id)}
+                            message={`"${hw.title}" ödevini silmek istediğine emin misin?`}
+                            className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors disabled:opacity-50"
+                          />
+                        )}
                       </div>
                     </div>
                   </div>

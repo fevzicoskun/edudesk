@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { assignRole } from '@/app/actions/kullanicilar'
 import { ROLE_LABELS, type Role } from '@/lib/types'
 
@@ -21,8 +21,18 @@ export default function RoleSelector({
   assignableRoles: Role[]
 }) {
   const [role, setRole] = useState(currentRole)
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
   const [open, setOpen] = useState(false)
   const [, startTransition] = useTransition()
+  const btnRef = useRef<HTMLButtonElement>(null)
+
+  const handleOpen = () => {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      setDropPos({ top: rect.bottom + 4, left: rect.left })
+    }
+    setOpen(o => !o)
+  }
 
   const handleSelect = (newRole: Role) => {
     if (newRole === role) { setOpen(false); return }
@@ -41,7 +51,8 @@ export default function RoleSelector({
   return (
     <div className="relative inline-block">
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={btnRef}
+        onClick={handleOpen}
         className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full cursor-pointer hover:opacity-80 transition-opacity ${BADGE[role] ?? BADGE.ogretmen}`}
       >
         {ROLE_LABELS[role] ?? role}
@@ -53,7 +64,10 @@ export default function RoleSelector({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-20 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 min-w-max">
+          <div
+            className="fixed z-20 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-lg py-1 min-w-max"
+            style={{ top: dropPos.top, left: dropPos.left }}
+          >
             {assignableRoles.map(r => (
               <button
                 key={r}

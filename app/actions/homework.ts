@@ -3,11 +3,15 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { requireSchoolId } from '@/lib/auth'
+import { requireSchoolId, getCurrentProfile } from '@/lib/auth'
 import type { SubmissionStatus } from '@/lib/types'
+import { isTeachingRole } from '@/lib/types'
 import { UUID, createHomeworkSchema, submissionStatusSchema } from '@/lib/validation'
 
 export async function createHomework(_: unknown, formData: FormData) {
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+
   const parsed = createHomeworkSchema.safeParse({
     class_id: formData.get('class_id'),
     title: formData.get('title'),
@@ -42,6 +46,9 @@ export async function updateSubmissionStatus(
   UUID.parse(studentId)
   submissionStatusSchema.parse(status)
 
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -68,6 +75,9 @@ export async function updateAllSubmissionStatuses(
   submissionStatusSchema.parse(status)
   if (studentIds.length > 200) throw new Error('Çok fazla öğrenci')
   studentIds.forEach(id => UUID.parse(id))
+
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
 
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
@@ -102,6 +112,9 @@ export async function updateSubmissionNote(
   UUID.parse(studentId)
   const sanitizedNote = String(note).slice(0, 1000).trim() || null
 
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return
+
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -116,6 +129,9 @@ export async function updateSubmissionNote(
 
 export async function deleteHomework(id: string) {
   UUID.parse(id)
+
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return
 
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

@@ -94,6 +94,19 @@ export default async function KullanicilarPage() {
                   <td className="px-4 py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
                     {u.subject ?? '—'}
                   </td>
+                  <td className="px-4 py-3">
+                    {canEditThis ? (
+                      <RoleSelector
+                        userId={u.id}
+                        currentRole={u.role}
+                        assignableRoles={editableRoles}
+                      />
+                    ) : (
+                      <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_BADGE[u.role] ?? ROLE_BADGE.ogretmen}`}>
+                        {ROLE_LABELS[u.role] ?? u.role}
+                      </span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 hidden md:table-cell">
                     {stats ? (
                       <div>
@@ -106,19 +119,6 @@ export default async function KullanicilarPage() {
                       </div>
                     ) : (
                       <span className="text-xs text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {canEditThis ? (
-                      <RoleSelector
-                        userId={u.id}
-                        currentRole={u.role}
-                        assignableRoles={editableRoles}
-                      />
-                    ) : (
-                      <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_BADGE[u.role] ?? ROLE_BADGE.ogretmen}`}>
-                        {ROLE_LABELS[u.role] ?? u.role}
-                      </span>
                     )}
                   </td>
                 </tr>

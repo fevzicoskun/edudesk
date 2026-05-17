@@ -91,18 +91,18 @@ export default async function ZumrePage({
       {/* ── TOPLANTI ── */}
       {tab === 'toplanti' && (
         <div className="space-y-4">
-          {(isBaskan || isMudurYrd) ? (
+          {isBaskan ? (
             <TutanakForm
               action={createMeeting}
               inputCls={inputCls}
               userSubject={userSubject}
-              isMudurYrd={isMudurYrd}
+              isMudurYrd={false}
               branches={branches}
             />
           ) : (
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3">
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                Toplantı oluşturma yetkisi Zümre Başkanı veya Müdür Yardımcısı&apos;na aittir.
+                Toplantı oluşturma yetkisi Zümre Başkanı&apos;na aittir.
               </p>
             </div>
           )}

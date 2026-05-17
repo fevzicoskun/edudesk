@@ -1,8 +1,14 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentProfile } from '@/lib/auth'
+import { isMudurOrAbove } from '@/lib/types'
+import { redirect } from 'next/navigation'
 import HomeworkForm from './HomeworkForm'
 import Link from 'next/link'
 
 export default async function YeniOdevPage() {
+  const profile = await getCurrentProfile()
+  if (profile && isMudurOrAbove(profile.role)) redirect('/odevler')
+
   const supabase = await createClient()
   const { data: classes } = await supabase
     .from('classes')

@@ -2,7 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
-import { requireSchoolId } from '@/lib/auth'
+import { requireSchoolId, getCurrentProfile } from '@/lib/auth'
+import { isTeachingRole } from '@/lib/types'
 import { UUID, attendanceStatusSchema, saveAttendanceSchema } from '@/lib/validation'
 
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused'
@@ -12,6 +13,9 @@ export async function saveAttendance(
   date: string,
   records: { studentId: string; status: AttendanceStatus }[]
 ) {
+  const profile = await getCurrentProfile()
+  if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+
   const parsed = saveAttendanceSchema.safeParse({ classId, date, records })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
