@@ -52,7 +52,7 @@ export default async function AuditPage() {
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Denetim ve Güvenlik</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          Veli linkleri, token yönetimi ve işlem geçmişi
+          Veli erişim linkleri ve işlem geçmişi
         </p>
       </div>
 
@@ -63,11 +63,11 @@ export default async function AuditPage() {
         profiles={profiles}
       />
 
-      {/* Manuel token iptal */}
+      {/* Manuel link kapatma */}
       <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Manuel Token İptali</h2>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-1">Linki Manuel Kapat</h2>
         <p className="text-xs text-gray-500 dark:text-slate-400 mb-4">
-          Elinizde token string'i varsa doğrudan yapıştırarak iptal edebilirsiniz.
+          Erişimi kapatılması gereken bir link veya kod varsa aşağıya yapıştırın.
         </p>
         <RevokeTokenForm />
       </section>
