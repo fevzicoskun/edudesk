@@ -10,11 +10,10 @@ const BASE_TABS = [
 ]
 
 const MENTOR_TAB = { href: '/raporlar/mentor', label: 'Mentör' }
-const MENTOR_ROLES = ['mudur', 'mudur_yardimcisi', 'zumre_baskani']
 
-export default function RaporlarTabs({ role }: { role?: string | null }) {
+export default function RaporlarTabs({ showMentorTab }: { showMentorTab: boolean }) {
   const pathname = usePathname()
-  const tabs = role && MENTOR_ROLES.includes(role) ? [...BASE_TABS, MENTOR_TAB] : BASE_TABS
+  const tabs = showMentorTab ? [...BASE_TABS, MENTOR_TAB] : BASE_TABS
 
   return (
     <nav className="flex gap-1 mb-6 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl overflow-x-auto">
