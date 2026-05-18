@@ -9,6 +9,7 @@ import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
 import MufredatWidget from './MufredatWidget'
 import MudurDashboard from './MudurDashboard'
 import MudurYardimcisiDashboard from './MudurYardimcisiDashboard'
+import MentorSinifimWidget from './MentorSinifimWidget'
 
 export const revalidate = 60
 
@@ -91,6 +92,10 @@ export default async function AnasayfaPage() {
       </Suspense>
 
       {curriculum.length > 0 && <MufredatWidget curriculum={curriculum} />}
+
+      <Suspense fallback={null}>
+        <MentorSinifimWidget />
+      </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <section className="lg:col-span-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
