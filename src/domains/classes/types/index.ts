@@ -1,1 +1,1 @@
-export type { Class, Student } from '@/lib/types'
+export type { Class, Student } from '@/src/shared/types'

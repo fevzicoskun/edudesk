@@ -1,4 +1,4 @@
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import type { AttendanceStatus } from '../types'
 
 export const AttendanceRepository = {

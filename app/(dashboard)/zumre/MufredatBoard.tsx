@@ -3,7 +3,7 @@
 import { useState, useTransition, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { setCurriculumStatus, removeCurriculumProgress, clearClassCurriculum } from '@/src/domains/zumre/actions'
-import { parseTopicString } from '@/lib/tymm-data'
+import { parseTopicString } from '@/src/domains/zumre/data/tymm'
 
 type Status = 'tamamlandi' | 'tekrar_gerekli' | 'eksik_kaldi'
 

@@ -15,7 +15,7 @@ import { makeUser, OGRETMEN_PERMS, MUDUR_PERMS, MUDUR_YARDIMCISI_PERMS } from '.
 import type { GrantedPermission } from '@/src/domains/rbac/types'
 
 // ── Mock'lar ──────────────────────────────────────────────────
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/src/shared/auth', () => ({
   getCurrentUser:    vi.fn(),
   getCurrentProfile: vi.fn(),
   requireSchoolId:   vi.fn(),
@@ -28,14 +28,14 @@ vi.mock('@/src/shared/auth', () => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
-vi.mock('@/src/shared/supabase/server', () => ({
+vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
 vi.mock('@/src/domains/rbac/repositories/RbacRepository', () => ({
   RbacRepository: { getUserPermissions: vi.fn() },
 }))
 
-const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/lib/auth')
+const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/src/shared/auth')
 const { getCurrentProfile: cps, requireSchoolId: rsi } = await import('@/src/shared/auth')
 const { RbacRepository }  = await import('@/src/domains/rbac/repositories/RbacRepository')
 const { UserService }     = await import('@/src/domains/users/services/UserService')

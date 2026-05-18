@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/lib/supabase/server'
 import MudurOnboardingForm from './MudurOnboardingForm'
 import JoinSchoolForm from './JoinSchoolForm'

@@ -1,8 +1,8 @@
 import { UserRepository } from '../repositories/UserRepository'
-import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { PermissionService } from '@/src/domains/rbac/services/PermissionService'
 import type { InviteResult, DeleteResult } from '../types'
-import type { Role } from '@/lib/types'
+import type { Role } from '@/src/shared/types'
 
 function randomTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'

@@ -1,4 +1,4 @@
-import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import ProfilForm from './ProfilForm'
 import PasswordForm from './PasswordForm'

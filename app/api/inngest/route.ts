@@ -1,5 +1,5 @@
 import { serve } from 'inngest/next'
-import { inngest } from '@/lib/inngest'
+import { inngest } from '@/src/infrastructure/inngest'
 import { exportXlsxFn } from '@/src/domains/export/functions/exportXlsx'
 import { exportDeadLetterFn } from '@/src/domains/export/functions/exportDeadLetter'
 

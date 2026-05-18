@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 import { updateMeeting } from '@/src/domains/zumre/actions'
 import Link from 'next/link'

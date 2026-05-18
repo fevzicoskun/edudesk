@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
-import { parseTopicString } from '@/lib/tymm-data'
+import { parseTopicString } from '@/src/domains/zumre/data/tymm'
 
 const STATUS_TR: Record<string, string> = {
   tamamlandi: 'Tamamlandı',

@@ -1,4 +1,4 @@
-import { inngest } from '@/lib/inngest'
+import { inngest } from '@/src/infrastructure/inngest'
 import { ExportRepository } from '../repositories/ExportRepository'
 
 export const exportDeadLetterFn = inngest.createFunction(

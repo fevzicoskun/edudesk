@@ -1,7 +1,7 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import PrintBtn from '../PrintBtn'
-import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
+import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 
 const STATUS_LABEL: Record<string, string> = {
   present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli',

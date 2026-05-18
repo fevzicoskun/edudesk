@@ -1,1 +1,1 @@
-export { attendanceStatusSchema, saveAttendanceSchema } from '@/lib/validation'
+export { attendanceStatusSchema, saveAttendanceSchema } from '@/src/shared/validation'

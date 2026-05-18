@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { saveExamEntries, fetchClassStudents } from '@/src/domains/zumre/actions'
-import { format, parseISO } from '@/lib/date-utils'
+import { format, parseISO } from '@/src/shared/date'
 
 interface ExamEntry {
   id: string

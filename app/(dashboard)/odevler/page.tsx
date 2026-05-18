@@ -1,12 +1,12 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import { deleteHomework } from '@/src/domains/homework/actions'
-import { format, isPast, parseISO } from '@/lib/date-utils'
+import { format, isPast, parseISO } from '@/src/shared/date'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import OdevlerFilterBar from './FilterBar'
-import { isMudurOrAbove, isTeachingRole } from '@/lib/types'
+import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 
 export const revalidate = 30
 

@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { importFromTYMM } from '@/src/domains/zumre/actions'
-import { TYMM_DATA, TYMM_SUBJECTS } from '@/lib/tymm-data'
+import { TYMM_DATA, TYMM_SUBJECTS } from '@/src/domains/zumre/data/tymm'
 
 type ImportState = { imported?: number; skipped?: number; error?: string } | null
 

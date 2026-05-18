@@ -1,1 +1,1 @@
-export { createHomeworkSchema, submissionStatusSchema } from '@/lib/validation'
+export { createHomeworkSchema, submissionStatusSchema } from '@/src/shared/validation'

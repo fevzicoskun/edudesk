@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { addStudent, deleteStudent } from '@/src/domains/classes/actions'
-import { getEgitimYili } from '@/lib/utils'
+import { getEgitimYili } from '@/src/shared/utils'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import BulkStudentModal from './BulkStudentModal'
 

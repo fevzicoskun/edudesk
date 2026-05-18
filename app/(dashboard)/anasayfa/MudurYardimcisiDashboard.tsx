@@ -1,8 +1,8 @@
 ﻿import { createClient } from '@/lib/supabase/server'
-import { requireSchoolId } from '@/lib/auth'
+import { requireSchoolId } from '@/src/shared/auth'
 import Link from 'next/link'
-import { format, parseISO, subDays, addDays } from '@/lib/date-utils'
-import { ROLE_LABELS, type Role } from '@/lib/types'
+import { format, parseISO, subDays, addDays } from '@/src/shared/date'
+import { ROLE_LABELS, type Role } from '@/src/shared/types'
 
 const DONE_STATUSES = new Set(['yapildi', 'gec'])
 

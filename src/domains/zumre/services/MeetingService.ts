@@ -1,6 +1,6 @@
 import { MeetingRepository } from '../repositories/MeetingRepository'
 import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { logAudit } from '@/src/shared/audit'
 
 async function requireBaskan() {

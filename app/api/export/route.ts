@@ -5,11 +5,11 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, requireSchoolId } from '@/lib/auth'
-import { UUID } from '@/lib/validation'
+import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
+import { UUID } from '@/src/shared/validation'
 import { ExportService } from '@/src/domains/export/services/ExportService'
 import { ExportRepository } from '@/src/domains/export/repositories/ExportRepository'
-import type { JobType } from '@/lib/jobs'
+import type { JobType } from '@/src/domains/export/types'
 
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',

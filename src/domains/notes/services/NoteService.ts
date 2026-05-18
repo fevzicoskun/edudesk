@@ -1,5 +1,5 @@
 import { NoteRepository } from '../repositories/NoteRepository'
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const NoteService = {
   async createNote(): Promise<string> {

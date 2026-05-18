@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
-import { isMudurOrAbove } from '@/lib/types'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { isMudurOrAbove } from '@/src/shared/types'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
 
 export const revalidate = 0

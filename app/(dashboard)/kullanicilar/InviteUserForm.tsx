@@ -2,7 +2,7 @@
 
 import { useState, useActionState } from 'react'
 import { inviteUser } from '@/src/domains/users/actions'
-import type { Role } from '@/lib/types'
+import type { Role } from '@/src/shared/types'
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [
   { value: 'mudur_yardimcisi', label: 'Müdür Yardımcısı' },

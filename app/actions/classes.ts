@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { UUID } from '@/lib/validation'
+import { UUID } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
 

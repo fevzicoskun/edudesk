@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import RevokeTokenForm from './RevokeTokenForm'
 import AuditLogClient from './AuditLogClient'

@@ -1,7 +1,7 @@
 import { AttendanceRepository } from '../repositories/AttendanceRepository'
 import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import type { AttendanceStatus } from '../types'
 
 export const AttendanceService = {

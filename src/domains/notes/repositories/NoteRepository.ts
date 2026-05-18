@@ -1,4 +1,4 @@
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const NoteRepository = {
   async insertNote(userId: string) {

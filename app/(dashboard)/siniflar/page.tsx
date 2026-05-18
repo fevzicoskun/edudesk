@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { createClass } from '@/src/domains/classes/actions'
-import { getEgitimYili } from '@/lib/utils'
+import { getEgitimYili } from '@/src/shared/utils'
 import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {

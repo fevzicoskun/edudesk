@@ -3,9 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { logout } from '@/src/domains/auth/actions'
-import type { Profile, Role } from '@/lib/types'
-import { ROLE_LABELS, isMudurOrAbove, isYonetici } from '@/lib/types'
-import { getEgitimYili } from '../../lib/utils'
+import type { Profile, Role } from '@/src/shared/types'
+import { ROLE_LABELS, isMudurOrAbove, isYonetici } from '@/src/shared/types'
+import { getEgitimYili } from '@/src/shared/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 
 type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>

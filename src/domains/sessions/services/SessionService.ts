@@ -1,5 +1,5 @@
 import { SessionRepository } from '../repositories/SessionRepository'
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const SessionService = {
   async startSession() {

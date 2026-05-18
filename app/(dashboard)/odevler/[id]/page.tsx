@@ -5,8 +5,8 @@ export const revalidate = 0
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
 import PrintButton from '@/components/PrintButton'
-import { format, parseISO } from '@/lib/date-utils'
-import type { SubmissionStatus } from '@/lib/types'
+import { format, parseISO } from '@/src/shared/date'
+import type { SubmissionStatus } from '@/src/shared/types'
 
 export default async function OdevDetayPage({
   params,

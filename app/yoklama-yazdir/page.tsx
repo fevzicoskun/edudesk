@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import PrintBtn from './PrintBtn'
-import { UUID } from '@/lib/validation'
+import { UUID } from '@/src/shared/validation'
 
 const STATUS_LABEL: Record<string, string> = {
   present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli',

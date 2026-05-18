@@ -2,8 +2,8 @@
 
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { UUID } from '@/lib/validation'
-import { getCurrentUser } from '@/lib/auth'
+import { UUID } from '@/src/shared/validation'
+import { getCurrentUser } from '@/src/shared/auth'
 import { TokenService } from '@/src/domains/tokens/services/TokenService'
 import type { TokenType } from '@/src/domains/tokens/types'
 

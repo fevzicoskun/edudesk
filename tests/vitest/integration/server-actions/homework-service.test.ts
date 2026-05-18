@@ -14,7 +14,7 @@ import {
 import { makeProfile, makeUser } from '../../setup/factories'
 
 // ── Auth mock'ları ────────────────────────────────────────────
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/src/shared/auth', () => ({
   getCurrentUser:    vi.fn(),
   getCurrentProfile: vi.fn(),
   requireSchoolId:   vi.fn(),
@@ -30,11 +30,11 @@ vi.mock('@/src/shared/auth', () => ({
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
-vi.mock('@/src/shared/supabase/server', () => ({
+vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
 
-const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/lib/auth')
+const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/src/shared/auth')
 const { getCurrentProfile: getProfileShared, requireSchoolId: requireSchoolIdShared } =
   await import('@/src/shared/auth')
 const { HomeworkService } = await import('@/src/domains/homework/services/HomeworkService')

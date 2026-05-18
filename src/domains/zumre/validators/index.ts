@@ -3,4 +3,4 @@ export {
   createExamSchema,
   createCurriculumProgressSchema,
   curriculumStatusSchema,
-} from '@/lib/validation'
+} from '@/src/shared/validation'

@@ -1,6 +1,6 @@
 import { TokenRepository } from '../repositories/TokenRepository'
 import { getCurrentProfile, getCurrentUser, requireSchoolId } from '@/src/shared/auth'
-import { createPublicToken, extractJti } from '@/lib/public-tokens'
+import { createPublicToken, extractJti } from '@/src/infrastructure/tokens'
 import { logAudit } from '@/src/shared/audit'
 import { cacheRevocation } from '@/src/infrastructure/security/revocation'
 import type { TokenType } from '../types'

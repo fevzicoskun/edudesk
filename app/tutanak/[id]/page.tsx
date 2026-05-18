@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser, getCurrentProfile } from '@/lib/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
-import { format, parseISO } from '@/lib/date-utils'
+import { format, parseISO } from '@/src/shared/date'
 import Link from 'next/link'
 import TutanakPrintClient from './TutanakPrintClient'
 

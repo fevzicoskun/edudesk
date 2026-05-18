@@ -8,7 +8,7 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue({ from: mockFrom }),
 }))
 
-const { logAudit } = await import('@/lib/audit')
+const { logAudit } = await import('@/src/shared/audit')
 
 beforeEach(() => vi.clearAllMocks())
 

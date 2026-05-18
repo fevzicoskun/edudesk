@@ -1,12 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { format, parseISO } from '@/lib/date-utils'
+import { format, parseISO } from '@/src/shared/date'
 import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
 import CopyVeliLink from './CopyVeliLink'
 import SetupBanner from '@/components/SetupBanner'
-import type { SubmissionStatus } from '@/lib/types'
-import { schoolYearStart } from '@/lib/utils'
+import type { SubmissionStatus } from '@/src/shared/types'
+import { schoolYearStart } from '@/src/shared/utils'
 
 export const revalidate = 60
 

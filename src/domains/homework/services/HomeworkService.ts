@@ -1,7 +1,7 @@
 import { HomeworkRepository } from '../repositories/HomeworkRepository'
 import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
-import { createClient } from '@/src/shared/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import type { SubmissionStatus } from '../types'
 
 export const HomeworkService = {

@@ -1,1 +1,1 @@
-export type { CurriculumStatus, ZumreMeeting, CommonExam, CurriculumProgress, ExamEntry } from '@/lib/types'
+export type { CurriculumStatus, ZumreMeeting, CommonExam, CurriculumProgress, ExamEntry } from '@/src/shared/types'

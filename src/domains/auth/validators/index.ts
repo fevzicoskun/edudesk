@@ -1,1 +1,1 @@
-export { loginSchema, registerSchema, changePasswordSchema } from '@/lib/validation'
+export { loginSchema, registerSchema, changePasswordSchema } from '@/src/shared/validation'

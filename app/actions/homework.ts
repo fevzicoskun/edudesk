@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { UUID } from '@/lib/validation'
+import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import type { SubmissionStatus } from '@/src/domains/homework/types'

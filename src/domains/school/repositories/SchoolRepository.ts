@@ -1,5 +1,5 @@
-import { createClient } from '@/src/shared/supabase/server'
-import { createServiceClient } from '@/src/shared/supabase/service'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { createServiceClient } from '@/src/infrastructure/supabase/service'
 
 export const SchoolRepository = {
   async updateSchool(schoolId: string, data: Partial<{ name: string; slug: string }>) {

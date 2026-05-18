@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useMemo } from 'react'
-import { format, parseISO } from '@/lib/date-utils'
+import { format, parseISO } from '@/src/shared/date'
 
 const ACTION_LABELS: Record<string, string> = {
   'class.create':    'Sınıf oluşturuldu',

@@ -1,5 +1,5 @@
 ﻿import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/lib/auth'
+import { getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 
 export const revalidate = 60
@@ -12,7 +12,7 @@ import {
   createCurriculumProgress,
   deleteMeeting,
 } from '@/src/domains/zumre/actions'
-import { format, parseISO } from '@/lib/date-utils'
+import { format, parseISO } from '@/src/shared/date'
 
 type Tab = 'toplanti' | 'sinav' | 'mufredat'
 

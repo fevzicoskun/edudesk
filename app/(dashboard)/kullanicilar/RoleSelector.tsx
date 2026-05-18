@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useRef } from 'react'
 import { assignRole } from '@/src/domains/users/actions'
-import { ROLE_LABELS, type Role } from '@/lib/types'
+import { ROLE_LABELS, type Role } from '@/src/shared/types'
 
 const BADGE: Record<string, string> = {
   mudur:            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',

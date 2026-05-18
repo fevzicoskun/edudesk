@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import YoklamaBoard from './YoklamaBoard'
@@ -7,7 +7,7 @@ import YoklamaGecmis from './YoklamaGecmis'
 import CopySqlButton from './CopySqlButton'
 import PrintButton from '@/components/PrintButton'
 import type { AttendanceStatus } from '@/src/domains/attendance/types'
-import { schoolYearStart } from '@/lib/utils'
+import { schoolYearStart } from '@/src/shared/utils'
 
 export const revalidate = 0
 

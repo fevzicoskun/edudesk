@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { UUID } from '@/lib/validation'
+import { UUID } from '@/src/shared/validation'
 import { saveAttendanceSchema } from '@/src/domains/attendance/validators'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import type { AttendanceStatus } from '@/src/domains/attendance/types'

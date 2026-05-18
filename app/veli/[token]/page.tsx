@@ -1,10 +1,10 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import PrintButton from '@/components/PrintButton'
-import { format, parseISO } from '@/lib/date-utils'
-import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/lib/public-tokens'
-import { UUID } from '@/lib/validation'
-import { schoolYearStart } from '@/lib/utils'
+import { format, parseISO } from '@/src/shared/date'
+import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
+import { UUID } from '@/src/shared/validation'
+import { schoolYearStart } from '@/src/shared/utils'
 
 const MEB_LIMIT = 20
 

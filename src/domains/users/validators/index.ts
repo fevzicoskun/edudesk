@@ -1,5 +1,5 @@
 import { z } from 'zod'
-export { profileSchema } from '@/lib/validation'
+export { profileSchema } from '@/src/shared/validation'
 
 export const AssignableRole = z.enum(['ogretmen', 'zumre_baskani', 'mudur_yardimcisi'])
 

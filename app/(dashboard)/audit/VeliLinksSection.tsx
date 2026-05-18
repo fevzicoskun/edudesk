@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import { format, parseISO, formatDistanceToNow, isPast } from '@/lib/date-utils'
+import { format, parseISO, formatDistanceToNow, isPast } from '@/src/shared/date'
 import { revokeToken } from '@/src/domains/tokens/actions'
 
 type VeliToken = {

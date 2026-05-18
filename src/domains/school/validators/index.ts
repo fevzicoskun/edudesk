@@ -1,5 +1,5 @@
 import { z } from 'zod'
-export { updateSchoolSchema } from '@/lib/validation'
+export { updateSchoolSchema } from '@/src/shared/validation'
 
 export const createSchoolSchema = z.object({
   name: z.string().min(2, 'Okul adı en az 2 karakter olmalı').max(120).trim(),

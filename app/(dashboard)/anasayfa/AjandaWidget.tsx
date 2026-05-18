@@ -5,7 +5,7 @@ import { createMeeting, deleteMeeting, updateMeetingNotes } from '@/src/domains/
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, isSameDay, isToday, addMonths, subMonths, parseISO,
-} from '@/lib/date-utils'
+} from '@/src/shared/date'
 
 type Meeting = {
   id: string

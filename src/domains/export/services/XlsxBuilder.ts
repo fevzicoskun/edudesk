@@ -1,5 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
-import { UUID } from '@/lib/validation'
+import { UUID } from '@/src/shared/validation'
 import * as XLSX from 'xlsx'
 import type { JobType } from '../types'
 

@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { UUID } from '@/lib/validation'
-import { getCurrentUser } from '@/lib/auth'
+import { UUID } from '@/src/shared/validation'
+import { getCurrentUser } from '@/src/shared/auth'
 import { profileSchema, AssignableRole } from '@/src/domains/users/validators'
 import { UserService } from '@/src/domains/users/services/UserService'
 import type { Role } from '@/src/shared/types'

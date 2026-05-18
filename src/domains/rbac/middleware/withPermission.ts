@@ -1,6 +1,6 @@
 'use server'
 
-import { getCurrentUser, requireSchoolId } from '@/lib/auth'
+import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
 import { PermissionService } from '../services/PermissionService'
 import type { Resource, Action, AccessScope } from '../types'
 

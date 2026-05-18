@@ -1,1 +1,1 @@
-export { createClassSchema, addStudentSchema, studentNoteSchema } from '@/lib/validation'
+export { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/shared/validation'

@@ -1,7 +1,7 @@
 import { CurriculumRepository } from '../repositories/CurriculumRepository'
 import { requireSchoolId } from '@/src/shared/auth'
-import { createClient } from '@/src/shared/supabase/server'
-import { TYMM_DATA, topicToString } from '@/lib/tymm-data'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { TYMM_DATA, topicToString } from '@/src/domains/zumre/data/tymm'
 import type { CurriculumStatus } from '../types'
 
 type ImportState = { imported?: number; skipped?: number; error?: string } | null

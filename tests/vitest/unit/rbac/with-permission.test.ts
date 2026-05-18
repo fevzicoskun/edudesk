@@ -3,7 +3,7 @@ import { OGRETMEN_PERMS, MUDUR_PERMS, makeUser, makeProfile } from '../../setup/
 import type { GrantedPermission } from '@/src/domains/rbac/types'
 
 // ── Mock'lar ─────────────────────────────────────────────────
-vi.mock('@/lib/auth', () => ({
+vi.mock('@/src/shared/auth', () => ({
   getCurrentUser:   vi.fn(),
   getCurrentProfile: vi.fn(),
   requireSchoolId:  vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('@/src/domains/rbac/repositories/RbacRepository', () => ({
 }))
 
 const { getCurrentUser, getCurrentProfile, requireSchoolId } =
-  await import('@/lib/auth')
+  await import('@/src/shared/auth')
 const { RbacRepository } = await import('@/src/domains/rbac/repositories/RbacRepository')
 const { withPermission, withAnyPermission, checkPermission } =
   await import('@/src/domains/rbac/middleware/withPermission')
