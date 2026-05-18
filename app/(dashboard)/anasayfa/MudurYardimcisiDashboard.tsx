@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { format, parseISO, subDays, addDays } from '@/src/shared/date'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
 import RaporButton from '@/components/RaporButton'
+import MYAjandaWidget from './MYAjandaWidget'
 
 const DONE_STATUSES = new Set(['yapildi', 'gec'])
 
@@ -397,6 +398,9 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
           ))}
         </div>
       </div>
+
+      {/* Haftalık Takvim Özeti */}
+      <MYAjandaWidget />
 
     </div>
   )

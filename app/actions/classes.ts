@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { createClient } from '@/lib/supabase/server'
 
 export async function createClass(formData: FormData) {
@@ -104,4 +104,66 @@ export async function assignMentor(classId: string, teacherId: string | null) {
 
   if (error) throw new Error(`Mentor atanamadı: ${error.message}`)
   revalidatePath('/siniflar/' + classId)
+}
+
+export async function addMentorReport(
+  studentId: string,
+  classId: string,
+  formData: FormData
+) {
+  UUID.parse(studentId)
+  UUID.parse(classId)
+
+  const content     = String(formData.get('content') ?? '').trim()
+  const report_date = String(formData.get('report_date') ?? '').trim()
+
+  if (content.length < 5) throw new Error('Rapor içeriği en az 5 karakter olmalı.')
+  if (!report_date) throw new Error('Rapor tarihi zorunludur.')
+
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Oturum gerekli.')
+  const profile = await getCurrentProfile()
+  if (!profile) throw new Error('Profil bulunamadı.')
+
+  const supabase = await createClient()
+
+  // Sadece sınıfın mentörü ekleyebilir
+  const { data: cls } = await supabase
+    .from('classes')
+    .select('mentor_teacher_id')
+    .eq('id', classId)
+    .eq('school_id', profile.school_id)
+    .single()
+
+  if (!cls || cls.mentor_teacher_id !== user.id) {
+    throw new Error('Bu sınıfın mentörü değilsiniz.')
+  }
+
+  const { error } = await supabase.from('mentor_reports').insert({
+    mentor_id:   user.id,
+    student_id:  studentId,
+    class_id:    classId,
+    school_id:   profile.school_id!,
+    content,
+    report_date,
+  })
+
+  if (error) throw new Error(`Rapor kaydedilemedi: ${error.message}`)
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+}
+
+export async function deleteMentorReport(
+  reportId: string,
+  studentId: string,
+  classId: string
+) {
+  UUID.parse(reportId)
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('mentor_reports')
+    .delete()
+    .eq('id', reportId)
+
+  if (error) throw new Error(`Rapor silinemedi: ${error.message}`)
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }

@@ -30,8 +30,13 @@ export default async function KullanicilarPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
+  const isMY = profile.role === 'mudur_yardimcisi'
+
+  let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').order('full_name')
+  if (isMY) profilesQuery = profilesQuery.neq('role', 'mudur')
+
   const [{ data }, { data: sessionsRaw }] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, subject, role').order('full_name'),
+    profilesQuery,
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes'),
   ])
 
@@ -52,7 +57,6 @@ export default async function KullanicilarPage() {
     sessionMap.set(s.user_id, prev)
   }
   const isMudur = profile.role === 'mudur'
-  const isMY = profile.role === 'mudur_yardimcisi'
   const canAssign = isMudur || isMY
 
   // Müdür: tüm rolleri atayabilir (mudur hariç)
