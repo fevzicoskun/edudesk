@@ -3,6 +3,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import Link from 'next/link'
 import { format, parseISO, subDays, addDays } from '@/src/shared/date'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
+import RaporButton from '@/components/RaporButton'
 
 const DONE_STATUSES = new Set(['yapildi', 'gec'])
 
@@ -128,11 +129,14 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
       {/* Başlık */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Operasyonel Panel</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {fullName} · {format(today, 'd MMMM yyyy, EEEE')}
-        </p>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Operasyonel Panel</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {fullName} · {format(today, 'd MMMM yyyy, EEEE')}
+          </p>
+        </div>
+        <RaporButton classes={classes.map(c => ({ id: c.id, name: c.name, grade: c.grade }))} />
       </div>
 
       {/* Alert bar */}
