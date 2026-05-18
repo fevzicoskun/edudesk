@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createClient } from './supabase/server'
 import type { Profile } from './types'
+import type { Resource, Action, GrantedPermission } from '@/src/domains/rbac/types'
 
 export const getCurrentUser = cache(async () => {
   const supabase = await createClient()
@@ -17,12 +18,44 @@ export const getCurrentProfile = cache(async () => {
     .select('full_name, subject, role, school_id, schools(name)')
     .eq('id', user.id)
     .single()
-  return data as Pick<Profile, 'full_name' | 'subject' | 'role'> & { school_id: string; schools: { name: string } | null } | null
+  return data as Pick<Profile, 'full_name' | 'subject' | 'role'> & {
+    school_id: string
+    schools: { name: string } | null
+  } | null
 })
 
-/** Returns school_id for the current user — throws if not found. */
+/** Oturum yoksa veya school_id yoksa fırlatır */
 export async function requireSchoolId(): Promise<string> {
   const profile = await getCurrentProfile()
   if (!profile?.school_id) throw new Error('Okul bilgisi bulunamadı')
   return profile.school_id
+}
+
+/**
+ * Mevcut kullanıcının tüm izinlerini yükler (request-scoped, cache'li).
+ * PermissionService.load() ile aynı cache bağlamını paylaşır.
+ */
+export const getCurrentPermissions = cache(async (): Promise<GrantedPermission[]> => {
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+  if (!user || !profile?.school_id) return []
+
+  // Dinamik import — döngüsel bağımlılığı önler
+  const { PermissionService } = await import('@/src/domains/rbac/services/PermissionService')
+  return PermissionService.load(user.id, profile.school_id)
+})
+
+/**
+ * İzin yoksa hata fırlatır.
+ * Server Action / Server Component'ta guard olarak kullanın.
+ *
+ * @example
+ * await requirePermission('users', 'create')
+ */
+export async function requirePermission(resource: Resource, action: Action): Promise<void> {
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+  if (!user || !profile?.school_id) throw new Error('Giriş gerekli')
+
+  const { PermissionService } = await import('@/src/domains/rbac/services/PermissionService')
+  const allowed = await PermissionService.check(user.id, profile.school_id, resource, action)
+  if (!allowed) throw new Error(`Yetki yok: ${resource}:${action}`)
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { changePassword } from '@/app/actions/auth'
+import { changePassword } from '@/src/domains/auth/actions'
 
 const initial = { error: undefined as string | undefined, success: false }
 

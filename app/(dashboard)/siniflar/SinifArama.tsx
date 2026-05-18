@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
-import { deleteClass } from '@/app/actions/class'
+import { deleteClass } from '@/src/domains/classes/actions'
 
 interface Cls {
   id: string

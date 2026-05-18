@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { logout } from '@/app/actions/auth'
+import { logout } from '@/src/domains/auth/actions'
 import type { Profile, Role } from '@/lib/types'
 import { ROLE_LABELS, isMudurOrAbove, isYonetici } from '@/lib/types'
 import { getEgitimYili } from '../../lib/utils'

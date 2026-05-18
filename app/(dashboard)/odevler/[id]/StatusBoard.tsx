@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import * as XLSX from 'xlsx'
-import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/app/actions/homework'
+import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/lib/types'
 
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']

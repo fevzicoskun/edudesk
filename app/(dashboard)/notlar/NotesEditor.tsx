@@ -1,7 +1,7 @@
 'use client'
 
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { updateNote } from '@/app/actions/notes'
+import { updateNote } from '@/src/domains/notes/actions'
 import type { Note } from './NotesLayout'
 
 const PRESET_COLORS = [

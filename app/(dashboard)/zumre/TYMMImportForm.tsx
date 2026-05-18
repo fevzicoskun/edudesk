@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { importFromTYMM } from '@/app/actions/zumre'
+import { importFromTYMM } from '@/src/domains/zumre/actions'
 import { TYMM_DATA, TYMM_SUBJECTS } from '@/lib/tymm-data'
 
 type ImportState = { imported?: number; skipped?: number; error?: string } | null

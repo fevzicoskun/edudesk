@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addStudentsBulk } from '@/app/actions/class'
+import { addStudentsBulk } from '@/src/domains/classes/actions'
 
 export default function BulkStudentModal({
   classId,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { assignRole } from '@/app/actions/kullanicilar'
+import { assignRole } from '@/src/domains/users/actions'
 import { ROLE_LABELS, type Role } from '@/lib/types'
 
 const BADGE: Record<string, string> = {

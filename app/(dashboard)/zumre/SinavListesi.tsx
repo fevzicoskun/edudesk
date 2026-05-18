@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useRef } from 'react'
-import { deleteExam, createExamReturning } from '@/app/actions/zumre'
+import { deleteExam, createExamReturning } from '@/src/domains/zumre/actions'
 import SinavCard from './SinavCard'
 
 interface Exam {

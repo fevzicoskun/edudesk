@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useActionState } from 'react'
-import { inviteUser } from '@/app/actions/invite-user'
+import { inviteUser } from '@/src/domains/users/actions'
 import type { Role } from '@/lib/types'
 
 const ROLE_OPTIONS: { value: Role; label: string }[] = [

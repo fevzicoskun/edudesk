@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition, useEffect, useRef } from 'react'
-import { saveAttendance, getAttendanceForDate, type AttendanceStatus } from '@/app/actions/yoklama'
-import { generateYoklamaToken } from '@/app/actions/tokens'
+import { saveAttendance, getAttendanceForDate } from '@/src/domains/attendance/actions'
+import type { AttendanceStatus } from '@/src/domains/attendance/types'
+import { generateYoklamaToken } from '@/src/domains/tokens/actions'
 
 interface Student { id: string; full_name: string; student_number: string | null }
 

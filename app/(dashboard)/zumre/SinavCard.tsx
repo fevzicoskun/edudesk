@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import { saveExamEntries, fetchClassStudents } from '@/app/actions/zumre'
+import { saveExamEntries, fetchClassStudents } from '@/src/domains/zumre/actions'
 import { format, parseISO } from '@/lib/date-utils'
 
 interface Exam {

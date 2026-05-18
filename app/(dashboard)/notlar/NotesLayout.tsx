@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { createNote, deleteNote } from '@/app/actions/notes'
+import { createNote, deleteNote } from '@/src/domains/notes/actions'
 import NotesEditor from './NotesEditor'
 
 export type Note = {

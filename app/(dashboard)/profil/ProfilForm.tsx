@@ -1,8 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
-import { updateProfile } from '@/app/actions/profile'
-import { logout } from '@/app/actions/auth'
+import { updateProfile } from '@/src/domains/users/actions'
+import { logout } from '@/src/domains/auth/actions'
 
 const initialState = { error: undefined as string | undefined, success: false }
 

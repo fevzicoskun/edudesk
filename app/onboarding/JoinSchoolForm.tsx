@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { joinSchool } from '@/app/actions/onboarding'
+import { joinSchool } from '@/src/domains/school/actions/onboarding'
 
 export default function JoinSchoolForm() {
   const [error, setError] = useState<string | null>(null)

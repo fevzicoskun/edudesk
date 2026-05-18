@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { generateVeliToken } from '@/app/actions/tokens'
+import { generateVeliToken } from '@/src/domains/tokens/actions'
 
 export default function CopyVeliLink({ studentId }: { studentId: string }) {
   const [copied, setCopied] = useState(false)

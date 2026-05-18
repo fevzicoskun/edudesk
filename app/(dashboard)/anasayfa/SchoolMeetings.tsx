@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition, useActionState } from 'react'
-import { createMeeting, deleteMeeting, updateMeetingNotes } from '@/app/actions/school-meetings'
+import { createMeeting, deleteMeeting, updateMeetingNotes } from '@/src/domains/school/actions/meetings'
 import { format, parseISO } from '@/lib/date-utils'
 
 const TYPE_LABELS: Record<string, string> = {

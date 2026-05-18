@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useActionState } from 'react'
-import { regenerateSchoolCode, updateSchoolSettings } from '@/app/actions/school'
+import { regenerateSchoolCode, updateSchoolSettings } from '@/src/domains/school/actions'
 
 export default function OkulAyarlari({
   initialName,

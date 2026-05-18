@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { setupSchool } from '@/app/actions/school'
+import { setupSchool } from '@/src/domains/school/actions'
 
 export default function MudurOnboardingForm({
   existingName,

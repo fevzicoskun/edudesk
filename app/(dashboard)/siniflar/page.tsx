@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/lib/auth'
-import { createClass } from '@/app/actions/class'
+import { createClass } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/lib/utils'
 import SinifArama from './SinifArama'
 

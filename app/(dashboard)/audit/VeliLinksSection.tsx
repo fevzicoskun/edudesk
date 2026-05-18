@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { format, parseISO, formatDistanceToNow, isPast } from '@/lib/date-utils'
-import { revokeToken } from '@/app/actions/tokens'
+import { revokeToken } from '@/src/domains/tokens/actions'
 
 type VeliToken = {
   id: string

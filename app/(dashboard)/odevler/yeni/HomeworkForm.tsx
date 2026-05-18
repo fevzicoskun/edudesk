@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
-import { createHomework } from '@/app/actions/homework'
+import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 
 type ClassItem = { id: string; name: string; grade: number }

@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import { useState, useTransition, useRef, useEffect } from 'react'
-import { createMeeting, deleteMeeting, updateMeetingNotes } from '@/app/actions/school-meetings'
+import { createMeeting, deleteMeeting, updateMeetingNotes } from '@/src/domains/school/actions/meetings'
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval,
   getDay, isSameDay, isToday, addMonths, subMonths, parseISO,

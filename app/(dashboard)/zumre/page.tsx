@@ -11,7 +11,7 @@ import {
   createMeeting,
   createCurriculumProgress,
   deleteMeeting,
-} from '@/app/actions/zumre'
+} from '@/src/domains/zumre/actions'
 import { format, parseISO } from '@/lib/date-utils'
 
 type Tab = 'toplanti' | 'sinav' | 'mufredat'

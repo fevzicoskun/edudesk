@@ -6,7 +6,7 @@ import YoklamaBoard from './YoklamaBoard'
 import YoklamaGecmis from './YoklamaGecmis'
 import CopySqlButton from './CopySqlButton'
 import PrintButton from '@/components/PrintButton'
-import type { AttendanceStatus } from '@/app/actions/yoklama'
+import type { AttendanceStatus } from '@/src/domains/attendance/types'
 import { schoolYearStart } from '@/lib/utils'
 
 export const revalidate = 0

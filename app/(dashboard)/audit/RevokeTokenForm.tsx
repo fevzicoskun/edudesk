@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { revokeToken } from '@/app/actions/tokens'
+import { revokeToken } from '@/src/domains/tokens/actions'
 
 type TokenType = 'veli' | 'yoklama' | 'tutanak'
 

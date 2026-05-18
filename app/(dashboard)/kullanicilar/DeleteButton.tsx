@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { removeUser } from '@/app/actions/invite-user'
+import { removeUser } from '@/src/domains/users/actions'
 
 export default function DeleteButton({ userId, userName }: { userId: string; userName: string }) {
   const [confirm, setConfirm] = useState(false)
