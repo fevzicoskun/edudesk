@@ -18,7 +18,7 @@ export default async function RaporlarLayout({ children }: { children: React.Rea
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Öğrenci, sınıf ve öğretmen analiz raporları</p>
       </div>
 
-      <RaporlarTabs showMentorTab={['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(profile.role)} />
+      <RaporlarTabs />
 
       {children}
     </div>
