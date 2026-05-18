@@ -1,0 +1,35 @@
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+
+const TABS = [
+  { href: '/raporlar/ogrenci', label: 'Öğrenci' },
+  { href: '/raporlar/sinif', label: 'Sınıf' },
+  { href: '/raporlar/ogretmen', label: 'Öğretmen' },
+]
+
+export default function RaporlarTabs() {
+  const pathname = usePathname()
+
+  return (
+    <nav className="flex gap-1 mb-6 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+      {TABS.map(tab => {
+        const active = pathname.startsWith(tab.href)
+        return (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            className={`flex-1 text-center px-4 py-2 rounded-lg text-sm font-medium transition-colors min-h-[44px] flex items-center justify-center ${
+              active
+                ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 shadow-sm'
+                : 'text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100'
+            }`}
+          >
+            {tab.label}
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}

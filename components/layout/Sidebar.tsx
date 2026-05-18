@@ -22,7 +22,7 @@ function formatName(raw: string): string {
 }
 
 // roles: null = tüm roller, dizi = yalnızca o roller
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; icon: React.ReactNode }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; icon: React.ReactNode; subItems?: { href: string; label: string }[] }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
@@ -73,6 +73,18 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L11 7h9a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>,
   },
   {
+    href: '/raporlar',
+    label: 'Raporlar',
+    mobile: true,
+    roles: ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi', 'mudur'],
+    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+    subItems: [
+      { href: '/raporlar/ogrenci', label: 'Öğrenci' },
+      { href: '/raporlar/sinif', label: 'Sınıf' },
+      { href: '/raporlar/ogretmen', label: 'Öğretmen' },
+    ],
+  },
+  {
     href: '/profil',
     label: 'Profil',
     mobile: false,
@@ -120,21 +132,42 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {navItems.filter(item => !item.roles || item.roles.includes(role as Role)).map(({ href, label, icon }) => {
+          {navItems.filter(item => !item.roles || item.roles.includes(role as Role)).map(({ href, label, icon, subItems }) => {
             const active = pathname.startsWith(href)
             return (
-              <Link
-                key={href}
-                href={href}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  active
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
-                }`}
-              >
-                {icon}
-                {label}
-              </Link>
+              <div key={href}>
+                <Link
+                  href={href}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                      : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  {icon}
+                  {label}
+                </Link>
+                {subItems && active && (
+                  <div className="ml-8 mt-0.5 space-y-0.5">
+                    {subItems.map(sub => {
+                      const subActive = pathname.startsWith(sub.href)
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          className={`block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                            subActive
+                              ? 'text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/50'
+                              : 'text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
+                          }`}
+                        >
+                          {sub.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )
           })}
           {isMudur && (

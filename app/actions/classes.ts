@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { createClient } from '@/lib/supabase/server'
 
 export async function createClass(formData: FormData) {
   const parsed = createClassSchema.safeParse({
@@ -82,4 +84,24 @@ export async function addStudentNote(studentId: string, classId: string, formDat
 
   await ClassService.addStudentNote(studentId, { body: parsed.data.body })
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+}
+
+export async function assignMentor(classId: string, teacherId: string | null) {
+  UUID.parse(classId)
+  if (teacherId !== null) UUID.parse(teacherId)
+
+  const profile = await getCurrentProfile()
+  if (profile?.role !== 'mudur_yardimcisi') {
+    throw new Error('Bu işlem için Müdür Yardımcısı yetkisi gereklidir.')
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('classes')
+    .update({ mentor_teacher_id: teacherId })
+    .eq('id', classId)
+    .eq('school_id', profile.school_id)
+
+  if (error) throw new Error(`Mentor atanamadı: ${error.message}`)
+  revalidatePath('/siniflar/' + classId)
 }

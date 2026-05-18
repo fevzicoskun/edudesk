@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { addStudent, deleteStudent } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import BulkStudentModal from './BulkStudentModal'
+import MentorForm from './MentorForm'
+import SinifExportButton from './SinifExportButton'
 
 export default async function SinifDetayPage({
   params,
@@ -12,22 +15,36 @@ export default async function SinifDetayPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
+  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
 
-  const [clsResult, studentsResult] = await Promise.all([
-    supabase.from('classes').select('name').eq('id', id).single(),
+  const isMudurYardimcisi = profile?.role === 'mudur_yardimcisi'
+
+  const [clsResult, studentsResult, teachersResult] = await Promise.all([
+    supabase
+      .from('classes')
+      .select('name, mentor_teacher_id')
+      .eq('id', id)
+      .single(),
     supabase
       .from('students')
       .select('id, full_name, student_number')
       .eq('class_id', id)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
+    isMudurYardimcisi
+      ? supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('role', ['ogretmen', 'zumre_baskani'])
+          .order('full_name')
+      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
   ])
 
   if (!clsResult.data) notFound()
 
   const cls = clsResult.data
   const students = studentsResult.data ?? []
+  const teachers = (teachersResult.data ?? []) as { id: string; full_name: string }[]
   const egitimYili = getEgitimYili()
 
   const maxNumber = students.reduce((max, s) => {
@@ -41,10 +58,25 @@ export default async function SinifDetayPage({
         ← Sınıflar
       </Link>
 
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{cls.name}</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400">{students.length} öğrenci · {egitimYili}</p>
+      <div className="mb-5 flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{cls.name}</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{students.length} öğrenci · {egitimYili}</p>
+        </div>
+        <SinifExportButton classId={id} className={cls.name} />
       </div>
+
+      {/* Mentor Atama — sadece mudur_yardimcisi */}
+      {isMudurYardimcisi && (
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Mentor Öğretmen</h2>
+          <MentorForm
+            classId={id}
+            currentMentorId={cls.mentor_teacher_id ?? null}
+            teachers={teachers}
+          />
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
         <div className="flex items-center justify-between mb-3">

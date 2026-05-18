@@ -6,6 +6,7 @@ import { deleteHomework } from '@/src/domains/homework/actions'
 import { format, isPast, parseISO } from '@/src/shared/date'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import OdevlerFilterBar from './FilterBar'
+import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 
 export const revalidate = 30
@@ -52,19 +53,22 @@ export default async function OdevlerPage({
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/10 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
 
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-3">
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ödevler</h1>
-          {canWrite && (
-            <Link
-              href="/odevler/yeni"
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Yeni Ödev
-            </Link>
-          )}
+          <div className="flex items-center gap-2">
+            <RaporButton classes={classes} />
+            {canWrite && (
+              <Link
+                href="/odevler/yeni"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Yeni Ödev
+              </Link>
+            )}
+          </div>
         </div>
 
         <OdevlerFilterBar

@@ -8,6 +8,7 @@ const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_yoklama',
   'excel_mufredat',
   'excel_notlar',
+  'excel_sinif_ogrencileri',
 ]
 
 export async function POST(req: NextRequest) {
