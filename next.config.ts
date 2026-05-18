@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from '@sentry/nextjs'
 
 // CSP is handled dynamically in proxy.ts (with nonce per request).
 // Static headers here are kept only for non-middleware responses.
@@ -19,4 +20,9 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  silent: true,
+  telemetry: false,
+  disableLogger: true,
+  widenClientFileUpload: false,
+});

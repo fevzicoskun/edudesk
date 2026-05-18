@@ -30,7 +30,7 @@ export const ExamService = {
   },
 
   async createExamReturning(data: { title: string; subject: string; exam_date: string }): Promise<
-    | { id: string; title: string; subject: string; exam_date: string; grades: number[] | null; grade_map: { name: string; grade: string }[] | null }
+    | { id: string; title: string; subject: string; exam_date: string; entries: [] }
     | { error: string }
   > {
     await requireBaskan()
@@ -54,39 +54,25 @@ export const ExamService = {
       school_id,
     })
 
-    return result as { id: string; title: string; subject: string; exam_date: string; grades: number[] | null; grade_map: { name: string; grade: string }[] | null }
+    return { ...result, entries: [] }
   },
 
-  async updateExamGrades(id: string, gradesStr: string): Promise<{ error?: string }> {
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
-
-    const grades = gradesStr
-      .split(/[,\s]+/)
-      .map(s => parseInt(s.trim(), 10))
-      .filter(n => !isNaN(n) && n >= 0 && n <= 100)
-
-    const { error } = await ExamRepository.updateExamGrades(id, school_id, grades)
-    return { error: error?.message }
-  },
-
-  async saveExamEntries(id: string, entries: { name: string; grade: string }[]): Promise<{ error?: string }> {
+  async saveExamEntries(
+    id: string,
+    entries: { name: string; grade: string }[]
+  ): Promise<{ error?: string }> {
     if (entries.length > 200) throw new Error('Çok fazla giriş')
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
+    const school_id = await requireSchoolId()
 
-    const grades = entries
-      .map(e => parseInt(e.grade))
-      .filter(n => !isNaN(n) && n >= 0 && n <= 100)
+    const normalized = entries
+      .map(e => ({
+        name: e.name.trim() || null,
+        student_id: null as string | null,
+        grade: parseInt(e.grade, 10),
+      }))
+      .filter(e => !isNaN(e.grade) && e.grade >= 0 && e.grade <= 100)
 
-    const safeEntries = entries.map(e => ({
-      name: String(e.name).slice(0, 120),
-      grade: String(e.grade).slice(0, 4),
-    }))
-
-    const { error } = await ExamRepository.updateExamEntries(id, school_id, grades, safeEntries)
+    const { error } = await ExamRepository.replaceEntries(id, school_id, normalized)
     return { error: error?.message }
   },
 
@@ -96,11 +82,28 @@ export const ExamService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Giriş gerekli')
 
-    await ExamRepository.deleteExam(id, school_id)
+    await ExamRepository.softDeleteExam(id, school_id, user.id)
 
     await logAudit({
       user_id: user.id,
       action: 'exam.delete',
+      table_name: 'common_exams',
+      record_id: id,
+      school_id,
+    })
+  },
+
+  async restoreExam(id: string) {
+    await requireBaskan()
+    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Giriş gerekli')
+
+    await ExamRepository.restoreExam(id, school_id)
+
+    await logAudit({
+      user_id: user.id,
+      action: 'exam.restore',
       table_name: 'common_exams',
       record_id: id,
       school_id,

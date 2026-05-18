@@ -1,1 +1,1 @@
-export { createServiceClient } from '@/lib/supabase/service'
+export { createServiceClient } from '@/src/infrastructure/supabase/service'

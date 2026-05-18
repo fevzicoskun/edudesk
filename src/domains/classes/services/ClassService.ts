@@ -43,20 +43,25 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { data: homeworks } = await ClassRepository.findHomeworksByClass(classId, school_id)
-    if (homeworks?.length) {
-      const homeworkIds = homeworks.map(h => h.id)
-      await ClassRepository.deleteHomeworkSubmissions(homeworkIds)
-      await ClassRepository.deleteHomeworks(homeworkIds, school_id)
-    }
+    await ClassRepository.softDeleteHomeworksByClass(classId, school_id, user.id)
+    await ClassRepository.softDeleteStudentsByClass(classId, school_id, user.id)
+    await ClassRepository.softDeleteClass(classId, school_id, user.id)
 
-    await ClassRepository.deleteAttendanceByClass(classId, school_id)
-    await ClassRepository.deleteTeacherClasses(classId)
-    await ClassRepository.deleteCurriculumProgressByClass(classId, school_id)
-    await ClassRepository.deleteStudentsByClass(classId, school_id)
-    await ClassRepository.deleteClass(classId, school_id)
+    await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId, school_id })
+  },
 
-    await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId })
+  async restoreClass(classId: string) {
+    await requireBaskan()
+    const school_id = await requireSchoolId()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    await ClassRepository.restoreClass(classId, school_id)
+    await ClassRepository.restoreStudentsByClass(classId, school_id)
+    await ClassRepository.restoreHomeworksByClass(classId, school_id)
+
+    await logAudit({ user_id: user.id, action: 'class.restore', table_name: 'classes', record_id: classId, school_id })
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {
@@ -93,21 +98,44 @@ export const ClassService = {
   },
 
   async deleteStudent(studentId: string) {
-    await ClassRepository.deleteStudentSubmissions(studentId)
-    await ClassRepository.deleteStudentNotesByStudent(studentId)
-    await ClassRepository.deleteStudent(studentId)
+    const school_id = await requireSchoolId()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    await ClassRepository.softDeleteStudent(studentId, school_id, user.id)
+
+    await logAudit({ user_id: user.id, action: 'student.delete', table_name: 'students', record_id: studentId, school_id })
   },
 
-  async addStudentNote(studentId: string, data: { body: string }, teacherId: string, schoolId: string) {
+  async restoreStudent(studentId: string) {
+    await requireBaskan()
+    const school_id = await requireSchoolId()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    await ClassRepository.restoreStudent(studentId, school_id)
+
+    await logAudit({ user_id: user.id, action: 'student.restore', table_name: 'students', record_id: studentId, school_id })
+  },
+
+  async addStudentNote(studentId: string, data: { body: string }) {
+    const school_id = await requireSchoolId()
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Giriş gerekli')
+
     await ClassRepository.insertStudentNote({
-      teacher_id: teacherId,
+      teacher_id: user.id,
       student_id: studentId,
       body: data.body,
-      school_id: schoolId,
+      school_id,
     })
   },
 
   async deleteStudentNote(noteId: string) {
+    await requireSchoolId()
     await ClassRepository.deleteStudentNote(noteId)
   },
 }

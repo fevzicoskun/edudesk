@@ -1,0 +1,7 @@
+export const PERF = {
+  DB_WARN_MS:     500,
+  DB_ERROR_MS:    2_000,
+  ACTION_WARN_MS: 1_000,
+  ACTION_ERROR_MS: 5_000,
+  EXPORT_WARN_MS: 30_000,
+}

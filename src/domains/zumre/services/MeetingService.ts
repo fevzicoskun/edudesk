@@ -58,11 +58,28 @@ export const MeetingService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Giriş gerekli')
 
-    await MeetingRepository.deleteMeeting(id, school_id)
+    await MeetingRepository.softDeleteMeeting(id, school_id, user.id)
 
     await logAudit({
       user_id: user.id,
       action: 'meeting.delete',
+      table_name: 'zumre_meetings',
+      record_id: id,
+      school_id,
+    })
+  },
+
+  async restoreMeeting(id: string) {
+    await requireBaskan()
+    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Giriş gerekli')
+
+    await MeetingRepository.restoreMeeting(id, school_id)
+
+    await logAudit({
+      user_id: user.id,
+      action: 'meeting.restore',
       table_name: 'zumre_meetings',
       record_id: id,
       school_id,

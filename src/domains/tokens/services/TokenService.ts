@@ -2,6 +2,7 @@ import { TokenRepository } from '../repositories/TokenRepository'
 import { getCurrentProfile, getCurrentUser, requireSchoolId } from '@/src/shared/auth'
 import { createPublicToken, extractJti } from '@/lib/public-tokens'
 import { logAudit } from '@/src/shared/audit'
+import { cacheRevocation } from '@/src/infrastructure/security/revocation'
 import type { TokenType } from '../types'
 
 export const TokenService = {
@@ -75,6 +76,10 @@ export const TokenService = {
       if (error.code === '23505') return { ok: false, error: 'Token zaten iptal edilmiş' }
       return { ok: false, error: error.message }
     }
+
+    // Warm revocation cache immediately so subsequent checks skip the DB
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    await cacheRevocation(jti, expiresAt)
 
     await logAudit({
       user_id: user.id,

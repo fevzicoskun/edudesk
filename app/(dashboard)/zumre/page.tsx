@@ -33,7 +33,7 @@ export default async function ZumrePage({
 
   const [meetingsResult, examsResult, curriculumResult, classesResult, branchesResult] = await Promise.all([
     supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').order('meeting_date', { ascending: false }),
-    supabase.from('common_exams').select('id, title, subject, exam_date, grades, grade_map').order('exam_date', { ascending: false }),
+    supabase.from('common_exams').select('id, title, subject, exam_date, exam_entries(id, name, student_id, grade)').order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
       .select('*, classes(grade, name)')

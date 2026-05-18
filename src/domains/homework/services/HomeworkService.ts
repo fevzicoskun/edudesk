@@ -129,11 +129,21 @@ export const HomeworkService = {
     const profile = await getCurrentProfile()
     if (!profile || !isTeachingRole(profile.role)) return
 
-    const supabase = await createClient()
+    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    await HomeworkRepository.deleteSubmissionsByHomework(id)
-    await HomeworkRepository.deleteHomework(id, user.id)
+    await HomeworkRepository.softDeleteHomework(id, user.id, school_id)
+  },
+
+  async restoreHomework(id: string): Promise<void> {
+    const profile = await getCurrentProfile()
+    if (!profile || profile.role !== 'zumre_baskani') return
+
+    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    await HomeworkRepository.restoreHomework(id, school_id)
   },
 }

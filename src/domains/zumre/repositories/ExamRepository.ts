@@ -23,26 +23,39 @@ export const ExamRepository = {
     return supabase
       .from('common_exams')
       .insert(data)
-      .select('id, title, subject, exam_date, grades, grade_map')
+      .select('id, title, subject, exam_date')
       .single()
   },
 
-  async updateExamGrades(id: string, schoolId: string, grades: number[]) {
+  async replaceEntries(
+    examId: string,
+    schoolId: string,
+    entries: { name: string | null; student_id: string | null; grade: number }[]
+  ) {
     const supabase = await createClient()
-    return supabase.from('common_exams').update({ grades }).eq('id', id).eq('school_id', schoolId)
-  },
-
-  async updateExamEntries(id: string, schoolId: string, grades: number[], gradeMap: { name: string; grade: string }[]) {
-    const supabase = await createClient()
-    return supabase
-      .from('common_exams')
-      .update({ grades, grade_map: gradeMap })
-      .eq('id', id)
+    const { error: delErr } = await supabase
+      .from('exam_entries')
+      .delete()
+      .eq('exam_id', examId)
       .eq('school_id', schoolId)
+    if (delErr) return { error: delErr }
+    if (entries.length === 0) return { error: null }
+    return supabase.from('exam_entries').insert(
+      entries.map(e => ({ exam_id: examId, school_id: schoolId, ...e }))
+    )
   },
 
-  async deleteExam(id: string, schoolId: string) {
+  async softDeleteExam(id: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('common_exams').delete().eq('id', id).eq('school_id', schoolId)
+    return supabase.from('common_exams')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('id', id).eq('school_id', schoolId)
+  },
+
+  async restoreExam(id: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('common_exams')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('id', id).eq('school_id', schoolId)
   },
 }

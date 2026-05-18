@@ -1,16 +1,22 @@
-﻿'use client'
+'use client'
 
-import { useState, useTransition, useEffect } from 'react'
+import { useState, useTransition } from 'react'
 import { saveExamEntries, fetchClassStudents } from '@/src/domains/zumre/actions'
 import { format, parseISO } from '@/lib/date-utils'
+
+interface ExamEntry {
+  id: string
+  name: string | null
+  student_id: string | null
+  grade: number
+}
 
 interface Exam {
   id: string
   title: string
   subject: string
   exam_date: string
-  grades: number[] | null
-  grade_map: { name: string; grade: string }[] | null
+  exam_entries: ExamEntry[]
 }
 
 interface ClassInfo {
@@ -34,8 +40,6 @@ function parseInput(raw: string): number[] {
   return raw.split(/[,\s]+/).map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n >= 0 && n <= 100)
 }
 
-const lsKey = (id: string) => `exam_entries_${id}`
-
 const selectCls = 'px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-xs bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500'
 
 export default function SinavCard({
@@ -49,32 +53,27 @@ export default function SinavCard({
   isBaskan: boolean
   classes: ClassInfo[]
 }) {
+  const initEntries: Entry[] = (exam.exam_entries ?? []).map(e => ({
+    name: e.name ?? '',
+    grade: String(e.grade),
+  }))
+  const initGrades = (exam.exam_entries ?? []).map(e => e.grade)
+  const hasNames = initEntries.some(e => e.name)
+
   const [open, setOpen] = useState(false)
-  const [input, setInput] = useState((exam.grades ?? []).join(', '))
-  const [saved, setSaved] = useState(exam.grades ?? [])
-  const [perStudent, setPerStudent] = useState(false)
-  const [entries, setEntries] = useState<Entry[]>([])
+  const [input, setInput] = useState(initGrades.join(', '))
+  const [saved, setSaved] = useState(initGrades)
+  const [perStudent, setPerStudent] = useState(hasNames)
+  const [entries, setEntries] = useState<Entry[]>(initEntries)
   const [selectedClassId, setSelectedClassId] = useState('')
   const [loadingStudents, setLoadingStudents] = useState(false)
   const [, startTransition] = useTransition()
-
-  useEffect(() => {
-    if (exam.grade_map && exam.grade_map.length > 0) {
-      setEntries(exam.grade_map)
-      return
-    }
-    try {
-      const stored = localStorage.getItem(lsKey(exam.id))
-      if (stored) setEntries(JSON.parse(stored))
-    } catch {}
-  }, [exam.id, exam.grade_map])
 
   const loadStudentsForClass = async (classId: string) => {
     if (!classId) return
     setLoadingStudents(true)
     const students = await fetchClassStudents(classId)
     setLoadingStudents(false)
-    // Mevcut notları koru: aynı isimde kayıt varsa notunu aktar
     const existingMap = new Map(entries.map(e => [e.name.trim(), e.grade]))
     setEntries(students.map(s => ({
       name: s.full_name,
@@ -114,7 +113,6 @@ export default function SinavCard({
     if (perStudent) {
       const grades = entries.map(e => parseInt(e.grade)).filter(n => !isNaN(n) && n >= 0 && n <= 100)
       setInput(grades.join(', '))
-      try { localStorage.setItem(lsKey(exam.id), JSON.stringify(entries)) } catch {}
       setSaved(grades)
       startTransition(() => { saveExamEntries(exam.id, entries) })
     } else {
@@ -154,7 +152,6 @@ export default function SinavCard({
 
       {open && (
         <div className="px-4 pb-4 border-t border-gray-100 dark:border-slate-700 pt-3 space-y-3">
-          {/* Mode toggle */}
           <div className="flex gap-2">
             <button
               onClick={() => perStudent ? switchToTextarea() : switchToPerStudent()}
@@ -170,7 +167,6 @@ export default function SinavCard({
 
           {perStudent ? (
             <div className="space-y-2">
-              {/* Sınıf seç → öğrenciler otomatik yükle */}
               <div className="flex items-center gap-2">
                 <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">Sınıf:</span>
                 <select

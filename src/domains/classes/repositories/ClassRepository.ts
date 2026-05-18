@@ -11,44 +11,65 @@ export const ClassRepository = {
     return supabase.from('classes').insert(data)
   },
 
-  async deleteClass(classId: string, schoolId: string) {
+  async softDeleteClass(classId: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('classes').delete().eq('id', classId).eq('school_id', schoolId)
+    return supabase.from('classes')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('id', classId).eq('school_id', schoolId)
+  },
+
+  async restoreClass(classId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('classes')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('id', classId).eq('school_id', schoolId)
   },
 
   async findHomeworksByClass(classId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('homeworks').select('id').eq('class_id', classId).eq('school_id', schoolId)
+    return supabase.from('homeworks').select('id').eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
   },
 
-  async deleteHomeworkSubmissions(homeworkIds: string[]) {
+  async softDeleteHomeworksByClass(classId: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('homework_submissions').delete().in('homework_id', homeworkIds)
+    return supabase.from('homeworks')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
   },
 
-  async deleteHomeworks(homeworkIds: string[], schoolId: string) {
+  async restoreHomeworksByClass(classId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('homeworks').delete().in('id', homeworkIds).eq('school_id', schoolId)
+    return supabase.from('homeworks')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('class_id', classId).eq('school_id', schoolId)
   },
 
-  async deleteAttendanceByClass(classId: string, schoolId: string) {
+  async softDeleteStudentsByClass(classId: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('attendance').delete().eq('class_id', classId).eq('school_id', schoolId)
+    return supabase.from('students')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
   },
 
-  async deleteTeacherClasses(classId: string) {
+  async restoreStudentsByClass(classId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('teacher_classes').delete().eq('class_id', classId)
+    return supabase.from('students')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('class_id', classId).eq('school_id', schoolId)
   },
 
-  async deleteCurriculumProgressByClass(classId: string, schoolId: string) {
+  async softDeleteStudent(studentId: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('curriculum_progress').delete().eq('class_id', classId).eq('school_id', schoolId)
+    return supabase.from('students')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('id', studentId).eq('school_id', schoolId)
   },
 
-  async deleteStudentsByClass(classId: string, schoolId: string) {
+  async restoreStudent(studentId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('students').delete().eq('class_id', classId).eq('school_id', schoolId)
+    return supabase.from('students')
+      .update({ deleted_at: null, deleted_by: null })
+      .eq('id', studentId).eq('school_id', schoolId)
   },
 
   async insertStudent(data: {
@@ -64,21 +85,6 @@ export const ClassRepository = {
   async insertStudents(rows: { class_id: string; full_name: string; student_number: string | null; school_id: string }[]) {
     const supabase = await createClient()
     return supabase.from('students').insert(rows)
-  },
-
-  async deleteStudentSubmissions(studentId: string) {
-    const supabase = await createClient()
-    return supabase.from('homework_submissions').delete().eq('student_id', studentId)
-  },
-
-  async deleteStudentNotesByStudent(studentId: string) {
-    const supabase = await createClient()
-    return supabase.from('student_notes').delete().eq('student_id', studentId)
-  },
-
-  async deleteStudent(studentId: string) {
-    const supabase = await createClient()
-    return supabase.from('students').delete().eq('id', studentId)
   },
 
   async deleteStudentNote(noteId: string) {

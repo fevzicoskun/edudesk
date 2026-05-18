@@ -4,13 +4,19 @@ import { useState, useTransition, useRef } from 'react'
 import { deleteExam, createExamReturning } from '@/src/domains/zumre/actions'
 import SinavCard from './SinavCard'
 
+interface ExamEntry {
+  id: string
+  name: string | null
+  student_id: string | null
+  grade: number
+}
+
 interface Exam {
   id: string
   title: string
   subject: string
   exam_date: string
-  grades: number[] | null
-  grade_map: { name: string; grade: string }[] | null
+  exam_entries: ExamEntry[]
 }
 
 interface ClassInfo {
@@ -50,7 +56,7 @@ export default function SinavListesi({
       setFormError(result.error)
       return
     }
-    setExams(prev => [result, ...prev])
+    setExams(prev => [{ ...result, exam_entries: [] }, ...prev])
     formRef.current?.reset()
   }
 

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const mockInsert = vi.fn().mockResolvedValue({ error: null })
 const mockFrom   = vi.fn(() => ({ insert: mockInsert }))
 
-vi.mock('@/lib/supabase/server', () => ({
+vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue({ from: mockFrom }),
 }))
 
