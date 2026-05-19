@@ -4,6 +4,7 @@ import { withInternalAuth } from '@/src/infrastructure/api/middleware'
 import { parseSearchParams } from '@/src/infrastructure/api/validation'
 import { apiOk, apiErr } from '@/src/infrastructure/api/response'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { trackedQuery } from '@/src/infrastructure/observability/slow-query'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -39,12 +40,14 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
     if (!class_id) return NextResponse.json(apiErr('VALIDATION_ERROR', 'class_id gerekli', ctx), { status: 400 })
 
     // Fetch homework IDs first — PostgREST doesn't support subqueries in .in()
-    const { data: hwRows } = await supabase
-      .from('homeworks')
-      .select('id')
-      .eq('class_id', class_id)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
+    const { data: hwRows } = await trackedQuery('reporting.class.hwIds', () =>
+      supabase
+        .from('homeworks')
+        .select('id')
+        .eq('class_id', class_id)
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
+    )
 
     const hwIds = (hwRows ?? []).map(r => r.id)
 
@@ -107,13 +110,15 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
     const targetId = teacher_id ?? ctx.ability.userId
 
     // Fetch IDs first for the submissions subquery
-    const { data: hwCreated } = await supabase
-      .from('homeworks')
-      .select('id')
-      .eq('teacher_id', targetId)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .gte('created_at', since)
+    const { data: hwCreated } = await trackedQuery('reporting.teacher.hwIds', () =>
+      supabase
+        .from('homeworks')
+        .select('id')
+        .eq('teacher_id', targetId)
+        .eq('school_id', schoolId)
+        .is('deleted_at', null)
+        .gte('created_at', since)
+    )
 
     const hwIds = (hwCreated ?? []).map(r => r.id)
 
@@ -175,12 +180,14 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
         .gte('updated_at', since)
         .order('updated_at', { ascending: false }),
 
-      supabase.from('attendance')
-        .select('date, status')
-        .eq('student_id', student_id)
-        .eq('school_id', schoolId)
-        .gte('date', since)
-        .order('date', { ascending: false }),
+      trackedQuery('reporting.student.attendance', () =>
+        supabase.from('attendance')
+          .select('date, status')
+          .eq('student_id', student_id)
+          .eq('school_id', schoolId)
+          .gte('date', since)
+          .order('date', { ascending: false })
+      ),
 
       supabase.from('student_notes')
         .select('body, created_at')

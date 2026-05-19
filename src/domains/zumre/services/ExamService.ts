@@ -1,31 +1,21 @@
 import { ExamRepository } from '../repositories/ExamRepository'
-import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import { requireAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import { logAudit } from '@/src/shared/audit'
-
-async function requireBaskan() {
-  const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'zumre_baskani') {
-    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
-  }
-  return profile
-}
 
 export const ExamService = {
   async createExam(data: { title: string; subject: string; exam_date: string }) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await ExamRepository.insertExam({ ...data, created_by: user.id, school_id })
+    await ExamRepository.insertExam({ ...data, created_by: ability.userId, school_id: ability.schoolId })
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'exam.create',
       table_name: 'common_exams',
       new_data: { title: data.title },
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 
@@ -33,25 +23,23 @@ export const ExamService = {
     | { id: string; title: string; subject: string; exam_date: string; entries: [] }
     | { error: string }
   > {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
+    const ability = await requireAbility()
+    if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
     const { data: result, error } = await ExamRepository.insertExamReturning({
       ...data,
-      created_by: user.id,
-      school_id,
+      created_by: ability.userId,
+      school_id: ability.schoolId,
     })
 
     if (error || !result) return { error: error?.message ?? 'Eklenemedi' }
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'exam.create',
       table_name: 'common_exams',
       new_data: { title: data.title },
-      school_id,
+      school_id: ability.schoolId,
     })
 
     return { ...result, entries: [] }
@@ -62,7 +50,7 @@ export const ExamService = {
     entries: { name: string; grade: string }[]
   ): Promise<{ error?: string }> {
     if (entries.length > 200) throw new Error('Çok fazla giriş')
-    const school_id = await requireSchoolId()
+    const ability = await requireAbility()
 
     const normalized = entries
       .map(e => ({
@@ -72,41 +60,37 @@ export const ExamService = {
       }))
       .filter(e => !isNaN(e.grade) && e.grade >= 0 && e.grade <= 100)
 
-    const { error } = await ExamRepository.replaceEntries(id, school_id, normalized)
+    const { error } = await ExamRepository.replaceEntries(id, ability.schoolId, normalized)
     return { error: error?.message }
   },
 
   async deleteExam(id: string) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await ExamRepository.softDeleteExam(id, school_id, user.id)
+    await ExamRepository.softDeleteExam(id, ability.schoolId, ability.userId)
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'exam.delete',
       table_name: 'common_exams',
       record_id: id,
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 
   async restoreExam(id: string) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await ExamRepository.restoreExam(id, school_id)
+    await ExamRepository.restoreExam(id, ability.schoolId)
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'exam.restore',
       table_name: 'common_exams',
       record_id: id,
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 }

@@ -1,0 +1,114 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OGRETMEN_PERMISSIONS fixture > snapshot — rol değişikliklerini yakalar 1`] = `
+[
+  {
+    "action": "create",
+    "resource": "homework",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "homework",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "update",
+    "resource": "homework",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "delete",
+    "resource": "homework",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "create",
+    "resource": "attendance",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "attendance",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "update",
+    "resource": "attendance",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "create",
+    "resource": "curriculum",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "curriculum",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "update",
+    "resource": "curriculum",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "students",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "create",
+    "resource": "students",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "classes",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "create",
+    "resource": "export",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "create",
+    "resource": "notes",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "read",
+    "resource": "notes",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "update",
+    "resource": "notes",
+    "scope": "own",
+    "source": "role",
+  },
+  {
+    "action": "delete",
+    "resource": "notes",
+    "scope": "own",
+    "source": "role",
+  },
+]
+`;

@@ -34,7 +34,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
   const [
     totalHW, doneHW,
     totalAtt, presentAtt,
-    activeTeacherRows,
+    activeTeachersRes,
     atRiskRes,
   ] = await Promise.all([
     supabase.from('homework_submissions')
@@ -53,11 +53,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
       .select('*', { count: 'exact', head: true })
       .eq('school_id', schoolId).eq('status', 'present').gte('date', since),
 
-    supabase.from('homeworks')
-      .select('teacher_id')
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .gte('created_at', since),
+    supabase.rpc('count_active_teachers', { p_school_id: schoolId, p_since: since }),
 
     supabase.rpc('at_risk_student_count', {
       p_school_id: schoolId,
@@ -73,7 +69,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
   const presentAttCount = presentAtt.count ?? 0
   const attRate         = totalAttCount > 0 ? Math.round((presentAttCount / totalAttCount) * 100) : null
 
-  const activeTeachers = new Set((activeTeacherRows.data ?? []).map(r => r.teacher_id)).size
+  const activeTeachers = (activeTeachersRes.data as number | null) ?? 0
 
   const atRiskStudents = (atRiskRes.data as number | null) ?? 0
 

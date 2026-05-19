@@ -1,15 +1,7 @@
 import { MeetingRepository } from '../repositories/MeetingRepository'
-import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import { requireAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import { logAudit } from '@/src/shared/audit'
-
-async function requireBaskan() {
-  const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'zumre_baskani') {
-    throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
-  }
-  return profile
-}
 
 export const MeetingService = {
   async createMeeting(data: {
@@ -18,24 +10,22 @@ export const MeetingService = {
     notes: string | null
     branch: string | null
   }) {
-    const caller = await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.ZUMRE.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
     await MeetingRepository.insertMeeting({
       ...data,
-      branch: data.branch ?? caller.subject ?? null,
-      created_by: user.id,
-      school_id,
+      branch: data.branch ?? null,
+      created_by: ability.userId,
+      school_id: ability.schoolId,
     })
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'meeting.create',
       table_name: 'zumre_meetings',
       new_data: { title: data.title },
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 
@@ -44,45 +34,39 @@ export const MeetingService = {
     meeting_date: string
     notes: string | null
   }) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.ZUMRE.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await MeetingRepository.updateMeeting(id, school_id, data)
+    await MeetingRepository.updateMeeting(id, ability.schoolId, data)
   },
 
   async deleteMeeting(id: string) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.ZUMRE.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await MeetingRepository.softDeleteMeeting(id, school_id, user.id)
+    await MeetingRepository.softDeleteMeeting(id, ability.schoolId, ability.userId)
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'meeting.delete',
       table_name: 'zumre_meetings',
       record_id: id,
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 
   async restoreMeeting(id: string) {
-    await requireBaskan()
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.ZUMRE.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
-    await MeetingRepository.restoreMeeting(id, school_id)
+    await MeetingRepository.restoreMeeting(id, ability.schoolId)
 
     await logAudit({
-      user_id: user.id,
+      user_id: ability.userId,
       action: 'meeting.restore',
       table_name: 'zumre_meetings',
       record_id: id,
-      school_id,
+      school_id: ability.schoolId,
     })
   },
 }
