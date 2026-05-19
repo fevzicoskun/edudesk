@@ -258,7 +258,7 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
       {/* ─── Hızlı Erişim ──────────────────────────────────────── */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Hızlı Erişim</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {[
             {
               href: '/siniflar', label: 'Sınıf Listeleri',
@@ -274,6 +274,16 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
               href: '/raporlar', label: 'Raporlar',
               color: 'text-violet-600 bg-violet-50 dark:bg-violet-950/40',
               icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+            },
+            {
+              href: '/ders-programi', label: 'Ders Programları',
+              color: 'text-orange-600 bg-orange-50 dark:bg-orange-950/40',
+              icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+            },
+            {
+              href: '/siniflar', label: 'Mentör Atamaları',
+              color: 'text-amber-600 bg-amber-50 dark:bg-amber-950/40',
+              icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
             },
             {
               href: '/kullanicilar', label: 'Kullanıcı Yönetimi',

@@ -10,6 +10,7 @@ import MufredatWidget from './MufredatWidget'
 import MudurDashboard from './MudurDashboard'
 import MudurYardimcisiDashboard from './MudurYardimcisiDashboard'
 import MentorSinifimWidget from './MentorSinifimWidget'
+import DersProgramiWidget from './DersProgramiWidget'
 
 export const revalidate = 60
 
@@ -95,6 +96,10 @@ export default async function AnasayfaPage() {
 
       <Suspense fallback={null}>
         <MentorSinifimWidget />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <DersProgramiWidget />
       </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
