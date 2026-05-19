@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
+import { requireSchoolId } from '@/src/shared/auth'
 import { saveAttendanceSchema } from '@/src/domains/attendance/validators'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import type { AttendanceStatus } from '@/src/domains/attendance/types'
@@ -25,11 +26,13 @@ export async function saveAttendance(
 }
 
 export async function getAttendanceForDate(classId: string, date: string) {
+  await requireSchoolId()
   UUID.parse(classId)
   return AttendanceService.getAttendanceForDate(classId, date)
 }
 
 export async function getAttendanceHistory(classId: string, days = 14) {
+  await requireSchoolId()
   UUID.parse(classId)
   return AttendanceService.getAttendanceHistory(classId, days)
 }
