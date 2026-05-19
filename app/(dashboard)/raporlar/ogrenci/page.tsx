@@ -9,13 +9,16 @@ export default async function OgrenciRaporPage() {
 
   const isYonetici = isMudurOrAbove(profile.role) || profile.role === 'zumre_baskani'
 
+  const sid = profile.school_id ?? ''
+
   // Öğretmen kendi sınıflarını görür; yönetici hepsini
   const classesResult = isYonetici
-    ? await supabase.from('classes').select('id, name, grade').order('grade').order('name')
+    ? await supabase.from('classes').select('id, name, grade').eq('school_id', sid).order('grade').order('name')
     : await supabase
         .from('homeworks')
         .select('class_id, classes(id, name, grade)')
         .eq('teacher_id', user?.id ?? '')
+        .eq('school_id', sid)
         .limit(500)
 
   let classes: { id: string; name: string; grade: number | null }[] = []

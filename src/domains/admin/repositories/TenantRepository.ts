@@ -2,15 +2,9 @@ import 'server-only'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import type { SchoolStatus, SchoolPlan, SchoolQuota, TenantMetrics } from '../types'
 
-let _client: ReturnType<typeof createServiceClient> | null = null
-function getClient() {
-  if (!_client) _client = createServiceClient()
-  return _client
-}
-
 export const TenantRepository = {
   async listTenants(): Promise<TenantMetrics[]> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { data, error } = await supabase
       .from('tenant_metrics')
       .select('*')
@@ -20,7 +14,7 @@ export const TenantRepository = {
   },
 
   async getTenant(schoolId: string): Promise<TenantMetrics | null> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { data, error } = await supabase
       .from('tenant_metrics')
       .select('*')
@@ -35,7 +29,7 @@ export const TenantRepository = {
     status:      SchoolStatus,
     suspendedBy: string | null,
   ): Promise<void> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const patch: Record<string, unknown> = { status }
     if (status === 'suspended') {
       patch.suspended_at = new Date().toISOString()
@@ -49,13 +43,13 @@ export const TenantRepository = {
   },
 
   async setPlan(schoolId: string, plan: SchoolPlan): Promise<void> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { error } = await supabase.from('schools').update({ plan }).eq('id', schoolId)
     if (error) throw new Error(error.message)
   },
 
   async getQuota(schoolId: string): Promise<SchoolQuota | null> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { data, error } = await supabase
       .from('school_quotas')
       .select('*')
@@ -69,7 +63,7 @@ export const TenantRepository = {
     schoolId: string,
     patch:    Partial<Pick<SchoolQuota, 'max_teachers' | 'max_students' | 'max_storage_mb'>>,
   ): Promise<void> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { error } = await supabase
       .from('school_quotas')
       .upsert({ school_id: schoolId, ...patch })
@@ -78,7 +72,7 @@ export const TenantRepository = {
   },
 
   async incrementStorage(schoolId: string, deltaMb: number): Promise<void> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { error } = await supabase.rpc('increment_school_storage', {
       p_school_id: schoolId,
       p_delta_mb:  deltaMb,
@@ -87,7 +81,7 @@ export const TenantRepository = {
   },
 
   async isPlatformAdmin(userId: string): Promise<boolean> {
-    const supabase = getClient()
+    const supabase = createServiceClient()
     const { data } = await supabase
       .from('platform_admins')
       .select('id')

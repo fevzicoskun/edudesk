@@ -86,23 +86,36 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
     .eq('id', studentId)
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
 
+  const schoolFilter = tokenSchoolId
   const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     studentQuery.single(),
-    supabase
-      .from('homework_submissions')
-      .select('id, status, updated_at, homeworks(title, subject, due_date, description)')
-      .eq('student_id', studentId),
-    supabase
-      .from('student_notes')
-      .select('id, body, created_at')
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: false }),
-    supabase
-      .from('attendance')
-      .select('date, status')
-      .eq('student_id', studentId)
-      .gte('date', schoolYearStart())
-      .order('date', { ascending: false }),
+    (() => {
+      let q = supabase
+        .from('homework_submissions')
+        .select('id, status, updated_at, homeworks(title, subject, due_date, description)')
+        .eq('student_id', studentId)
+      if (schoolFilter) q = q.eq('school_id', schoolFilter)
+      return q
+    })(),
+    (() => {
+      let q = supabase
+        .from('student_notes')
+        .select('id, body, created_at')
+        .eq('student_id', studentId)
+        .order('created_at', { ascending: false })
+      if (schoolFilter) q = q.eq('school_id', schoolFilter)
+      return q
+    })(),
+    (() => {
+      let q = supabase
+        .from('attendance')
+        .select('date, status')
+        .eq('student_id', studentId)
+        .gte('date', schoolYearStart())
+        .order('date', { ascending: false })
+      if (schoolFilter) q = q.eq('school_id', schoolFilter)
+      return q
+    })(),
   ])
 
   if (!studentResult.data) notFound()

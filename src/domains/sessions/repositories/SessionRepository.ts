@@ -15,13 +15,20 @@ export const SessionRepository = {
 
   async updateLastSeen(userId: string) {
     const supabase = await createClient()
-    return supabase
+    // ORDER/LIMIT are silently ignored on UPDATE in PostgREST — select the row id first
+    const { data: session } = await supabase
       .from('user_sessions')
-      .update({ last_seen_at: new Date().toISOString() })
+      .select('id')
       .eq('user_id', userId)
       .is('logout_at', null)
       .order('login_at', { ascending: false })
       .limit(1)
+      .single()
+    if (!session) return
+    return supabase
+      .from('user_sessions')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('id', session.id)
   },
 
   async findOpenSession(userId: string) {

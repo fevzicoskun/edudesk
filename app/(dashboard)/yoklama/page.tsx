@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import YoklamaBoard from './YoklamaBoard'
@@ -46,14 +46,15 @@ export default async function YoklamaPage({
   const { classId, tab: tabParam } = await searchParams
   const tab: Tab = tabParam === 'gecmis' ? 'gecmis' : 'yoklama'
 
-  const user = await getCurrentUser()
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) redirect('/login')
+  const schoolId = profile?.school_id ?? ''
 
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
   const [{ data: classes }, tableProbe] = await Promise.all([
-    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
+    supabase.from('classes').select('id, name, grade').eq('school_id', schoolId).order('grade').order('name'),
     supabase.from('attendance').select('id').limit(1),
   ])
 
@@ -70,12 +71,14 @@ export default async function YoklamaPage({
       .from('attendance')
       .select('student_id, status')
       .eq('class_id', selectedId)
+      .eq('school_id', schoolId)
       .eq('date', today)
 
     const studentsRes = await supabase
       .from('students')
       .select('id, full_name, student_number')
       .eq('class_id', selectedId)
+      .eq('school_id', schoolId)
       .order('student_number', { nullsFirst: false })
       .order('full_name')
 
@@ -90,6 +93,7 @@ export default async function YoklamaPage({
         .from('attendance')
         .select('student_id, date, status')
         .eq('class_id', selectedId)
+        .eq('school_id', schoolId)
         .gte('date', schoolYearStart())
         .order('date', { ascending: false })
 

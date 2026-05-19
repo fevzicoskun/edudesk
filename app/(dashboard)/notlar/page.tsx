@@ -1,16 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
+import { getCurrentUser } from '@/src/shared/auth'
+import { redirect } from 'next/navigation'
 import NotesLayout from './NotesLayout'
 import NotlarExportButton from './NotlarExportButton'
 import type { Note } from './NotesLayout'
 
 export default async function NotlarPage() {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
 
   const { data: notes } = await supabase
     .from('user_notes')
     .select('id, title, content, created_at, updated_at')
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
 
   const notesList = (notes ?? []) as Note[]

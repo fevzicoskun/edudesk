@@ -22,7 +22,7 @@ export const OnboardingService = {
     const { error } = await SchoolRepository.adminOnboardUser({
       p_id:        user.id,
       p_school_id: school.id,
-      p_role:      'zumre_baskani',
+      p_role:      'mudur',
     })
 
     if (error) return { error: error.message }

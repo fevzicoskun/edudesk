@@ -48,13 +48,15 @@ export default async function OgrenciDetayPage({
     getCurrentProfile(),
   ])
 
+  const schoolId = currentProfile?.school_id ?? ''
+
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, mentorReportsRes] = await Promise.all([
-    supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).single(),
-    supabase.from('students').select('id, full_name, student_number, class_id').eq('id', studentId).eq('class_id', classId).single(),
-    supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId),
-    supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).order('created_at', { ascending: false }),
-    supabase.from('attendance').select('date, status').eq('student_id', studentId).gte('date', schoolYearStart()).order('date', { ascending: false }),
-    supabase.from('mentor_reports').select('id, content, report_date, created_at, mentor_id').eq('student_id', studentId).order('report_date', { ascending: false }),
+    supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
+    supabase.from('students').select('id, full_name, student_number, class_id').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
+    supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
+    supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
+    supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
+    supabase.from('mentor_reports').select('id, content, report_date, created_at, mentor_id').eq('student_id', studentId).eq('school_id', schoolId).order('report_date', { ascending: false }),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()

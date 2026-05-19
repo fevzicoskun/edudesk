@@ -30,7 +30,7 @@ export const CurriculumRepository = {
     return supabase.from('curriculum_progress').insert(rows)
   },
 
-  async updateProgressStatus(id: string, teacherId: string, data: {
+  async updateProgressStatus(id: string, teacherId: string, schoolId: string, data: {
     status: CurriculumStatus
     completed: boolean
     completion_date: string | null
@@ -41,20 +41,22 @@ export const CurriculumRepository = {
       .update(data)
       .eq('id', id)
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
   },
 
-  async deleteProgress(id: string, teacherId: string) {
+  async deleteProgress(id: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('curriculum_progress').delete().eq('id', id).eq('teacher_id', teacherId)
+    return supabase.from('curriculum_progress').delete().eq('id', id).eq('teacher_id', teacherId).eq('school_id', schoolId)
   },
 
-  async clearClassCurriculum(classId: string, teacherId: string) {
+  async clearClassCurriculum(classId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase
       .from('curriculum_progress')
       .delete()
       .eq('class_id', classId)
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
   },
 
   async findExistingTopics(teacherId: string, classId: string) {

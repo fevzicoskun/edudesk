@@ -37,7 +37,7 @@ export default async function KullanicilarPage() {
 
   const [{ data }, { data: sessionsRaw }] = await Promise.all([
     profilesQuery,
-    supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes'),
+    supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes').eq('school_id', profile.school_id),
   ])
 
   const users = (data ?? []) as UserRow[]

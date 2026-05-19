@@ -19,12 +19,13 @@ export const ScheduleRepository = {
     })
   },
 
-  async updateScheduleFile(id: string, file_url: string, file_name: string) {
+  async updateScheduleFile(id: string, schoolId: string, file_url: string, file_name: string) {
     const supabase = await createClient()
     return supabase
       .from('lesson_schedules')
       .update({ file_url, file_name })
       .eq('id', id)
+      .eq('school_id', schoolId)
   },
 
   async updateOkulTypeLabel(school_id: string, type_label: string) {
@@ -36,8 +37,8 @@ export const ScheduleRepository = {
       .eq('schedule_type', 'okul')
   },
 
-  async deleteSchedule(id: string) {
+  async deleteSchedule(id: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('lesson_schedules').delete().eq('id', id)
+    return supabase.from('lesson_schedules').delete().eq('id', id).eq('school_id', schoolId)
   },
 }

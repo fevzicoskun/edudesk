@@ -31,7 +31,7 @@ export const ScheduleService = {
     const ability = await requireAbility()
     if (ability.cannot(P.SCHOOL.UPDATE)) throw new Error('Unauthorized')
 
-    const { error } = await ScheduleRepository.updateScheduleFile(id, file_url, file_name)
+    const { error } = await ScheduleRepository.updateScheduleFile(id, ability.schoolId, file_url, file_name)
     if (error) throw error
   },
 
@@ -47,7 +47,7 @@ export const ScheduleService = {
     const ability = await requireAbility()
     if (ability.cannot(P.SCHOOL.UPDATE)) throw new Error('Unauthorized')
 
-    const { error } = await ScheduleRepository.deleteSchedule(id)
+    const { error } = await ScheduleRepository.deleteSchedule(id, ability.schoolId)
     if (error) throw error
   },
 }

@@ -27,6 +27,7 @@ export default async function DersProgramiPage() {
     supabase
       .from('lesson_schedules')
       .select('id, schedule_type, type_label, teacher_id, class_id, file_url, file_name, created_at')
+      .eq('school_id', profile.school_id)
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')

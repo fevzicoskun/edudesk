@@ -30,6 +30,8 @@ export async function revokeToken(
   tokenType: TokenType,
   reason?: string
 ): Promise<{ ok: boolean; error?: string }> {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
   const result = await TokenService.revokeToken(token, tokenType, reason)
   if (result.ok) revalidatePath('/audit')
   return result

@@ -19,22 +19,27 @@ export default async function SinifDetayPage({
 
   const isMudurYardimcisi = profile?.role === 'mudur_yardimcisi'
 
+  const schoolId = profile?.school_id ?? ''
+
   const [clsResult, studentsResult, teachersResult] = await Promise.all([
     supabase
       .from('classes')
       .select('name, mentor_teacher_id')
       .eq('id', id)
+      .eq('school_id', schoolId)
       .single(),
     supabase
       .from('students')
       .select('id, full_name, student_number')
       .eq('class_id', id)
+      .eq('school_id', schoolId)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
     isMudurYardimcisi
       ? supabase
           .from('profiles')
           .select('id, full_name')
+          .eq('school_id', schoolId)
           .in('role', ['ogretmen', 'zumre_baskani'])
           .order('full_name')
       : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),

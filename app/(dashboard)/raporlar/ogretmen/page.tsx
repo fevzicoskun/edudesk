@@ -11,28 +11,30 @@ export default async function OgretmenRaporPage() {
 
   let teachers: { id: string; full_name: string; subject: string | null }[] = []
 
+  const sid = profile.school_id ?? ''
+
   if (isMudurOrAbove(profile.role)) {
-    // Tüm öğretmenler
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, subject')
+      .eq('school_id', sid)
       .in('role', ['ogretmen', 'zumre_baskani'])
       .order('full_name')
     teachers = (data ?? []) as { id: string; full_name: string; subject: string | null }[]
   } else if (profile.role === 'zumre_baskani' && profile.subject) {
-    // Aynı subject'teki öğretmenler
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, subject')
+      .eq('school_id', sid)
       .in('role', ['ogretmen', 'zumre_baskani'])
       .eq('subject', profile.subject)
       .order('full_name')
     teachers = (data ?? []) as { id: string; full_name: string; subject: string | null }[]
   } else {
-    // Sadece kendi verisi
     const { data } = await supabase
       .from('profiles')
       .select('id, full_name, subject')
+      .eq('school_id', sid)
       .eq('id', currentUserId)
       .single()
     if (data) teachers = [data as { id: string; full_name: string; subject: string | null }]

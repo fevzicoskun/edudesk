@@ -14,14 +14,9 @@ export const ExportService = {
     userId: string,
     schoolId: string
   ): Promise<{ jobId: string } | { error: string }> {
-    // Stable idempotency key: one export job per user+type+params combination
-    // per minute (prevents accidental double-clicks)
     const dedupeKey = `export-${userId}-${jobType}-${Math.floor(Date.now() / 60_000)}`
 
-    // Check if an identical event was already enqueued this minute
-    const { data: existing } = await ExportRepository.findByEventId(dedupeKey)
-    if (existing) return { jobId: existing.id }
-
+    // Atomic insert — if inngest_event_id unique constraint fires, fetch the existing row
     const { data: job, error } = await ExportRepository.create({
       school_id: schoolId,
       user_id:   userId,
@@ -29,10 +24,18 @@ export const ExportService = {
       params,
       inngest_event_id: dedupeKey,
     })
-    if (error || !job) return { error: error?.message ?? 'İş oluşturulamadı' }
+
+    if (error) {
+      if (error.code === '23505') {
+        const { data: existing } = await ExportRepository.findByEventId(dedupeKey)
+        if (existing) return { jobId: existing.id }
+      }
+      return { error: error.message ?? 'İş oluşturulamadı' }
+    }
+    if (!job) return { error: 'İş oluşturulamadı' }
 
     await inngest.send({
-      id:   dedupeKey,               // Inngest-level idempotency
+      id:   dedupeKey,
       name: 'export/requested',
       data: { jobId: job.id, jobType, params, userId, schoolId },
     })
@@ -45,7 +48,7 @@ export const ExportService = {
    * if it hasn't completed yet; the dead-letter handler will not fire.
    */
   async cancel(jobId: string, cancelledBy: string): Promise<{ error?: string }> {
-    const { data: job } = await ExportRepository.findById(jobId)
+    const { data: job } = await ExportRepository.findById(jobId, cancelledBy)
     if (!job) return { error: 'İş bulunamadı' }
     if (!['pending', 'processing'].includes(job.status)) {
       return { error: `İş zaten ${job.status} durumunda` }

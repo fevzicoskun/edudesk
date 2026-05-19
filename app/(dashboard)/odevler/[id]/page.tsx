@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { notFound, redirect } from 'next/navigation'
 
 export const revalidate = 0
 import Link from 'next/link'
@@ -14,12 +15,16 @@ export default async function OdevDetayPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) redirect('/login')
+
   const supabase = await createClient()
 
   const { data: hw } = await supabase
     .from('homeworks')
     .select('*, classes(name)')
     .eq('id', id)
+    .eq('school_id', profile.school_id)
     .single()
 
   if (!hw) notFound()
@@ -28,7 +33,8 @@ export default async function OdevDetayPage({
     supabase
       .from('students')
       .select('id, full_name, student_number')
-      .eq('class_id', hw.class_id),
+      .eq('class_id', hw.class_id)
+      .eq('school_id', profile.school_id),
     supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
   ])
 

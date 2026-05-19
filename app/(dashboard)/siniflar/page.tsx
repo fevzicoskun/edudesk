@@ -10,7 +10,8 @@ export default async function SiniflarPage() {
 
   const { data: classes } = await supabase
     .from('classes')
-    .select('id, name, grade, students(id)')
+    .select('id, name, grade, students(id, deleted_at)')
+    .eq('school_id', profile?.school_id ?? '')
     .order('grade')
     .order('name')
 
@@ -63,7 +64,10 @@ export default async function SiniflarPage() {
         <div className="text-center py-20 text-gray-400 text-sm">Henüz sınıf eklenmemiş.</div>
       ) : (
         <SinifArama
-          classes={classes as { id: string; name: string; grade: number; students: { id: string }[] }[]}
+          classes={(classes as { id: string; name: string; grade: number; students: { id: string; deleted_at: string | null }[] }[]).map(c => ({
+            ...c,
+            students: c.students.filter(s => !s.deleted_at),
+          }))}
           isBaskan={isBaskan}
         />
       )}

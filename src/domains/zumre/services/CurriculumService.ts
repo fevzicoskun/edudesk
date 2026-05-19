@@ -32,11 +32,11 @@ export const CurriculumService = {
   },
 
   async setStatus(id: string, status: CurriculumStatus) {
-    const supabase = await createClient()
+    const [supabase, schoolId] = await Promise.all([createClient(), requireSchoolId()])
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    await CurriculumRepository.updateProgressStatus(id, user.id, {
+    await CurriculumRepository.updateProgressStatus(id, user.id, schoolId, {
       status,
       completed: status !== 'eksik_kaldi',
       completion_date: status === 'tamamlandi' ? new Date().toISOString().split('T')[0] : null,
@@ -44,19 +44,19 @@ export const CurriculumService = {
   },
 
   async removeProgress(id: string) {
-    const supabase = await createClient()
+    const [supabase, schoolId] = await Promise.all([createClient(), requireSchoolId()])
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    await CurriculumRepository.deleteProgress(id, user.id)
+    await CurriculumRepository.deleteProgress(id, user.id, schoolId)
   },
 
   async clearClassCurriculum(classId: string) {
-    const supabase = await createClient()
+    const [supabase, schoolId] = await Promise.all([createClient(), requireSchoolId()])
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    await CurriculumRepository.clearClassCurriculum(classId, user.id)
+    await CurriculumRepository.clearClassCurriculum(classId, user.id, schoolId)
   },
 
   async fetchClassStudents(classId: string): Promise<{ id: string; full_name: string }[]> {

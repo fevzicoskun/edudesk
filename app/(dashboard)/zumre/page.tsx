@@ -1,5 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
 export const revalidate = 60
@@ -24,17 +25,14 @@ export default async function ZumrePage({
   searchParams: Promise<{ tab?: string }>
 }) {
   const { tab = 'toplanti' } = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const profile = await getCurrentProfile()
+  const [supabase, user, profile] = await Promise.all([createClient(), getCurrentUser(), getCurrentProfile()])
+  if (!user) redirect('/login')
   const isBaskan = profile?.role === 'zumre_baskani'
 
   const sid = profile?.school_id ?? ''
   const [meetingsResult, examsResult, curriculumResult, classesResult, branchesResult] = await Promise.all([
-    supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').eq('school_id', sid).order('meeting_date', { ascending: false }),
-    supabase.from('common_exams').select('id, title, subject, exam_date, exam_entries(id, name, student_id, grade)').eq('school_id', sid).order('exam_date', { ascending: false }),
+    supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').eq('school_id', sid).is('deleted_at', null).order('meeting_date', { ascending: false }),
+    supabase.from('common_exams').select('id, title, subject, exam_date, exam_entries(id, name, student_id, grade)').eq('school_id', sid).is('deleted_at', null).order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
       .select('*, classes(grade, name)')

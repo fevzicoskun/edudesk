@@ -29,9 +29,12 @@ export default async function MentorRaporlarPage({
   const { class_id } = await searchParams
   const supabase = await createClient()
 
+  const sid = profile.school_id ?? ''
+
   let reportsQuery = supabase
     .from('mentor_reports')
     .select('id, content, report_date, mentor_id, students(full_name, student_number), classes(id, name), profiles(id, full_name)')
+    .eq('school_id', sid)
     .order('report_date', { ascending: false })
 
   if (class_id) reportsQuery = reportsQuery.eq('class_id', class_id)
@@ -39,7 +42,7 @@ export default async function MentorRaporlarPage({
   const _t1 = perfGroup('raporlar/mentor:parallel-queries')
   const [reportsRes, classesRes] = await Promise.all([
     reportsQuery,
-    supabase.from('classes').select('id, name').order('name'),
+    supabase.from('classes').select('id, name').eq('school_id', sid).order('name'),
   ])
   _t1.done()
 
