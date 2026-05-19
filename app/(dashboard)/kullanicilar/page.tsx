@@ -78,7 +78,8 @@ export default async function KullanicilarPage() {
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[500px]">
           <thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
             <tr>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ad Soyad</th>
@@ -149,6 +150,7 @@ export default async function KullanicilarPage() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

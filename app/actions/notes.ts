@@ -13,6 +13,7 @@ export async function createNote(): Promise<string> {
 export async function updateNote(id: string, title: string, content: string): Promise<void> {
   UUID.parse(id)
   await NoteService.updateNote(id, title, content)
+  revalidatePath('/notlar')
 }
 
 export async function deleteNote(id: string): Promise<void> {

@@ -245,8 +245,8 @@ export default function SinavCard({
           )}
 
           {perStudent && entries.some(e => e.name) && (
-            <div className="border border-gray-100 dark:border-slate-700 rounded-lg overflow-hidden">
-              <table className="w-full text-xs">
+            <div className="border border-gray-100 dark:border-slate-700 rounded-lg overflow-hidden overflow-x-auto">
+              <table className="w-full text-xs min-w-[320px]">
                 <thead className="bg-gray-50 dark:bg-slate-700">
                   <tr>
                     <th className="text-left px-3 py-1.5 text-gray-500 dark:text-slate-400 font-medium">Öğrenci</th>

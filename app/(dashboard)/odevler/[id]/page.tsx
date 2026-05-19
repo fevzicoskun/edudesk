@@ -56,20 +56,20 @@ export default async function OdevDetayPage({
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-3 print:hidden">
-        <Link href="/odevler" className="text-sm text-gray-500 hover:text-gray-700">
+        <Link href="/odevler" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200">
           ← Ödevler
         </Link>
         <PrintButton />
       </div>
 
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900">{hw.title}</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{hw.title}</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {cls?.name ?? '—'} · {hw.subject} · Son:{' '}
           {format(parseISO(hw.due_date), 'd MMMM yyyy')}
         </p>
         {hw.description && (
-          <p className="text-sm text-gray-700 mt-3 bg-gray-50 rounded-xl p-3 border border-gray-200">
+          <p className="text-sm text-gray-700 dark:text-slate-300 mt-3 bg-gray-50 dark:bg-slate-800 rounded-xl p-3 border border-gray-200 dark:border-slate-700">
             {hw.description}
           </p>
         )}

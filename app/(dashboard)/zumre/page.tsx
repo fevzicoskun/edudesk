@@ -31,17 +31,18 @@ export default async function ZumrePage({
   const profile = await getCurrentProfile()
   const isBaskan = profile?.role === 'zumre_baskani'
 
+  const sid = profile?.school_id ?? ''
   const [meetingsResult, examsResult, curriculumResult, classesResult, branchesResult] = await Promise.all([
-    supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').order('meeting_date', { ascending: false }),
-    supabase.from('common_exams').select('id, title, subject, exam_date, exam_entries(id, name, student_id, grade)').order('exam_date', { ascending: false }),
+    supabase.from('zumre_meetings').select('id, title, meeting_date, notes, branch').eq('school_id', sid).order('meeting_date', { ascending: false }),
+    supabase.from('common_exams').select('id, title, subject, exam_date, exam_entries(id, name, student_id, grade)').eq('school_id', sid).order('exam_date', { ascending: false }),
     supabase
       .from('curriculum_progress')
       .select('*, classes(grade, name)')
       .eq('teacher_id', user.id)
       .order('week_number', { nullsFirst: true })
       .order('created_at'),
-    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
-    supabase.from('profiles').select('subject').not('subject', 'is', null).order('subject'),
+    supabase.from('classes').select('id, name, grade').eq('school_id', sid).order('grade').order('name'),
+    supabase.from('profiles').select('subject').eq('school_id', sid).not('subject', 'is', null).order('subject'),
   ])
 
   const meetings = meetingsResult.data ?? []

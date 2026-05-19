@@ -118,6 +118,7 @@ export async function addMentorReport(
   const report_date = String(formData.get('report_date') ?? '').trim()
 
   if (content.length < 5) throw new Error('Rapor içeriği en az 5 karakter olmalı.')
+  if (content.length > 2000) throw new Error('Rapor içeriği en fazla 2000 karakter olabilir.')
   if (!report_date) throw new Error('Rapor tarihi zorunludur.')
 
   const user = await getCurrentUser()
@@ -158,11 +159,34 @@ export async function deleteMentorReport(
   classId: string
 ) {
   UUID.parse(reportId)
+  const user = await getCurrentUser()
+  if (!user) throw new Error('Oturum gerekli.')
+  const profile = await getCurrentProfile()
+  if (!profile) throw new Error('Profil bulunamadı.')
+
   const supabase = await createClient()
+
+  // Raporu çek — RLS sadece mentor_id = user ya da yönetici görebilir
+  const { data: report } = await supabase
+    .from('mentor_reports')
+    .select('mentor_id')
+    .eq('id', reportId)
+    .eq('school_id', profile.school_id)
+    .single()
+
+  if (!report) throw new Error('Rapor bulunamadı.')
+
+  // Sadece raporu yazan mentor silebilir
+  if (report.mentor_id !== user.id) {
+    throw new Error('Bu raporu silme yetkiniz yok.')
+  }
+
   const { error } = await supabase
     .from('mentor_reports')
     .delete()
     .eq('id', reportId)
+    .eq('mentor_id', user.id)
+    .eq('school_id', profile.school_id)
 
   if (error) throw new Error(`Rapor silinemedi: ${error.message}`)
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
