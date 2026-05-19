@@ -1,7 +1,6 @@
 ﻿import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { perfGroup } from '@/src/shared/perf'
 import { isMudurOrAbove } from '@/src/shared/types'
 import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
@@ -58,7 +57,6 @@ export default async function AnasayfaPage() {
     .order('due_date', { ascending: false })
   if (!isZumreBaskani) hwQuery = hwQuery.eq('teacher_id', user.id)
 
-  const _t1 = perfGroup('anasayfa:ogretmen:parallel-queries')
   const [{ data: hwData }, { data: curriculumRaw }] = await Promise.all([
     hwQuery,
     supabase
@@ -66,7 +64,6 @@ export default async function AnasayfaPage() {
       .select('class_id, status, classes(name, grade)')
       .eq('teacher_id', user.id),
   ])
-  _t1.done()
   const homeworks = (hwData ?? []) as unknown as HwLite[]
   type CurrRaw = { class_id: string; status: string; classes: { name: string; grade: number } | null }
   const curriculum = (curriculumRaw ?? []) as unknown as CurrRaw[]

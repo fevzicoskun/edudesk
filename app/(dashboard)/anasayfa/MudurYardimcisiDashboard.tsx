@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import { perfGroup } from '@/src/shared/perf'
 import Link from 'next/link'
 import { format, subDays, addDays } from '@/src/shared/date'
 import AjandaWidget from './AjandaWidget'
@@ -33,7 +32,6 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
   const thirtyDaysAgo = subDays(today, 30).toISOString().split('T')[0]
   const twoWeeksAgo   = subDays(today, 14).toISOString()
 
-  const _t1 = perfGroup('mudur-yardimcisi-dashboard:parallel-queries')
   const [profilesRes, classesRes, studentsRes, todayAttRes, absent30Res, meetingsRes, sessionsRes] = await Promise.all([
     supabase
       .from('profiles')
@@ -71,8 +69,6 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
       .select('user_id, last_seen_at')
       .eq('school_id', school_id),
   ])
-  _t1.done()
-
   const teachers  = profilesRes.data ?? []
   const classes   = classesRes.data   ?? []
   const students  = studentsRes.data  ?? []

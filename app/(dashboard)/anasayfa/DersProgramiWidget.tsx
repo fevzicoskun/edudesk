@@ -1,6 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
-import { perfGroup } from '@/src/shared/perf'
 
 type Schedule = {
   id: string
@@ -23,8 +22,6 @@ export default async function DersProgramiWidget() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  // Paralel: kendi ders programları + mentor olduğu sınıflar (waterfall yok)
-  const _t1 = perfGroup('DersProgramiWidget:parallel-queries')
   const [ownSchedulesRes, mentorClassesRes] = await Promise.all([
     supabase
       .from('lesson_schedules')
@@ -37,7 +34,6 @@ export default async function DersProgramiWidget() {
       .select('id, name, grade')
       .eq('mentor_teacher_id', user.id),
   ])
-  _t1.done()
 
   const mentorClasses = mentorClassesRes.data ?? []
   const mentorClassIds = mentorClasses.map((c: { id: string }) => c.id)

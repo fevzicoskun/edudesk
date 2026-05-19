@@ -4,29 +4,12 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import YoklamaBoard from './YoklamaBoard'
 import YoklamaGecmis from './YoklamaGecmis'
-import CopySqlButton from './CopySqlButton'
 import PrintButton from '@/components/PrintButton'
 import type { AttendanceStatus } from '@/src/domains/attendance/types'
 import { schoolYearStart } from '@/src/shared/utils'
 
 export const revalidate = 0
 
-const MIGRATION_SQL = `CREATE TABLE IF NOT EXISTS attendance (
-  id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  teacher_id UUID NOT NULL REFERENCES profiles(id),
-  class_id   UUID NOT NULL REFERENCES classes(id),
-  student_id UUID NOT NULL REFERENCES students(id),
-  date       DATE NOT NULL,
-  status     TEXT NOT NULL DEFAULT 'present'
-               CHECK (status IN ('present', 'absent', 'late', 'excused')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE (class_id, student_id, date)
-);
-CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, date);
-ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "attendance_own" ON attendance FOR ALL TO authenticated
-  USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
-CREATE POLICY "attendance_public_read" ON attendance FOR SELECT TO anon USING (true);`
 
 function last14Days(): string[] {
   return Array.from({ length: 14 }, (_, i) => {
@@ -121,20 +104,9 @@ export default async function YoklamaPage({
 
       {!tableExists ? (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-5">
-          <h2 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Kurulum gerekiyor</h2>
-          <p className="text-sm text-yellow-700 dark:text-yellow-400 mb-3">
-            Yoklama tablosu henüz oluşturulmamış. Supabase Dashboard › SQL Editor'de çalıştır:
-          </p>
-          <div className="relative">
-            <pre className="bg-gray-900 text-green-400 text-xs p-4 rounded-lg overflow-x-auto whitespace-pre-wrap">
-              {MIGRATION_SQL}
-            </pre>
-            <div className="absolute top-2 right-2">
-              <CopySqlButton sql={MIGRATION_SQL} />
-            </div>
-          </div>
-          <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-3">
-            Kopyala → Supabase Dashboard › SQL Editor&apos;e yapıştır → Çalıştır → Sayfayı yenile.
+          <h2 className="font-semibold text-yellow-800 dark:text-yellow-300 mb-2">Yoklama modülü henüz etkinleştirilmemiş</h2>
+          <p className="text-sm text-yellow-700 dark:text-yellow-400">
+            Lütfen sistem yöneticinizle iletişime geçin.
           </p>
         </div>
       ) : (

@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { perfGroup } from '@/src/shared/perf'
 import { format, parseISO } from '@/src/shared/date'
 
 const ALLOWED_ROLES = ['mudur', 'mudur_yardimcisi', 'zumre_baskani']
@@ -39,13 +38,10 @@ export default async function MentorRaporlarPage({
 
   if (class_id) reportsQuery = reportsQuery.eq('class_id', class_id)
 
-  const _t1 = perfGroup('raporlar/mentor:parallel-queries')
   const [reportsRes, classesRes] = await Promise.all([
     reportsQuery,
     supabase.from('classes').select('id, name').eq('school_id', sid).order('name'),
   ])
-  _t1.done()
-
   const rawReports = (reportsRes.data ?? []) as unknown as RawReport[]
   const classes = classesRes.data ?? []
 
