@@ -87,9 +87,12 @@ export const ClassRepository = {
     return supabase.from('students').insert(rows)
   },
 
-  async deleteStudentNote(noteId: string) {
+  async deleteStudentNote(noteId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('student_notes').delete().eq('id', noteId)
+    return supabase.from('student_notes').delete()
+      .eq('id', noteId)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
   },
 
   async insertStudentNote(data: {

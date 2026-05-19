@@ -121,7 +121,8 @@ export const ClassService = {
   },
 
   async deleteStudentNote(noteId: string) {
-    await requireSchoolId()
-    await ClassRepository.deleteStudentNote(noteId)
+    const [schoolId, user] = await Promise.all([requireSchoolId(), getCurrentUser()])
+    if (!user) throw new Error('Giriş gerekli')
+    await ClassRepository.deleteStudentNote(noteId, user.id, schoolId)
   },
 }
