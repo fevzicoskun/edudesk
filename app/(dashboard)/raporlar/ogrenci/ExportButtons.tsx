@@ -67,10 +67,9 @@ export default function ExportButtons({
   async function handlePdf() {
     setPdfLoading(true)
     try {
-      const { default: JsPDF } = await import('jspdf')
+      const { createDoc } = await import('@/src/lib/createPdf')
       const { default: autoTable } = await import('jspdf-autotable')
-      const doc = new JsPDF()
-      type DocWithTable = InstanceType<typeof JsPDF> & { lastAutoTable?: { finalY?: number } }
+      const doc = await createDoc()
       const date = new Date().toLocaleDateString('tr-TR')
 
       doc.setFontSize(16)
@@ -96,7 +95,7 @@ export default function ExportButtons({
           headStyles: { fillColor: [59, 130, 246] },
           margin: { left: 14, right: 14 },
         })
-        y = (doc as DocWithTable).lastAutoTable?.finalY ?? y + 20
+        y = doc.lastAutoTable?.finalY ?? y + 20
         y += 6
       }
 
@@ -108,7 +107,7 @@ export default function ExportButtons({
           headStyles: { fillColor: [16, 185, 129] },
           margin: { left: 14, right: 14 },
         })
-        y = (doc as DocWithTable).lastAutoTable?.finalY ?? y + 20
+        y = doc.lastAutoTable?.finalY ?? y + 20
         y += 6
       }
 

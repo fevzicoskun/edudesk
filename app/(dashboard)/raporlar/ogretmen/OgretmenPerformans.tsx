@@ -166,9 +166,9 @@ export default function OgretmenPerformans({ teachers, currentUserId, schoolId }
     if (!data) return
     setPdfLoading(true)
     try {
-      const jsPDF = (await import('jspdf')).default
+      const { createDoc } = await import('@/src/lib/createPdf')
       const autoTable = (await import('jspdf-autotable')).default
-      const doc = new jsPDF()
+      const doc = await createDoc()
       const teacherName = teachers.find(t => t.id === selectedTeacher)?.full_name ?? ''
       const date = new Date().toLocaleDateString('tr-TR')
 

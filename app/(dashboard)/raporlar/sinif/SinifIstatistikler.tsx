@@ -175,10 +175,9 @@ export default function SinifIstatistikler({ classes, schoolId }: SinifIstatisti
     if (!data) return
     setPdfLoading(true)
     try {
-      const { default: JsPDF } = await import('jspdf')
+      const { createDoc } = await import('@/src/lib/createPdf')
       const { default: autoTable } = await import('jspdf-autotable')
-      const doc = new JsPDF()
-      type DocWithTable = InstanceType<typeof JsPDF> & { lastAutoTable?: { finalY?: number } }
+      const doc = await createDoc()
       const sinifAd = classes.find(c => c.id === selectedClass)?.name ?? ''
       const date = new Date().toLocaleDateString('tr-TR')
 
@@ -200,7 +199,7 @@ export default function SinifIstatistikler({ classes, schoolId }: SinifIstatisti
         headStyles: { fillColor: [22, 163, 74] },
         margin: { left: 14, right: 14 },
       })
-      y = (doc as DocWithTable).lastAutoTable?.finalY ?? y + 30
+      y = doc.lastAutoTable?.finalY ?? y + 30
       y += 6
 
       autoTable(doc, {
@@ -210,7 +209,7 @@ export default function SinifIstatistikler({ classes, schoolId }: SinifIstatisti
         headStyles: { fillColor: [239, 68, 68] },
         margin: { left: 14, right: 14 },
       })
-      y = (doc as DocWithTable).lastAutoTable?.finalY ?? y + 30
+      y = doc.lastAutoTable?.finalY ?? y + 30
       y += 6
 
       autoTable(doc, {

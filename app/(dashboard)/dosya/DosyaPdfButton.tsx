@@ -90,10 +90,10 @@ export default function DosyaPdfButton() {
         if (saved) checked = JSON.parse(saved) as Record<string, boolean>
       } catch { /* ignore */ }
 
-      const { default: JsPDF } = await import('jspdf')
+      const { createDoc } = await import('@/src/lib/createPdf')
       const { default: autoTable } = await import('jspdf-autotable')
 
-      const doc = new JsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+      const doc = await createDoc({ orientation: 'portrait', unit: 'mm', format: 'a4' })
 
       const date = new Date().toLocaleDateString('tr-TR')
       const total = BELGELER.reduce((s, k) => s + k.belgeler.length, 0)
@@ -134,7 +134,7 @@ export default function DosyaPdfButton() {
           },
         })
 
-        const finalY = (doc as InstanceType<typeof JsPDF> & { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? yStart
+        const finalY = doc.lastAutoTable?.finalY ?? yStart
         yStart = finalY + 6
       }
 
