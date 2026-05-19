@@ -61,6 +61,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
   let studentId: string
 
+  let tokenSchoolId: string | undefined
+
   if (looksLikeToken(token)) {
     const supabase = createServiceClient()
     const result = await verifyPublicToken(token, 'veli')
@@ -69,6 +71,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       return <TokenExpiredPage />
     }
     studentId = result.payload.id
+    tokenSchoolId = result.payload.m?.school_id
   } else if (UUID.safeParse(token).success) {
     // Eski UUID tabanlı link — geçersiz sayıyoruz (yeni link almaları gerekiyor)
     return <TokenExpiredPage />
@@ -77,12 +80,14 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   }
 
   const supabase = createServiceClient()
+  let studentQuery = supabase
+    .from('students')
+    .select('id, full_name, student_number, classes(name, grade)')
+    .eq('id', studentId)
+  if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
+
   const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
-    supabase
-      .from('students')
-      .select('id, full_name, student_number, classes(name, grade)')
-      .eq('id', studentId)
-      .single(),
+    studentQuery.single(),
     supabase
       .from('homework_submissions')
       .select('id, status, updated_at, homeworks(title, subject, due_date, description)')

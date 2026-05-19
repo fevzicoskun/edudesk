@@ -17,7 +17,7 @@ export const TokenService = {
     const { data: student } = await TokenRepository.findStudentById(studentId, school_id)
     if (!student) throw new Error('Öğrenci bulunamadı')
 
-    const token = await createPublicToken('veli', studentId, 7)
+    const token = await createPublicToken('veli', studentId, 7, { school_id })
     const jti = extractJti(token)
     const expiresAt = new Date(Date.now() + 7 * 86400_000).toISOString()
 
