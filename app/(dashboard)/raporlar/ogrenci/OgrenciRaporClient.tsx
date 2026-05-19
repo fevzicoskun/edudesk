@@ -164,6 +164,7 @@ export default function OgrenciRaporClient({ classes, schoolId }: OgrenciRaporCl
         .from('exam_entries')
         .select('grade')
         .eq('student_id', selectedStudent)
+        .eq('school_id', schoolId)
         .limit(100)
 
       const exams = (examData ?? []) as { grade: number }[]
