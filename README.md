@@ -1,6 +1,6 @@
-# EduDesk — Zümre Takip Sistemi
+# EduDesk — Okul Yönetim Platformu
 
-Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production-grade zümre yönetim platformu.
+Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production-grade okul yönetim platformu.
 
 **Canlı:** https://zumre-takip.vercel.app
 
@@ -8,7 +8,7 @@ Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production
 
 ## Özellikler
 
-| Modül | Ne yapıyor |
+| Modül | Açıklama |
 |-------|-----------|
 | **Sınıf & Öğrenci** | Toplu ekleme, sınıf bazlı liste, öğrenci notları, Excel export |
 | **Ödev Takibi** | Durum board, notlar, toplu güncelleme, Excel export, mobil swipe sil |
@@ -17,21 +17,35 @@ Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production
 | **Zümre Toplantıları** | Gündem oluşturma, tutanak yazdırma *(sadece Zümre Başkanı)* |
 | **Ortak Sınavlar** | Sınav planlaması, öğrenci bazlı not girişi *(sadece Zümre Başkanı)* |
 | **Müfredat Takibi** | TYMM import, konu bazlı ilerleme |
-| **Excel / PDF Export** | Gerçek XLSX (SheetJS), server-side Supabase Storage; client-side jspdf |
-| **Raporlar** | Öğrenci, sınıf ve öğretmen bazlı interaktif grafikler (Recharts) + Excel/PDF export |
-| **Mentor Sistemi** | Müdür yardımcısı sınıfa mentör atar; mentör öğrenciye tarihli rapor girer |
-| **Müdür Y. Dashboard** | Yaklaşan ödevler + devamsızlık özeti — 14 günlük takvim-ajanda widget'ı |
-| **Denetim Günlüğü** | Tüm işlemler kaydedilir; token iptali *(sadece Zümre Başkanı)* |
+| **Raporlar** | Öğrenci/sınıf/öğretmen/mentor bazlı interaktif grafikler (Recharts) + Excel/PDF export |
+| **Mentörlük** | Atanmış sınıf öğrencilerine rapor + kişisel öğrenci takip defteri (veli bilgileri dahil) |
+| **Ders Programı** | MY PDF/resim yükler → öğretmenler dashboard'dan görür |
+| **Müdür Y. Dashboard** | Devamsızlık özeti, öğretmen listesi, ajanda, mentör rapor özeti |
+| **Müdür Dashboard** | Okul geneli istatistikler, ajanda, mentör rapor özeti |
+| **Denetim Günlüğü** | Tüm işlemler kaydedilir; token iptali *(Başkan/Müdür)* |
 | **Öğretmen Dosyası** | MEB belge kontrol listesi, PDF export |
-| **Kişisel Notlar** | Zengin metin editörü, Excel export |
+| **Kişisel Notlar** | Not editörü, Excel export |
 | **Dark Mode** | Sistem teması veya manuel geçiş |
 
 ---
 
 ## Rol Sistemi
 
+### Hiyerarşi
+
+```
+Müdür
+  └─ Müdür Yardımcısı
+       └─ Zümre Başkanı
+            └─ Öğretmen
+```
+
+Her üst rol, alt rolün tüm yetkilerini içerir.
+
+### Yetki Matrisi
+
 | Özellik | Öğretmen | Zümre Başkanı | Müdür Yardımcısı | Müdür |
-|---------|----------|---------------|------------------|-------|
+|---------|:--------:|:-------------:|:----------------:|:-----:|
 | Kendi ödevlerini yönetme | ✅ | ✅ | ✅ | ✅ |
 | Tüm ödevleri görme | ❌ | ✅ | ✅ | ✅ |
 | Yoklama alma | ✅ | ✅ | ✅ | ✅ |
@@ -44,46 +58,45 @@ Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production
 | Token iptal etme | ❌ | ✅ | ❌ | ❌ |
 | Mentor atama | ❌ | ❌ | ✅ | ✅ |
 | Mentör raporu yazma | ✅ (atandıysa) | ✅ (atandıysa) | ❌ (okuma) | ❌ (okuma) |
-| Raporlar modülü | ✅ | ✅ | ✅ | ✅ |
-| Kullanıcı listesi (tüm roller) | ❌ | ❌ | ✅ (müdür hariç) | ✅ |
+| Mentörlük defteri (manuel öğrenci) | ✅ | ✅ | ❌ | ❌ |
+| Ders programı yükleme | ❌ | ❌ | ✅ | ✅ |
+| Ders programı görme | ✅ (kendi) | ✅ (kendi) | ✅ (tümü) | ✅ (tümü) |
+| Raporlar → Mentör sekmesi | ❌ | ✅ | ✅ | ✅ |
+| Kullanıcı listesi | ❌ | ❌ | ✅ (müdür hariç) | ✅ |
+| Kullanıcı davet / silme | ❌ | ❌ | ❌ | ✅ |
+| Rol atama | ❌ | ❌ | ❌ | ✅ |
+| Silinen kayıtları geri yükleme | ❌ | ❌ | ✅ | ✅ |
 
-### Rol atama (SQL)
+### Rol Atama (SQL)
 
 ```sql
 -- Kullanıcı UUID'sini bul
 SELECT id, email FROM auth.users WHERE email = 'ornek@okul.com';
 
--- Rol ata
-UPDATE profiles
-SET role = 'zumre_baskani'   -- veya: ogretmen | mudur_yardimcisi | mudur
-WHERE id = '<kullanıcı-uuid>';
+-- Rol ata (ogretmen | zumre_baskani | mudur_yardimcisi | mudur)
+UPDATE profiles SET role = 'zumre_baskani' WHERE id = '<uuid>';
 ```
 
-### Yeni öğretmen ekleme
+### Yeni Öğretmen Ekleme
 
-Öğretmen `/login` → **Kayıt Ol** ile hesap oluşturur, `/onboarding` sayfasına yönlendirilir. Mevcut bir okula katılım için:
+Öğretmen `/login` → **Kayıt Ol** ile hesap oluşturur. Mevcut okula katılım için:
 
 ```sql
--- Okul UUID'sini öğren
 SELECT id, name FROM schools;
-
--- Öğretmeni okula ata
-UPDATE profiles
-SET school_id = '<okul-uuid>'
-WHERE id = '<öğretmen-uuid>';
+UPDATE profiles SET school_id = '<okul-uuid>' WHERE id = '<öğretmen-uuid>';
 ```
 
 ---
 
-## Kurulum (Yeni Proje)
+## Kurulum
 
 ### Gereksinimler
 
 - Node.js 20+
-- Supabase hesabı (ücretsiz plan yeterli)
-- Upstash hesabı (rate limiting — opsiyonel, yoksa in-memory fallback çalışır)
+- Supabase hesabı
+- Upstash hesabı (opsiyonel — yoksa in-memory rate limit çalışır)
 
-### 1. Klonla ve bağımlılıkları yükle
+### 1. Kur
 
 ```bash
 git clone https://github.com/fevzicoskun/zumre-takip.git
@@ -91,84 +104,47 @@ cd zumre-takip
 npm install
 ```
 
-### 2. Ortam değişkenlerini ayarla
+### 2. Ortam Değişkenleri
 
 ```bash
 cp .env.example .env.local
 ```
 
-| Değişken | Nereden alınır | Zorunlu |
-|----------|---------------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API → Project URL | ✅ |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API → `anon` public key | ✅ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API → `service_role` secret key | ✅ |
+| Değişken | Nereden | Zorunlu |
+|----------|---------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API | ✅ |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API (anon key) | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (service_role) | ✅ |
 | `TOKEN_SECRET` | `openssl rand -hex 32` | ✅ |
-| `UPSTASH_REDIS_REST_URL` | [console.upstash.com](https://console.upstash.com) → Redis → REST URL | opsiyonel |
-| `UPSTASH_REDIS_REST_TOKEN` | Aynı sayfadan REST Token | opsiyonel |
+| `UPSTASH_REDIS_REST_URL` | console.upstash.com | opsiyonel |
+| `UPSTASH_REDIS_REST_TOKEN` | console.upstash.com | opsiyonel |
 
-> **`SUPABASE_SERVICE_ROLE_KEY` kritik:** Veli portalı, yoklama yazdırma ve admin işlemleri bu key olmadan 500 hatası verir.
+### 3. Veritabanı
 
-### 3. Veritabanını kur
+Supabase Dashboard → SQL Editor → `supabase/migrations/` içindeki dosyaları sırayla çalıştır.
 
-Supabase Dashboard → **SQL Editor** — migration dosyalarını sırasıyla çalıştır:
-
-```
-supabase/migrations/
-  ├── 20260513165225_create_attendance_table.sql
-  ├── 20260513170429_add_grade_map_drop_orphaned_tables.sql
-  ├── 20260514173535_rol_bazli_rls_politikalari.sql
-  ├── 20260514205010_audit_log_sistemi.sql
-  ├── 20260514205140_multi_tenant_school_isolation.sql
-  ├── 20260514211517_schools_isolation_20260515.sql
-  ├── 20260514211611_rls_hardening_20260515.sql
-  ├── 20260515_phase3_constraints_jobs_revocation.sql
-  ├── 20260519100000_add_mentor_teacher.sql
-  └── 20260519110000_add_mentor_reports.sql
-```
-
-### 4. Supabase Storage bucket oluştur
+### 4. Storage Bucket
 
 ```sql
 INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'exports', 'exports', false, 10485760,
-  ARRAY['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-)
+VALUES ('exports', 'exports', false, 10485760,
+  ARRAY['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
 ON CONFLICT (id) DO NOTHING;
-
-CREATE POLICY "exports_read" ON storage.objects
-  FOR SELECT TO authenticated
-  USING (bucket_id = 'exports' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "exports_insert" ON storage.objects
-  FOR INSERT TO authenticated
-  WITH CHECK (bucket_id = 'exports' AND (storage.foldername(name))[1] = auth.uid()::text);
 ```
 
-### 5. Geliştirme sunucusu
+`schedule-files` bucket'ı migration ile otomatik oluşturulur.
+
+### 5. Geliştirme
 
 ```bash
 npm run dev
 ```
 
-`http://localhost:3000` adresinde açılır.
-
 ---
 
 ## Deploy (Vercel)
 
-```bash
-npx vercel link
-npx vercel env add NEXT_PUBLIC_SUPABASE_URL production
-npx vercel env add NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY production
-npx vercel env add SUPABASE_SERVICE_ROLE_KEY production
-npx vercel env add TOKEN_SECRET production
-npx vercel env add UPSTASH_REDIS_REST_URL production
-npx vercel env add UPSTASH_REDIS_REST_TOKEN production
-npx vercel --prod
-```
-
-`main` branch'ine push atınca Vercel otomatik deploy eder.
+`main` branch'ine push atınca Vercel otomatik deploy eder. Ortam değişkenlerini Vercel dashboard → Settings → Environment Variables'dan ayarla.
 
 ---
 
@@ -179,11 +155,12 @@ npx vercel --prod
 | Kimlik doğrulama | Supabase JWT, secure httpOnly cookies |
 | Çok kiracılı izolasyon | `school_id NOT NULL` + RLS her tabloda |
 | Public route güvenliği | HMAC-SHA256 imzalı token (jti + exp) |
-| Token iptali | `revoked_tokens` tablosu, anında etkili |
-| Rate limiting | Upstash Redis sliding window (10/60 req/dk) |
-| CSP | Per-request nonce — `unsafe-inline` yok |
+| Token iptali | `revoked_tokens` tablosu + Redis fail-closed cache |
+| Rate limiting | Upstash Redis sliding window |
+| CSP | Per-request nonce |
 | Input doğrulama | Zod tüm server action'larda |
-| Denetim kaydı | Her kritik işlem `audit_logs`'a yazılır |
+| Denetim kaydı | `audit_logs` — WORM korumalı |
+| Soft delete | 5 tabloda, 30 gün geri yükleme penceresi |
 
 ---
 
@@ -193,60 +170,16 @@ npx vercel --prod
 |--------|-----------|
 | Framework | Next.js 16 (App Router, Server Actions) |
 | UI | React 19, Tailwind CSS v4 |
-| Grafikler | Recharts (ResponsiveContainer) |
+| Grafikler | Recharts |
 | Veritabanı | Supabase (PostgreSQL 17 + RLS) |
-| Auth | Supabase SSR (`@supabase/ssr`) |
-| Rate Limiting | Upstash Redis (`@upstash/ratelimit`) |
-| Storage | Supabase Storage (private bucket) |
-| Excel | SheetJS (`xlsx`) |
+| Auth | Supabase SSR |
+| Storage | Supabase Storage |
+| Rate Limiting | Upstash Redis |
+| Excel | SheetJS (xlsx) |
 | PDF | jspdf + jspdf-autotable |
+| Background Jobs | Inngest v4 |
 | Mobil UX | react-swipeable |
 | Tarih | date-fns v4 (tr locale) |
-| Dil | TypeScript 5 |
+| Loglama | Pino |
+| Error Tracking | Sentry |
 | Deploy | Vercel |
-
----
-
-## Proje Yapısı
-
-```
-app/
-├── (dashboard)/
-│   ├── anasayfa/        # Dashboard — Müdür ajanda widget, MüdürY ajanda widget
-│   ├── audit/           # Denetim günlüğü + token iptali (başkan/müdür)
-│   ├── dosya/           # MEB belge kontrol listesi + PDF export
-│   ├── kullanicilar/    # Kullanıcı listesi (müdür yardımcısı/müdür)
-│   ├── mufredat/        # Müfredat takibi
-│   ├── notlar/          # Kişisel notlar + Excel export
-│   ├── odevler/         # Ödev yönetimi + swipe-to-delete (mobil)
-│   ├── profil/          # Profil & şifre
-│   ├── raporlar/        # Raporlar (Öğrenci / Sınıf / Öğretmen) + export
-│   ├── siniflar/        # Sınıf & öğrenci + mentor atama + Excel export
-│   ├── yoklama/         # Günlük yoklama
-│   └── zumre/           # Toplantı, sınav, müfredat (başkan özellikleri)
-├── api/
-│   └── export/          # POST: XLSX üret → Storage; GET: iş durumu
-├── onboarding/
-├── veli/[token]/
-├── yoklama-yazdir/[token]/
-├── tutanak/[id]/
-└── actions/
-    ├── auth.ts
-    ├── classes.ts       # assignMentor, addMentorReport, deleteMentorReport
-    ├── homework.ts
-    ├── yoklama.ts
-    ├── zumre.ts
-    ├── tokens.ts
-    ├── onboarding.ts
-    └── notes.ts
-
-src/
-├── domains/export/      # XlsxBuilder, export types
-└── shared/
-    ├── auth/            # getCurrentProfile
-    ├── date/            # formatDate, startOfWeek
-    └── types/           # Role, Database types
-
-supabase/migrations/     # Sıralı SQL migration dosyaları
-proxy.ts                 # Middleware: auth + rate limit + CSP nonce + onboarding redirect
-```
