@@ -22,7 +22,7 @@ function formatName(raw: string): string {
 }
 
 // roles: null = tüm roller, dizi = yalnızca o roller
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; icon: React.ReactNode; subItems?: { href: string; label: string }[] }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; icon: React.ReactNode; subItems?: { href: string; label: string; mentorOnly?: boolean }[] }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
@@ -75,6 +75,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
       { href: '/raporlar/ogrenci', label: 'Öğrenci' },
       { href: '/raporlar/sinif', label: 'Sınıf' },
       { href: '/raporlar/ogretmen', label: 'Öğretmen' },
+      { href: '/raporlar/mentor', label: 'Mentör', mentorOnly: true },
     ],
   },
   {
@@ -156,22 +157,24 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                 </Link>
                 {subItems && active && (
                   <div className="ml-8 mt-0.5 space-y-0.5">
-                    {subItems.map(sub => {
-                      const subActive = pathname.startsWith(sub.href)
-                      return (
-                        <Link
-                          key={sub.href}
-                          href={sub.href}
-                          className={`block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                            subActive
-                              ? 'text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/50'
-                              : 'text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
-                          }`}
-                        >
-                          {sub.label}
-                        </Link>
-                      )
-                    })}
+                    {subItems
+                      .filter(sub => !sub.mentorOnly || ['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(role ?? ''))
+                      .map(sub => {
+                        const subActive = pathname.startsWith(sub.href)
+                        return (
+                          <Link
+                            key={sub.href}
+                            href={sub.href}
+                            className={`block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                              subActive
+                                ? 'text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/50'
+                                : 'text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
+                            }`}
+                          >
+                            {sub.label}
+                          </Link>
+                        )
+                      })}
                   </div>
                 )}
               </div>

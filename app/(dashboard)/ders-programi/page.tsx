@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import DersProgramiListUI from './DersProgramiListUI'
 
@@ -11,43 +11,34 @@ type Schedule = {
   type_label: string
   teacher_id: string | null
   class_id: string | null
-  title: string | null
-  period_count: number
-  slots: { day: number; period: number; subject: string }[]
+  file_url: string | null
+  file_name: string | null
   created_at: string
-  teacher: { full_name: string | null; subject: string | null } | null
-  cls: { name: string; grade: number } | null
+  teacher: Teacher | null
+  cls: Cls | null
 }
 
 export default async function DersProgramiPage() {
   const supabase = await createClient()
-  const user = await getCurrentUser()
-  if (!user) return null
-
-  const { data: profileData } = await supabase
-    .from('profiles')
-    .select('school_id')
-    .eq('id', user.id)
-    .single()
-
-  const schoolId = profileData?.school_id
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+  if (!user || !profile) return null
 
   const [{ data: schedulesRaw }, { data: teachersRaw }, { data: classesRaw }] = await Promise.all([
     supabase
       .from('lesson_schedules')
-      .select('id, schedule_type, type_label, teacher_id, class_id, title, period_count, slots, created_at')
+      .select('id, schedule_type, type_label, teacher_id, class_id, file_url, file_name, created_at')
       .order('created_at', { ascending: false }),
     supabase
       .from('profiles')
       .select('id, full_name, subject')
-      .eq('school_id', schoolId)
+      .eq('school_id', profile.school_id)
       .in('role', ['ogretmen', 'zumre_baskani'])
       .order('full_name'),
     supabase
       .from('classes')
       .select('id, name, grade')
-      .order('grade')
-      .order('name'),
+      .eq('school_id', profile.school_id)
+      .order('grade').order('name'),
   ])
 
   const teacherMap = new Map<string, Teacher>()
@@ -58,8 +49,8 @@ export default async function DersProgramiPage() {
 
   const schedules: Schedule[] = (schedulesRaw ?? []).map((s: {
     id: string; schedule_type: 'resmi' | 'okul'; type_label: string;
-    teacher_id: string | null; class_id: string | null; title: string | null;
-    period_count: number; slots: { day: number; period: number; subject: string }[]; created_at: string
+    teacher_id: string | null; class_id: string | null;
+    file_url: string | null; file_name: string | null; created_at: string
   }) => ({
     ...s,
     teacher: s.teacher_id ? teacherMap.get(s.teacher_id) ?? null : null,
@@ -73,7 +64,7 @@ export default async function DersProgramiPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ders Programları</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Öğretmen ve sınıf bazında haftalık programlar</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">PDF veya resim olarak yüklenmiş haftalık programlar</p>
         </div>
         <Link
           href="/ders-programi/yeni"
@@ -84,12 +75,7 @@ export default async function DersProgramiPage() {
         </Link>
       </div>
 
-      <DersProgramiListUI
-        schedules={schedules}
-        teachers={teachersRaw ?? []}
-        classes={classesRaw ?? []}
-        okulLabel={okulLabel}
-      />
+      <DersProgramiListUI schedules={schedules} okulLabel={okulLabel} />
     </div>
   )
 }

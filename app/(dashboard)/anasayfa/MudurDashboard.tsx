@@ -39,7 +39,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
 
   const [
     schoolRes, profilesRes, studentsRes, classesRes,
-    meetingsRes, zumreRes, homeworksRes,
+    meetingsRes, zumreRes, mentorReportsRes,
   ] = await Promise.all([
     supabase.from('schools').select('name, slug').eq('id', school_id).single(),
     supabase.from('profiles').select('id, full_name, role, subject').eq('school_id', school_id),
@@ -54,12 +54,10 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
       .eq('school_id', school_id)
       .order('meeting_date', { ascending: false })
       .limit(50),
-    supabase.from('homeworks')
-      .select('id, title, subject, due_date, class_id, teacher_id')
+    supabase.from('mentor_reports')
+      .select('mentor_id')
       .eq('school_id', school_id)
-      .lt('due_date', todayStr)
-      .order('due_date', { ascending: false })
-      .limit(20),
+      .gte('report_date', thirtyDaysAgo),
   ])
 
   const schoolName = schoolRes.data?.name ?? ''
@@ -69,7 +67,15 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   const classes = classesRes.data ?? []
   const allMeetings = meetingsRes.data ?? []
   const zumreMeetings = zumreRes.data ?? []
-  const overdueHomeworks = homeworksRes.data ?? []
+
+  // Mentör rapor özeti (son 30 gün)
+  const mentorReportCounts = new Map<string, number>()
+  for (const r of mentorReportsRes.data ?? []) {
+    mentorReportCounts.set(r.mentor_id, (mentorReportCounts.get(r.mentor_id) ?? 0) + 1)
+  }
+  const mentorSummary = [...mentorReportCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
 
   const meetings = allMeetings.filter(m => m.meeting_type !== 'not')
 
@@ -142,8 +148,6 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   if (inactiveTeachers.length >= 3) redAlerts.push(`${inactiveTeachers.length} öğretmen 14+ gün pasif`)
   else if (inactiveTeachers.length > 0) yellowAlerts.push(`${inactiveTeachers.length} öğretmen 14+ gün pasif`)
   else greenAlerts.push('Tüm öğretmenler aktif')
-
-  if (overdueHomeworks.length > 0) yellowAlerts.push(`${overdueHomeworks.length} ödev vadesi geçmiş`)
 
   if (weekMeetings.length > 0) yellowAlerts.push(`Bu hafta ${weekMeetings.length} toplantı`)
 
@@ -277,6 +281,36 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
           ))}
         </div>
       </div>
+
+      {/* Mentör Rapor Özeti */}
+      {mentorSummary.length > 0 && (
+        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Mentör Rapor Özeti (Son 30 Gün)</h2>
+            <a href="/raporlar/mentor" className="text-xs text-purple-600 font-medium hover:underline">Tümü →</a>
+          </div>
+          <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+            {mentorSummary.map(([mentorId, count]) => {
+              const teacher = profiles.find(p => p.id === mentorId)
+              return (
+                <li key={mentorId} className="flex items-center justify-between px-4 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                      {teacher?.full_name ?? 'Bilinmeyen Öğretmen'}
+                    </p>
+                    {teacher?.subject && (
+                      <p className="text-xs text-gray-400 dark:text-slate-500">{teacher.subject}</p>
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 shrink-0">
+                    {count} rapor
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* Zümre Performans + Öğretmen Aktivitesi */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

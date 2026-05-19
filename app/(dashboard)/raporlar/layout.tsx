@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import type { Role } from '@/src/shared/types'
