@@ -85,11 +85,11 @@
 ## Yapılacaklar 🔲
 
 ### Öncelikli — Güvenlik
-- [ ] **BUG-003**: `/veli/[token]` sayfası service client sorguları `school_id` filtresi içermiyor — veli_tokens tablosuna `school_id` ekle, token doğrulaması sonrası izolasyonu uygulama katmanında da doğrula
-- [ ] **BUG-005**: `deleteStudentNote` servisinde `school_id`/`teacher_id` filtresi repo katmanında eksik — `ClassRepository.deleteStudentNote` sorguya `.eq('school_id', schoolId)` ekle
-- [ ] **BUG-007**: `/raporlar/ogrenci` `exam_entries` sorgusu `school_id` filtresi içermiyor (RLS var ama defense-in-depth eksik)
-- [ ] **BUG-008**: `platformAuth.ts` yanlış env değişkeni (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) — `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` olarak güncelle
-- [ ] **BUG-010**: `getAttendanceForDate` ve `getAttendanceHistory` server action'larında auth kontrolü eksik
+- [x] **BUG-003**: veli token'ına school_id meta'sı eklendi; veli sayfasında cross-tenant izolasyon sağlandı
+- [x] **BUG-005**: `deleteStudentNote` repo katmanına `teacher_id` + `school_id` filtresi eklendi
+- [x] **BUG-007**: `exam_entries` sorgusuna `school_id` filtresi eklendi
+- [x] **BUG-008**: `platformAuth.ts`, `/api/health`, `/api/ready` — yanlış env var adı düzeltildi
+- [x] **BUG-010**: `getAttendanceForDate` ve `getAttendanceHistory` auth kontrolü eklendi
 
 ### Öncelikli — Özellik
 - [ ] Öğrenci arama / filtre — sınıf listesi sayfasında isim bazlı arama
