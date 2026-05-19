@@ -40,7 +40,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
     if (!class_id) return NextResponse.json(apiErr('VALIDATION_ERROR', 'class_id gerekli', ctx), { status: 400 })
 
     // Fetch homework IDs first — PostgREST doesn't support subqueries in .in()
-    const { data: hwRows } = await trackedQuery('reporting.class.hwIds', () =>
+    const { data: hwRows } = await trackedQuery('reporting.class.hwIds', async () =>
       supabase
         .from('homeworks')
         .select('id')
@@ -110,7 +110,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
     const targetId = teacher_id ?? ctx.ability.userId
 
     // Fetch IDs first for the submissions subquery
-    const { data: hwCreated } = await trackedQuery('reporting.teacher.hwIds', () =>
+    const { data: hwCreated } = await trackedQuery('reporting.teacher.hwIds', async () =>
       supabase
         .from('homeworks')
         .select('id')
@@ -180,7 +180,7 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
         .gte('updated_at', since)
         .order('updated_at', { ascending: false }),
 
-      trackedQuery('reporting.student.attendance', () =>
+      trackedQuery('reporting.student.attendance', async () =>
         supabase.from('attendance')
           .select('date, status')
           .eq('student_id', student_id)
