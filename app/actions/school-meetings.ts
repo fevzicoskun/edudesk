@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { UUID } from '@/src/shared/validation'
 import { MeetingService } from '@/src/domains/school/services/MeetingService'
 import type { MeetingResult } from '@/src/domains/school/types'
 
@@ -23,6 +24,7 @@ export async function createMeeting(_: unknown, formData: FormData): Promise<Mee
 }
 
 export async function updateMeetingNotes(meetingId: string, notes: string): Promise<MeetingResult> {
+  UUID.parse(meetingId)
   const result = await MeetingService.updateMeetingNotes(meetingId, notes)
   if (result.success) {
     revalidatePath('/anasayfa')
@@ -32,6 +34,7 @@ export async function updateMeetingNotes(meetingId: string, notes: string): Prom
 }
 
 export async function deleteMeeting(meetingId: string): Promise<MeetingResult> {
+  UUID.parse(meetingId)
   const result = await MeetingService.deleteMeeting(meetingId)
   if (result.success) {
     revalidatePath('/anasayfa')

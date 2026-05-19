@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { UUID } from '@/src/shared/validation'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 
 export async function addMentorStudent(formData: FormData) {
@@ -16,6 +17,7 @@ export async function addMentorStudent(formData: FormData) {
 }
 
 export async function deleteMentorStudent(id: string) {
+  UUID.parse(id)
   await MentorService.deleteMentorStudent(id)
   revalidatePath('/mentorluk')
 }
@@ -33,6 +35,7 @@ export async function addMentorStudentNote(formData: FormData) {
 }
 
 export async function deleteMentorStudentNote(id: string) {
+  UUID.parse(id)
   await MentorService.deleteMentorStudentNote(id)
   revalidatePath('/mentorluk')
 }

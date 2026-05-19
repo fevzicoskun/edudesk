@@ -33,6 +33,7 @@ export const MeetingService = {
     title: string
     meeting_date: string
     notes: string | null
+    branch?: string | null
   }) {
     const ability = await requireAbility()
     if (ability.cannot(P.ZUMRE.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')

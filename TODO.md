@@ -68,12 +68,30 @@
 - [x] Dark mode eksiklikleri (odevler/[id] sayfası)
 - [x] updateNote sonrası revalidatePath eksikliği giderildi
 - [x] Veli linkinde çalışmayan "Erişimi Kapat" butonu kaldırıldı
+- [x] **BUG-001**: `tutanak/[id]` sayfasında `school_id` filtresi eklendi (cross-tenant izolasyon)
+- [x] **BUG-002**: `mufredat/[classId]` sayfasında `school_id` filtresi eklendi
+- [x] **BUG-004**: `removeUser` server action'ında `UUID.parse` validasyonu eklendi
+- [x] **BUG-006**: `OgretmenPerformans` yoklama sıklığı sorgusuna `teacher_id` filtresi eklendi
+- [x] **BUG-009**: `/api/health` ve `/api/ready` endpoint'leri rate limit'ten muaf tutuldu
+- [x] **BUG-011**: `deleteMentorStudent` / `deleteMentorStudentNote` UUID validasyonu eklendi
+- [x] **BUG-012**: `schedules.ts` — `updateScheduleFile`, `deleteSchedule` UUID validasyonu eklendi
+- [x] **BUG-013**: `school-meetings.ts` — `updateMeetingNotes`, `deleteMeeting` UUID validasyonu eklendi
+- [x] **BUG-014**: `updateMeeting` server action'ı `branch` alanını sessizce siliyordu — düzeltildi
+- [x] **BUG-016**: `app/error.tsx` Sentry'e `captureException` eklendi
+- [x] **BUG-017**: `mufredat/[classId]` Server Component'teki `onClick` butonu `<PrintButton />` ile değiştirildi
 
 ---
 
 ## Yapılacaklar 🔲
 
-### Öncelikli
+### Öncelikli — Güvenlik
+- [ ] **BUG-003**: `/veli/[token]` sayfası service client sorguları `school_id` filtresi içermiyor — veli_tokens tablosuna `school_id` ekle, token doğrulaması sonrası izolasyonu uygulama katmanında da doğrula
+- [ ] **BUG-005**: `deleteStudentNote` servisinde `school_id`/`teacher_id` filtresi repo katmanında eksik — `ClassRepository.deleteStudentNote` sorguya `.eq('school_id', schoolId)` ekle
+- [ ] **BUG-007**: `/raporlar/ogrenci` `exam_entries` sorgusu `school_id` filtresi içermiyor (RLS var ama defense-in-depth eksik)
+- [ ] **BUG-008**: `platformAuth.ts` yanlış env değişkeni (`NEXT_PUBLIC_SUPABASE_ANON_KEY`) — `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` olarak güncelle
+- [ ] **BUG-010**: `getAttendanceForDate` ve `getAttendanceHistory` server action'larında auth kontrolü eksik
+
+### Öncelikli — Özellik
 - [ ] Öğrenci arama / filtre — sınıf listesi sayfasında isim bazlı arama
 - [ ] Bildirim sistemi — yaklaşan ödev teslim tarihi push/email bildirimi
 - [ ] Veli linki erişim kapatma — öğretmen arayüzüne düzgün çalışan "Devre Dışı Bırak" ekle

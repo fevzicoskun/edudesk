@@ -14,12 +14,16 @@ export default async function TutanakPrintPage({
   if (!user) redirect('/login')
 
   const { id } = await params
-  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) redirect('/login')
+
+  const supabase = await createClient()
 
   const { data: meeting } = await supabase
     .from('zumre_meetings')
     .select('title, meeting_date, notes')
     .eq('id', id)
+    .eq('school_id', profile.school_id)
     .single()
 
   if (!meeting) notFound()

@@ -77,16 +77,16 @@ export default function OgretmenPerformans({ teachers, currentUserId, schoolId }
         aylikOdevler.push({ ay: MONTH_LABELS[d.getMonth()], sayi: count ?? 0 })
       }
 
-      // Yoklama sıklığı (son 4 hafta)
+      // Yoklama sıklığı (son 4 hafta) — seçili öğretmene göre
       const fourWeeksAgo = new Date(now.getTime() - 28 * 86400_000).toISOString().split('T')[0]
       const { data: yoklamaData } = await db
         .from('attendance')
         .select('date')
         .eq('school_id', schoolId)
+        .eq('teacher_id', selectedTeacher)
         .gte('date', fourWeeksAgo)
         .limit(1000)
 
-      // Eğer teacher_id attendance'ta yoksa distinct date sayısı
       const uniqueDates = new Set(((yoklamaData ?? []) as { date: string }[]).map(a => a.date))
       const yoklamaSikligi = uniqueDates.size
 

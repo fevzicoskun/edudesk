@@ -1,7 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentUser } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import { parseTopicString } from '@/src/domains/zumre/data/tymm'
+import PrintButton from '@/components/PrintButton'
 
 const STATUS_TR: Record<string, string> = {
   tamamlandi: 'Tamamlandı',
@@ -11,13 +12,13 @@ const STATUS_TR: Record<string, string> = {
 
 export default async function MufredatYazdirPage({ params }: { params: Promise<{ classId: string }> }) {
   const { classId } = await params
-  const user = await getCurrentUser()
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user) notFound()
 
   const supabase = await createClient()
 
   const [{ data: cls }, { data: rawTopics }] = await Promise.all([
-    supabase.from('classes').select('name, grade').eq('id', classId).single(),
+    supabase.from('classes').select('name, grade').eq('id', classId).eq('school_id', profile?.school_id ?? '').single(),
     supabase
       .from('curriculum_progress')
       .select('id, topic, week_number, status')
@@ -49,13 +50,7 @@ export default async function MufredatYazdirPage({ params }: { params: Promise<{
     <div className="max-w-3xl mx-auto p-4 md:p-8 print:p-4 font-sans text-sm text-gray-900">
       <div className="flex flex-wrap items-center justify-between gap-2 mb-1 print:hidden">
         <h1 className="text-xl font-bold">Müfredat Raporu — {cls.name}</h1>
-        <button
-          onClick={() => window.print()}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          suppressHydrationWarning
-        >
-          Yazdır / PDF
-        </button>
+        <PrintButton label="Yazdır / PDF" />
       </div>
       <div className="print:block hidden mb-4">
         <h1 className="text-xl font-bold">{cls.name} — Müfredat Takip Raporu</h1>

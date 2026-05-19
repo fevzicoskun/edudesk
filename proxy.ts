@@ -118,7 +118,7 @@ export async function proxy(request: NextRequest) {
       return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
     }
   }
-  if (pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/') && pathname !== '/api/health' && pathname !== '/api/ready') {
     if (!(await checkRateLimit(`api:${ip}`, 30, 60_000, true))) {
       return new NextResponse('Çok fazla istek.', { status: 429 })
     }

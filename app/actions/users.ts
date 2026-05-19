@@ -28,6 +28,7 @@ export async function inviteUser(_: unknown, formData: FormData): Promise<Invite
 }
 
 export async function removeUser(targetId: string): Promise<DeleteResult> {
+  UUID.parse(targetId)
   const result = await UserService.deleteUser(targetId)
   if (result.success) revalidatePath('/kullanicilar')
   return result

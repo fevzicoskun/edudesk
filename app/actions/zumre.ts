@@ -35,10 +35,11 @@ export async function updateMeeting(id: string, formData: FormData) {
     title:        formData.get('title'),
     meeting_date: formData.get('meeting_date'),
     notes:        formData.get('notes') || null,
+    branch:       formData.get('branch') || null,
   })
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
 
-  await MeetingService.updateMeeting(id, { ...parsed.data, notes: parsed.data.notes ?? null })
+  await MeetingService.updateMeeting(id, { ...parsed.data, notes: parsed.data.notes ?? null, branch: parsed.data.branch ?? null })
   revalidatePath('/zumre')
   redirect('/zumre?tab=toplanti')
 }

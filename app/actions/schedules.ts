@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { UUID } from '@/src/shared/validation'
 import { ScheduleService } from '@/src/domains/mentor/services/ScheduleService'
 
 export async function createScheduleWithFile(input: {
@@ -17,6 +18,7 @@ export async function createScheduleWithFile(input: {
 }
 
 export async function updateScheduleFile(id: string, file_url: string, file_name: string) {
+  UUID.parse(id)
   await ScheduleService.updateScheduleFile(id, file_url, file_name)
   revalidatePath('/ders-programi')
   revalidatePath('/anasayfa')
@@ -28,6 +30,7 @@ export async function renameOkulTypeLabel(newLabel: string) {
 }
 
 export async function deleteSchedule(id: string) {
+  UUID.parse(id)
   await ScheduleService.deleteSchedule(id)
   revalidatePath('/ders-programi')
   revalidatePath('/anasayfa')
