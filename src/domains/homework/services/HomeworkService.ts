@@ -1,27 +1,23 @@
 import { HomeworkRepository } from '../repositories/HomeworkRepository'
-import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
-import { isTeachingRole } from '@/src/shared/types'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import { getAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus } from '../types'
 
 export const HomeworkService = {
   async createHomework(data: {
-    class_id: string
-    title: string
+    class_id:    string
+    title:       string
     description: string | null
-    subject: string
-    due_date: string
+    subject:     string
+    due_date:    string
   }): Promise<{ error?: string }> {
-    const profile = await getCurrentProfile()
-    if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
-
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
     const { error } = await HomeworkRepository.insertHomework({
-      teacher_id: user.id,
-      school_id,
+      teacher_id: ability.userId,
+      school_id:  ability.schoolId,
       ...data,
     })
 
@@ -31,28 +27,25 @@ export const HomeworkService = {
 
   async updateSubmissionStatus(
     homeworkId: string,
-    studentId: string,
-    status: SubmissionStatus
+    studentId:  string,
+    status:     SubmissionStatus
   ): Promise<{ error?: string; success?: boolean }> {
-    const profile = await getCurrentProfile()
-    if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
-
-    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, school_id)
+    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, ability.schoolId)
     if (!hw) return { error: 'Ödev bulunamadı' }
-    if (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani') {
+    if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
 
     const { error } = await HomeworkRepository.upsertSubmissionStatus({
       homework_id: homeworkId,
-      student_id: studentId,
+      student_id:  studentId,
       status,
-      school_id,
-      updated_at: new Date().toISOString(),
+      school_id:   ability.schoolId,
+      updated_at:  new Date().toISOString(),
     })
 
     if (error) return { error: error.message }
@@ -62,29 +55,26 @@ export const HomeworkService = {
   async updateAllSubmissionStatuses(
     homeworkId: string,
     studentIds: string[],
-    status: SubmissionStatus
+    status:     SubmissionStatus
   ): Promise<{ error?: string; success?: boolean }> {
     if (studentIds.length > 200) throw new Error('Çok fazla öğrenci')
 
-    const profile = await getCurrentProfile()
-    if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
-
-    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, school_id)
+    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, ability.schoolId)
     if (!hw) return { error: 'Ödev bulunamadı' }
-    if (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani') {
+    if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
 
     const rows = studentIds.map(studentId => ({
       homework_id: homeworkId,
-      student_id: studentId,
-      school_id,
+      student_id:  studentId,
+      school_id:   ability.schoolId,
       status,
-      updated_at: new Date().toISOString(),
+      updated_at:  new Date().toISOString(),
     }))
 
     if (rows.length === 0) return { success: true }
@@ -96,29 +86,26 @@ export const HomeworkService = {
 
   async updateSubmissionNote(
     homeworkId: string,
-    studentId: string,
-    note: string
+    studentId:  string,
+    note:       string
   ): Promise<{ error?: string; success?: boolean }> {
     const sanitizedNote = String(note).slice(0, 1000).trim() || null
 
-    const profile = await getCurrentProfile()
-    if (!profile || !isTeachingRole(profile.role)) return { error: 'Bu işlem için yetkiniz yok.' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return { error: 'Giriş gerekli' }
-
-    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, school_id)
-    if (!hw || (hw.teacher_id !== user.id && profile.role !== 'zumre_baskani')) {
+    const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, ability.schoolId)
+    if (!hw || ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Ödev bulunamadı veya yetkiniz yok.' }
     }
 
     const { error } = await HomeworkRepository.upsertSubmissionNote({
       homework_id: homeworkId,
-      student_id: studentId,
-      note: sanitizedNote,
-      school_id,
-      updated_at: new Date().toISOString(),
+      student_id:  studentId,
+      note:        sanitizedNote,
+      school_id:   ability.schoolId,
+      updated_at:  new Date().toISOString(),
     })
 
     if (error) return { error: error.message }
@@ -126,24 +113,19 @@ export const HomeworkService = {
   },
 
   async deleteHomework(id: string): Promise<void> {
-    const profile = await getCurrentProfile()
-    if (!profile || !isTeachingRole(profile.role)) return
+    const ability = await getAbility()
+    if (!ability || ability.cannot(P.HOMEWORK.DELETE)) return
 
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    await HomeworkRepository.softDeleteHomework(id, user.id, school_id)
+    await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
   },
 
   async restoreHomework(id: string): Promise<void> {
-    const profile = await getCurrentProfile()
-    if (!profile || profile.role !== 'zumre_baskani') return
+    const ability = await getAbility()
+    if (!ability) return
+    // Restore requires school-wide scope — own-scope teachers cannot restore
+    const scope = ability.scope(P.HOMEWORK.UPDATE)
+    if (!scope || scope === 'own') return
 
-    const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    await HomeworkRepository.restoreHomework(id, school_id)
+    await HomeworkRepository.restoreHomework(id, ability.schoolId)
   },
 }

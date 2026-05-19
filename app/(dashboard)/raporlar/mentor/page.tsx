@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { perfGroup } from '@/src/shared/perf'
 import { format, parseISO } from '@/src/shared/date'
 
 const ALLOWED_ROLES = ['mudur', 'mudur_yardimcisi', 'zumre_baskani']
@@ -12,6 +13,7 @@ type RawReport = {
   mentor_id: string
   students: { full_name: string; student_number: string | null } | null
   classes: { id: string; name: string } | null
+  profiles: { id: string; full_name: string } | null
 }
 
 export default async function MentorRaporlarPage({
@@ -29,24 +31,19 @@ export default async function MentorRaporlarPage({
 
   let reportsQuery = supabase
     .from('mentor_reports')
-    .select('id, content, report_date, mentor_id, students(full_name, student_number), classes(id, name)')
+    .select('id, content, report_date, mentor_id, students(full_name, student_number), classes(id, name), profiles(id, full_name)')
     .order('report_date', { ascending: false })
 
   if (class_id) reportsQuery = reportsQuery.eq('class_id', class_id)
 
+  const _t1 = perfGroup('raporlar/mentor:parallel-queries')
   const [reportsRes, classesRes] = await Promise.all([
     reportsQuery,
     supabase.from('classes').select('id, name').order('name'),
   ])
+  _t1.done()
 
   const rawReports = (reportsRes.data ?? []) as unknown as RawReport[]
-
-  const mentorIds = [...new Set(rawReports.map(r => r.mentor_id))]
-  const { data: mentorProfiles } = mentorIds.length > 0
-    ? await supabase.from('profiles').select('id, full_name').in('id', mentorIds)
-    : { data: [] }
-
-  const mentorMap = Object.fromEntries((mentorProfiles ?? []).map(p => [p.id, p.full_name]))
   const classes = classesRes.data ?? []
 
   return (
@@ -112,7 +109,7 @@ export default async function MentorRaporlarPage({
                     {format(parseISO(r.report_date), 'd MMM yyyy')}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-                    {mentorMap[r.mentor_id] ?? '—'}
+                    {r.profiles?.full_name ?? '—'}
                   </p>
                 </div>
               </div>

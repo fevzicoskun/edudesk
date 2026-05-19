@@ -1,13 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import OgretmenPerformans from './OgretmenPerformans'
 
 export default async function OgretmenRaporPage() {
-  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
+  const [supabase, profile, user] = await Promise.all([createClient(), getCurrentProfile(), getCurrentUser()])
   if (!profile) return null
 
-  const { data: { user } } = await supabase.auth.getUser()
   const currentUserId = user?.id ?? ''
 
   let teachers: { id: string; full_name: string; subject: string | null }[] = []

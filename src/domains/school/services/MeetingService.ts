@@ -1,46 +1,46 @@
 import { MeetingRepository } from '../repositories/MeetingRepository'
-import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
-import { isMudurOrAbove } from '@/src/shared/types'
+import { getCurrentUser } from '@/src/shared/auth'
+import { getAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import type { MeetingResult } from '../types'
 
 export const MeetingService = {
   async createMeeting(data: {
-    title: string
+    title:        string
     meeting_date: string
     meeting_type: string
-    notes: string | null
-    attendees: string | null
+    notes:        string | null
+    attendees:    string | null
   }): Promise<MeetingResult> {
-    const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
-    if (!profile || !user || !isMudurOrAbove(profile.role)) return { error: 'Yetki yok' }
-    if (!profile.school_id) return { error: 'Okul bilgisi eksik' }
+    const [ability, user] = await Promise.all([getAbility(), getCurrentUser()])
+    if (!ability || !user) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.SCHOOL.UPDATE)) return { error: 'Yetki yok' }
 
     const { data: result, error } = await MeetingRepository.insertMeeting({
-      school_id:    profile.school_id,
-      created_by:   user.id,
+      school_id:  ability.schoolId,
+      created_by: user.id,
       ...data,
     })
-
     if (error) return { error: error.message }
     return { success: true, id: result.id }
   },
 
   async updateMeetingNotes(meetingId: string, notes: string): Promise<MeetingResult> {
-    const profile = await getCurrentProfile()
-    if (!profile || !isMudurOrAbove(profile.role)) return { error: 'Yetki yok' }
-    if (!profile.school_id) return { error: 'Okul bilgisi eksik' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.SCHOOL.UPDATE)) return { error: 'Yetki yok' }
 
-    const { error } = await MeetingRepository.updateMeetingNotes(meetingId, profile.school_id, notes)
+    const { error } = await MeetingRepository.updateMeetingNotes(meetingId, ability.schoolId, notes)
     if (error) return { error: error.message }
     return { success: true }
   },
 
   async deleteMeeting(meetingId: string): Promise<MeetingResult> {
-    const profile = await getCurrentProfile()
-    if (!profile || !isMudurOrAbove(profile.role)) return { error: 'Yetki yok' }
-    if (!profile.school_id) return { error: 'Okul bilgisi eksik' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.SCHOOL.UPDATE)) return { error: 'Yetki yok' }
 
-    const { error } = await MeetingRepository.deleteMeeting(meetingId, profile.school_id)
+    const { error } = await MeetingRepository.deleteMeeting(meetingId, ability.schoolId)
     if (error) return { error: error.message }
     return { success: true }
   },

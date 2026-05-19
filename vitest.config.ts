@@ -6,7 +6,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./tests/vitest/setup/vitest-setup.ts'],
-    include: ['tests/vitest/**/*.test.ts'],
+    include: ['tests/vitest/**/*.test.ts', 'tests/permissions/**/*.test.ts'],
 
     projects: [
       {
@@ -30,6 +30,16 @@ export default defineConfig({
           pool: 'forks',
           testTimeout: 30_000,
           hookTimeout: 30_000,
+        },
+      },
+      {
+        resolve: { tsconfigPaths: true },
+        test: {
+          name: 'permissions',
+          globals: true,
+          environment: 'node',
+          setupFiles: ['./tests/vitest/setup/vitest-setup.ts'],
+          include: ['tests/permissions/**/*.test.ts'],
         },
       },
     ],

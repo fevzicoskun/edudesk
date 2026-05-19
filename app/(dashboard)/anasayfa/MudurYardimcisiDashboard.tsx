@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
+import { perfGroup } from '@/src/shared/perf'
 import Link from 'next/link'
 import { format, subDays, addDays } from '@/src/shared/date'
 import AjandaWidget from './AjandaWidget'
@@ -32,7 +33,8 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
   const thirtyDaysAgo = subDays(today, 30).toISOString().split('T')[0]
   const twoWeeksAgo   = subDays(today, 14).toISOString()
 
-  const [profilesRes, classesRes, studentsRes, attendanceRes, meetingsRes] = await Promise.all([
+  const _t1 = perfGroup('mudur-yardimcisi-dashboard:parallel-queries')
+  const [profilesRes, classesRes, studentsRes, todayAttRes, absent30Res, meetingsRes, sessionsRes] = await Promise.all([
     supabase
       .from('profiles')
       .select('id, full_name, subject, role')
@@ -50,47 +52,51 @@ export default async function MudurYardimcisiDashboard({ fullName }: { fullName:
       .eq('school_id', school_id),
     supabase
       .from('attendance')
-      .select('class_id, student_id, date, status')
+      .select('class_id, student_id, status')
       .eq('school_id', school_id)
+      .eq('date', todayStr),
+    supabase
+      .from('attendance')
+      .select('student_id')
+      .eq('school_id', school_id)
+      .eq('status', 'absent')
       .gte('date', thirtyDaysAgo),
     supabase
       .from('school_meetings')
       .select('id, title, meeting_date, meeting_type, attendees, notes')
       .eq('school_id', school_id)
       .order('meeting_date', { ascending: false }),
+    supabase
+      .from('user_sessions')
+      .select('user_id, last_seen_at')
+      .eq('school_id', school_id),
   ])
+  _t1.done()
 
   const teachers  = profilesRes.data ?? []
   const classes   = classesRes.data   ?? []
   const students  = studentsRes.data  ?? []
-  const attendance = attendanceRes.data ?? []
   const meetings  = meetingsRes.data  ?? []
 
-  // Oturum verileri
+  // Oturum verileri — school_id ile paralel çekildi, öğretmen filtresi burada
   const teacherIds = teachers.map(t => t.id)
-  const { data: sessionsRaw } = teacherIds.length
-    ? await supabase
-        .from('user_sessions')
-        .select('user_id, last_seen_at')
-        .in('user_id', teacherIds)
-    : { data: [] }
-  const sessions = sessionsRaw ?? []
-
+  const teacherIdSet = new Set(teacherIds)
   const sessionMap = new Map<string, string>()
-  for (const s of sessions) {
+  for (const s of sessionsRes.data ?? []) {
+    if (!teacherIdSet.has(s.user_id)) continue
     const prev = sessionMap.get(s.user_id)
     if (!prev || s.last_seen_at > prev) sessionMap.set(s.user_id, s.last_seen_at)
   }
 
   // ─── Bugün istatistikleri ─────────────────────────────────────────
-  const todayAtt = attendance.filter(a => a.date === todayStr)
+  const todayAtt = todayAttRes.data ?? []
   const classesWithAtt = new Set(todayAtt.map(a => a.class_id))
   const todayAbsent = todayAtt.filter(a => a.status === 'absent').length
 
-  // ─── Devamsızlık riski (son 30 gün ≥ 5 devamsız) ─────────────────
+  // ─── Devamsızlık riski (son 30 gün ≥ 5 devamsız — sadece absent çekildi) ─────
   const absenceMap = new Map<string, number>()
-  for (const a of attendance) {
-    if (a.status === 'absent') absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
+  for (const a of absent30Res.data ?? []) {
+    absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
   }
   const riskStudents = students
     .map(s => ({ ...s, absences: absenceMap.get(s.id) ?? 0 }))

@@ -1,5 +1,7 @@
 import { TokenRepository } from '../repositories/TokenRepository'
-import { getCurrentProfile, getCurrentUser, requireSchoolId } from '@/src/shared/auth'
+import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
+import { getAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import { createPublicToken, extractJti } from '@/src/infrastructure/tokens'
 import { logAudit } from '@/src/shared/audit'
 import { cacheRevocation } from '@/src/infrastructure/security/revocation'
@@ -23,18 +25,18 @@ export const TokenService = {
       await TokenRepository.insertVeliToken({
         student_id: studentId,
         school_id,
-        issued_by: user.id,
+        issued_by:  user.id,
         jti,
         expires_at: expiresAt,
       })
     }
 
     await logAudit({
-      user_id: user.id,
-      action: 'token.generate',
+      user_id:    user.id,
+      action:     'token.generate',
       table_name: 'students',
-      record_id: studentId,
-      new_data: { student_name: student.full_name },
+      record_id:  studentId,
+      new_data:   { student_name: student.full_name },
       school_id,
     })
 
@@ -50,17 +52,15 @@ export const TokenService = {
   },
 
   async revokeToken(
-    token: string,
+    token:     string,
     tokenType: TokenType,
-    reason?: string
+    reason?:   string
   ): Promise<{ ok: boolean; error?: string }> {
-    const profile = await getCurrentProfile()
-    if (!profile || !['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(profile.role)) {
+    const ability = await getAbility()
+    if (!ability) return { ok: false, error: 'Giriş gerekli' }
+    if (ability.cannot(P.ZUMRE.MANAGE)) {
       return { ok: false, error: 'Bu işlem için Zümre Başkanı veya Yönetici yetkisi gereklidir.' }
     }
-
-    const user = await getCurrentUser()
-    if (!user) return { ok: false, error: 'Giriş gerekli' }
 
     const jti = token.startsWith('v1.') ? extractJti(token) : token
     if (!jti) return { ok: false, error: 'Geçersiz token formatı' }
@@ -68,8 +68,8 @@ export const TokenService = {
     const { error } = await TokenRepository.insertRevokedToken({
       jti,
       token_type: tokenType,
-      revoked_by: user.id,
-      reason: reason?.slice(0, 200) ?? null,
+      revoked_by: ability.userId,
+      reason:     reason?.slice(0, 200) ?? null,
     })
 
     if (error) {
@@ -82,18 +82,18 @@ export const TokenService = {
     await cacheRevocation(jti, expiresAt)
 
     await logAudit({
-      user_id: user.id,
-      action: 'token.revoke',
+      user_id:    ability.userId,
+      action:     'token.revoke',
       table_name: 'revoked_tokens',
-      new_data: { jti, token_type: tokenType, reason },
+      new_data:   { jti, token_type: tokenType, reason },
     })
 
     return { ok: true }
   },
 
   async listRevokedTokens() {
-    const profile = await getCurrentProfile()
-    if (profile?.role !== 'zumre_baskani') return { data: null, error: 'Yetersiz yetki' }
+    const ability = await getAbility()
+    if (!ability || ability.cannot(P.ZUMRE.MANAGE)) return { data: null, error: 'Yetersiz yetki' }
 
     const { data, error } = await TokenRepository.listRevokedTokens()
     return { data, error: error?.message }

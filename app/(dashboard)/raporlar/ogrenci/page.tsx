@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import OgrenciRaporClient from './OgrenciRaporClient'
 
 export default async function OgrenciRaporPage() {
-  const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
+  const [supabase, profile, user] = await Promise.all([createClient(), getCurrentProfile(), getCurrentUser()])
   if (!profile) return null
 
   const isYonetici = isMudurOrAbove(profile.role) || profile.role === 'zumre_baskani'
@@ -15,7 +15,7 @@ export default async function OgrenciRaporPage() {
     : await supabase
         .from('homeworks')
         .select('class_id, classes(id, name, grade)')
-        .eq('teacher_id', (await supabase.auth.getUser()).data.user?.id ?? '')
+        .eq('teacher_id', user?.id ?? '')
         .limit(500)
 
   let classes: { id: string; name: string; grade: number | null }[] = []

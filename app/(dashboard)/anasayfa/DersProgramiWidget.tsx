@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
+import { perfGroup } from '@/src/shared/perf'
 
 type Schedule = {
   id: string
@@ -22,26 +23,46 @@ export default async function DersProgramiWidget() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  const { data: mentorClasses } = await supabase
-    .from('classes').select('id, name, grade').eq('mentor_teacher_id', user.id)
+  // Paralel: kendi ders programları + mentor olduğu sınıflar (waterfall yok)
+  const _t1 = perfGroup('DersProgramiWidget:parallel-queries')
+  const [ownSchedulesRes, mentorClassesRes] = await Promise.all([
+    supabase
+      .from('lesson_schedules')
+      .select('id, schedule_type, type_label, teacher_id, class_id, file_url, file_name')
+      .eq('teacher_id', user.id)
+      .not('file_url', 'is', null)
+      .order('schedule_type'),
+    supabase
+      .from('classes')
+      .select('id, name, grade')
+      .eq('mentor_teacher_id', user.id),
+  ])
+  _t1.done()
 
-  const mentorClassIds = (mentorClasses ?? []).map((c: { id: string }) => c.id)
+  const mentorClasses = mentorClassesRes.data ?? []
+  const mentorClassIds = mentorClasses.map((c: { id: string }) => c.id)
+  const classMap = new Map<string, { name: string; grade: number }>()
+  mentorClasses.forEach((c: { id: string; name: string; grade: number }) => classMap.set(c.id, c))
 
-  let query = supabase
-    .from('lesson_schedules')
-    .select('id, schedule_type, type_label, teacher_id, class_id, file_url, file_name')
-    .not('file_url', 'is', null)
-
+  // Mentor sınıflarının ders programları (sadece mentor ise)
+  let mentorSchedulesData: typeof ownSchedulesRes.data = []
   if (mentorClassIds.length > 0) {
-    query = query.or(`teacher_id.eq.${user.id},class_id.in.(${mentorClassIds.join(',')})`)
-  } else {
-    query = query.eq('teacher_id', user.id)
+    const { data } = await supabase
+      .from('lesson_schedules')
+      .select('id, schedule_type, type_label, teacher_id, class_id, file_url, file_name')
+      .in('class_id', mentorClassIds)
+      .not('file_url', 'is', null)
+      .order('schedule_type')
+    mentorSchedulesData = data ?? []
   }
 
-  const { data: schedulesRaw } = await query.order('schedule_type')
-
-  const classMap = new Map<string, { name: string; grade: number }>()
-  ;(mentorClasses ?? []).forEach((c: { id: string; name: string; grade: number }) => classMap.set(c.id, c))
+  // Birleştir, tekrarlananları at (öğretmen hem mentor hem öğretmen olabilir)
+  const seen = new Set<string>()
+  const schedulesRaw = [...(ownSchedulesRes.data ?? []), ...(mentorSchedulesData ?? [])].filter(s => {
+    if (seen.has(s.id)) return false
+    seen.add(s.id)
+    return true
+  })
 
   const schedules: Schedule[] = (schedulesRaw ?? []).map((s: {
     id: string; schedule_type: 'resmi' | 'okul'; type_label: string;

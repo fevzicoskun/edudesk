@@ -109,4 +109,23 @@ export interface CurriculumProgress {
 }
 
 export type { Resource, Action, Scope, AccessScope, GrantedPermission, PermissionRequirement } from '@/src/domains/rbac/types'
+
+// Permission sabitleri
 export { P } from '@/src/shared/permissions'
+export type { PermissionKey } from '@/src/shared/permissions'
+
+// Authorization engine
+export {
+  createAbility,
+  can,
+  cannot,
+  guard,
+  guardAll,
+  guardAny,
+  AuthorizationError,
+  type Ability,
+  type AuthorizationContext,
+  type DenialReason,
+  type DenialCode,
+  type AuthorizationResult,
+} from '@/src/shared/authorization'

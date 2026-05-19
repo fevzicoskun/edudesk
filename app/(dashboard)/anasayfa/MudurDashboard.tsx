@@ -1,5 +1,6 @@
 ﻿import { createClient } from '@/lib/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
+import { perfGroup } from '@/src/shared/perf'
 import Link from 'next/link'
 import { subDays, addDays, format, parseISO, isThisWeek } from '@/src/shared/date'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
@@ -37,9 +38,10 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   const thirtyDaysAgo = subDays(today, 30).toISOString().split('T')[0]
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
 
+  const _t1 = perfGroup('mudur-dashboard:parallel-queries')
   const [
     schoolRes, profilesRes, studentsRes, classesRes,
-    meetingsRes, zumreRes, mentorReportsRes,
+    meetingsRes, zumreRes, mentorReportsRes, sessionsRes,
   ] = await Promise.all([
     supabase.from('schools').select('name, slug').eq('id', school_id).single(),
     supabase.from('profiles').select('id, full_name, role, subject').eq('school_id', school_id),
@@ -50,7 +52,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
       .eq('school_id', school_id)
       .order('meeting_date', { ascending: false }),
     supabase.from('zumre_meetings')
-      .select('id, title, meeting_date, branch, notes')
+      .select('id, title, meeting_date, branch')
       .eq('school_id', school_id)
       .order('meeting_date', { ascending: false })
       .limit(50),
@@ -58,7 +60,11 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
       .select('mentor_id')
       .eq('school_id', school_id)
       .gte('report_date', thirtyDaysAgo),
+    supabase.from('user_sessions')
+      .select('user_id, login_at, last_seen_at, duration_minutes')
+      .eq('school_id', school_id),
   ])
+  _t1.done()
 
   const schoolName = schoolRes.data?.name ?? ''
   const schoolCode = schoolRes.data?.slug ?? ''
@@ -84,10 +90,7 @@ export default async function MudurDashboard({ fullName }: { fullName: string })
   )
 
   const teacherIds = teacherProfiles.map(t => t.id)
-  const { data: sessionsData } = teacherIds.length
-    ? await supabase.from('user_sessions').select('user_id, login_at, last_seen_at, duration_minutes').in('user_id', teacherIds)
-    : { data: [] }
-  const sessions = sessionsData ?? []
+  const sessions = sessionsRes.data ?? []
 
   type SessionSummary = { count: number; totalMinutes: number; lastSeen: string | null }
   const sessionMap = new Map<string, SessionSummary>()

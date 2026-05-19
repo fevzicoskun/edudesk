@@ -1,67 +1,95 @@
+/**
+ * Type-safe permission sabitleri.
+ *
+ * Her sabit { resource, action } çiftini literal type olarak tutar.
+ * Eski: { resource: 'homework' as Resource, action: 'create' as Action }
+ * Yeni: { resource: 'homework', action: 'create' }  — tam çıkarım, no cast
+ *
+ * Kullanım:
+ *   import { P } from '@/src/shared/permissions'
+ *   ability.can(P.HOMEWORK.CREATE)
+ *   guard(ability, P.CLASSES.DELETE)
+ *   withPermission(P.USERS.CREATE, handler)
+ */
+
 import type { Resource, Action } from '@/src/domains/rbac/types'
+import type { PermissionKey } from '@/src/shared/authorization'
+
+/**
+ * İki string'i compile-time'da Resource ve Action olarak doğrulayan helper.
+ * Magic string'lere karşı tam koruma — geçersiz değer derleme hatası verir.
+ */
+function p<R extends Resource, A extends Action>(
+  resource: R,
+  action:   A,
+): PermissionKey & { readonly resource: R; readonly action: A } {
+  return { resource, action }
+}
 
 export const P = {
   HOMEWORK: {
-    CREATE: { resource: 'homework' as Resource, action: 'create' as Action },
-    READ:   { resource: 'homework' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'homework' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'homework' as Resource, action: 'delete' as Action },
+    CREATE: p('homework', 'create'),
+    READ:   p('homework', 'read'),
+    UPDATE: p('homework', 'update'),
+    DELETE: p('homework', 'delete'),
   },
   ATTENDANCE: {
-    CREATE: { resource: 'attendance' as Resource, action: 'create' as Action },
-    READ:   { resource: 'attendance' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'attendance' as Resource, action: 'update' as Action },
+    CREATE: p('attendance', 'create'),
+    READ:   p('attendance', 'read'),
+    UPDATE: p('attendance', 'update'),
   },
   CURRICULUM: {
-    CREATE: { resource: 'curriculum' as Resource, action: 'create' as Action },
-    READ:   { resource: 'curriculum' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'curriculum' as Resource, action: 'update' as Action },
+    CREATE: p('curriculum', 'create'),
+    READ:   p('curriculum', 'read'),
+    UPDATE: p('curriculum', 'update'),
   },
   STUDENTS: {
-    READ:   { resource: 'students' as Resource, action: 'read'   as Action },
-    CREATE: { resource: 'students' as Resource, action: 'create' as Action },
-    UPDATE: { resource: 'students' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'students' as Resource, action: 'delete' as Action },
+    READ:   p('students', 'read'),
+    CREATE: p('students', 'create'),
+    UPDATE: p('students', 'update'),
+    DELETE: p('students', 'delete'),
   },
   CLASSES: {
-    READ:   { resource: 'classes' as Resource, action: 'read'   as Action },
-    CREATE: { resource: 'classes' as Resource, action: 'create' as Action },
-    UPDATE: { resource: 'classes' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'classes' as Resource, action: 'delete' as Action },
+    READ:   p('classes', 'read'),
+    CREATE: p('classes', 'create'),
+    UPDATE: p('classes', 'update'),
+    DELETE: p('classes', 'delete'),
   },
   ZUMRE: {
-    CREATE: { resource: 'zumre' as Resource, action: 'create' as Action },
-    READ:   { resource: 'zumre' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'zumre' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'zumre' as Resource, action: 'delete' as Action },
-    MANAGE: { resource: 'zumre' as Resource, action: 'manage' as Action },
+    CREATE: p('zumre', 'create'),
+    READ:   p('zumre', 'read'),
+    UPDATE: p('zumre', 'update'),
+    DELETE: p('zumre', 'delete'),
+    MANAGE: p('zumre', 'manage'),
   },
   EXAM: {
-    CREATE: { resource: 'exam' as Resource, action: 'create' as Action },
-    READ:   { resource: 'exam' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'exam' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'exam' as Resource, action: 'delete' as Action },
-    MANAGE: { resource: 'exam' as Resource, action: 'manage' as Action },
+    CREATE: p('exam', 'create'),
+    READ:   p('exam', 'read'),
+    UPDATE: p('exam', 'update'),
+    DELETE: p('exam', 'delete'),
+    MANAGE: p('exam', 'manage'),
   },
   USERS: {
-    CREATE: { resource: 'users' as Resource, action: 'create' as Action },
-    READ:   { resource: 'users' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'users' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'users' as Resource, action: 'delete' as Action },
-    MANAGE: { resource: 'users' as Resource, action: 'manage' as Action },
+    CREATE: p('users', 'create'),
+    READ:   p('users', 'read'),
+    UPDATE: p('users', 'update'),
+    DELETE: p('users', 'delete'),
+    MANAGE: p('users', 'manage'),
   },
   SCHOOL: {
-    READ:   { resource: 'school' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'school' as Resource, action: 'update' as Action },
-    MANAGE: { resource: 'school' as Resource, action: 'manage' as Action },
+    READ:   p('school', 'read'),
+    UPDATE: p('school', 'update'),
+    MANAGE: p('school', 'manage'),
   },
   EXPORT: {
-    CREATE: { resource: 'export' as Resource, action: 'create' as Action },
+    CREATE: p('export', 'create'),
   },
   NOTES: {
-    CREATE: { resource: 'notes' as Resource, action: 'create' as Action },
-    READ:   { resource: 'notes' as Resource, action: 'read'   as Action },
-    UPDATE: { resource: 'notes' as Resource, action: 'update' as Action },
-    DELETE: { resource: 'notes' as Resource, action: 'delete' as Action },
+    CREATE: p('notes', 'create'),
+    READ:   p('notes', 'read'),
+    UPDATE: p('notes', 'update'),
+    DELETE: p('notes', 'delete'),
   },
 } as const
+
+export type { PermissionKey }

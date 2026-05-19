@@ -140,7 +140,7 @@ export default function TutanakPrintClient({
         </div>
 
         <p className="text-center text-[10px] text-gray-400 mt-4 print:mt-3">
-          EduDesk · Zümre Takip Sistemi
+          EduDesk
         </p>
       </div>
     </>

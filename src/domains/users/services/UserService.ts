@@ -1,6 +1,6 @@
 import { UserRepository } from '../repositories/UserRepository'
-import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { PermissionService } from '@/src/domains/rbac/services/PermissionService'
+import { getAbility, requireAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import type { InviteResult, DeleteResult } from '../types'
 import type { Role } from '@/src/shared/types'
 
@@ -16,11 +16,9 @@ export const UserService = {
     subject:   string | null
     role:      Role
   }): Promise<InviteResult> {
-    const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
-    if (!user || !profile?.school_id) return { error: 'Giriş gerekli' }
-
-    const canInvite = await PermissionService.check(user.id, profile.school_id, 'users', 'create')
-    if (!canInvite) return { error: 'Yetki yok' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.USERS.CREATE)) return { error: 'Yetki yok' }
 
     if (!params.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email))
       return { error: 'Geçerli bir e-posta girin' }
@@ -28,7 +26,7 @@ export const UserService = {
       return { error: 'Ad soyad en az 2 karakter olmalı' }
 
     // users:manage → müdür; sadece create → müdür yardımcısı
-    const canManage  = await PermissionService.check(user.id, profile.school_id, 'users', 'manage')
+    const canManage  = ability.can(P.USERS.MANAGE)
     const allowedRoles: Role[] = canManage
       ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
       : ['zumre_baskani', 'ogretmen']
@@ -52,7 +50,7 @@ export const UserService = {
       p_full_name: params.full_name,
       p_subject:   params.subject ?? '',
       p_role:      params.role,
-      p_school_id: profile.school_id,
+      p_school_id: ability.schoolId,
     })
     if (profileError) {
       await UserRepository.deleteAuthUser(userData.user.id)
@@ -63,18 +61,16 @@ export const UserService = {
   },
 
   async deleteUser(targetId: string): Promise<DeleteResult> {
-    const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
-    if (!user || !profile?.school_id) return { error: 'Giriş gerekli' }
-
-    const canDelete = await PermissionService.check(user.id, profile.school_id, 'users', 'delete')
-    if (!canDelete) return { error: 'Yetki yok' }
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.USERS.DELETE)) return { error: 'Yetki yok' }
 
     const { data: target } = await UserRepository.getProfileById(targetId)
-    if (!target || target.school_id !== profile.school_id) return { error: 'Kullanıcı bulunamadı' }
+    if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
     if (target.role === 'mudur') return { error: 'Müdür silinemez' }
 
     // users:manage yoksa sadece ogretmen/zumre_baskani silebilir
-    const canManage = await PermissionService.check(user.id, profile.school_id, 'users', 'manage')
+    const canManage = ability.can(P.USERS.MANAGE)
     if (!canManage && !['ogretmen', 'zumre_baskani'].includes(target.role)) {
       return { error: 'Bu kullanıcıyı silemezsiniz' }
     }
@@ -86,15 +82,11 @@ export const UserService = {
   },
 
   async assignRole(targetId: string, newRole: string): Promise<void> {
-    const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
-    if (!user || !profile?.school_id) throw new Error('Giriş gerekli')
+    const ability = await requireAbility()
+    if (ability.cannot(P.USERS.UPDATE)) throw new Error('Yetki yok')
+    if (targetId === ability.userId) throw new Error('Kendi rolünüzü değiştiremezsiniz')
 
-    const canUpdate = await PermissionService.check(user.id, profile.school_id, 'users', 'update')
-    if (!canUpdate) throw new Error('Yetki yok')
-
-    if (targetId === user.id) throw new Error('Kendi rolünüzü değiştiremezsiniz')
-
-    const canManage = await PermissionService.check(user.id, profile.school_id, 'users', 'manage')
+    const canManage = ability.can(P.USERS.MANAGE)
     if (!canManage) {
       if (!['ogretmen', 'zumre_baskani'].includes(newRole))
         throw new Error('Bu rolü atayamazsınız')
