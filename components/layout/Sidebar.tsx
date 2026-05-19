@@ -8,6 +8,7 @@ import { ROLE_LABELS, isMudurOrAbove, isYonetici } from '@/src/shared/types'
 import { getEgitimYili } from '@/src/shared/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 import MobileNavDrawer from '@/components/layout/MobileNavDrawer'
+import FeedbackButton from '@/components/FeedbackButton'
 
 type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 
@@ -230,6 +231,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             )}
             <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
           </div>
+          <FeedbackButton />
           <form action={logout}>
             <button
               type="submit"
