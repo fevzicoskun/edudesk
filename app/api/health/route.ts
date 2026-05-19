@@ -8,7 +8,7 @@ export async function GET() {
   const begin = Date.now()
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const anonKey     = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const anonKey     = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 
   let dbStatus: 'ok' | 'error' = 'error'
   let dbLatencyMs: number | null = null
