@@ -15,7 +15,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // GET /api/internal/admin/:schoolId — single tenant metrics
 export async function GET(
   req: NextRequest,
-  { params }: { params: { schoolId: string } },
+  { params }: { params: Promise<{ schoolId: string }> },
 ): Promise<NextResponse> {
   const requestId = newRequestId()
   const startedAt = Date.now()
@@ -24,14 +24,16 @@ export async function GET(
   const adminId = await requirePlatformAdmin(req)
   if (!adminId) return jsonErr('UNAUTHORIZED', 'Platform admin erişimi gerekli', meta, 403)
 
-  if (!UUID_RE.test(params.schoolId)) {
+  const { schoolId } = await params
+
+  if (!UUID_RE.test(schoolId)) {
     return jsonErr('VALIDATION_ERROR', 'Geçersiz okul ID', meta, 400)
   }
 
-  const tenant = await TenantService.getOne(params.schoolId)
+  const tenant = await TenantService.getOne(schoolId)
   if (!tenant) return jsonErr('NOT_FOUND', 'Okul bulunamadı', meta, 404)
 
-  const quota = await QuotaService.checkTeacherQuota(params.schoolId)
+  const quota = await QuotaService.checkTeacherQuota(schoolId)
 
   return jsonOk({ tenant, quota }, meta)
 }
@@ -62,7 +64,7 @@ const PatchSchema = z.discriminatedUnion('action', [
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { schoolId: string } },
+  { params }: { params: Promise<{ schoolId: string }> },
 ): Promise<NextResponse> {
   const requestId = newRequestId()
   const startedAt = Date.now()
@@ -71,7 +73,9 @@ export async function PATCH(
   const adminId = await requirePlatformAdmin(req)
   if (!adminId) return jsonErr('UNAUTHORIZED', 'Platform admin erişimi gerekli', meta, 403)
 
-  if (!UUID_RE.test(params.schoolId)) {
+  const { schoolId } = await params
+
+  if (!UUID_RE.test(schoolId)) {
     return jsonErr('VALIDATION_ERROR', 'Geçersiz okul ID', meta, 400)
   }
 
@@ -79,7 +83,6 @@ export async function PATCH(
   if (!parsed.success) return jsonErr('VALIDATION_ERROR', parsed.error, meta, 400)
 
   const { action } = parsed.data
-  const schoolId   = params.schoolId
 
   switch (action) {
     case 'suspend':
