@@ -116,10 +116,13 @@ export const HomeworkService = {
     const ability = await getAbility()
     if (!ability) return
 
-    const scope = ability.scope(P.HOMEWORK.DELETE)
-    if (!scope) return
+    // 'school' scope varsa müdür/zümre başkanı — teacher_id filtresi olmadan siler
+    // 'own' veya null → kendi ödevi; DB RLS (teacher_id = auth.uid()) zaten güvenliği sağlar
+    const isManager =
+      ability.scope(P.HOMEWORK.DELETE) === 'school' ||
+      ability.scope(P.HOMEWORK.UPDATE) === 'school'
 
-    if (scope === 'school') {
+    if (isManager) {
       await HomeworkRepository.softDeleteHomeworkAsManager(id, ability.userId, ability.schoolId)
     } else {
       await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
