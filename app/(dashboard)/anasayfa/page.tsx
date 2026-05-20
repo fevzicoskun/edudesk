@@ -90,13 +90,13 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         </Suspense>
       </div>
 
-      {/* ─── Ana Panel: Bu Hafta + Gündem ────────────────── */}
+      {/* ─── Ana Panel: Gündem + Bu Hafta ────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurHaftaWidget />
+          <GundemWidget />
         </Suspense>
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <GundemWidget />
+          <MudurHaftaWidget />
         </Suspense>
       </div>
 

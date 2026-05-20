@@ -9,14 +9,22 @@ type Meeting = {
   title: string
   meeting_date: string
   meeting_type: string
-  attendees: string | null
+  attendees: string | null  // öncelik: 'önemli' | 'dikkat' | 'az_önemli' | null
   notes: string | null
+}
+
+type Priority = 'önemli' | 'dikkat' | 'az_önemli'
+
+const PRIORITY: Record<Priority, { label: string; dot: string; badge: string; borderColor: string }> = {
+  'önemli':    { label: 'Önemli',    dot: 'bg-red-500',   badge: 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-300',       borderColor: 'border-l-red-500' },
+  'dikkat':    { label: 'Dikkat',    dot: 'bg-amber-500', badge: 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300', borderColor: 'border-l-amber-500' },
+  'az_önemli': { label: 'Az Önemli', dot: 'bg-slate-400', badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',   borderColor: 'border-l-slate-400' },
 }
 
 const TYPE_LABELS: Record<string, string> = {
   genel:              'Genel',
   veli:               'Veli',
-  ogretmenler_kurulu: 'Öğretmenler K.',
+  ogretmenler_kurulu: 'Öğr. Kurulu',
   diger:              'Diğer',
   not:                'Not',
 }
@@ -48,6 +56,8 @@ function dateLabel(dateStr: string): string {
 export default function GundemClient({ initial }: { initial: Meeting[] }) {
   const [meetings, setMeetings] = useState<Meeting[]>(initial)
   const [showForm, setShowForm] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selectedPriority, setSelectedPriority] = useState<Priority | ''>('')
   const [, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
 
@@ -58,16 +68,16 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
     startTransition(async () => {
       const res = await createMeeting(null, fd)
       if (res.success && res.id) {
-        const id = res.id
         setMeetings(prev => [...prev, {
-          id,
+          id:           res.id!,
           title:        String(fd.get('title')),
           meeting_date: String(fd.get('meeting_date')),
           meeting_type: String(fd.get('meeting_type') ?? 'genel'),
-          attendees: null,
-          notes: null,
+          attendees:    String(fd.get('attendees') ?? '') || null,
+          notes:        String(fd.get('notes') ?? '') || null,
         }].sort((a, b) => a.meeting_date.localeCompare(b.meeting_date)))
         formRef.current?.reset()
+        setSelectedPriority('')
         setShowForm(false)
       }
     })
@@ -81,7 +91,8 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
   }
 
   return (
-    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col h-full">
+    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col h-full min-h-[420px]">
+      {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between shrink-0">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Gündem</h2>
         <button
@@ -95,48 +106,90 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
         </button>
       </div>
 
+      {/* Form */}
       {showForm && (
         <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/40 shrink-0">
-          <form ref={formRef} action={handleAdd} className="flex flex-wrap gap-2 items-end">
+          <form ref={formRef} action={handleAdd} className="space-y-2.5">
+            <div className="flex flex-wrap gap-2">
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Tarih</label>
+                <input
+                  type="date"
+                  name="meeting_date"
+                  required
+                  defaultValue={todayStr}
+                  className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="flex-1 min-w-[8rem]">
+                <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Başlık</label>
+                <input
+                  name="title"
+                  required
+                  minLength={2}
+                  placeholder="Başlık…"
+                  className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Tür</label>
+                <select
+                  name="meeting_type"
+                  defaultValue="genel"
+                  className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="genel">Genel</option>
+                  <option value="veli">Veli Toplantısı</option>
+                  <option value="ogretmenler_kurulu">Öğretmenler Kurulu</option>
+                  <option value="not">Not</option>
+                  <option value="diger">Diğer</option>
+                </select>
+              </div>
+            </div>
+
             <div>
-              <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Tarih</label>
-              <input
-                type="date"
-                name="meeting_date"
-                required
-                defaultValue={todayStr}
-                className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Önem</label>
+              <input type="hidden" name="attendees" value={selectedPriority} />
+              <div className="flex gap-1.5 flex-wrap">
+                {(['önemli', 'dikkat', 'az_önemli'] as Priority[]).map(p => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setSelectedPriority(prev => prev === p ? '' : p)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
+                      selectedPriority === p
+                        ? `${PRIORITY[p].badge} border-transparent`
+                        : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY[p].dot}`} />
+                    {PRIORITY[p].label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">
+                Not <span className="normal-case font-normal">(isteğe bağlı)</span>
+              </label>
+              <textarea
+                name="notes"
+                rows={2}
+                placeholder="Ek notlar…"
+                className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
-            <div className="flex-1 min-w-[8rem]">
-              <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Başlık</label>
-              <input
-                name="title"
-                required
-                minLength={2}
-                placeholder="Etkinlik başlığı…"
-                className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Tür</label>
-              <select
-                name="meeting_type"
-                defaultValue="genel"
-                className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="genel">Genel</option>
-                <option value="veli">Veli Toplantısı</option>
-                <option value="ogretmenler_kurulu">Öğretmenler Kurulu</option>
-                <option value="not">Not</option>
-                <option value="diger">Diğer</option>
-              </select>
-            </div>
+
             <div className="flex gap-1.5">
               <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 transition-colors">
                 Kaydet
               </button>
-              <button type="button" onClick={() => setShowForm(false)} className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
+              <button
+                type="button"
+                onClick={() => { setShowForm(false); setSelectedPriority('') }}
+                className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
                 İptal
               </button>
             </div>
@@ -144,7 +197,8 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
         </div>
       )}
 
-      <div className="overflow-y-auto divide-y divide-gray-50 dark:divide-slate-700/50" style={{ maxHeight: '340px' }}>
+      {/* List */}
+      <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-700/50">
         {grouped.length === 0 ? (
           <p className="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">Yaklaşan etkinlik yok.</p>
         ) : grouped.map(([dateStr, items]) => (
@@ -153,22 +207,55 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
               {dateLabel(dateStr)}
             </p>
             <ul className="space-y-1.5">
-              {items.map(m => (
-                <li key={m.id} className="group flex items-center gap-2">
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${TYPE_BADGE[m.meeting_type] ?? TYPE_BADGE.diger}`}>
-                    {TYPE_LABELS[m.meeting_type] ?? m.meeting_type}
-                  </span>
-                  <span className="text-xs text-gray-800 dark:text-slate-200 flex-1 truncate">{m.title}</span>
-                  <button
-                    onClick={() => handleDelete(m.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-red-400 hover:text-red-600 shrink-0"
+              {items.map(m => {
+                const priority = (m.attendees && m.attendees in PRIORITY) ? m.attendees as Priority : null
+                const p = priority ? PRIORITY[priority] : null
+                const isExpanded = expandedId === m.id
+                return (
+                  <li
+                    key={m.id}
+                    className={`rounded-lg border-l-2 overflow-hidden ${p ? p.borderColor : 'border-l-transparent'} bg-gray-50 dark:bg-slate-700/30`}
                   >
-                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </li>
-              ))}
+                    <div
+                      className="group flex items-center gap-2 px-2.5 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700/60 transition-colors"
+                      onClick={() => setExpandedId(isExpanded ? null : m.id)}
+                    >
+                      {p && (
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${p.badge}`}>
+                          {p.label}
+                        </span>
+                      )}
+                      <span className="text-xs font-medium text-gray-800 dark:text-slate-200 flex-1 truncate">{m.title}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${TYPE_BADGE[m.meeting_type] ?? TYPE_BADGE.diger}`}>
+                        {TYPE_LABELS[m.meeting_type] ?? m.meeting_type}
+                      </span>
+                      <svg
+                        className={`w-3 h-3 text-gray-400 dark:text-slate-500 shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                      </svg>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleDelete(m.id) }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-red-400 hover:text-red-600 shrink-0"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    {isExpanded && (
+                      <div className="px-3 pb-2.5 pt-1.5 border-t border-gray-100 dark:border-slate-700">
+                        {m.notes ? (
+                          <p className="text-xs text-gray-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">{m.notes}</p>
+                        ) : (
+                          <p className="text-xs text-gray-400 dark:text-slate-500 italic">Not eklenmemiş.</p>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}
