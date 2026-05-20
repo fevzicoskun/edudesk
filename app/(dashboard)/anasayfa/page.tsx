@@ -7,7 +7,7 @@ import { format } from '@/src/shared/date'
 import RaporButton from '@/components/RaporButton'
 import OgretmenDashboard from './OgretmenDashboard'
 import MudurStatsWidget      from './MudurStatsWidget'
-import MudurHaftaWidget      from './MudurHaftaWidget'
+import EtkinliklerWidget     from './EtkinliklerWidget'
 import MentorOzetiWidget     from './MentorOzetiWidget'
 import ZumreOgretmenWidget   from './ZumreOgretmenWidget'
 import GundemWidget          from './GundemWidget'
@@ -96,7 +96,7 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
           <GundemWidget />
         </Suspense>
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurHaftaWidget />
+          <EtkinliklerWidget />
         </Suspense>
       </div>
 
