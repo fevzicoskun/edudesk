@@ -71,6 +71,14 @@ export const HomeworkRepository = {
       .eq('id', homeworkId).eq('teacher_id', teacherId).eq('school_id', schoolId)
   },
 
+  // Zümre başkanı: teacher_id filtresi yok, okul kapsamlı silme
+  async softDeleteHomeworkAsManager(homeworkId: string, deletedBy: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('homeworks')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
+      .eq('id', homeworkId).eq('school_id', schoolId)
+  },
+
   async restoreHomework(homeworkId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('homeworks')

@@ -114,9 +114,16 @@ export const HomeworkService = {
 
   async deleteHomework(id: string): Promise<void> {
     const ability = await getAbility()
-    if (!ability || ability.cannot(P.HOMEWORK.DELETE)) return
+    if (!ability) return
 
-    await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
+    const scope = ability.scope(P.HOMEWORK.UPDATE)
+    if (!scope) return
+
+    if (scope === 'school') {
+      await HomeworkRepository.softDeleteHomeworkAsManager(id, ability.userId, ability.schoolId)
+    } else {
+      await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
+    }
   },
 
   async restoreHomework(id: string): Promise<void> {
