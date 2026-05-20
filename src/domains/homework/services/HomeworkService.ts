@@ -116,7 +116,7 @@ export const HomeworkService = {
     const ability = await getAbility()
     if (!ability) return
 
-    const scope = ability.scope(P.HOMEWORK.UPDATE)
+    const scope = ability.scope(P.HOMEWORK.DELETE)
     if (!scope) return
 
     if (scope === 'school') {

@@ -4,7 +4,6 @@ import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
-import { MentorService } from '@/src/domains/mentor/services/MentorService'
 
 export async function createClass(formData: FormData) {
   const parsed = createClassSchema.safeParse({
@@ -85,39 +84,3 @@ export async function addStudentNote(studentId: string, classId: string, formDat
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }
 
-export async function assignMentor(classId: string, teacherId: string | null) {
-  UUID.parse(classId)
-  if (teacherId !== null) UUID.parse(teacherId)
-
-  await MentorService.assignMentor(classId, teacherId)
-  revalidatePath('/siniflar/' + classId)
-}
-
-export async function addMentorReport(
-  studentId: string,
-  classId:   string,
-  formData:  FormData
-) {
-  UUID.parse(studentId)
-  UUID.parse(classId)
-
-  const content     = String(formData.get('content') ?? '').trim()
-  const report_date = String(formData.get('report_date') ?? '').trim()
-
-  if (content.length < 5)    throw new Error('Rapor içeriği en az 5 karakter olmalı.')
-  if (content.length > 2000) throw new Error('Rapor içeriği en fazla 2000 karakter olabilir.')
-  if (!report_date)          throw new Error('Rapor tarihi zorunludur.')
-
-  await MentorService.addMentorReport(studentId, classId, { content, report_date })
-  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
-}
-
-export async function deleteMentorReport(
-  reportId:  string,
-  studentId: string,
-  classId:   string
-) {
-  UUID.parse(reportId)
-  await MentorService.deleteMentorReport(reportId)
-  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
-}

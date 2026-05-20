@@ -3,15 +3,12 @@
 import { useTransition } from 'react'
 import { restoreClass, restoreStudent } from '@/app/actions/classes'
 import { restoreHomework } from '@/app/actions/homework'
-import { restoreMeeting, restoreExam } from '@/app/actions/zumre'
 import { format, parseISO } from '@/src/shared/date'
 
 interface DeletedItem { id: string; deleted_at: string }
 interface DeletedClass extends DeletedItem { name: string; grade: number }
 interface DeletedStudent extends DeletedItem { full_name: string; class_id: string }
 interface DeletedHomework extends DeletedItem { title: string; subject: string }
-interface DeletedMeeting extends DeletedItem { title: string; meeting_date: string }
-interface DeletedExam extends DeletedItem { title: string; exam_date: string }
 
 function RestoreBtn({ label, onRestore }: { label: string; onRestore: () => Promise<void> }) {
   const [pending, startTransition] = useTransition()
@@ -56,15 +53,13 @@ function Section<T extends DeletedItem>({
 }
 
 export default function SilinenListesi({
-  classes, students, homeworks, meetings, exams,
+  classes, students, homeworks,
 }: {
   classes: DeletedClass[]
   students: DeletedStudent[]
   homeworks: DeletedHomework[]
-  meetings: DeletedMeeting[]
-  exams: DeletedExam[]
 }) {
-  const total = classes.length + students.length + homeworks.length + meetings.length + exams.length
+  const total = classes.length + students.length + homeworks.length
 
   if (total === 0) {
     return (
@@ -115,33 +110,6 @@ export default function SilinenListesi({
         )}
       />
 
-      <Section
-        title="Zümre Toplantıları"
-        items={meetings}
-        renderRow={m => (
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{m.title}</p>
-              <p className="text-xs text-gray-400">{format(parseISO(m.meeting_date), 'd MMMM yyyy')}</p>
-            </div>
-            <RestoreBtn label="Geri al" onRestore={() => restoreMeeting(m.id)} />
-          </div>
-        )}
-      />
-
-      <Section
-        title="Ortak Sınavlar"
-        items={exams}
-        renderRow={e => (
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{e.title}</p>
-              <p className="text-xs text-gray-400">{format(parseISO(e.exam_date), 'd MMMM yyyy')}</p>
-            </div>
-            <RestoreBtn label="Geri al" onRestore={() => restoreExam(e.id)} />
-          </div>
-        )}
-      />
     </div>
   )
 }

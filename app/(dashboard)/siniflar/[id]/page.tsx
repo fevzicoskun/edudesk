@@ -6,7 +6,6 @@ import { addStudent, deleteStudent } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import BulkStudentModal from './BulkStudentModal'
-import MentorForm from './MentorForm'
 import SinifExportButton from './SinifExportButton'
 
 export default async function SinifDetayPage({
@@ -17,14 +16,12 @@ export default async function SinifDetayPage({
   const { id } = await params
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
 
-  const isMudurYardimcisi = profile?.role === 'mudur_yardimcisi'
-
   const schoolId = profile?.school_id ?? ''
 
-  const [clsResult, studentsResult, teachersResult] = await Promise.all([
+  const [clsResult, studentsResult] = await Promise.all([
     supabase
       .from('classes')
-      .select('name, mentor_teacher_id')
+      .select('name')
       .eq('id', id)
       .eq('school_id', schoolId)
       .single(),
@@ -35,21 +32,12 @@ export default async function SinifDetayPage({
       .eq('school_id', schoolId)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
-    isMudurYardimcisi
-      ? supabase
-          .from('profiles')
-          .select('id, full_name')
-          .eq('school_id', schoolId)
-          .in('role', ['ogretmen', 'zumre_baskani'])
-          .order('full_name')
-      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
   ])
 
   if (!clsResult.data) notFound()
 
   const cls = clsResult.data
   const students = studentsResult.data ?? []
-  const teachers = (teachersResult.data ?? []) as { id: string; full_name: string }[]
   const egitimYili = getEgitimYili()
 
   const maxNumber = students.reduce((max, s) => {
@@ -70,18 +58,6 @@ export default async function SinifDetayPage({
         </div>
         <SinifExportButton classId={id} className={cls.name} />
       </div>
-
-      {/* Mentor Atama — sadece mudur_yardimcisi */}
-      {isMudurYardimcisi && (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Mentor Öğretmen</h2>
-          <MentorForm
-            classId={id}
-            currentMentorId={cls.mentor_teacher_id ?? null}
-            teachers={teachers}
-          />
-        </div>
-      )}
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
         <div className="flex items-center justify-between mb-3">

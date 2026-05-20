@@ -6,16 +6,12 @@ import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import CalendarWidget from './CalendarWidget'
 import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
-import MufredatWidget from './MufredatWidget'
-import MentorSinifimWidget from './MentorSinifimWidget'
-import DersProgramiWidget from './DersProgramiWidget'
 
 type ClassRel = { name: string; grade: number } | null
 type HwLite = {
   id: string; title: string; subject: string
   due_date: string; class_id: string; classes: ClassRel
 }
-type CurrRaw = { class_id: string; status: string; classes: { name: string; grade: number } | null }
 
 export default async function OgretmenDashboard() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
@@ -33,16 +29,9 @@ export default async function OgretmenDashboard() {
     .order('due_date', { ascending: false })
   if (!isZumreBaskani) hwQuery = hwQuery.eq('teacher_id', user.id)
 
-  const [{ data: hwData }, { data: curriculumRaw }] = await Promise.all([
-    hwQuery,
-    supabase
-      .from('curriculum_progress')
-      .select('class_id, status, classes(name, grade)')
-      .eq('teacher_id', user.id),
-  ])
+  const { data: hwData } = await hwQuery
 
   const homeworks = (hwData ?? []) as unknown as HwLite[]
-  const curriculum = (curriculumRaw ?? []) as unknown as CurrRaw[]
   const hwIds = homeworks.map(h => h.id)
   const todayHws = homeworks.filter(h => h.due_date === todayStr)
   const upcomingHws = homeworks
@@ -65,16 +54,6 @@ export default async function OgretmenDashboard() {
           todayCount={todayHws.length}
           upcomingCount={upcomingHws.length}
         />
-      </Suspense>
-
-      {curriculum.length > 0 && <MufredatWidget curriculum={curriculum} />}
-
-      <Suspense fallback={null}>
-        <MentorSinifimWidget />
-      </Suspense>
-
-      <Suspense fallback={null}>
-        <DersProgramiWidget />
       </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">

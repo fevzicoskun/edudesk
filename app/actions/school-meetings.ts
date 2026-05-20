@@ -2,43 +2,40 @@
 
 import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
+import { schoolMeetingSchema } from '@/src/domains/school/validators'
 import { MeetingService } from '@/src/domains/school/services/MeetingService'
-import type { MeetingResult } from '@/src/domains/school/types'
 
-export async function createMeeting(_: unknown, formData: FormData): Promise<MeetingResult> {
-  const title        = String(formData.get('title') ?? '').trim()
-  const meeting_date = String(formData.get('meeting_date') ?? '').trim()
-  const meeting_type = String(formData.get('meeting_type') ?? 'genel').trim()
-  const notes        = String(formData.get('notes') ?? '').trim() || null
-  const attendees    = String(formData.get('attendees') ?? '').trim() || null
+export async function createMeeting(_: unknown, formData: FormData) {
+  const parsed = schoolMeetingSchema.safeParse({
+    title:        formData.get('title'),
+    meeting_date: formData.get('meeting_date'),
+    meeting_type: formData.get('meeting_type') ?? 'genel',
+    notes:        formData.get('notes') || null,
+    attendees:    formData.get('attendees') || null,
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-  if (!title || title.length < 2) return { error: 'Toplantı adı en az 2 karakter olmalı' }
-  if (!meeting_date) return { error: 'Tarih zorunlu' }
+  const result = await MeetingService.createMeeting({
+    ...parsed.data,
+    notes:     parsed.data.notes     ?? null,
+    attendees: parsed.data.attendees ?? null,
+  })
+  if (result.error) return result
 
-  const result = await MeetingService.createMeeting({ title, meeting_date, meeting_type, notes, attendees })
-  if (result.success) {
-    revalidatePath('/anasayfa')
-    revalidatePath('/yonetim')
-  }
-  return result
+  revalidatePath('/yonetim')
+  return { success: true }
 }
 
-export async function updateMeetingNotes(meetingId: string, notes: string): Promise<MeetingResult> {
+export async function updateMeetingNotes(meetingId: string, notes: string) {
   UUID.parse(meetingId)
   const result = await MeetingService.updateMeetingNotes(meetingId, notes)
-  if (result.success) {
-    revalidatePath('/anasayfa')
-    revalidatePath('/yonetim')
-  }
+  if (result.success) revalidatePath('/yonetim')
   return result
 }
 
-export async function deleteMeeting(meetingId: string): Promise<MeetingResult> {
+export async function deleteMeeting(meetingId: string) {
   UUID.parse(meetingId)
   const result = await MeetingService.deleteMeeting(meetingId)
-  if (result.success) {
-    revalidatePath('/anasayfa')
-    revalidatePath('/yonetim')
-  }
+  if (result.success) revalidatePath('/yonetim')
   return result
 }

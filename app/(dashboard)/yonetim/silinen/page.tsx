@@ -14,13 +14,11 @@ export default async function SilinenPage() {
   const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
   const sid = profile.school_id
 
-  const [classesResult, studentsResult, homeworksResult, meetingsResult, examsResult] =
+  const [classesResult, studentsResult, homeworksResult] =
     await Promise.all([
       supabase.from('classes').select('id, name, grade, deleted_at').eq('school_id', sid).not('deleted_at', 'is', null).gte('deleted_at', cutoff).order('deleted_at', { ascending: false }),
       supabase.from('students').select('id, full_name, class_id, deleted_at').eq('school_id', sid).not('deleted_at', 'is', null).gte('deleted_at', cutoff).order('deleted_at', { ascending: false }),
       supabase.from('homeworks').select('id, title, subject, deleted_at').eq('school_id', sid).not('deleted_at', 'is', null).gte('deleted_at', cutoff).order('deleted_at', { ascending: false }),
-      supabase.from('zumre_meetings').select('id, title, meeting_date, deleted_at').eq('school_id', sid).not('deleted_at', 'is', null).gte('deleted_at', cutoff).order('deleted_at', { ascending: false }),
-      supabase.from('common_exams').select('id, title, exam_date, deleted_at').eq('school_id', sid).not('deleted_at', 'is', null).gte('deleted_at', cutoff).order('deleted_at', { ascending: false }),
     ])
 
   return (
@@ -33,8 +31,6 @@ export default async function SilinenPage() {
         classes={classesResult.data ?? []}
         students={studentsResult.data ?? []}
         homeworks={homeworksResult.data ?? []}
-        meetings={meetingsResult.data ?? []}
-        exams={examsResult.data ?? []}
       />
     </div>
   )

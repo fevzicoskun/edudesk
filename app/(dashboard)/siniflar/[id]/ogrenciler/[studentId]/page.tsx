@@ -2,13 +2,12 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
-import { addStudentNote, deleteStudentNote, addMentorReport, deleteMentorReport } from '@/src/domains/classes/actions'
+import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
 import CopyVeliLink from './CopyVeliLink'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
-import { isMudurOrAbove } from '@/src/shared/types'
 import { schoolYearStart } from '@/src/shared/utils'
-import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile } from '@/src/shared/auth'
 
 export const revalidate = 60
 
@@ -33,7 +32,6 @@ const BADGE: Record<SubmissionStatus, string> = {
 type HomeworkRel = { title: string; subject: string; due_date: string } | null
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
-type MentorReportRow = { id: string; content: string; report_date: string; created_at: string; mentor_id: string }
 
 export default async function OgrenciDetayPage({
   params,
@@ -43,31 +41,22 @@ export default async function OgrenciDetayPage({
   const { id: classId, studentId } = await params
   const supabase = await createClient()
 
-  const [currentUser, currentProfile] = await Promise.all([
-    getCurrentUser(),
-    getCurrentProfile(),
-  ])
+  const currentProfile = await getCurrentProfile()
 
   const schoolId = currentProfile?.school_id ?? ''
 
-  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, mentorReportsRes] = await Promise.all([
-    supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
+  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
+    supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
-    supabase.from('mentor_reports').select('id, content, report_date, created_at, mentor_id').eq('student_id', studentId).eq('school_id', schoolId).order('report_date', { ascending: false }),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
 
   const cls = classResult.data
   const student = studentResult.data
-  const mentorReports = (mentorReportsRes.data ?? []) as MentorReportRow[]
-  const isMentor = currentUser?.id === cls.mentor_teacher_id
-  const isYoneticiRole = isMudurOrAbove(currentProfile?.role ?? null)
-  const showMentorSection = isMentor || isYoneticiRole
-  const today = new Date().toISOString().split('T')[0]
   const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
@@ -230,60 +219,6 @@ export default async function OgrenciDetayPage({
         </section>
       </div>
 
-      {showMentorSection && (
-        <section className="mt-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Mentör Raporları</h2>
-
-          {isMentor && (
-            <form action={addMentorReport.bind(null, studentId, classId)} className="mb-4">
-              <textarea
-                name="content"
-                required
-                minLength={5}
-                placeholder="Rapor içeriği (en az 5 karakter)..."
-                className="w-full min-h-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400"
-              />
-              <div className="flex items-center gap-3 mt-2">
-                <input
-                  type="date"
-                  name="report_date"
-                  required
-                  defaultValue={today}
-                  className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="min-h-[44px] bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Rapor Ekle
-                </button>
-              </div>
-            </form>
-          )}
-
-          {mentorReports.length === 0 ? (
-            <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">Henüz mentör raporu yok.</p>
-          ) : (
-            <div className="space-y-2">
-              {mentorReports.map((r) => (
-                <div key={r.id} className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-gray-800 dark:text-slate-200 whitespace-pre-wrap flex-1">{r.content}</p>
-                    {isMentor && (
-                      <form action={deleteMentorReport.bind(null, r.id, studentId, classId)} className="shrink-0">
-                        <button type="submit" className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
-                      </form>
-                    )}
-                  </div>
-                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
-                    {format(parseISO(r.report_date), 'd MMM yyyy')}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-      )}
     </div>
   )
 }
