@@ -1,9 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createScheduleWithFile } from '@/app/actions/schedules'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/src/infrastructure/supabase/client'
 
 type Teacher = { id: string; full_name: string | null; subject: string | null }
 type Cls = { id: string; name: string; grade: number }

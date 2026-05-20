@@ -1,4 +1,4 @@
-import { NoteRepository } from '../repositories/NoteRepository'
+import { insertNote, updateNote, deleteNote } from '@/src/queries/notes'
 import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const NoteService = {
@@ -7,7 +7,7 @@ export const NoteService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { data, error } = await NoteRepository.insertNote(user.id)
+    const { data, error } = await insertNote(user.id)
     if (error) throw new Error(error.message)
     return data.id
   },
@@ -17,7 +17,7 @@ export const NoteService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { error } = await NoteRepository.updateNote(id, user.id, {
+    const { error } = await updateNote(id, user.id, {
       title:   String(title).slice(0, 200),
       content: String(content).slice(0, 50000),
     })
@@ -29,7 +29,7 @@ export const NoteService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { error } = await NoteRepository.deleteNote(id, user.id)
+    const { error } = await deleteNote(id, user.id)
     if (error) throw new Error(error.message)
   },
 }

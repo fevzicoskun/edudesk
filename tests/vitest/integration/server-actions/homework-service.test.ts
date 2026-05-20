@@ -1,4 +1,4 @@
-/**
+﻿/**
  * HomeworkService entegrasyon testleri.
  * Auth katmanı mock'lanır, DB gerçek Supabase ile çalışır.
  */
@@ -27,7 +27,7 @@ vi.mock('@/src/shared/auth', () => ({
 }))
 
 // Server client'ı service client'a yönlendir (auth token gerekmez)
-vi.mock('@/lib/supabase/server', () => ({
+vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
 vi.mock('@/src/infrastructure/supabase/server', () => ({

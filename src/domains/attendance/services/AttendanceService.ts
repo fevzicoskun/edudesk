@@ -1,4 +1,4 @@
-import { AttendanceRepository } from '../repositories/AttendanceRepository'
+import { upsertAttendance, findByClassAndDate, findHistoryByClass } from '@/src/queries/attendance'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { AttendanceStatus } from '../types'
@@ -22,18 +22,14 @@ export const AttendanceService = {
       school_id:  ability.schoolId,
     }))
 
-    const { error } = await AttendanceRepository.upsertAttendance(rows)
+    const { error } = await upsertAttendance(rows)
     return { error: error?.message }
-  },
-
-  async getAttendanceForDate(classId: string, date: string) {
-    return AttendanceRepository.findByClassAndDate(classId, date)
   },
 
   async getAttendanceHistory(classId: string, days = 14) {
     const safeDays = Math.min(Math.max(1, days), 90)
     const since    = new Date()
     since.setDate(since.getDate() - safeDays)
-    return AttendanceRepository.findHistoryByClass(classId, since.toISOString().split('T')[0])
+    return findHistoryByClass(classId, since.toISOString().split('T')[0])
   },
 }

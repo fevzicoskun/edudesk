@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import { parseTopicString } from '@/src/domains/zumre/data/tymm'

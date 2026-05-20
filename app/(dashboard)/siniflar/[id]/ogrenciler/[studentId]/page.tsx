@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'

@@ -1,4 +1,11 @@
-import { ClassRepository } from '../repositories/ClassRepository'
+import {
+  insertClass, softDeleteClass, restoreClass,
+  softDeleteHomeworksByClass, restoreHomeworksByClass,
+  softDeleteStudentsByClass, restoreStudentsByClass,
+  softDeleteStudent, restoreStudent,
+  insertStudent, insertStudents,
+  insertStudentNote, deleteStudentNote,
+} from '@/src/queries/classes'
 import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { guard } from '@/src/shared/authorization'
@@ -17,7 +24,7 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    const { error } = await ClassRepository.insertClass({
+    const { error } = await insertClass({
       name: data.name, grade: data.grade,
       academic_year: getEgitimYili(), school_id,
     })
@@ -38,9 +45,9 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await ClassRepository.softDeleteHomeworksByClass(classId, school_id, user.id)
-    await ClassRepository.softDeleteStudentsByClass(classId, school_id, user.id)
-    await ClassRepository.softDeleteClass(classId, school_id, user.id)
+    await softDeleteHomeworksByClass(classId, school_id, user.id)
+    await softDeleteStudentsByClass(classId, school_id, user.id)
+    await softDeleteClass(classId, school_id, user.id)
 
     await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId, school_id })
   },
@@ -54,9 +61,9 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await ClassRepository.restoreClass(classId, school_id)
-    await ClassRepository.restoreStudentsByClass(classId, school_id)
-    await ClassRepository.restoreHomeworksByClass(classId, school_id)
+    await restoreClass(classId, school_id)
+    await restoreStudentsByClass(classId, school_id)
+    await restoreHomeworksByClass(classId, school_id)
 
     await logAudit({ user_id: user.id, action: 'class.restore', table_name: 'classes', record_id: classId, school_id })
   },
@@ -67,7 +74,7 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await ClassRepository.insertStudent({
+    await insertStudent({
       class_id: classId, full_name: data.full_name,
       student_number: data.student_number ?? null, school_id,
     })
@@ -85,7 +92,7 @@ export const ClassService = {
       .map(s => ({ full_name: s.full_name.trim().slice(0, 120), student_number: s.student_number?.slice(0, 20) ?? null }))
       .filter(s => s.full_name.length >= 2)
 
-    await ClassRepository.insertStudents(valid.map(s => ({ class_id: classId, school_id, ...s })))
+    await insertStudents(valid.map(s => ({ class_id: classId, school_id, ...s })))
   },
 
   async deleteStudent(studentId: string) {
@@ -94,7 +101,7 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await ClassRepository.softDeleteStudent(studentId, school_id, user.id)
+    await softDeleteStudent(studentId, school_id, user.id)
     await logAudit({ user_id: user.id, action: 'student.delete', table_name: 'students', record_id: studentId, school_id })
   },
 
@@ -107,7 +114,7 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await ClassRepository.restoreStudent(studentId, school_id)
+    await restoreStudent(studentId, school_id)
     await logAudit({ user_id: user.id, action: 'student.restore', table_name: 'students', record_id: studentId, school_id })
   },
 
@@ -117,12 +124,12 @@ export const ClassService = {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Giriş gerekli')
 
-    await ClassRepository.insertStudentNote({ teacher_id: user.id, student_id: studentId, body: data.body, school_id })
+    await insertStudentNote({ teacher_id: user.id, student_id: studentId, body: data.body, school_id })
   },
 
   async deleteStudentNote(noteId: string) {
     const [schoolId, user] = await Promise.all([requireSchoolId(), getCurrentUser()])
     if (!user) throw new Error('Giriş gerekli')
-    await ClassRepository.deleteStudentNote(noteId, user.id, schoolId)
+    await deleteStudentNote(noteId, user.id, schoolId)
   },
 }

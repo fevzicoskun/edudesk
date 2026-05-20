@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+﻿import { redirect } from 'next/navigation'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'

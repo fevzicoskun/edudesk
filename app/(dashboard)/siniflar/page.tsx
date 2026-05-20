@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClass } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'

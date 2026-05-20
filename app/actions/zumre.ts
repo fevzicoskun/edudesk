@@ -12,6 +12,7 @@ import {
 import { MeetingService }    from '@/src/domains/zumre/services/MeetingService'
 import { ExamService }       from '@/src/domains/zumre/services/ExamService'
 import { CurriculumService } from '@/src/domains/zumre/services/CurriculumService'
+import { CurriculumRepository } from '@/src/domains/zumre/repositories/CurriculumRepository'
 import type { CurriculumStatus } from '@/src/domains/zumre/types'
 
 // ── Meeting ───────────────────────────────────────────────────────────────────
@@ -111,7 +112,8 @@ export async function restoreExam(id: string) {
 
 export async function fetchClassStudents(classId: string): Promise<{ id: string; full_name: string }[]> {
   UUID.parse(classId)
-  return CurriculumService.fetchClassStudents(classId)
+  const { data } = await CurriculumRepository.findStudentsByClass(classId)
+  return data ?? []
 }
 
 export async function createCurriculumProgress(formData: FormData) {

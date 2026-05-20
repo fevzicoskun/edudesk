@@ -59,11 +59,6 @@ export const CurriculumService = {
     await CurriculumRepository.clearClassCurriculum(classId, user.id, schoolId)
   },
 
-  async fetchClassStudents(classId: string): Promise<{ id: string; full_name: string }[]> {
-    const { data } = await CurriculumRepository.findStudentsByClass(classId)
-    return data ?? []
-  },
-
   async importFromTYMM(subject: string, classId: string): Promise<ImportState> {
     const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
     const { data: { user } } = await supabase.auth.getUser()

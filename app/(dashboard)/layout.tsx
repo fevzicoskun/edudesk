@@ -1,6 +1,6 @@
-import { redirect } from 'next/navigation'
+﻿import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import { ToastProvider } from '@/components/Toast'
 import SessionTracker from '@/components/SessionTracker'

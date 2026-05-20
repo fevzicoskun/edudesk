@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 import { updateMeeting } from '@/src/domains/zumre/actions'

@@ -1,5 +1,5 @@
-import { createServiceClient } from '@/lib/supabase/service'
-import { createClient } from '@/lib/supabase/server'
+﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Resource, Action, GrantedPermission, UserRole } from '../types'
 
 export const RbacRepository = {

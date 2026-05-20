@@ -1,9 +1,9 @@
-'use client'
+﻿'use client'
 
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateScheduleFile } from '@/app/actions/schedules'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/src/infrastructure/supabase/client'
 
 const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
 

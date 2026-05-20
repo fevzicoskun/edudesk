@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+﻿import { redirect } from 'next/navigation'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isYonetici } from '@/src/shared/types'
 import SilinenListesi from './SilinenListesi'

@@ -1,5 +1,5 @@
-import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
+﻿import { Suspense } from 'react'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import { deleteHomework } from '@/src/domains/homework/actions'
@@ -28,20 +28,21 @@ export default async function OdevlerPage({
 }) {
   const params = await searchParams
   const [user, profile, supabase] = await Promise.all([getCurrentUser(), getCurrentProfile(), createClient()])
-  if (!user) return null
+  if (!user || !profile?.school_id) return null
+  const sid = profile.school_id
 
-  const isZumreBaskani = profile?.role === 'zumre_baskani' || isMudurOrAbove(profile?.role)
-  const canWrite = isTeachingRole(profile?.role)
+  const isZumreBaskani = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
+  const canWrite = isTeachingRole(profile.role)
 
   const subjectsQuery = isZumreBaskani
     ? supabase.from('homeworks').select('subject')
     : supabase.from('homeworks').select('subject').eq('teacher_id', user.id)
 
   const [classesResult, subjectsResult, teachersResult] = await Promise.all([
-    supabase.from('classes').select('id, name, grade').order('grade').order('name'),
+    supabase.from('classes').select('id, name, grade').eq('school_id', sid).order('grade').order('name'),
     subjectsQuery,
     isZumreBaskani
-      ? supabase.from('profiles').select('id, full_name').order('full_name')
+      ? supabase.from('profiles').select('id, full_name').eq('school_id', sid).order('full_name')
       : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
   ])
 

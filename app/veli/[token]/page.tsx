@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/service'
+﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { notFound } from 'next/navigation'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'

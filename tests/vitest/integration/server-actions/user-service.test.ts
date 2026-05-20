@@ -1,4 +1,4 @@
-/**
+﻿/**
  * UserService RBAC entegrasyon testleri.
  * users:create / users:delete / users:manage izin hiyerarşisini test eder.
  */
@@ -25,7 +25,7 @@ vi.mock('@/src/shared/auth', () => ({
   getCurrentProfile: vi.fn(),
   requireSchoolId:   vi.fn(),
 }))
-vi.mock('@/lib/supabase/server', () => ({
+vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
 vi.mock('@/src/infrastructure/supabase/server', () => ({

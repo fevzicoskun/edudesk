@@ -1,5 +1,5 @@
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/server'
+﻿import Link from 'next/link'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 type ClassRel = { name: string; grade: number } | null
 type StudentRel = { id: string; full_name: string; class_id: string; classes: ClassRel } | null

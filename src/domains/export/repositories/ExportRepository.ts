@@ -1,4 +1,4 @@
-import { createServiceClient } from '@/lib/supabase/service'
+﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import type { ExportJob, JobStatus } from '../types'
 
 export const ExportRepository = {
