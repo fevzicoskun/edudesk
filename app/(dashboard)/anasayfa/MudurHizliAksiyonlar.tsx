@@ -45,24 +45,13 @@ const ACTIONS = [
       </svg>
     ),
   },
-  {
-    href: '/audit',
-    label: 'Denetim Günlüğü',
-    sub: 'Değişiklik Kayıtları',
-    gradient: 'from-slate-600 to-slate-700',
-    icon: (
-      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-      </svg>
-    ),
-  },
 ]
 
 export default function MudurHizliAksiyonlar() {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Hızlı Erişim</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {ACTIONS.map(a => (
           <Link
             key={a.href}

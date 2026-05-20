@@ -84,7 +84,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     href: '/ders-programi',
     label: 'Ders Programı',
     mobile: false,
-    roles: ['mudur_yardimcisi', 'mudur'],
+    roles: ['mudur_yardimcisi'],
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
   {
@@ -140,18 +140,53 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
   const isMudur = isMudurOrAbove(role)
   const isYoneticiUser = isYonetici(role)
   const roleLabel = role ? ROLE_LABELS[role] ?? 'Öğretmen' : 'Öğretmen'
+  const darkSidebar = role === 'mudur'
+
+  // Theme tokens — dark sidebar for müdür, standard for others
+  const S = darkSidebar ? {
+    aside:      'bg-slate-900 border-r border-slate-700/50',
+    divider:    'border-slate-700/50',
+    brand:      'text-white',
+    year:       'text-slate-500',
+    navActive:  'bg-white/10 text-white',
+    navInactive:'text-slate-400 hover:bg-white/[0.07] hover:text-white',
+    subActive:  'text-white bg-white/[0.08]',
+    subInactive:'text-slate-500 hover:text-slate-200',
+    userCard:   'bg-white/[0.06]',
+    userName:   'text-white',
+    userSub:    'text-slate-500',
+    logout:     'text-slate-400 hover:bg-white/[0.07] hover:text-white',
+    roleBadge:  'bg-purple-500/20 text-purple-300',
+    mobileHdr:  'bg-slate-900 border-b border-slate-700/50',
+    mobileBrand:'text-white',
+  } : {
+    aside:      'bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700',
+    divider:    'border-gray-200 dark:border-slate-700',
+    brand:      'text-gray-900 dark:text-slate-100',
+    year:       'text-gray-400 dark:text-slate-500',
+    navActive:  'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    navInactive:'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100',
+    subActive:  'text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/50',
+    subInactive:'text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300',
+    userCard:   'bg-gray-50 dark:bg-slate-800',
+    userName:   'text-gray-900 dark:text-slate-100',
+    userSub:    'text-gray-400 dark:text-slate-500',
+    logout:     'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100',
+    roleBadge:  isMudur
+      ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+      : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+    mobileHdr:  'bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700',
+    mobileBrand:'text-gray-900 dark:text-slate-100',
+  }
 
   return (
     <>
       {/* Mobile header */}
-      <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4">
+      <header className={`md:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 ${S.mobileHdr}`}>
         <div className="flex items-center gap-2">
-          <p className="font-bold text-gray-900 dark:text-slate-100">EduDesk</p>
+          <p className={`font-bold ${S.mobileBrand}`}>EduDesk</p>
           {isYoneticiUser && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
-              isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-            }`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${S.roleBadge}`}>
               {roleLabel}
             </span>
           )}
@@ -160,11 +195,11 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       </header>
 
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-60 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex-col shrink-0">
-        <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+      <aside className={`hidden md:flex w-60 flex-col shrink-0 ${S.aside}`}>
+        <div className={`px-5 py-4 border-b flex items-center justify-between ${S.divider}`}>
           <div>
-            <p className="font-bold text-gray-900 dark:text-slate-100 text-base">EduDesk</p>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{getEgitimYili()}</p>
+            <p className={`font-bold text-base ${S.brand}`}>EduDesk</p>
+            <p className={`text-xs mt-0.5 ${S.year}`}>{getEgitimYili()}</p>
           </div>
           <ThemeToggle />
         </div>
@@ -177,9 +212,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                 <Link
                   href={href}
                   className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                      : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+                    active ? S.navActive : S.navInactive
                   }`}
                 >
                   {icon}
@@ -196,9 +229,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                             key={sub.href}
                             href={sub.href}
                             className={`block px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                              subActive
-                                ? 'text-blue-700 dark:text-blue-300 bg-blue-50/50 dark:bg-blue-950/50'
-                                : 'text-gray-500 dark:text-slate-500 hover:text-gray-800 dark:hover:text-slate-300'
+                              subActive ? S.subActive : S.subInactive
                             }`}
                           >
                             {sub.label}
@@ -213,29 +244,26 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         </nav>
 
         {/* User + logout */}
-        <div className="p-3 border-t border-gray-200 dark:border-slate-700">
-          <div className="px-3 py-2 mb-1 rounded-lg bg-gray-50 dark:bg-slate-800">
+        <div className={`p-3 border-t ${S.divider}`}>
+          <div className={`px-3 py-2 mb-1 rounded-lg ${S.userCard}`}>
             <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>
+              <p className={`text-sm font-semibold truncate flex-1 ${S.userName}`}>{displayName}</p>
               {isYoneticiUser && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
-                  isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                           : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                }`}>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${S.roleBadge}`}>
                   {isMudur ? (role === 'mudur' ? 'Müdür' : 'Müd.Yrd.') : 'Başkan'}
                 </span>
               )}
             </div>
             {profile?.subject && (
-              <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
+              <p className={`text-xs truncate mt-0.5 ${S.userSub}`}>{profile.subject}</p>
             )}
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
+            <p className={`text-[11px] mt-0.5 ${S.userSub}`}>{roleLabel}</p>
           </div>
           <FeedbackButton />
           <form action={logout}>
             <button
               type="submit"
-              className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100 transition-colors"
+              className={`w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors ${S.logout}`}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
               Çıkış Yap
