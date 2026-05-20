@@ -1,7 +1,6 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { getCurrentUser } from '@/src/shared/auth'
 import { TokenService } from '@/src/domains/tokens/services/TokenService'
@@ -32,9 +31,7 @@ export async function revokeToken(
 ): Promise<{ ok: boolean; error?: string }> {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  const result = await TokenService.revokeToken(token, tokenType, reason)
-  if (result.ok) revalidatePath('/audit')
-  return result
+  return TokenService.revokeToken(token, tokenType, reason)
 }
 
 export async function listRevokedTokens() {

@@ -11,7 +11,6 @@ import { requireAbility } from '@/src/shared/authorization/server'
 import { guard } from '@/src/shared/authorization'
 import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { logAudit } from '@/src/shared/audit'
 import { getEgitimYili } from '@/src/shared/utils'
 
 export const ClassService = {
@@ -29,11 +28,6 @@ export const ClassService = {
       academic_year: getEgitimYili(), school_id,
     })
     if (error) throw new Error(error.message)
-
-    await logAudit({
-      user_id: user.id, action: 'class.create', table_name: 'classes',
-      new_data: { name: data.name, grade: data.grade }, school_id,
-    })
   },
 
   async deleteClass(classId: string) {
@@ -48,13 +42,11 @@ export const ClassService = {
     await softDeleteHomeworksByClass(classId, school_id, user.id)
     await softDeleteStudentsByClass(classId, school_id, user.id)
     await softDeleteClass(classId, school_id, user.id)
-
-    await logAudit({ user_id: user.id, action: 'class.delete', table_name: 'classes', record_id: classId, school_id })
   },
 
   async restoreClass(classId: string) {
     const ability   = await requireAbility()
-    guard(ability, P.CLASSES.CREATE)   // restore = sınıf oluşturma yetkisi
+    guard(ability, P.CLASSES.CREATE)
 
     const school_id = ability.schoolId
     const supabase  = await createClient()
@@ -64,8 +56,6 @@ export const ClassService = {
     await restoreClass(classId, school_id)
     await restoreStudentsByClass(classId, school_id)
     await restoreHomeworksByClass(classId, school_id)
-
-    await logAudit({ user_id: user.id, action: 'class.restore', table_name: 'classes', record_id: classId, school_id })
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {
@@ -102,12 +92,11 @@ export const ClassService = {
     if (!user) throw new Error('Unauthorized')
 
     await softDeleteStudent(studentId, school_id, user.id)
-    await logAudit({ user_id: user.id, action: 'student.delete', table_name: 'students', record_id: studentId, school_id })
   },
 
   async restoreStudent(studentId: string) {
     const ability   = await requireAbility()
-    guard(ability, P.STUDENTS.CREATE)  // restore = oluşturma yetkisi
+    guard(ability, P.STUDENTS.CREATE)
 
     const school_id = ability.schoolId
     const supabase  = await createClient()
@@ -115,7 +104,6 @@ export const ClassService = {
     if (!user) throw new Error('Unauthorized')
 
     await restoreStudent(studentId, school_id)
-    await logAudit({ user_id: user.id, action: 'student.restore', table_name: 'students', record_id: studentId, school_id })
   },
 
   async addStudentNote(studentId: string, data: { body: string }) {

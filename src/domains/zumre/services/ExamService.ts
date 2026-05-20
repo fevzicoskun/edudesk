@@ -1,7 +1,6 @@
 import { ExamRepository } from '../repositories/ExamRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
-import { logAudit } from '@/src/shared/audit'
 
 export const ExamService = {
   async createExam(data: { title: string; subject: string; exam_date: string }) {
@@ -9,14 +8,6 @@ export const ExamService = {
     if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
     await ExamRepository.insertExam({ ...data, created_by: ability.userId, school_id: ability.schoolId })
-
-    await logAudit({
-      user_id: ability.userId,
-      action: 'exam.create',
-      table_name: 'common_exams',
-      new_data: { title: data.title },
-      school_id: ability.schoolId,
-    })
   },
 
   async createExamReturning(data: { title: string; subject: string; exam_date: string }): Promise<
@@ -33,14 +24,6 @@ export const ExamService = {
     })
 
     if (error || !result) return { error: error?.message ?? 'Eklenemedi' }
-
-    await logAudit({
-      user_id: ability.userId,
-      action: 'exam.create',
-      table_name: 'common_exams',
-      new_data: { title: data.title },
-      school_id: ability.schoolId,
-    })
 
     return { ...result, entries: [] }
   },
@@ -69,14 +52,6 @@ export const ExamService = {
     if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
     await ExamRepository.softDeleteExam(id, ability.schoolId, ability.userId)
-
-    await logAudit({
-      user_id: ability.userId,
-      action: 'exam.delete',
-      table_name: 'common_exams',
-      record_id: id,
-      school_id: ability.schoolId,
-    })
   },
 
   async restoreExam(id: string) {
@@ -84,13 +59,5 @@ export const ExamService = {
     if (ability.cannot(P.EXAM.MANAGE)) throw new Error('Bu işlem için Zümre Başkanı yetkisi gereklidir.')
 
     await ExamRepository.restoreExam(id, ability.schoolId)
-
-    await logAudit({
-      user_id: ability.userId,
-      action: 'exam.restore',
-      table_name: 'common_exams',
-      record_id: id,
-      school_id: ability.schoolId,
-    })
   },
 }

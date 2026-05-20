@@ -3,7 +3,6 @@ import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { createPublicToken, extractJti } from '@/src/infrastructure/tokens'
-import { logAudit } from '@/src/shared/audit'
 import { cacheRevocation } from '@/src/infrastructure/security/revocation'
 import type { TokenType } from '../types'
 
@@ -30,15 +29,6 @@ export const TokenService = {
         expires_at: expiresAt,
       })
     }
-
-    await logAudit({
-      user_id:    user.id,
-      action:     'token.generate',
-      table_name: 'students',
-      record_id:  studentId,
-      new_data:   { student_name: student.full_name },
-      school_id,
-    })
 
     return token
   },
@@ -77,16 +67,8 @@ export const TokenService = {
       return { ok: false, error: error.message }
     }
 
-    // Warm revocation cache immediately so subsequent checks skip the DB
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     await cacheRevocation(jti, expiresAt)
-
-    await logAudit({
-      user_id:    ability.userId,
-      action:     'token.revoke',
-      table_name: 'revoked_tokens',
-      new_data:   { jti, token_type: tokenType, reason },
-    })
 
     return { ok: true }
   },
