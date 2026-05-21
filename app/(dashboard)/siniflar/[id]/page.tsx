@@ -109,10 +109,12 @@ export default async function SinifDetayPage({
                   <p className="text-xs text-gray-400">No: {s.student_number}</p>
                 )}
               </div>
-              <ConfirmDeleteButton
-                action={deleteStudent.bind(null, s.id, id)}
-                message={`"${s.full_name}" adlı öğrenciyi ve tüm ödev kayıtlarını silmek istediğine emin misin?`}
-              />
+              {(profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi') && (
+                <ConfirmDeleteButton
+                  action={deleteStudent.bind(null, s.id, id)}
+                  message={`"${s.full_name}" adlı öğrenciyi ve tüm ödev kayıtlarını silmek istediğine emin misin?`}
+                />
+              )}
             </div>
           ))}
         </div>
