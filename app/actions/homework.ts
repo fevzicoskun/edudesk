@@ -70,7 +70,8 @@ export async function updateSubmissionNote(
 
 export async function deleteHomework(id: string) {
   UUID.parse(id)
-  await HomeworkService.deleteHomework(id)
+  const result = await HomeworkService.deleteHomework(id)
+  if (result.error) throw new Error(result.error)
   revalidatePath('/odevler')
 }
 

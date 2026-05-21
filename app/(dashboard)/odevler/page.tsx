@@ -131,6 +131,7 @@ async function HomeworkSection({
   let query = supabase
     .from('homeworks')
     .select('*, classes(id, name, grade), teacher:profiles(full_name)')
+    .is('deleted_at', null)
     .order('due_date', { ascending: false })
 
   if (!isZumreBaskani) {

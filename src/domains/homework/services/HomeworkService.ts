@@ -112,21 +112,20 @@ export const HomeworkService = {
     return { success: true }
   },
 
-  async deleteHomework(id: string): Promise<void> {
+  async deleteHomework(id: string): Promise<{ error?: string }> {
     const ability = await getAbility()
-    if (!ability) return
+    if (!ability) return { error: 'Giriş gerekli' }
 
-    // 'school' scope varsa müdür/zümre başkanı — teacher_id filtresi olmadan siler
-    // 'own' veya null → kendi ödevi; DB RLS (teacher_id = auth.uid()) zaten güvenliği sağlar
     const isManager =
       ability.scope(P.HOMEWORK.DELETE) === 'school' ||
       ability.scope(P.HOMEWORK.UPDATE) === 'school'
 
-    if (isManager) {
-      await HomeworkRepository.softDeleteHomeworkAsManager(id, ability.userId, ability.schoolId)
-    } else {
-      await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
-    }
+    const { error } = isManager
+      ? await HomeworkRepository.softDeleteHomeworkAsManager(id, ability.userId, ability.schoolId)
+      : await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
+
+    if (error) return { error: error.message }
+    return {}
   },
 
   async restoreHomework(id: string): Promise<void> {
