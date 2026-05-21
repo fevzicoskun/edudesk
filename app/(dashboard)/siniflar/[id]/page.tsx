@@ -30,6 +30,7 @@ export default async function SinifDetayPage({
       .select('id, full_name, student_number')
       .eq('class_id', id)
       .eq('school_id', schoolId)
+      .is('deleted_at', null)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
   ])
