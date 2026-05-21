@@ -115,6 +115,7 @@ export const HomeworkService = {
   async deleteHomework(id: string): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.DELETE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
     const isManager =
       ability.scope(P.HOMEWORK.DELETE) === 'school' ||

@@ -91,6 +91,9 @@ export const UserService = {
     if (ability.cannot(P.USERS.UPDATE)) throw new Error('Yetki yok')
     if (targetId === ability.userId) throw new Error('Kendi rolünüzü değiştiremezsiniz')
 
+    const { data: target } = await UserRepository.getProfileById(targetId)
+    if (!target || target.school_id !== ability.schoolId) throw new Error('Kullanıcı bulunamadı')
+
     const canManage = ability.can(P.USERS.MANAGE)
     if (canManage) {
       // Müdür → sadece mudur_yardimcisi rolü atayabilir
@@ -99,8 +102,7 @@ export const UserService = {
       // MY → sadece ogretmen/zumre_baskani arasında atama yapabilir
       if (!['ogretmen', 'zumre_baskani'].includes(newRole))
         throw new Error('Bu rolü atayamazsınız')
-      const { data: target } = await UserRepository.getProfileByIdWithClient(targetId)
-      if (!target || !['ogretmen', 'zumre_baskani'].includes(target.role))
+      if (!['ogretmen', 'zumre_baskani'].includes(target.role))
         throw new Error('Yalnızca Öğretmen veya Zümre Başkanının rolünü değiştirebilirsiniz')
     }
 

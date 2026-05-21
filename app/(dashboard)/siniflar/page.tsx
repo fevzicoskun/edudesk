@@ -6,7 +6,7 @@ import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
-  const isBaskan = profile?.role === 'mudur_yardimcisi' || profile?.role === 'mudur'
+  const canManageClasses = profile?.role === 'mudur_yardimcisi' || profile?.role === 'mudur'
 
   const { data: classes } = await supabase
     .from('classes')
@@ -24,7 +24,7 @@ export default async function SiniflarPage() {
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{egitimYili} Eğitim Yılı</p>
       </div>
 
-      {isBaskan ? (
+      {canManageClasses ? (
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Sınıf Ekle</h2>
           <form action={createClass} className="flex gap-2 flex-wrap">
@@ -68,7 +68,7 @@ export default async function SiniflarPage() {
             ...c,
             students: c.students.filter(s => !s.deleted_at),
           }))}
-          isBaskan={isBaskan}
+          canManageClasses={canManageClasses}
         />
       )}
     </div>
