@@ -25,6 +25,7 @@ export default async function OdevDetayPage({
     .select('*, classes(name)')
     .eq('id', id)
     .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
     .single()
 
   if (!hw) notFound()

@@ -26,6 +26,7 @@ export default async function OgretmenDashboard() {
   let hwQuery = supabase
     .from('homeworks')
     .select('id, title, subject, due_date, class_id, classes(name, grade)')
+    .is('deleted_at', null)
     .order('due_date', { ascending: false })
   if (!isZumreBaskani) hwQuery = hwQuery.eq('teacher_id', user.id)
 
