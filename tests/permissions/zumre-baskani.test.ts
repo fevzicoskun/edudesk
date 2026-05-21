@@ -71,14 +71,14 @@ describe('Sınav (exam)', () => {
 
 // ─── Sınıf yönetimi ───────────────────────────────────────────────────────────
 describe('Sınıf (classes)', () => {
-  it('sınıf oluşturabilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'classes', 'create', 'school')
-  })
-  it('sınıf silebilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'classes', 'delete', 'school')
-  })
   it('sınıfları okuyabilir (inherited)', () => {
     expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'classes', 'read', 'school')
+  })
+  it('sınıf OLUŞTURAMAZ — bu yetki müdür yardımcısına aittir', () => {
+    expectNoPermission(ZUMRE_BASKANI_PERMISSIONS, 'classes', 'create')
+  })
+  it('sınıf SİLEMEz — bu yetki müdür yardımcısına aittir', () => {
+    expectNoPermission(ZUMRE_BASKANI_PERMISSIONS, 'classes', 'delete')
   })
 })
 
@@ -87,8 +87,14 @@ describe('Ödev geniş kapsam (homework)', () => {
   it('tüm okul ödevlerini güncelleyebilir (school scope)', () => {
     expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'homework', 'update', 'school')
   })
+  it('tüm okul ödevlerini silebilir (school scope)', () => {
+    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'homework', 'delete', 'school')
+  })
   it('homework:update için en geniş scope school olmalı', async () => {
     expect(await PermissionService.getScope(U, S, 'homework', 'update')).toBe('school')
+  })
+  it('homework:delete için en geniş scope school olmalı', async () => {
+    expect(await PermissionService.getScope(U, S, 'homework', 'delete')).toBe('school')
   })
 })
 
@@ -126,13 +132,15 @@ describe('PermissionService ile zümre başkanı kontrolü', () => {
     const result = await PermissionService.checkMany(U, S, [
       { resource: 'zumre',    action: 'create' },
       { resource: 'exam',     action: 'create' },
+      { resource: 'homework', action: 'delete' },
       { resource: 'classes',  action: 'create' },
       { resource: 'users',    action: 'manage' },
       { resource: 'school',   action: 'update' },
     ])
     expect(result['zumre:create']).toBe(true)
     expect(result['exam:create']).toBe(true)
-    expect(result['classes:create']).toBe(true)
+    expect(result['homework:delete']).toBe(true)
+    expect(result['classes:create']).toBe(false)
     expect(result['users:manage']).toBe(false)
     expect(result['school:update']).toBe(false)
   })

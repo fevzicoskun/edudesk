@@ -25,10 +25,11 @@ export const UserService = {
     if (!params.full_name || params.full_name.length < 2)
       return { error: 'Ad soyad en az 2 karakter olmalı' }
 
-    // users:manage → müdür; sadece create → müdür yardımcısı
+    // users:manage → müdür → sadece mudur_yardimcisi atayabilir
+    // sadece create → müdür yardımcısı → zumre_baskani veya ogretmen atayabilir
     const canManage  = ability.can(P.USERS.MANAGE)
     const allowedRoles: Role[] = canManage
-      ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
+      ? ['mudur_yardimcisi']
       : ['zumre_baskani', 'ogretmen']
 
     if (!allowedRoles.includes(params.role)) return { error: 'Bu rolü atayamazsınız' }
@@ -69,9 +70,13 @@ export const UserService = {
     if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
     if (target.role === 'mudur') return { error: 'Müdür silinemez' }
 
-    // users:manage yoksa sadece ogretmen/zumre_baskani silebilir
     const canManage = ability.can(P.USERS.MANAGE)
-    if (!canManage && !['ogretmen', 'zumre_baskani'].includes(target.role)) {
+    // Müdür → sadece mudur_yardimcisi silebilir
+    // MY → sadece ogretmen/zumre_baskani silebilir
+    const deletableRoles: Role[] = canManage
+      ? ['mudur_yardimcisi']
+      : ['ogretmen', 'zumre_baskani']
+    if (!deletableRoles.includes(target.role as Role)) {
       return { error: 'Bu kullanıcıyı silemezsiniz' }
     }
 
@@ -87,7 +92,11 @@ export const UserService = {
     if (targetId === ability.userId) throw new Error('Kendi rolünüzü değiştiremezsiniz')
 
     const canManage = ability.can(P.USERS.MANAGE)
-    if (!canManage) {
+    if (canManage) {
+      // Müdür → sadece mudur_yardimcisi rolü atayabilir
+      if (newRole !== 'mudur_yardimcisi') throw new Error('Bu rolü atayamazsınız')
+    } else {
+      // MY → sadece ogretmen/zumre_baskani arasında atama yapabilir
       if (!['ogretmen', 'zumre_baskani'].includes(newRole))
         throw new Error('Bu rolü atayamazsınız')
       const { data: target } = await UserRepository.getProfileByIdWithClient(targetId)

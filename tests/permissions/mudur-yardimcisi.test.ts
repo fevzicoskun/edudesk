@@ -73,6 +73,16 @@ describe('Okul (school)', () => {
   })
 })
 
+// ─── Sınıf yönetimi ───────────────────────────────────────────────────────────
+describe('Sınıf (classes)', () => {
+  it('sınıf oluşturabilir', () => {
+    expectPermission(MUDUR_YARDIMCISI_PERMISSIONS, 'classes', 'create', 'school')
+  })
+  it('sınıf silebilir', () => {
+    expectPermission(MUDUR_YARDIMCISI_PERMISSIONS, 'classes', 'delete', 'school')
+  })
+})
+
 // ─── Genişletilmiş kapsam ─────────────────────────────────────────────────────
 describe('Genişletilmiş kapsamlar', () => {
   it('tüm öğretmenlerin müfredatını güncelleyebilir (school scope)', () => {

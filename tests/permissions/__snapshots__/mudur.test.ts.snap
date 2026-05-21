@@ -165,6 +165,18 @@ exports[`MUDUR_PERMISSIONS fixture > snapshot 1`] = `
     "source": "role",
   },
   {
+    "action": "update",
+    "resource": "homework",
+    "scope": "school",
+    "source": "role",
+  },
+  {
+    "action": "delete",
+    "resource": "homework",
+    "scope": "school",
+    "source": "role",
+  },
+  {
     "action": "create",
     "resource": "classes",
     "scope": "school",
@@ -173,12 +185,6 @@ exports[`MUDUR_PERMISSIONS fixture > snapshot 1`] = `
   {
     "action": "delete",
     "resource": "classes",
-    "scope": "school",
-    "source": "role",
-  },
-  {
-    "action": "update",
-    "resource": "homework",
     "scope": "school",
     "source": "role",
   },

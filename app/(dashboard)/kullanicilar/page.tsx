@@ -59,10 +59,10 @@ export default async function KullanicilarPage() {
   const isMudur = profile.role === 'mudur'
   const canAssign = isMudur || isMY
 
-  // Müdür: tüm rolleri atayabilir (mudur hariç)
-  // Müdür yardımcısı: yalnızca zumre_baskani → ogretmen
+  // Müdür: sadece mudur_yardimcisi atayabilir
+  // Müdür yardımcısı: zumre_baskani ve ogretmen atayabilir
   const assignableRoles = (isMudur
-    ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
+    ? ['mudur_yardimcisi']
     : ['zumre_baskani', 'ogretmen']) as Role[]
 
   return (
@@ -139,8 +139,10 @@ export default async function KullanicilarPage() {
                     )}
                   </td>
                   <td className="px-4 py-3">
-                    {canAssign && !isSelf && u.role !== 'mudur' && (
-                      isMudur || ['zumre_baskani', 'ogretmen'].includes(u.role)
+                    {canAssign && !isSelf && (
+                      isMudur
+                        ? u.role === 'mudur_yardimcisi'
+                        : ['zumre_baskani', 'ogretmen'].includes(u.role)
                     ) && (
                       <DeleteButton userId={u.id} userName={u.full_name} />
                     )}

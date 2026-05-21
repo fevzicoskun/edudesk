@@ -165,19 +165,13 @@ exports[`ZUMRE_BASKANI_PERMISSIONS fixture > snapshot — rol değişikliklerini
     "source": "role",
   },
   {
-    "action": "create",
-    "resource": "classes",
+    "action": "update",
+    "resource": "homework",
     "scope": "school",
     "source": "role",
   },
   {
     "action": "delete",
-    "resource": "classes",
-    "scope": "school",
-    "source": "role",
-  },
-  {
-    "action": "update",
     "resource": "homework",
     "scope": "school",
     "source": "role",

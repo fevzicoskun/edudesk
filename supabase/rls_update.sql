@@ -10,16 +10,27 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
   )
 $$;
 
+-- Yardımcı fonksiyon: mevcut kullanıcının mudur_yardimcisi veya mudur olup olmadığını kontrol eder
+CREATE OR REPLACE FUNCTION is_mudur_yardimcisi_or_above()
+RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER AS $$
+  SELECT EXISTS(
+    SELECT 1 FROM profiles WHERE id = auth.uid() AND role IN ('mudur_yardimcisi', 'mudur')
+  )
+$$;
+
 -- ─── CLASSES ──────────────────────────────────────────────────────────────────
 -- Okuma: tüm authenticated kullanıcılar
--- Yazma: yalnızca zümre_baskani
+-- Yazma: yalnızca mudur_yardimcisi ve üstü
 
 DROP POLICY IF EXISTS "classes_all" ON classes;
+DROP POLICY IF EXISTS "classes_insert" ON classes;
+DROP POLICY IF EXISTS "classes_update" ON classes;
+DROP POLICY IF EXISTS "classes_delete" ON classes;
 
 CREATE POLICY "classes_read"   ON classes FOR SELECT TO authenticated USING (true);
-CREATE POLICY "classes_insert" ON classes FOR INSERT TO authenticated WITH CHECK (is_zumre_baskani());
-CREATE POLICY "classes_update" ON classes FOR UPDATE TO authenticated USING (is_zumre_baskani());
-CREATE POLICY "classes_delete" ON classes FOR DELETE TO authenticated USING (is_zumre_baskani());
+CREATE POLICY "classes_insert" ON classes FOR INSERT TO authenticated WITH CHECK (is_mudur_yardimcisi_or_above());
+CREATE POLICY "classes_update" ON classes FOR UPDATE TO authenticated USING (is_mudur_yardimcisi_or_above());
+CREATE POLICY "classes_delete" ON classes FOR DELETE TO authenticated USING (is_mudur_yardimcisi_or_above());
 
 -- ─── ZUMRE MEETINGS ───────────────────────────────────────────────────────────
 -- Okuma: tüm authenticated kullanıcılar

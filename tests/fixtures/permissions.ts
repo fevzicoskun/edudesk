@@ -40,8 +40,9 @@ export const OGRETMEN_PERMISSIONS: GrantedPermission[] = [
   { resource: 'notes',      action: 'delete', scope: 'own',    source: 'role' },
 ]
 
-// ─── Zümre Başkanı: ~30 izin ──────────────────────────────────────────────────
-// Öğretmen izinleri + zümre yönetimi + sınıf yazma + geniş ödev scope
+// ─── Zümre Başkanı: ~29 izin ──────────────────────────────────────────────────
+// Öğretmen izinleri + zümre yönetimi + geniş ödev scope
+// NOT: Sınıf ekleme/silme yetkisi Müdür Yardımcısı'na aittir.
 export const ZUMRE_BASKANI_PERMISSIONS: GrantedPermission[] = [
   ...OGRETMEN_PERMISSIONS,
 
@@ -58,18 +59,19 @@ export const ZUMRE_BASKANI_PERMISSIONS: GrantedPermission[] = [
   { resource: 'exam',       action: 'update', scope: 'school', source: 'role' },
   { resource: 'exam',       action: 'delete', scope: 'school', source: 'role' },
 
-  // Sınıf: oluşturabilir ve silebilir
-  { resource: 'classes',    action: 'create', scope: 'school', source: 'role' },
-  { resource: 'classes',    action: 'delete', scope: 'school', source: 'role' },
-
-  // Ödev: tüm okul ödevlerini güncelleyebilir (zümre kapsamında)
+  // Ödev: tüm okul ödevlerini güncelleyebilir ve silebilir (zümre kapsamında)
   { resource: 'homework',   action: 'update', scope: 'school', source: 'role' },
+  { resource: 'homework',   action: 'delete', scope: 'school', source: 'role' },
 ]
 
-// ─── Müdür Yardımcısı: ~42 izin ──────────────────────────────────────────────
-// Zümre Başkanı izinleri + kullanıcı yönetimi + okul okuma + tüm müfredat
+// ─── Müdür Yardımcısı: ~44 izin ──────────────────────────────────────────────
+// Zümre Başkanı izinleri + sınıf yönetimi + kullanıcı yönetimi + okul okuma + tüm müfredat
 export const MUDUR_YARDIMCISI_PERMISSIONS: GrantedPermission[] = [
   ...ZUMRE_BASKANI_PERMISSIONS,
+
+  // Sınıf: oluşturabilir ve silebilir — sadece müdür yardımcısı ve üstü
+  { resource: 'classes',    action: 'create', scope: 'school', source: 'role' },
+  { resource: 'classes',    action: 'delete', scope: 'school', source: 'role' },
 
   // Kullanıcı: davet hariç tam yönetim (manage yetkisi yok)
   { resource: 'users',      action: 'create', scope: 'school', source: 'role' },

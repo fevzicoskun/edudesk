@@ -83,6 +83,30 @@ describe('Role-exclusive izinler', () => {
     expect(hasUsersCreate(MUDUR_PERMISSIONS)).toBe(true)
   })
 
+  it('classes:create sadece mudur_yardimcisi ve üstünde var', () => {
+    const hasClassesCreate = (perms: typeof OGRETMEN_PERMISSIONS) =>
+      perms.some(p => p.resource === 'classes' && p.action === 'create')
+
+    expect(hasClassesCreate(OGRETMEN_PERMISSIONS)).toBe(false)
+    expect(hasClassesCreate(ZUMRE_BASKANI_PERMISSIONS)).toBe(false)
+    expect(hasClassesCreate(MUDUR_YARDIMCISI_PERMISSIONS)).toBe(true)
+    expect(hasClassesCreate(MUDUR_PERMISSIONS)).toBe(true)
+  })
+
+  it('homework:delete: ogretmen(own), zumre_baskani ve üstü (school)', () => {
+    const getHighestDeleteScope = (perms: typeof OGRETMEN_PERMISSIONS) => {
+      const scopes = perms
+        .filter(p => p.resource === 'homework' && p.action === 'delete')
+        .map(p => p.scope)
+      return scopes.includes('school') ? 'school' : scopes[0]
+    }
+
+    expect(getHighestDeleteScope(OGRETMEN_PERMISSIONS)).toBe('own')
+    expect(getHighestDeleteScope(ZUMRE_BASKANI_PERMISSIONS)).toBe('school')
+    expect(getHighestDeleteScope(MUDUR_YARDIMCISI_PERMISSIONS)).toBe('school')
+    expect(getHighestDeleteScope(MUDUR_PERMISSIONS)).toBe('school')
+  })
+
   it('users:manage sadece mudurde var', () => {
     const hasUsersManage = (perms: typeof OGRETMEN_PERMISSIONS) =>
       perms.some(p => p.resource === 'users' && p.action === 'manage')
