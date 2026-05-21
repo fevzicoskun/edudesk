@@ -1,10 +1,8 @@
 import { Suspense } from 'react'
-import { createClient } from '@/src/infrastructure/supabase/server'
-import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from '@/src/shared/date'
-import RaporButton from '@/components/RaporButton'
 import OgretmenDashboard from './OgretmenDashboard'
 import MudurStatsWidget      from './MudurStatsWidget'
 import EtkinliklerWidget     from './EtkinliklerWidget'
@@ -53,11 +51,6 @@ function DashboardSkeleton() {
 }
 
 async function MudurWidgets({ fullName }: { fullName: string }) {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
-  const { data: classes } = await supabase
-    .from('classes').select('id, name, grade').eq('school_id', school_id).order('grade').order('name')
-
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
@@ -70,18 +63,15 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
               {fullName} · {format(new Date(), 'd MMMM yyyy, EEEE')}
             </p>
           </div>
-          <div className="flex gap-2 flex-wrap">
-            <Link
-              href="/yonetim"
-              className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors border border-white/15"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-              </svg>
-              Yeni Toplantı
-            </Link>
-            <RaporButton classes={(classes ?? []).map(c => ({ id: c.id, name: c.name, grade: c.grade }))} />
-          </div>
+          <Link
+            href="/yonetim"
+            className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors border border-white/15"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Yeni Toplantı
+          </Link>
         </div>
         <Suspense fallback={<DarkSkeleton />}>
           <MudurStatsWidget />
