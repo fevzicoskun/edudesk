@@ -6,7 +6,6 @@ import {
   insertStudent, insertStudents,
   insertStudentNote, deleteStudentNote,
 } from '@/src/queries/classes'
-import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { guard } from '@/src/shared/authorization'
 import { P } from '@/src/shared/permissions'
@@ -59,39 +58,37 @@ export const ClassService = {
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {
-    const school_id = await requireSchoolId()
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const ability   = await requireAbility()
+    guard(ability, P.STUDENTS.CREATE)
 
     await insertStudent({
       class_id: classId, full_name: data.full_name,
-      student_number: data.student_number ?? null, school_id,
+      student_number: data.student_number ?? null, school_id: ability.schoolId,
     })
   },
 
   async addStudentsBulk(classId: string, students: { full_name: string; student_number: string | null }[]) {
     if (students.length > 100) throw new Error('En fazla 100 öğrenci eklenebilir')
 
-    const school_id = await requireSchoolId()
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const ability   = await requireAbility()
+    guard(ability, P.STUDENTS.CREATE)
 
     const valid = students
       .map(s => ({ full_name: s.full_name.trim().slice(0, 120), student_number: s.student_number?.slice(0, 20) ?? null }))
       .filter(s => s.full_name.length >= 2)
 
-    await insertStudents(valid.map(s => ({ class_id: classId, school_id, ...s })))
+    await insertStudents(valid.map(s => ({ class_id: classId, school_id: ability.schoolId, ...s })))
   },
 
   async deleteStudent(studentId: string) {
-    const school_id = await requireSchoolId()
+    const ability   = await requireAbility()
+    guard(ability, P.STUDENTS.DELETE)
+
     const supabase  = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
-    await softDeleteStudent(studentId, school_id, user.id)
+    await softDeleteStudent(studentId, ability.schoolId, user.id)
   },
 
   async restoreStudent(studentId: string) {
@@ -107,17 +104,16 @@ export const ClassService = {
   },
 
   async addStudentNote(studentId: string, data: { body: string }) {
-    const school_id = await requireSchoolId()
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Giriş gerekli')
+    const ability   = await requireAbility()
+    guard(ability, P.NOTES.CREATE)
 
-    await insertStudentNote({ teacher_id: user.id, student_id: studentId, body: data.body, school_id })
+    await insertStudentNote({ teacher_id: ability.userId, student_id: studentId, body: data.body, school_id: ability.schoolId })
   },
 
   async deleteStudentNote(noteId: string) {
-    const [schoolId, user] = await Promise.all([requireSchoolId(), getCurrentUser()])
-    if (!user) throw new Error('Giriş gerekli')
-    await deleteStudentNote(noteId, user.id, schoolId)
+    const ability   = await requireAbility()
+    guard(ability, P.NOTES.DELETE)
+
+    await deleteStudentNote(noteId, ability.userId, ability.schoolId)
   },
 }

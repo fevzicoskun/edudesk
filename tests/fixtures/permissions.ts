@@ -25,9 +25,10 @@ export const OGRETMEN_PERMISSIONS: GrantedPermission[] = [
   { resource: 'curriculum', action: 'read',   scope: 'school', source: 'role' },
   { resource: 'curriculum', action: 'update', scope: 'own',    source: 'role' },
 
-  // Öğrenci / Sınıf: sadece okuma
+  // Öğrenci / Sınıf: okuma + ekleme/silme (sınıf listesi yönetimi)
   { resource: 'students',   action: 'read',   scope: 'school', source: 'role' },
-  { resource: 'students',   action: 'create', scope: 'school', source: 'role' }, // öğrenci ekleyebilir
+  { resource: 'students',   action: 'create', scope: 'school', source: 'role' },
+  { resource: 'students',   action: 'delete', scope: 'school', source: 'role' },
   { resource: 'classes',    action: 'read',   scope: 'school', source: 'role' },
 
   // Export: kendi verisini dışa aktarır

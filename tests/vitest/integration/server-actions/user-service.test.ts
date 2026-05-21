@@ -176,8 +176,8 @@ describe('UserService.assignRole()', () => {
   // Repo katmanını spy ile mock'layıp UserService'in izin mantığını test ediyoruz.
   beforeEach(() => {
     vi.spyOn(UserRepository, 'assignRole').mockResolvedValue({ data: null, error: null } as never)
-    vi.spyOn(UserRepository, 'getProfileByIdWithClient').mockResolvedValue({
-      data: { role: 'ogretmen' }, error: null,
+    vi.spyOn(UserRepository, 'getProfileById').mockResolvedValue({
+      data: { role: 'ogretmen', school_id: school.id }, error: null,
     } as never)
   })
 

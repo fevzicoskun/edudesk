@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
+import { getAbility } from '@/src/shared/authorization/server'
+import { P } from '@/src/shared/permissions'
 import { fetchRows, buildXlsx } from '@/src/domains/export/services/XlsxBuilder'
 import type { JobType } from '@/src/domains/export/types'
 
@@ -12,8 +13,9 @@ const ALLOWED_JOB_TYPES: JobType[] = [
 ]
 
 export async function POST(req: NextRequest) {
-  const user = await getCurrentUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const ability = await getAbility()
+  if (!ability) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (ability.cannot(P.EXPORT.CREATE)) return NextResponse.json({ error: 'Yetki yok' }, { status: 403 })
 
   let body: { jobType?: string; params?: Record<string, string> }
   try {
@@ -27,12 +29,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Geçersiz rapor türü' }, { status: 400 })
   }
 
-  let schoolId: string
-  try {
-    schoolId = await requireSchoolId()
-  } catch {
-    return NextResponse.json({ error: 'Okul bilgisi eksik' }, { status: 403 })
-  }
+  const schoolId = ability.schoolId
 
   try {
     const rows = await fetchRows(jobType, body.params ?? {}, schoolId)

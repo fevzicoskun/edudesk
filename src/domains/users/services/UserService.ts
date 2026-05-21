@@ -114,6 +114,9 @@ export const UserService = {
     userId: string,
     data: { full_name: string; subject: string | null }
   ): Promise<{ error?: string }> {
+    const ability = await getAbility()
+    if (!ability || ability.userId !== userId) return { error: 'Yetki yok' }
+
     const { error } = await UserRepository.updateProfile(userId, data)
     if (error) return { error: error.message }
     return {}

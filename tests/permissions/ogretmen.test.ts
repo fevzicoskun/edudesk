@@ -20,8 +20,8 @@ beforeEach(() => { vi.clearAllMocks(); mock() })
 
 // ─── Fixture integrity ────────────────────────────────────────────────────────
 describe('OGRETMEN_PERMISSIONS fixture', () => {
-  it('18 izin içerir', () => {
-    expect(uniquePerms(OGRETMEN_PERMISSIONS)).toHaveLength(18)
+  it('19 izin içerir', () => {
+    expect(uniquePerms(OGRETMEN_PERMISSIONS)).toHaveLength(19)
   })
 
   it('snapshot — rol değişikliklerini yakalar', () => {

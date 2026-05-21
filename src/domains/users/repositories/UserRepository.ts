@@ -46,11 +46,6 @@ export const UserRepository = {
     })
   },
 
-  async getProfileByIdWithClient(targetId: string) {
-    const supabase = await createClient()
-    return supabase.from('profiles').select('role').eq('id', targetId).single()
-  },
-
   async getCurrentUser() {
     const supabase = await createClient()
     return supabase.auth.getUser()

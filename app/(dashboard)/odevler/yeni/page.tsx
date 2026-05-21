@@ -13,6 +13,7 @@ export default async function YeniOdevPage() {
   const { data: classes } = await supabase
     .from('classes')
     .select('id, name, grade')
+    .eq('school_id', profile?.school_id ?? '')
     .order('grade')
     .order('name')
 
