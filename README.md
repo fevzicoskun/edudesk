@@ -1,15 +1,47 @@
-# EduDesk — Okul Yönetim Platformu
+# AkademikOS — Okulun Akademik İşletim Sistemi
 
-Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production-grade okul yönetim platformu.
+> **Eski Adı:** EduDesk  
+> **Vizyon:** "Sessiz otomasyon" — Öğretmene ekstra iş değil, değer. AI destekli öngörü. Tek veri girişi → Çoklu otomatik çıktı.
+
+Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production-grade okul yönetim platformu. AI destekli akademik analiz, risk tahminleme ve akıllı öneri sistemi ile okulun akademik işletim sistemi.
 
 **Canlı:** https://zumre-takip.vercel.app
 
 ---
 
-## Özellikler
+## 🆕 AkademikOS Nedir?
+
+EduDesk'i bir adım öteye taşıyoruz. Artık sadece "zümre takip" değil, **okulun akademik işletim sistemi**:
+
+### Fark Yaratan Özellikler
+
+| Özellik | EduDesk (v1) | AkademikOS (v2) |
+|---------|:------------:|:---------------:|
+| Öğretmen Dashboard | ❌ Basit | ✅ AI destekli "Günün Özeti" |
+| Risk Uyarıları | ❌ Yok | ✅ "Öğrenci X 3 haftadır düşüşte" |
+| Kazanım Takibi | ⚠️ Temel | ✅ TYMM uyumlu, ilerleme grafikleri |
+| AI Asistan | ❌ Yok | ✅ "Bugün ne yapmalıyım?" |
+| Gamification | ❌ Yok | ✅ 🔥 Streak counter, rozet sistemi |
+| Tahminleme | ❌ Yok | ✅ "Öğrenci X gelecek ay düşecek" |
+
+### Sessiz Otomasyon Felsefesi
+
+```
+Öğretmen sadece:
+✓ Sınıf defterine bakar → Otomatik dolmuş görür
+✓ Yoklamayı işaretler → Sistem devamsızlık raporu oluşturur
+✓ Notu girer → AI öğrenciyi değerlendirir
+✓ Toplantı yapar → Tutanak otomatik hazır
+```
+
+---
+
+## ✨ Özellikler
+
+### Mevcut Özellikler (EduDesk v1)
 
 | Modül | Açıklama |
-|-------|-----------|
+|-------|----------|
 | **Sınıf & Öğrenci** | Toplu ekleme, sınıf bazlı liste, öğrenci notları, Excel export |
 | **Ödev Takibi** | Durum board, notlar, toplu güncelleme, Excel export, mobil swipe sil |
 | **Yoklama** | Günlük devam takibi, yıllık devamsızlık istatistikleri, yazdırma linki |
@@ -27,144 +59,78 @@ Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production
 | **Kişisel Notlar** | Not editörü, Excel export |
 | **Dark Mode** | Sistem teması veya manuel geçiş |
 
+### Geliştirilmekte Olan Özellikler (AkademikOS v2)
+
+| Modül | Durum | Açıklama |
+|-------|-------|----------|
+| **Öğretmen Dashboard** | 🚧 Geliştiriliyor | AI destekli "Günün Özeti", risk uyarıları, hızlı işlemler |
+| **Kazanım Takibi** | 🚧 Geliştiriliyor | TYMM uyumlu, öğrenci/sınıf bazlı tamamlanma oranları |
+| **AI Asistan** | 📋 Planlandı | "Bugün ne yapmalıyım?" — OpenAI destekli akıllı öneri |
+| **Risk Tahminleme** | 📋 Planlandı | ML destekli öğrenci düşüş tahmini |
+| **Gamification** | 📋 Planlandı | 🔥 Streak counter, rozet sistemi, achievement'lar |
+| **Otomasyon** | 📋 Planlandı | Sessiz arka plan işlemleri, otomatik raporlar |
+| **PWA Mobil** | 📋 Planlandı | Offline mod, push notifications |
+| **MEB Entegrasyonu** | 📋 Planlandı | e-Okul API, TYMM uyumluluğu |
+| **Billing** | 📋 Planlandı | Stripe entegrasyonu, plan bazlı özellikler |
+
 ---
 
-## Rol Sistemi
+## 🎯 Kimler İçin?
 
-### Hiyerarşi
+- **Öğretmenler:** Günlük akademik operasyonlar (ödev, yoklama, not) tek platformda
+- **Zümre Başkanları:** Koordinasyon, müfredat takibi, zümre raporları
+- **Müdür Yardımcıları:** Okul operasyonları, öğretmen takibi
+- **Müdürler:** Executive dashboard, stratejik kararlar için AI destekli analizler
+
+### Kullanıcı Hikayeleri
 
 ```
-Müdür
-  └─ Müdür Yardımcısı
-       └─ Zümre Başkanı
-            └─ Öğretmen
-```
+👨‍🏫 Öğretmen Ahmet:
+"Her sabah dashboard'u açıyorum → 'Bugün 3 öğrenci riskli, 2 ödev verilecek'
+Sistem beni uyarıyor, ben sadece tıklıyorum. Artık WhatsApp grubu açmıyorum."
 
-Her üst rol, alt rolün tüm yetkilerini içerir.
+👩‍💼 MY Fatma:
+"Öğretmen X müfredatı %40 tamamlamış, uyarı geldi.
+Hemen toplantı ayarlıyorum. Sistem beni yönlendiriyor."
 
-### Yetki Matrisi
-
-| Özellik | Öğretmen | Zümre Başkanı | Müdür Yardımcısı | Müdür |
-|---------|:--------:|:-------------:|:----------------:|:-----:|
-| Kendi ödevlerini yönetme | ✅ | ✅ | ✅ | ✅ |
-| Tüm ödevleri görme | ❌ | ✅ | ✅ | ✅ |
-| Yoklama alma | ✅ | ✅ | ✅ | ✅ |
-| Sınıf oluşturma / silme | ❌ | ✅ | ✅ | ✅ |
-| Öğrenci ekleme | ✅ | ✅ | ✅ | ✅ |
-| Zümre toplantısı oluşturma | ❌ | ✅ | ❌ | ❌ |
-| Ortak sınav oluşturma | ❌ | ✅ | ❌ | ❌ |
-| Müfredat takibi | ✅ (kendi) | ✅ (tümü) | ✅ (tümü) | ✅ (tümü) |
-| Denetim günlüğü görme | ❌ | ✅ | ❌ | ✅ |
-| Token iptal etme | ❌ | ✅ | ❌ | ❌ |
-| Mentor atama | ❌ | ❌ | ✅ | ✅ |
-| Mentör raporu yazma | ✅ (atandıysa) | ✅ (atandıysa) | ❌ (okuma) | ❌ (okuma) |
-| Mentörlük defteri (manuel öğrenci) | ✅ | ✅ | ❌ | ❌ |
-| Ders programı yükleme | ❌ | ❌ | ✅ | ✅ |
-| Ders programı görme | ✅ (kendi) | ✅ (kendi) | ✅ (tümü) | ✅ (tümü) |
-| Raporlar → Mentör sekmesi | ❌ | ✅ | ✅ | ✅ |
-| Kullanıcı listesi | ❌ | ❌ | ✅ (müdür hariç) | ✅ |
-| Kullanıcı davet / silme | ❌ | ❌ | ❌ | ✅ |
-| Rol atama | ❌ | ❌ | ❌ | ✅ |
-| Silinen kayıtları geri yükleme | ❌ | ❌ | ✅ | ✅ |
-
-### Rol Atama (SQL)
-
-```sql
--- Kullanıcı UUID'sini bul
-SELECT id, email FROM auth.users WHERE email = 'ornek@okul.com';
-
--- Rol ata (ogretmen | zumre_baskani | mudur_yardimcisi | mudur)
-UPDATE profiles SET role = 'zumre_baskani' WHERE id = '<uuid>';
-```
-
-### Yeni Öğretmen Ekleme
-
-Öğretmen `/login` → **Kayıt Ol** ile hesap oluşturur. Mevcut okula katılım için:
-
-```sql
-SELECT id, name FROM schools;
-UPDATE profiles SET school_id = '<okul-uuid>' WHERE id = '<öğretmen-uuid>';
+📊 Müdür Hasan:
+"'Okulum nasıl gidiyor?' sorusuna artık dashboard'um cevap veriyor.
+AI diyor ki: 'Matematik zümresi ilçe ortalamasının %5 altında.'
+Stratejik karar: Destek planı."
 ```
 
 ---
 
-## Kurulum
+## 🔥 Neden AkademikOS?
 
-### Gereksinimler
+### Rakiplerden Farkımız
 
-- Node.js 20+
-- Supabase hesabı
-- Upstash hesabı (opsiyonel — yoksa in-memory rate limit çalışır)
+| Rakip | Eksik | AkademikOS Çözümü |
+|-------|-------|-------------------|
+| KazanımCepte | AI yok, izole veri | AI destekli analiz + öngörü |
+| EBA | Öğretmen odaklı değil | "Sessiz otomasyon" felsefesi |
+| WhatsApp | Kaotik, aranamaz | Düzenli, aranabilir, raporlu |
+| Excel | Elle hesaplama | Otomatik, canlı veri |
 
-### 1. Kur
+### Değer Önermemiz
 
-```bash
-git clone https://github.com/fevzicoskun/zumre-takip.git
-cd zumre-takip
-npm install
 ```
+💰 Zamandan Tasarruf:
+- Haftada 2-3 saat Excel/WhatsApp zamanı → 30 dakika
 
-### 2. Ortam Değişkenleri
+📊 Veri Görünürlüğü:
+- "Sınıfım nasıl gidiyor?" → Bir bakışta cevap
 
-```bash
-cp .env.example .env.local
-```
+🤖 AI Destekli:
+- "Öğrenci X düşüşte" → Sistem uyarır, öğretmen önlem alır
 
-| Değişken | Nereden | Zorunlu |
-|----------|---------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase → Settings → API | ✅ |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → Settings → API (anon key) | ✅ |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Settings → API (service_role) | ✅ |
-| `TOKEN_SECRET` | `openssl rand -hex 32` | ✅ |
-| `UPSTASH_REDIS_REST_URL` | console.upstash.com | opsiyonel |
-| `UPSTASH_REDIS_REST_TOKEN` | console.upstash.com | opsiyonel |
-
-### 3. Veritabanı
-
-Supabase Dashboard → SQL Editor → `supabase/migrations/` içindeki dosyaları sırayla çalıştır.
-
-### 4. Storage Bucket
-
-```sql
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('exports', 'exports', false, 10485760,
-  ARRAY['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
-ON CONFLICT (id) DO NOTHING;
-```
-
-`schedule-files` bucket'ı migration ile otomatik oluşturulur.
-
-### 5. Geliştirme
-
-```bash
-npm run dev
+🔗 Koordinasyon:
+- Zümre + MY + Müdür aynı sistemde, aynı veriye bakıyor
 ```
 
 ---
 
-## Deploy (Vercel)
-
-`main` branch'ine push atınca Vercel otomatik deploy eder. Ortam değişkenlerini Vercel dashboard → Settings → Environment Variables'dan ayarla.
-
----
-
-## Güvenlik
-
-| Önlem | Uygulama |
-|-------|---------|
-| Kimlik doğrulama | Supabase JWT, secure httpOnly cookies |
-| Çok kiracılı izolasyon | `school_id NOT NULL` + RLS her tabloda |
-| Public route güvenliği | HMAC-SHA256 imzalı token (jti + exp) |
-| Token iptali | `revoked_tokens` tablosu + Redis fail-closed cache |
-| Rate limiting | Upstash Redis sliding window |
-| CSP | Per-request nonce |
-| Input doğrulama | Zod tüm server action'larda |
-| Denetim kaydı | `audit_logs` — WORM korumalı |
-| Soft delete | 5 tabloda, 30 gün geri yükleme penceresi |
-
----
-
-## Teknik Yığın
+## 🛠️ Teknik Yığın
 
 | Katman | Teknoloji |
 |--------|-----------|
@@ -174,12 +140,58 @@ npm run dev
 | Veritabanı | Supabase (PostgreSQL 17 + RLS) |
 | Auth | Supabase SSR |
 | Storage | Supabase Storage |
-| Rate Limiting | Upstash Redis |
+| Cache | Redis (Upstash) |
+| Queue | Inngest v4 (Background jobs) |
 | Excel | SheetJS (xlsx) |
 | PDF | jspdf + jspdf-autotable |
-| Background Jobs | Inngest v4 |
-| Mobil UX | react-swipeable |
+| AI | OpenAI GPT-4 (planlı) |
+| Mobil UX | PWA (planlı) |
 | Tarih | date-fns v4 (tr locale) |
 | Loglama | Pino |
 | Error Tracking | Sentry |
 | Deploy | Vercel |
+
+---
+
+## 📅 Yol Haritası
+
+Detaylı yol haritası için: [ROADMAP.md](./ROADMAP.md)
+
+### Kısa Özet
+
+```
+🟢 Faz 1 (Hafta 1-6):   Teacher Dashboard + Kazanım Takibi + MY/Müdür Panelleri
+🟡 Faz 2 (Hafta 7-12):  AI Asistan + Otomasyon + Raporlama + MEB Hazırlık
+🔵 Faz 3 (Hafta 13-18): Gamification + PWA + Performans
+🟣 Faz 4 (Hafta 19-24): Billing + Gelişmiş AI + Scale
+```
+
+---
+
+## 👥 Katkıda Bulunma
+
+Bu proje tek geliştirici tarafından (Bahçeşehir Koleji Matematik Öğretmeni) geliştiriliyor.
+
+### Açık Sorular ve Geri Bildirim
+
+- [x] Issue açabilirsiniz
+- [x] PR gönderebilirsiniz
+- [x] Geri bildirim için: GitHub Issues veya LinkedIn
+
+---
+
+## 📄 Lisans
+
+MIT License — Eğitim amaçlı kullanım serbest.
+
+---
+
+## 🙋 İletişim
+
+- **Geliştirici:** Bahçeşehir Koleji Matematik Öğretmeni
+- **Proje:** [GitHub](https://github.com/fevzicoskun/zumre-takip)
+- **Canlı Uygulama:** https://zumre-takip.vercel.app
+
+---
+
+*Son güncelleme: Mayıs 2026 — AkademikOS v2 planı onaylandı* 🚀
