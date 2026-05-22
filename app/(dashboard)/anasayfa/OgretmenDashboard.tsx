@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import CalendarWidget from './CalendarWidget'
 import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
+import RiskUyarilariWidget from './RiskUyarilariWidget'
 
 type ClassRel = { name: string; grade: number } | null
 type HwLite = {
@@ -58,47 +59,53 @@ export default async function OgretmenDashboard() {
       </Suspense>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-        <section className="lg:col-span-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-          <header className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bugün ve Yaklaşan</h2>
-            <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
-          </header>
-          {todayHws.length + upcomingHws.length === 0 ? (
-            <p className="text-center text-gray-400 text-sm py-8">
-              Bugün veya önümüzdeki 7 gün için ödev yok.
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {[
-                ...todayHws.map(h => ({ ...h, isToday: true })),
-                ...upcomingHws.map(h => ({ ...h, isToday: false })),
-              ].map(hw => (
-                <li key={hw.id}>
-                  <Link
-                    href={`/odevler/${hw.id}`}
-                    className="block rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{hw.title}</span>
-                      {hw.isToday && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">BUGÜN</span>
-                      )}
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      {hw.classes?.name ?? '—'} · {hw.subject} ·{' '}
-                      {(() => {
-                        try { return format(parseISO(hw.due_date), 'd MMM') }
-                        catch { return hw.due_date }
-                      })()}
-                    </p>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
+        <section className="lg:col-span-2 space-y-4">
+          <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+            <header className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bugün ve Yaklaşan</h2>
+              <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
+            </header>
+            {todayHws.length + upcomingHws.length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-8">
+                Bugün veya önümüzdeki 7 gün için ödev yok.
+              </p>
+            ) : (
+              <ul className="space-y-2">
+                {[
+                  ...todayHws.map(h => ({ ...h, isToday: true })),
+                  ...upcomingHws.map(h => ({ ...h, isToday: false })),
+                ].map(hw => (
+                  <li key={hw.id}>
+                    <Link
+                      href={`/odevler/${hw.id}`}
+                      className="block rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{hw.title}</span>
+                        {hw.isToday && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">BUGÜN</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        {hw.classes?.name ?? '—'} · {hw.subject} ·{' '}
+                        {(() => {
+                          try { return format(parseISO(hw.due_date), 'd MMM') }
+                          catch { return hw.due_date }
+                        })()}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <RiskUyarilariWidget />
         </section>
 
-        <CalendarWidget />
+        <div className="space-y-4">
+          <CalendarWidget />
+        </div>
       </div>
     </div>
   )
