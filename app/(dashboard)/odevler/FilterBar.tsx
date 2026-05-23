@@ -172,19 +172,19 @@ export default function OdevlerFilterBar({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2 items-center">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-2 sm:items-center">
         <input
           type="date"
           value={currentParams.baslangic ?? ''}
           onChange={(e) => update('baslangic', e.target.value)}
-          className={`${selectCls} flex-1 sm:flex-none`}
+          className={`${selectCls} w-full sm:w-auto`}
         />
-        <span className="text-sm text-gray-300">—</span>
+        <span className="hidden sm:block text-sm text-gray-300">—</span>
         <input
           type="date"
           value={currentParams.bitis ?? ''}
           onChange={(e) => update('bitis', e.target.value)}
-          className={`${selectCls} flex-1 sm:flex-none`}
+          className={`${selectCls} w-full sm:w-auto`}
         />
         {hasFilters && (
           <button
