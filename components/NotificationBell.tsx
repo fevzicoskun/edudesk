@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
-import { getNotifications, getUnreadCount, markAllRead } from '@/src/domains/notifications/actions'
+import { getNotifications, getUnreadCount, markAllRead, markRead } from '@/src/domains/notifications/actions'
 
 type Notification = {
   id: string
@@ -43,12 +43,20 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
         setLoaded(true)
       })
     }
-    if (unread > 0) {
-      startTransition(async () => {
-        await markAllRead()
-        setUnread(0)
-      })
-    }
+  }
+
+  function handleMarkOne(id: string) {
+    // Optimistic update
+    setItems(prev => prev.map(n => n.id === id ? { ...n, read_at: new Date().toISOString() } : n))
+    setUnread(prev => Math.max(0, prev - 1))
+    startTransition(async () => { await markRead(id) })
+  }
+
+  function handleMarkAll() {
+    const now = new Date().toISOString()
+    setItems(prev => prev.map(n => ({ ...n, read_at: n.read_at ?? now })))
+    setUnread(0)
+    startTransition(async () => { await markAllRead() })
   }
 
   return (
@@ -72,14 +80,24 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
         <div className={`absolute top-full mt-2 w-80 max-w-[calc(100vw-1rem)] bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg z-50 overflow-hidden ${align === 'right' ? 'right-0' : 'left-0'}`}>
           <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between">
             <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">Bildirimler</span>
-            <button
-              onClick={() => setOpen(false)}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-2">
+              {unread > 0 && (
+                <button
+                  onClick={handleMarkAll}
+                  className="text-xs text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+                >
+                  Tümünü okundu yap
+                </button>
+              )}
+              <button
+                onClick={() => setOpen(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           <div className="max-h-80 overflow-y-auto divide-y divide-gray-100 dark:divide-slate-700">
@@ -96,17 +114,20 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
                   {n.homework_id ? (
                     <Link
                       href={`/odevler/${n.homework_id}`}
-                      onClick={() => setOpen(false)}
+                      onClick={() => { if (!n.read_at) handleMarkOne(n.id); setOpen(false) }}
                       className="block"
                     >
                       <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{n.title}</p>
                       {n.body && <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>}
                     </Link>
                   ) : (
-                    <>
+                    <div
+                      onClick={() => { if (!n.read_at) handleMarkOne(n.id) }}
+                      className={!n.read_at ? 'cursor-pointer' : undefined}
+                    >
                       <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{n.title}</p>
                       {n.body && <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>}
-                    </>
+                    </div>
                   )}
                   <p className="text-[11px] text-gray-300 dark:text-slate-600 mt-1">
                     {new Date(n.created_at).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
