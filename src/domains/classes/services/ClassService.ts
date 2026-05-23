@@ -116,4 +116,14 @@ export const ClassService = {
 
     await deleteStudentNote(noteId, ability.userId, ability.schoolId)
   },
+
+  async updateVeliEmail(studentId: string, email: string | null) {
+    const ability  = await requireAbility()
+    const supabase = await createClient()
+    await supabase
+      .from('students')
+      .update({ veli_email: email })
+      .eq('id', studentId)
+      .eq('school_id', ability.schoolId)
+  },
 }

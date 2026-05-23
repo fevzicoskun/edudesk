@@ -84,3 +84,12 @@ export async function addStudentNote(studentId: string, classId: string, formDat
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }
 
+export async function updateVeliEmail(studentId: string, classId: string, formData: FormData) {
+  UUID.parse(studentId)
+  UUID.parse(classId)
+  const raw = (formData.get('veli_email') as string | null)?.trim() || null
+  if (raw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw)) throw new Error('Geçersiz email adresi')
+  await ClassService.updateVeliEmail(studentId, raw)
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+}
+

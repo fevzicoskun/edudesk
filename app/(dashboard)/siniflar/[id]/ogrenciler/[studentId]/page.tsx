@@ -2,7 +2,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
-import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
+import { addStudentNote, deleteStudentNote, updateVeliEmail } from '@/src/domains/classes/actions'
 import CopyVeliLink from './CopyVeliLink'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -47,7 +47,7 @@ export default async function OgrenciDetayPage({
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
-    supabase.from('students').select('id, full_name, student_number, class_id').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
+    supabase.from('students').select('id, full_name, student_number, class_id, veli_email').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
@@ -90,6 +90,25 @@ export default async function OgrenciDetayPage({
           </p>
         </div>
         <CopyVeliLink studentId={studentId} />
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4">
+        <form action={updateVeliEmail.bind(null, studentId, classId)} className="flex items-center gap-2 flex-wrap">
+          <label className="text-sm text-gray-600 dark:text-slate-400 shrink-0">Veli E-posta:</label>
+          <input
+            name="veli_email"
+            type="email"
+            defaultValue={student.veli_email ?? ''}
+            placeholder="veli@ornek.com"
+            className="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          >
+            Kaydet
+          </button>
+        </form>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
