@@ -15,6 +15,7 @@ export default async function ProfilPage() {
         defaultSubject={profile?.subject ?? ''}
         schoolName={profile?.schools?.name ?? null}
         email={user.email ?? ''}
+        role={profile?.role ?? 'ogretmen'}
       />
       <div className="px-4 md:px-6 pb-6 max-w-lg mx-auto">
         <PasswordForm />

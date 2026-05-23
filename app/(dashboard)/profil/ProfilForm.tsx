@@ -11,11 +11,13 @@ export default function ProfilForm({
   defaultSubject,
   schoolName,
   email,
+  role,
 }: {
   defaultFullName: string
   defaultSubject: string
   schoolName: string | null
   email: string
+  role: string
 }) {
   const [state, action, pending] = useActionState(
     async (_prev: typeof initialState, formData: FormData) => {
@@ -62,18 +64,20 @@ export default function ProfilForm({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-              Branş / Ders
-            </label>
-            <input
-              name="subject"
-              type="text"
-              defaultValue={defaultSubject}
-              placeholder="Örn: Matematik, Türkçe..."
-              className={inputCls}
-            />
-          </div>
+          {role !== 'mudur_yardimcisi' && role !== 'mudur' && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
+                Branş / Ders
+              </label>
+              <input
+                name="subject"
+                type="text"
+                defaultValue={defaultSubject}
+                placeholder="Örn: Matematik, Türkçe..."
+                className={inputCls}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
