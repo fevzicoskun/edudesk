@@ -82,9 +82,6 @@ export default function ProfilForm({
             <div className={inputCls + ' bg-gray-50 dark:bg-slate-700/50 opacity-75 cursor-not-allowed'}>
               {schoolName ?? '—'}
             </div>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">
-              Okul ismini değiştirmek için zümre başkanına başvurun.
-            </p>
           </div>
 
           {state.error && (
