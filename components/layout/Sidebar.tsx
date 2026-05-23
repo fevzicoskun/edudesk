@@ -101,7 +101,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           )}
         </div>
         <div className="flex items-center gap-1">
-          <NotificationBell />
+          <NotificationBell align="right" />
           <ThemeToggle />
         </div>
       </header>
@@ -114,7 +114,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{getEgitimYili()}</p>
           </div>
           <div className="flex items-center gap-1">
-            <NotificationBell />
+            <NotificationBell align="left" />
             <ThemeToggle />
           </div>
         </div>
