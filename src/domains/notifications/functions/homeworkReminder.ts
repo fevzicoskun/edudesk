@@ -19,7 +19,7 @@ export const homeworkReminderFn = inngest.createFunction(
 
       const { data: homeworks } = await supabase
         .from('homeworks')
-        .select('id, title, due_date, school_id, teacher_id')
+        .select('id, title, due_date, school_id, teacher_id, class_id')
         .is('deleted_at', null)
         .not('due_date', 'is', null)
         .gte('due_date', today.toISOString().split('T')[0])
@@ -57,6 +57,7 @@ export const homeworkReminderFn = inngest.createFunction(
         return [
           {
             homeworkId: hw.id,
+            classId: hw.class_id,
             title: hw.title,
             dueDate: hw.due_date.slice(0, 10),
             schoolId: hw.school_id,
@@ -110,13 +111,13 @@ export const homeworkReminderFn = inngest.createFunction(
       )
     })
 
-    // 4. E-posta gönder (email_on = true olanlar)
-    const emailTargets = toSend.filter((c) => c.emailOn && c.teacherEmail)
+    // 4. Öğretmene e-posta gönder (email_on = true olanlar)
+    const teacherEmailTargets = toSend.filter((c) => c.emailOn && c.teacherEmail)
 
-    if (emailTargets.length) {
-      await step.run('send-emails', async () => {
+    if (teacherEmailTargets.length) {
+      await step.run('send-teacher-emails', async () => {
         await Promise.allSettled(
-          emailTargets.map((c) =>
+          teacherEmailTargets.map((c) =>
             mailer.sendMail({
               from: `EduDesk <${process.env.SMTP_USER}>`,
               to: c.teacherEmail,
@@ -133,6 +134,64 @@ export const homeworkReminderFn = inngest.createFunction(
       })
     }
 
-    return { sent: toSend.length, emailed: emailTargets.length }
+    // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri)
+    const veliEmails = await step.run('fetch-veli-emails', async () => {
+      const supabase = createServiceClient()
+      const results: { to: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }[] = []
+
+      for (const hw of toSend) {
+        const [{ data: students }, { data: subs }] = await Promise.all([
+          supabase
+            .from('students')
+            .select('id, full_name, veli_email')
+            .eq('class_id', hw.classId)
+            .eq('school_id', hw.schoolId)
+            .not('veli_email', 'is', null),
+          supabase
+            .from('homework_submissions')
+            .select('student_id')
+            .eq('homework_id', hw.homeworkId)
+            .eq('status', 'teslim_edildi'),
+        ])
+
+        if (!students?.length) continue
+
+        const teslimEdenIds = new Set(subs?.map((s) => s.student_id) ?? [])
+
+        for (const s of students) {
+          if (!s.veli_email || teslimEdenIds.has(s.id)) continue
+          results.push({
+            to: s.veli_email,
+            ogrenciAdi: s.full_name,
+            odevBaslik: hw.title,
+            dueDate: hw.dueDate,
+          })
+        }
+      }
+
+      return results
+    })
+
+    if (veliEmails.length) {
+      await step.run('send-veli-emails', async () => {
+        await Promise.allSettled(
+          veliEmails.map((v) =>
+            mailer.sendMail({
+              from: `EduDesk <${process.env.SMTP_USER}>`,
+              to: v.to,
+              subject: `Ödev Hatırlatması — ${v.ogrenciAdi}`,
+              html: `
+                <p>Sayın veli,</p>
+                <p><strong>${v.ogrenciAdi}</strong> adlı öğrencinizin <strong>"${v.odevBaslik}"</strong> ödevi <strong>${v.dueDate}</strong> tarihinde teslim edilmesi gerekmektedir.</p>
+                <p>Lütfen ödevin tamamlandığından emin olunuz.</p>
+                <p style="color:#888;font-size:12px;margin-top:16px">EduDesk — Okul Takip Sistemi</p>
+              `,
+            })
+          )
+        )
+      })
+    }
+
+    return { sent: toSend.length, teacherEmailed: teacherEmailTargets.length, veliEmailed: veliEmails.length }
   }
 )

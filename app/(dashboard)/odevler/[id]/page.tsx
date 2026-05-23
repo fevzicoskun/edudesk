@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation'
 export const revalidate = 0
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
+import VeliWhatsApp from './VeliWhatsApp'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -33,7 +34,7 @@ export default async function OdevDetayPage({
   const [studentsResult, subsResult] = await Promise.all([
     supabase
       .from('students')
-      .select('id, full_name, student_number')
+      .select('id, full_name, student_number, veli_telefon')
       .eq('class_id', hw.class_id)
       .eq('school_id', profile.school_id),
     supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
@@ -50,6 +51,7 @@ export default async function OdevDetayPage({
         student_id: student.id,
         full_name: student.full_name,
         student_number: student.student_number,
+        veli_telefon: student.veli_telefon ?? null,
         status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note: sub?.note ?? null,
       }
@@ -87,7 +89,15 @@ export default async function OdevDetayPage({
           Bu sınıfta henüz öğrenci yok.
         </p>
       ) : (
-        <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} />
+        <>
+          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} />
+          <VeliWhatsApp
+            items={items}
+            homeworkTitle={hw.title}
+            dueDate={format(parseISO(hw.due_date), 'd MMMM yyyy')}
+            className={cls?.name ?? ''}
+          />
+        </>
       )}
     </div>
   )
