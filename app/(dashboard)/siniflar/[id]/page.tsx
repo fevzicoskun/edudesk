@@ -2,11 +2,11 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { addStudent, deleteStudent } from '@/src/domains/classes/actions'
+import { addStudent } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'
-import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import BulkStudentModal from './BulkStudentModal'
 import SinifExportButton from './SinifExportButton'
+import OgrenciListesi from './OgrenciListesi'
 
 export default async function SinifDetayPage({
   params,
@@ -91,33 +91,11 @@ export default async function SinifDetayPage({
       {students.length === 0 ? (
         <div className="text-center py-20 text-gray-400 text-sm">Bu sınıfta henüz öğrenci yok.</div>
       ) : (
-        <div className="space-y-2">
-          {students.map((s, i) => (
-            <div
-              key={s.id}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 flex items-center gap-3"
-            >
-              <span className="text-xs text-gray-400 w-6 text-right shrink-0">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <Link
-                  href={`/siniflar/${id}/ogrenciler/${s.id}`}
-                  className="text-sm font-medium text-gray-900 dark:text-slate-100 hover:text-blue-700 dark:hover:text-blue-400"
-                >
-                  {s.full_name}
-                </Link>
-                {s.student_number && (
-                  <p className="text-xs text-gray-400">No: {s.student_number}</p>
-                )}
-              </div>
-              {(profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi') && (
-                <ConfirmDeleteButton
-                  action={deleteStudent.bind(null, s.id, id)}
-                  message={`"${s.full_name}" adlı öğrenciyi ve tüm ödev kayıtlarını silmek istediğine emin misin?`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        <OgrenciListesi
+          students={students}
+          classId={id}
+          canDelete={profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'}
+        />
       )}
     </div>
   )
