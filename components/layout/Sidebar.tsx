@@ -9,6 +9,7 @@ import { getEgitimYili } from '@/src/shared/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 import MobileNavDrawer from '@/components/layout/MobileNavDrawer'
 import FeedbackButton from '@/components/FeedbackButton'
+import NotificationBell from '@/components/NotificationBell'
 
 type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 
@@ -99,7 +100,10 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             </span>
           )}
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <ThemeToggle />
+        </div>
       </header>
 
       {/* Desktop sidebar */}
@@ -109,7 +113,10 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             <p className="font-bold text-gray-900 dark:text-slate-100 text-base">EduDesk</p>
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{getEgitimYili()}</p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <ThemeToggle />
+          </div>
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
