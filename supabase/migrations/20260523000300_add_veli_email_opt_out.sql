@@ -1,0 +1,1 @@
+ALTER TABLE students ADD COLUMN veli_email_opt_out BOOLEAN NOT NULL DEFAULT FALSE;

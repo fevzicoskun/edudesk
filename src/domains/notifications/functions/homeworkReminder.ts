@@ -1,6 +1,7 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
+import { unsubscribeUrl } from '@/src/lib/unsubscribeToken'
 
 export const homeworkReminderFn = inngest.createFunction(
   {
@@ -141,7 +142,8 @@ export const homeworkReminderFn = inngest.createFunction(
     // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri)
     const veliEmails = await step.run('fetch-veli-emails', async () => {
       const supabase = createServiceClient()
-      const results: { to: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }[] = []
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://edudesk.vercel.app'
+      const results: { to: string; ogrenciAdi: string; odevBaslik: string; dueDate: string; studentId: string }[] = []
 
       for (const hw of toSend) {
         const [{ data: students }, { data: subs }] = await Promise.all([
@@ -150,7 +152,8 @@ export const homeworkReminderFn = inngest.createFunction(
             .select('id, full_name, veli_email')
             .eq('class_id', hw.classId)
             .eq('school_id', hw.schoolId)
-            .not('veli_email', 'is', null),
+            .not('veli_email', 'is', null)
+            .eq('veli_email_opt_out', false),
           supabase
             .from('homework_submissions')
             .select('student_id')
@@ -169,6 +172,7 @@ export const homeworkReminderFn = inngest.createFunction(
             ogrenciAdi: s.full_name,
             odevBaslik: hw.title,
             dueDate: hw.dueDate,
+            studentId: s.id,
           })
         }
       }
@@ -189,6 +193,7 @@ export const homeworkReminderFn = inngest.createFunction(
                 <p><strong>${v.ogrenciAdi}</strong> adlı öğrencinizin <strong>"${v.odevBaslik}"</strong> ödevi <strong>${v.dueDate}</strong> tarihinde teslim edilmesi gerekmektedir.</p>
                 <p>Lütfen ödevin tamamlandığından emin olunuz.</p>
                 <p style="color:#888;font-size:12px;margin-top:16px">EduDesk — Okul Takip Sistemi</p>
+                <p style="color:#bbb;font-size:11px;margin-top:8px">Bu bildirimleri durdurmak için <a href="${unsubscribeUrl(v.studentId, baseUrl)}" style="color:#bbb">buraya tıklayın</a>.</p>
               </body></html>`,
             })
           )
