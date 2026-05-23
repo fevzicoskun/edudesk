@@ -13,10 +13,10 @@ export default async function DuyuruPage() {
   const readAction = markAnnouncementRead.bind(null, announcement.id)
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/95 backdrop-blur-sm p-3 sm:p-4">
       <div className="w-full max-w-lg bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden">
 
-        <div className="bg-blue-600 dark:bg-blue-700 px-6 py-4 flex items-center gap-3">
+        <div className="bg-blue-600 dark:bg-blue-700 px-4 sm:px-6 py-4 flex items-center gap-3">
           <div className="flex-shrink-0 w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
             <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
@@ -28,13 +28,13 @@ export default async function DuyuruPage() {
           </div>
         </div>
 
-        <div className="px-6 py-6">
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
           <p className="text-gray-800 dark:text-slate-100 text-base leading-relaxed whitespace-pre-wrap">
             {announcement.message}
           </p>
         </div>
 
-        <div className="px-6 pb-6">
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
           <form action={readAction}>
             <button
               type="submit"
