@@ -11,31 +11,22 @@ import {
   type TestSchool,
   type TestUser,
 } from '../../setup/db'
-import { makeProfile, makeUser } from '../../setup/factories'
+import { makeProfile, makeUser, OGRETMEN_PERMS } from '../../setup/factories'
 
 // ── Auth mock'ları ────────────────────────────────────────────
 vi.mock('@/src/shared/auth', () => ({
-  getCurrentUser:    vi.fn(),
-  getCurrentProfile: vi.fn(),
-  requireSchoolId:   vi.fn(),
-  requirePermission: vi.fn(),
-}))
-vi.mock('@/src/shared/auth', () => ({
-  getCurrentUser:    vi.fn(),
-  getCurrentProfile: vi.fn(),
-  requireSchoolId:   vi.fn(),
+  getCurrentUser:        vi.fn(),
+  getCurrentProfile:     vi.fn(),
+  getCurrentPermissions: vi.fn(),
+  requireSchoolId:       vi.fn(),
 }))
 
 // Server client'ı service client'a yönlendir (auth token gerekmez)
 vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
 }))
-vi.mock('@/src/infrastructure/supabase/server', () => ({
-  createClient: vi.fn().mockResolvedValue(serviceDb),
-}))
 
-const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/src/shared/auth')
-const { getCurrentProfile: getProfileShared, requireSchoolId: requireSchoolIdShared } =
+const { getCurrentUser, getCurrentProfile, getCurrentPermissions, requireSchoolId } =
   await import('@/src/shared/auth')
 const { HomeworkService } = await import('@/src/domains/homework/services/HomeworkService')
 
@@ -74,12 +65,9 @@ function setupTeacherAuth() {
 
   vi.mocked(getCurrentUser).mockResolvedValue(user as never)
   vi.mocked(getCurrentProfile).mockResolvedValue(profile as never)
+  vi.mocked(getCurrentPermissions).mockResolvedValue(OGRETMEN_PERMS as never)
   vi.mocked(requireSchoolId).mockResolvedValue(school.id)
-  vi.mocked(getProfileShared).mockResolvedValue(profile as never)
-  vi.mocked(requireSchoolIdShared).mockResolvedValue(school.id)
 
-  // HomeworkService, createClient().auth.getUser() ile mevcut user'ı alır.
-  // serviceDb service role client'dır — getUser() null döner. Mock ile enjekte et.
   vi.spyOn(serviceDb.auth, 'getUser').mockResolvedValue({
     data: { user: { id: teacher.id } as never },
     error: null,
@@ -114,10 +102,9 @@ describe('HomeworkService.createHomework()', () => {
     cleanup.push(data![0].id)
   })
 
-  it('öğretmen olmayan kullanıcı ödev oluşturamaz', async () => {
-    // Müdür rolüne geç — isTeachingRole() false döner
-    vi.mocked(getCurrentProfile).mockResolvedValue(makeProfile('mudur', school.id) as never)
-    vi.mocked(getProfileShared).mockResolvedValue(makeProfile('mudur', school.id) as never)
+  it('homework:create izni olmayan kullanıcı ödev oluşturamaz', async () => {
+    // homework:create izni olmayan kullanıcı simüle et
+    vi.mocked(getCurrentPermissions).mockResolvedValue([] as never)
 
     const result = await HomeworkService.createHomework({
       class_id:    classId,
@@ -133,7 +120,7 @@ describe('HomeworkService.createHomework()', () => {
   it('giriş yapmamış kullanıcı ödev oluşturamaz', async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(null)
     vi.mocked(getCurrentProfile).mockResolvedValue(null)
-    vi.mocked(getProfileShared).mockResolvedValue(null)
+    vi.mocked(getCurrentPermissions).mockResolvedValue([] as never)
 
     const result = await HomeworkService.createHomework({
       class_id:    classId,

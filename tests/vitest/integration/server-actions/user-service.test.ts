@@ -16,17 +16,10 @@ import type { GrantedPermission } from '@/src/domains/rbac/types'
 
 // ── Mock'lar ──────────────────────────────────────────────────
 vi.mock('@/src/shared/auth', () => ({
-  getCurrentUser:    vi.fn(),
-  getCurrentProfile: vi.fn(),
-  requireSchoolId:   vi.fn(),
-}))
-vi.mock('@/src/shared/auth', () => ({
-  getCurrentUser:    vi.fn(),
-  getCurrentProfile: vi.fn(),
-  requireSchoolId:   vi.fn(),
-}))
-vi.mock('@/src/infrastructure/supabase/server', () => ({
-  createClient: vi.fn().mockResolvedValue(serviceDb),
+  getCurrentUser:        vi.fn(),
+  getCurrentProfile:     vi.fn(),
+  getCurrentPermissions: vi.fn(),
+  requireSchoolId:       vi.fn(),
 }))
 vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(serviceDb),
@@ -35,8 +28,8 @@ vi.mock('@/src/domains/rbac/repositories/RbacRepository', () => ({
   RbacRepository: { getUserPermissions: vi.fn() },
 }))
 
-const { getCurrentUser, getCurrentProfile, requireSchoolId } = await import('@/src/shared/auth')
-const { getCurrentProfile: cps, requireSchoolId: rsi } = await import('@/src/shared/auth')
+const { getCurrentUser, getCurrentProfile, getCurrentPermissions, requireSchoolId } =
+  await import('@/src/shared/auth')
 const { RbacRepository }  = await import('@/src/domains/rbac/repositories/RbacRepository')
 const { UserService }     = await import('@/src/domains/users/services/UserService')
 const { UserRepository }  = await import('@/src/domains/users/repositories/UserRepository')
@@ -65,9 +58,8 @@ function setupCaller(perms: GrantedPermission[], role = 'mudur') {
   const profile = { full_name: 'Caller', subject: 'X', role, school_id: school.id, schools: null }
   vi.mocked(getCurrentUser).mockResolvedValue(user as never)
   vi.mocked(getCurrentProfile).mockResolvedValue(profile as never)
-  vi.mocked(cps).mockResolvedValue(profile as never)
+  vi.mocked(getCurrentPermissions).mockResolvedValue(perms as never)
   vi.mocked(requireSchoolId).mockResolvedValue(school.id)
-  vi.mocked(rsi).mockResolvedValue(school.id)
   vi.mocked(RbacRepository.getUserPermissions).mockResolvedValue(perms)
 }
 
@@ -142,9 +134,9 @@ describe('UserService.invite()', () => {
 
 // ─────────────────────────────────────────────────────────────
 describe('UserService.deleteUser()', () => {
-  it('users:delete izni olan kullanıcı öğretmeni silebilir', async () => {
-    setupCaller(MUDUR_PERMS, 'mudur')
-    // Silinecek geçici öğretmen
+  it('mudur_yardimcisi öğretmeni silebilir', async () => {
+    // Müdür sadece MY silebilir; MY ise ogretmen/zumre_baskani silebilir
+    setupCaller(MUDUR_YARDIMCISI_PERMS, 'mudur_yardimcisi')
     const tmp = await createTestUser({ role: 'ogretmen', schoolId: school.id, suffix: '_del' })
     const result = await UserService.deleteUser(tmp.id)
     expect(result.error).toBeUndefined()
@@ -181,8 +173,9 @@ describe('UserService.assignRole()', () => {
     } as never)
   })
 
-  it('users:update izni olan kullanıcı rol atayabilir', async () => {
-    setupCaller(MUDUR_PERMS, 'mudur')
+  it('mudur_yardimcisi ogretmeni zumre_baskani yapabilir', async () => {
+    // MY: canManage=false → ogretmen/zumre_baskani arasında atama yapabilir
+    setupCaller(MUDUR_YARDIMCISI_PERMS, 'mudur_yardimcisi')
     await expect(
       UserService.assignRole(targetOgretmen.id, 'zumre_baskani')
     ).resolves.not.toThrow()

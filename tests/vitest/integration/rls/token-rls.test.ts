@@ -1,21 +1,17 @@
 /**
  * Token revocation (revoked_tokens) RLS testleri.
  *
- * revoked_tokens tablosunun 3 politikası:
- *   1. revoked_tokens_anon_read  : anon + authenticated → SELECT (token doğrulama için)
- *   2. revoked_tokens_baskan_insert : authenticated + is_zumre_baskani_in_school() → INSERT
- *   3. revoked_tokens_baskan_delete : authenticated + is_zumre_baskani_in_school() → DELETE
+ * revoked_tokens tablosunun politikaları (v2 — 20260524100000_revoked_tokens_rls_v2):
+ *   1. revoked_tokens_server_read   : authenticated → SELECT (anon erişimi kaldırıldı)
+ *   2. revoked_tokens_manager_insert: authenticated + can_revoke_tokens() → INSERT
+ *   3. revoked_tokens_manager_delete: authenticated + can_revoke_tokens() → DELETE
  *
- * Güvenlik tasarımı notu:
- *   Token iptali sadece zumre_baskani'na verilmiştir (mudur dahil değil).
- *   Bu bilinçli bir tasarım kararıdır; mudur şu an token iptal edemez.
- *   Eğer bu değiştirilmek istenirse migration + test güncellenmeli.
+ * can_revoke_tokens() = mudur | mudur_yardimcisi | zumre_baskani
  *
  * Saldırı vektörleri:
- *   A. Düşük yetkili kullanıcı (ogretmen, mudur_yardimcisi, mudur) token iptal etmeye çalışır
+ *   A. Yetkisiz kullanıcı (ogretmen) token iptal etmeye çalışır
  *   B. Anonim kullanıcı token iptal etmeye çalışır
- *   C. Herhangi bir kullanıcı revoked_tokens kaydını silmeye çalışır (restore saldırısı)
- *   D. Saldırgan kendi jti'sini revoked_tokens'tan silip token'ı reaktive etmeye çalışır
+ *   C. Yetkisiz kullanıcı revoked_tokens kaydını silip token'ı reaktive etmeye çalışır (restore attack)
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { randomUUID } from 'crypto'
@@ -73,8 +69,8 @@ afterAll(async () => {
   await cleanupTestData({ userIds: [ogretmen.id, baskan.id, mudur.id, my.id], schoolIds: [school.id] })
 })
 
-// ─── SELECT: herkes okuyabilir (token doğrulama için açık) ───────────────────
-describe('revoked_tokens SELECT: herkese açık (token doğrulama)', () => {
+// ─── SELECT: yalnızca authenticated ─────────────────────────────────────────
+describe('revoked_tokens SELECT: yalnızca authenticated', () => {
   let testJti: string
 
   beforeAll(async () => {
@@ -85,12 +81,11 @@ describe('revoked_tokens SELECT: herkese açık (token doğrulama)', () => {
     insertedJtis.push(testJti)
   })
 
-  it('anonim kullanıcı revoked_tokens okuyabilir', async () => {
+  it('anonim kullanıcı revoked_tokens okuyamaz', async () => {
     const client = createAnonClient()
-    const { data, error } = await client
+    const { data } = await client
       .from('revoked_tokens').select('jti').eq('jti', testJti)
-    expect(error).toBeNull()
-    expect(data ?? []).toHaveLength(1)
+    expect(data ?? []).toHaveLength(0)
   })
 
   it('authenticated öğretmen revoked_tokens okuyabilir', async () => {
@@ -110,8 +105,8 @@ describe('revoked_tokens SELECT: herkese açık (token doğrulama)', () => {
   })
 })
 
-// ─── INSERT: sadece zumre_baskani ────────────────────────────────────────────
-describe('revoked_tokens INSERT: sadece zumre_baskani', () => {
+// ─── INSERT: can_revoke_tokens() = mudur | MY | zumre_baskani ───────────────
+describe('revoked_tokens INSERT: can_revoke_tokens() rolleri', () => {
   it('zumre_baskani token iptal edebilir', async () => {
     const jti = `${TEST_JTI_BASE}-baskan-insert`
     const client = createUserClient(tokenBaskan)
@@ -122,8 +117,27 @@ describe('revoked_tokens INSERT: sadece zumre_baskani', () => {
     insertedJtis.push(jti)
   })
 
-  it('öğretmen token iptal edemez — yetkisiz', async () => {
-    // Saldırı A: düşük yetkili kullanıcı token iptali
+  it('mudur token iptal edebilir', async () => {
+    const jti = `${TEST_JTI_BASE}-mudur-insert`
+    const client = createUserClient(tokenMudur)
+    const { error } = await client.from('revoked_tokens').insert({
+      jti, token_type: 'veli', revoked_by: mudur.id, reason: 'test',
+    })
+    expect(error).toBeNull()
+    insertedJtis.push(jti)
+  })
+
+  it('mudur_yardimcisi token iptal edebilir', async () => {
+    const jti = `${TEST_JTI_BASE}-my-insert`
+    const client = createUserClient(tokenMy)
+    const { error } = await client.from('revoked_tokens').insert({
+      jti, token_type: 'veli', revoked_by: my.id, reason: 'test',
+    })
+    expect(error).toBeNull()
+    insertedJtis.push(jti)
+  })
+
+  it('öğretmen token iptal edemez — yetkisiz (saldırı A)', async () => {
     const jti = `${TEST_JTI_BASE}-ogretmen-attempt`
     await assertInsertBlocked(
       createUserClient(tokenOg),
@@ -133,32 +147,7 @@ describe('revoked_tokens INSERT: sadece zumre_baskani', () => {
     )
   })
 
-  it('mudur_yardimcisi token iptal edemez — tasarım gereği', async () => {
-    // Saldırı A: MY token iptali deneme
-    // Not: mudur_yardimcisi zumre_baskani değildir; is_zumre_baskani_in_school() false döner
-    const jti = `${TEST_JTI_BASE}-my-attempt`
-    await assertInsertBlocked(
-      createUserClient(tokenMy),
-      'revoked_tokens',
-      { jti, token_type: 'veli', revoked_by: my.id, reason: 'attack' },
-      'mudur_yardimcisi-insert'
-    )
-  })
-
-  it('mudur token iptal edemez — tasarım gereği sadece baskan', async () => {
-    // Saldırı A: mudur token iptali deneme
-    // Güvenlik notu: mudur gerekirse bu politika değiştirilmeli ve test güncellenmeli
-    const jti = `${TEST_JTI_BASE}-mudur-attempt`
-    await assertInsertBlocked(
-      createUserClient(tokenMudur),
-      'revoked_tokens',
-      { jti, token_type: 'veli', revoked_by: mudur.id, reason: 'attack' },
-      'mudur-insert'
-    )
-  })
-
-  it('anonim kullanıcı token iptal edemez', async () => {
-    // Saldırı B: anon INSERT girişimi
+  it('anonim kullanıcı token iptal edemez (saldırı B)', async () => {
     const jti = `${TEST_JTI_BASE}-anon-attempt`
     const client = createAnonClient()
     const { error } = await client.from('revoked_tokens').insert({
@@ -168,8 +157,8 @@ describe('revoked_tokens INSERT: sadece zumre_baskani', () => {
   })
 })
 
-// ─── DELETE: token'ı "unrevoking" saldırısı ──────────────────────────────────
-describe('revoked_tokens DELETE: restore saldırısı engellenmeli', () => {
+// ─── DELETE: restore saldırısı engellenmeli ──────────────────────────────────
+describe('revoked_tokens DELETE: yetkisiz kullanıcı restore saldırısı', () => {
   let protectedJti: string
 
   beforeAll(async () => {
@@ -181,11 +170,8 @@ describe('revoked_tokens DELETE: restore saldırısı engellenmeli', () => {
   })
 
   /**
-   * revoked_tokens PK = jti (text), 'id' değil — assertDeleteBlocked helper yerine
-   * inline sorgular kullanıyoruz.
-   *
-   * Saldırı D: iptal edilmiş token'ın jti'sini bilen saldırgan kaydı silerek
-   * token'ı geçerli hale getirmeye çalışır (restore attack).
+   * Saldırı C/D: yetkisiz aktör jti'yi silerek token'ı reaktive etmeye çalışır.
+   * can_revoke_tokens() false → DELETE engellenir, kayıt yerinde kalır.
    */
   async function assertJtiNotDeleted(actorClient: ReturnType<typeof createUserClient> | ReturnType<typeof createAnonClient>) {
     await actorClient.from('revoked_tokens').delete().eq('jti', protectedJti)
@@ -193,30 +179,34 @@ describe('revoked_tokens DELETE: restore saldırısı engellenmeli', () => {
     expect(data ?? [], 'revoked token silinmiş olmamalı (restore saldırısı engeli)').toHaveLength(1)
   }
 
-  it('öğretmen iptal edilmiş token kaydını silemez', async () => {
+  it('öğretmen iptal edilmiş token kaydını silemez (saldırı C)', async () => {
     await assertJtiNotDeleted(createUserClient(tokenOg))
   })
 
-  it('mudur iptal edilmiş token kaydını silemez', async () => {
-    await assertJtiNotDeleted(createUserClient(tokenMudur))
-  })
-
-  it('anonim kullanıcı token kaydını silemez', async () => {
+  it('anonim kullanıcı token kaydını silemez (saldırı C)', async () => {
     await assertJtiNotDeleted(createAnonClient())
   })
 
-  it('zumre_baskani kendi eklediği token kaydını silebilir', async () => {
-    // Meşru iptal geri alma: baskan kendi okulunun token'ını silebilir
+  it('zumre_baskani token kaydını silebilir (can_revoke_tokens)', async () => {
     const jti = `${TEST_JTI_BASE}-baskan-delete`
     await serviceDb.from('revoked_tokens').insert({
       jti, token_type: 'veli', revoked_by: baskan.id, reason: 'to be deleted',
     })
-
     const client = createUserClient(tokenBaskan)
     const { error } = await client.from('revoked_tokens').delete().eq('jti', jti)
     expect(error).toBeNull()
+    const { data } = await serviceDb.from('revoked_tokens').select('jti').eq('jti', jti)
+    expect(data ?? []).toHaveLength(0)
+  })
 
-    // Gerçekten silindi mi?
+  it('mudur token kaydını silebilir (can_revoke_tokens)', async () => {
+    const jti = `${TEST_JTI_BASE}-mudur-delete`
+    await serviceDb.from('revoked_tokens').insert({
+      jti, token_type: 'veli', revoked_by: mudur.id, reason: 'to be deleted',
+    })
+    const client = createUserClient(tokenMudur)
+    const { error } = await client.from('revoked_tokens').delete().eq('jti', jti)
+    expect(error).toBeNull()
     const { data } = await serviceDb.from('revoked_tokens').select('jti').eq('jti', jti)
     expect(data ?? []).toHaveLength(0)
   })
