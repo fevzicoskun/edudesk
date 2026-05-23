@@ -24,7 +24,7 @@ export default async function DuyuruPage() {
           </div>
           <div>
             <h1 className="text-white font-semibold text-base leading-tight">Okul Duyurusu</h1>
-            <p className="text-blue-200 text-xs mt-0.5">{tarih}</p>
+            <p className="text-blue-200 text-xs mt-0.5">{announcement.sender_name} · {tarih}</p>
           </div>
         </div>
 

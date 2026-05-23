@@ -1,15 +1,15 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
-import type { Announcement } from '../types'
+import type { Announcement, AnnouncementWithSender } from '../types'
 
 export const AnnouncementRepository = {
-  async getFirstUnread(userId: string, userRole: string, schoolId: string): Promise<Announcement | null> {
+  async getFirstUnread(userId: string, userRole: string, schoolId: string): Promise<AnnouncementWithSender | null> {
     const supabase = await createClient()
     const { data } = await supabase.rpc('get_first_unread_announcement', {
       p_user_id:   userId,
       p_user_role: userRole,
       p_school_id: schoolId,
     })
-    return (data?.[0] as Announcement) ?? null
+    return (data?.[0] as AnnouncementWithSender) ?? null
   },
 
   async markRead(announcementId: string, userId: string): Promise<void> {

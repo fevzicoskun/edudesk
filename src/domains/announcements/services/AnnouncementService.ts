@@ -1,10 +1,10 @@
 import { AnnouncementRepository } from '../repositories/AnnouncementRepository'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { MUDUR_TARGET_ROLES, MY_TARGET_ROLES } from '../validators'
-import type { Announcement } from '../types'
+import type { Announcement, AnnouncementWithSender } from '../types'
 
 export const AnnouncementService = {
-  async getFirstUnread(): Promise<Announcement | null> {
+  async getFirstUnread(): Promise<AnnouncementWithSender | null> {
     const user = await getCurrentUser()
     const profile = await getCurrentProfile()
     if (!user || !profile?.school_id) return null

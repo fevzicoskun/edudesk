@@ -6,3 +6,7 @@ export interface Announcement {
   target_roles: string[]
   created_at: string
 }
+
+export interface AnnouncementWithSender extends Announcement {
+  sender_name: string
+}
