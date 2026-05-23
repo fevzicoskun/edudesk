@@ -2,6 +2,14 @@
 
 import { useState, useMemo } from 'react'
 
+type HwLite = {
+  id: string
+  title: string
+  subject: string
+  due_date: string
+  classes: { name: string; grade: number } | null
+}
+
 const HOLIDAYS: { date: string; label: string; color: string }[] = [
   { date: '2025-01-01', label: 'Yılbaşı',            color: '#38bdf8' },
   { date: '2025-03-30', label: 'Ramazan Bayramı',    color: '#34d399' },
@@ -33,16 +41,19 @@ const HOLIDAYS: { date: string; label: string; color: string }[] = [
   { date: '2026-10-29', label: 'Cumhuriyet Bayramı', color: '#f43f5e' },
 ]
 
-const DAYS = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
+const DAYS   = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık']
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 function toStr(y: number, m: number, d: number) { return `${y}-${pad(m + 1)}-${pad(d)}` }
 
-export default function CalendarWidget() {
+export default function CalendarWidget({ homeworks = [] }: { homeworks?: HwLite[] }) {
   const today = new Date()
-  const [year, setYear]   = useState(today.getFullYear())
-  const [month, setMonth] = useState(today.getMonth())
+  const [year, setYear]         = useState(today.getFullYear())
+  const [month, setMonth]       = useState(today.getMonth())
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  const todayStr = toStr(today.getFullYear(), today.getMonth(), today.getDate())
 
   const holidayMap = useMemo(() => {
     const map = new Map<string, { label: string; color: string }>()
@@ -52,93 +63,114 @@ export default function CalendarWidget() {
     return map
   }, [])
 
-  const todayStr = toStr(today.getFullYear(), today.getMonth(), today.getDate())
+  const hwMap = useMemo(() => {
+    const map = new Map<string, HwLite[]>()
+    for (const hw of homeworks) {
+      if (!hw.due_date) continue
+      const list = map.get(hw.due_date) ?? []
+      map.set(hw.due_date, [...list, hw])
+    }
+    return map
+  }, [homeworks])
 
-  // First day of month (0=Sun … 6=Sat) → convert to Mon-based (0=Mon … 6=Sun)
-  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7
+  const firstDow    = (new Date(year, month, 1).getDay() + 6) % 7
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-
   const cells: (number | null)[] = [
     ...Array(firstDow).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
-  // Pad to complete last row
   while (cells.length % 7 !== 0) cells.push(null)
 
-  const monthHolidays = useMemo(() => {
-    const seen = new Set<string>()
-    return HOLIDAYS.filter(h => {
-      const [y, m] = h.date.split('-').map(Number)
-      if (y !== year || m !== month + 1) return false
-      if (seen.has(h.label)) return false
-      seen.add(h.label)
-      return true
-    })
-  }, [year, month])
-
   const prev = () => { if (month === 0) { setMonth(11); setYear(y => y - 1) } else setMonth(m => m - 1) }
-  const next = () => { if (month === 11) { setMonth(0); setYear(y => y + 1) } else setMonth(m => m + 1) }
+  const next = () => { if (month === 11) { setMonth(0);  setYear(y => y + 1) } else setMonth(m => m + 1) }
+
+  const selectedHoliday = selectedDay ? holidayMap.get(selectedDay) : undefined
+  const selectedHws     = selectedDay ? (hwMap.get(selectedDay) ?? []) : []
+  const hasSelectedData = !!(selectedHoliday || selectedHws.length > 0)
 
   return (
-    <section className="bg-white border border-gray-200 rounded-xl p-4">
+    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-700">Takvim</h2>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Takvim</h2>
         <div className="flex items-center gap-1">
-          <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+          <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
-          <span className="text-xs font-medium text-gray-700 w-28 text-center">{MONTHS[month]} {year}</span>
-          <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors">
+          <span className="text-xs font-medium text-gray-700 dark:text-slate-300 w-28 text-center">{MONTHS[month]} {year}</span>
+          <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
       </div>
 
-      {/* Day headers */}
-      <div className="grid grid-cols-7 mb-1">
+      {/* Gün başlıkları */}
+      <div className="grid grid-cols-7 mb-0.5">
         {DAYS.map(d => (
-          <div key={d} className="text-center text-[10px] font-semibold text-gray-400 pb-1">{d}</div>
+          <div key={d} className="text-center text-[10px] font-semibold text-gray-400 dark:text-slate-500 pb-0.5">{d}</div>
         ))}
       </div>
 
-      {/* Day cells */}
+      {/* Gün hücreleri */}
       <div className="grid grid-cols-7 gap-y-0.5">
         {cells.map((day, i) => {
           if (!day) return <div key={i} />
-          const dateStr = toStr(year, month, day)
-          const holiday = holidayMap.get(dateStr)
-          const isToday = dateStr === todayStr
+          const dateStr    = toStr(year, month, day)
+          const holiday    = holidayMap.get(dateStr)
+          const dayHws     = hwMap.get(dateStr)
+          const isToday    = dateStr === todayStr
+          const isSelected = dateStr === selectedDay
+
           return (
-            <div key={i} className="flex flex-col items-center py-0.5">
-              <span className={`w-7 h-7 flex items-center justify-center rounded-full text-xs font-medium transition-colors
-                ${isToday ? 'bg-blue-600 text-white' : holiday ? 'text-gray-900' : 'text-gray-600 hover:bg-gray-100'}
+            <button
+              key={i}
+              onClick={() => setSelectedDay(prev => prev === dateStr ? null : dateStr)}
+              className="flex flex-col items-center py-0.5 rounded transition-colors"
+            >
+              <span className={`
+                w-6 h-6 flex items-center justify-center rounded-full text-[11px] font-medium transition-colors
+                ${isSelected ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-slate-800' : ''}
+                ${isToday
+                  ? 'bg-blue-600 text-white'
+                  : holiday
+                    ? 'text-gray-900 dark:text-slate-100'
+                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700'}
               `}>
                 {day}
               </span>
-              {holiday && (
-                <span className="w-1.5 h-1.5 rounded-full mt-0.5" style={{ backgroundColor: holiday.color }} />
+              {(holiday || dayHws) && (
+                <div className="flex gap-0.5 mt-0.5">
+                  {holiday && <span className="w-1 h-1 rounded-full" style={{ backgroundColor: holiday.color }} />}
+                  {dayHws  && <span className="w-1 h-1 rounded-full bg-blue-400" />}
+                </div>
               )}
-            </div>
+            </button>
           )
         })}
       </div>
 
-      {/* This month's holidays */}
-      {monthHolidays.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-100 space-y-1.5">
-          {monthHolidays.map((h, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: h.color }} />
-              <span className="text-xs text-gray-600 flex-1">{h.label}</span>
-              <span className="text-[10px] text-gray-400 tabular-nums">{h.date.slice(8)} {MONTHS[month].slice(0,3)}</span>
+      {/* Seçili gün detayı */}
+      {hasSelectedData && (
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 space-y-1.5">
+          {selectedHoliday && (
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: selectedHoliday.color }} />
+              <span className="text-xs text-gray-600 dark:text-slate-400 flex-1">{selectedHoliday.label}</span>
+              <span className="text-[10px] text-gray-400 dark:text-slate-500 tabular-nums">
+                {selectedDay!.slice(8)} {MONTHS[month].slice(0, 3)}
+              </span>
+            </div>
+          )}
+          {selectedHws.map(hw => (
+            <div key={hw.id} className="flex items-start gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0 mt-1" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-700 dark:text-slate-300 truncate">{hw.title}</p>
+                <p className="text-[10px] text-gray-400 dark:text-slate-500">{hw.classes?.name ?? '—'} · {hw.subject}</p>
+              </div>
             </div>
           ))}
         </div>
-      )}
-
-      {monthHolidays.length === 0 && (
-        <p className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-400 text-center">Bu ayda resmi tatil yok</p>
       )}
     </section>
   )

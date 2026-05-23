@@ -115,7 +115,7 @@ export default async function OgretmenDashboard() {
         </section>
 
         <div className="space-y-4">
-          <CalendarWidget />
+          <CalendarWidget homeworks={homeworks} />
         </div>
       </div>
     </div>
