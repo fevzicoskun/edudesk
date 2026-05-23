@@ -1,4 +1,4 @@
-export type JobType = 'excel_odevler' | 'excel_yoklama' | 'excel_mufredat' | 'excel_notlar' | 'excel_sinif_ogrencileri'
+export type JobType = 'excel_odevler' | 'excel_notlar' | 'excel_sinif_ogrencileri'
 export type JobStatus = 'pending' | 'processing' | 'done' | 'error' | 'cancelled' | 'dead_letter'
 
 export interface ExportJob {

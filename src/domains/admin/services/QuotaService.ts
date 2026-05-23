@@ -30,7 +30,8 @@ export const QuotaService = {
       createServiceClient()
         .from('students')
         .select('id', { count: 'exact', head: true })
-        .eq('school_id', schoolId),
+        .eq('school_id', schoolId)
+        .is('deleted_at', null),
     ])
 
     const max     = quota?.max_students ?? 500

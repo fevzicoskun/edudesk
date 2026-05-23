@@ -12,10 +12,9 @@ type ReportType = {
 }
 
 const REPORT_TYPES: ReportType[] = [
-  { value: 'excel_odevler',  label: 'Ödevler',         hasClass: true,  hasDates: true  },
-  { value: 'excel_yoklama',  label: 'Yoklama',          hasClass: true,  hasDates: true  },
-  { value: 'excel_mufredat', label: 'Müfredat',         hasClass: true,  hasDates: false },
-  { value: 'excel_notlar',   label: 'Öğrenci Notları',  hasClass: false, hasDates: false },
+  { value: 'excel_odevler',         label: 'Ödevler',           hasClass: true,  hasDates: true  },
+  { value: 'excel_notlar',          label: 'Öğrenci Notları',   hasClass: false, hasDates: false },
+  { value: 'excel_sinif_ogrencileri', label: 'Sınıf Öğrencileri', hasClass: true,  hasDates: false },
 ]
 
 function defaultDateFrom() {

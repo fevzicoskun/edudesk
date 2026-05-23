@@ -67,38 +67,20 @@ export default async function EtkinliklerWidget() {
   const todayStr  = today.toISOString().split('T')[0]
   const maxStr    = addDays(today, 60).toISOString().split('T')[0]
 
-  const [schoolRes, zumreRes] = await Promise.all([
-    supabase.from('school_meetings')
-      .select('id, title, meeting_date, meeting_type, attendees')
-      .eq('school_id', school_id)
-      .gte('meeting_date', todayStr)
-      .lte('meeting_date', maxStr)
-      .order('meeting_date'),
-    supabase.from('zumre_meetings')
-      .select('id, title, meeting_date, branch')
-      .eq('school_id', school_id)
-      .gte('meeting_date', todayStr)
-      .lte('meeting_date', maxStr)
-      .order('meeting_date'),
-  ])
+  const schoolRes = await supabase.from('school_meetings')
+    .select('id, title, meeting_date, meeting_type, attendees')
+    .eq('school_id', school_id)
+    .gte('meeting_date', todayStr)
+    .lte('meeting_date', maxStr)
+    .order('meeting_date')
 
-  const events: Event[] = [
-    ...(schoolRes.data ?? []).map(m => ({
-      id:       m.id,
-      title:    m.title,
-      date:     m.meeting_date,
-      type:     m.meeting_type ?? 'genel',
-      priority: (m.attendees && m.attendees in PRIORITY ? m.attendees as Priority : null),
-    })),
-    ...(zumreRes.data ?? []).map(m => ({
-      id:    m.id,
-      title: m.title,
-      date:  m.meeting_date,
-      type:  'zumre',
-      priority: null,
-      sub:   m.branch ?? undefined,
-    })),
-  ].sort((a, b) => a.date.localeCompare(b.date))
+  const events: Event[] = (schoolRes.data ?? []).map(m => ({
+    id:       m.id,
+    title:    m.title,
+    date:     m.meeting_date,
+    type:     m.meeting_type ?? 'genel',
+    priority: (m.attendees && m.attendees in PRIORITY ? m.attendees as Priority : null),
+  }))
 
   const grouped = groupByMonth(events)
 

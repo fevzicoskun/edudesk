@@ -11,8 +11,6 @@ import { P } from '@/src/shared/permissions'
 
 const JOB_TYPES = [
   'excel_odevler',
-  'excel_yoklama',
-  'excel_mufredat',
   'excel_notlar',
   'excel_sinif_ogrencileri',
 ] as const
