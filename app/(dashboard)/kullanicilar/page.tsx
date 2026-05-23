@@ -79,14 +79,14 @@ export default async function KullanicilarPage() {
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-[500px]">
+        <table className="w-full text-sm min-w-full">
           <thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
             <tr>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ad Soyad</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Branş</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
-              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Kullanım</th>
-              <th className="px-4 py-3 w-10"></th>
+              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ad Soyad</th>
+              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Branş</th>
+              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
+              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Kullanım</th>
+              <th className="px-3 py-2 sm:px-4 sm:py-3 w-10"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
@@ -102,16 +102,16 @@ export default async function KullanicilarPage() {
 
               return (
                 <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3">
                     <p className="font-medium text-gray-900 dark:text-slate-100">
                       {u.full_name}
                       {isSelf && <span className="ml-2 text-[10px] text-gray-400">(sen)</span>}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
                     {u.subject ?? '—'}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3">
                     {canEditThis ? (
                       <RoleSelector
                         userId={u.id}
@@ -124,7 +124,7 @@ export default async function KullanicilarPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3 hidden md:table-cell">
                     {stats ? (
                       <div>
                         <p className="text-xs font-medium text-gray-900 dark:text-slate-100">{stats.count} giriş · {totalHours} saat</p>
@@ -138,7 +138,7 @@ export default async function KullanicilarPage() {
                       <span className="text-xs text-gray-400">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2 sm:px-4 sm:py-3">
                     {canAssign && !isSelf && (
                       isMudur
                         ? u.role === 'mudur_yardimcisi'
