@@ -162,10 +162,10 @@ export default function StatusBoard({
                     <p className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</p>
                   )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <button
                     onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                    className={`text-xs px-2 py-1 rounded-lg border transition-colors ${
+                    className={`text-sm px-3 py-2 rounded-lg border transition-colors ${
                       notes[item.student_id]
                         ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                         : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
@@ -177,7 +177,7 @@ export default function StatusBoard({
                     value={status}
                     disabled={isPending}
                     onChange={(event) => setStatus(item.student_id, event.target.value as SubmissionStatus)}
-                    className={`px-3 py-1.5 rounded-full border text-xs font-semibold transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${STYLES[status]}`}
+                    className={`px-3 py-2 rounded-full border text-sm font-semibold transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${STYLES[status]}`}
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>{LABELS[option]}</option>
@@ -193,7 +193,7 @@ export default function StatusBoard({
                     onBlur={e => saveNote(item.student_id, e.target.value)}
                     rows={2}
                     placeholder="Öğrenci hakkında kısa not..."
-                    className="w-full px-3 py-2 text-xs border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder:text-gray-400 dark:placeholder:text-slate-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder:text-gray-400 dark:placeholder:text-slate-500"
                   />
                 </div>
               )}
