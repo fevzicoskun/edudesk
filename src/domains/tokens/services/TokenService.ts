@@ -73,6 +73,18 @@ export const TokenService = {
     return { ok: true }
   },
 
+  async getActiveVeliTokens(studentId: string): Promise<{ jti: string; expires_at: string; created_at: string }[]> {
+    const school_id = await requireSchoolId()
+    const { data: tokens } = await TokenRepository.listActiveVeliTokens(studentId, school_id)
+    if (!tokens?.length) return []
+
+    const jtis = tokens.map(t => t.jti)
+    const { data: revoked } = await TokenRepository.listRevokedByJtis(jtis)
+    const revokedSet = new Set(revoked?.map(r => r.jti) ?? [])
+
+    return tokens.filter(t => !revokedSet.has(t.jti))
+  },
+
   async listRevokedTokens() {
     const ability = await getAbility()
     if (!ability || ability.cannot(P.ZUMRE.MANAGE)) return { data: null, error: 'Yetersiz yetki' }

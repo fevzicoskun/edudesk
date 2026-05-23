@@ -34,6 +34,13 @@ export async function revokeToken(
   return TokenService.revokeToken(token, tokenType, reason)
 }
 
+export async function getActiveVeliTokens(studentId: string) {
+  UUID.parse(studentId)
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
+  return TokenService.getActiveVeliTokens(studentId)
+}
+
 export async function listRevokedTokens() {
   return TokenService.listRevokedTokens()
 }

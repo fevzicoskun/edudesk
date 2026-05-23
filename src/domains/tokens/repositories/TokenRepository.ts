@@ -33,6 +33,25 @@ export const TokenRepository = {
     return supabase.from('revoked_tokens').insert(data)
   },
 
+  async listActiveVeliTokens(studentId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('veli_tokens')
+      .select('jti, expires_at, created_at')
+      .eq('student_id', studentId)
+      .eq('school_id', schoolId)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+  },
+
+  async listRevokedByJtis(jtis: string[]) {
+    const supabase = await createClient()
+    return supabase
+      .from('revoked_tokens')
+      .select('jti')
+      .in('jti', jtis)
+  },
+
   async listRevokedTokens() {
     const supabase = await createClient()
     return supabase
