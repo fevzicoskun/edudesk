@@ -48,7 +48,7 @@ export default async function OgrenciDetayPage({
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
-    supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
+    supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
@@ -98,6 +98,7 @@ export default async function OgrenciDetayPage({
         classId={classId}
         defaultEmail={student.veli_email ?? ''}
         defaultTelefon={student.veli_telefon ?? ''}
+        defaultAd={student.veli_ad ?? ''}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">

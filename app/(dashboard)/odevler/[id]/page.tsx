@@ -34,7 +34,7 @@ export default async function OdevDetayPage({
   const [studentsResult, subsResult] = await Promise.all([
     supabase
       .from('students')
-      .select('id, full_name, student_number, veli_telefon')
+      .select('id, full_name, student_number, veli_telefon, veli_ad')
       .eq('class_id', hw.class_id)
       .eq('school_id', profile.school_id),
     supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
@@ -52,6 +52,7 @@ export default async function OdevDetayPage({
         full_name: student.full_name,
         student_number: student.student_number,
         veli_telefon: student.veli_telefon ?? null,
+        veli_ad: student.veli_ad ?? null,
         status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note: sub?.note ?? null,
       }

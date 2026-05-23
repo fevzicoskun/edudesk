@@ -6,6 +6,7 @@ interface OgrenciItem {
   student_number: string | null
   status: string
   veli_telefon: string | null
+  veli_ad: string | null
 }
 
 interface Props {
@@ -23,14 +24,15 @@ function waLink(telefon: string): string {
   return `https://wa.me/${digits}`
 }
 
-function waMessage(ogrenciAdi: string, odevAdi: string, teslimTarihi: string): string {
-  const msg = `Sayın veli, ${ogrenciAdi} adlı öğrencinizin "${odevAdi}" ödevi ${teslimTarihi} tarihinde teslim edilmesi gerekmektedir. Lütfen ödevin tamamlandığından emin olunuz.`
+function waMessage(ogrenciAdi: string, odevAdi: string, teslimTarihi: string, veliAdi: string | null): string {
+  const hitap = veliAdi ? `Sayın ${veliAdi},` : 'Sayın veli,'
+  const msg = `${hitap}\n\n${ogrenciAdi} adlı öğrencinizin "${odevAdi}" ödevi ${teslimTarihi} tarihinde teslim edilmesi gerekmektedir.\n\nLütfen ödevin tamamlandığından emin olunuz.\n\nSaygılarımla.`
   return encodeURIComponent(msg)
 }
 
 export default function VeliWhatsApp({ items, homeworkTitle, dueDate, className }: Props) {
   const teslimEtmeyenler = items.filter(
-    (i) => i.status === 'yapilmadi' && i.veli_telefon
+    (i) => i.status !== 'teslim_edildi' && i.status !== 'yapildi' && i.veli_telefon
   )
 
   if (teslimEtmeyenler.length === 0) {
@@ -64,7 +66,7 @@ export default function VeliWhatsApp({ items, homeworkTitle, dueDate, className 
               {o.student_number ? `${o.student_number} — ` : ''}{o.full_name}
             </span>
             <a
-              href={`${waLink(o.veli_telefon!)}?text=${waMessage(o.full_name, homeworkTitle, dueDate)}`}
+              href={`${waLink(o.veli_telefon!)}?text=${waMessage(o.full_name, homeworkTitle, dueDate, o.veli_ad)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs font-medium text-green-600 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition-colors"

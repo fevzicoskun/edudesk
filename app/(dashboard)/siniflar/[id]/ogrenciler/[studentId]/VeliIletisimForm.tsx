@@ -8,9 +8,10 @@ interface Props {
   classId: string
   defaultEmail: string
   defaultTelefon: string
+  defaultAd: string
 }
 
-export default function VeliIletisimForm({ studentId, classId, defaultEmail, defaultTelefon }: Props) {
+export default function VeliIletisimForm({ studentId, classId, defaultEmail, defaultTelefon, defaultAd }: Props) {
   const [state, action, pending] = useActionState(
     async (_prev: { ok: boolean } | null, formData: FormData) => {
       await updateVeliContact(studentId, classId, formData)
@@ -23,6 +24,16 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-4 mb-4">
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Veli İletişim</h2>
       <form action={action} className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <label className="text-sm text-gray-600 dark:text-slate-400 w-24 shrink-0">Veli Adı</label>
+          <input
+            name="veli_ad"
+            type="text"
+            defaultValue={defaultAd}
+            placeholder="Ahmet Yılmaz"
+            className="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <label className="text-sm text-gray-600 dark:text-slate-400 w-24 shrink-0">E-posta</label>
           <input

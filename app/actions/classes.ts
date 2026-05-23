@@ -89,8 +89,9 @@ export async function updateVeliContact(studentId: string, classId: string, form
   UUID.parse(classId)
   const email = (formData.get('veli_email') as string | null)?.trim() || null
   const telefon = (formData.get('veli_telefon') as string | null)?.trim() || null
+  const ad = (formData.get('veli_ad') as string | null)?.trim() || null
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Geçersiz email adresi')
-  await ClassService.updateVeliContact(studentId, { email, telefon })
+  await ClassService.updateVeliContact(studentId, { email, telefon, ad })
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }
 
