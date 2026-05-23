@@ -64,5 +64,5 @@ export async function saveNotificationPreferences(formData: FormData) {
     .from('notification_preferences')
     .upsert({ user_id: user.id, days_before, email_on, updated_at: new Date().toISOString() })
 
-  revalidatePath('/profil')
+  revalidatePath('/ayarlar')
 }
