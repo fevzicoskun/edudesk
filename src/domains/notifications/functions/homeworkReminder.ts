@@ -9,6 +9,8 @@ export const homeworkReminderFn = inngest.createFunction(
     triggers: [{ cron: '0 5 * * *' }], // 08:00 Türkiye saati (UTC+3)
   },
   async ({ step }) => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://edudesk.vercel.app'
+
     // 1. Önümüzdeki 1-7 gün içinde teslimi olan ödevleri çek
     const candidates = await step.run('fetch-due-homeworks', async () => {
       const supabase = createServiceClient()
@@ -142,7 +144,6 @@ export const homeworkReminderFn = inngest.createFunction(
     // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri)
     const veliEmails = await step.run('fetch-veli-emails', async () => {
       const supabase = createServiceClient()
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://edudesk.vercel.app'
       const results: { to: string; ogrenciAdi: string; odevBaslik: string; dueDate: string; studentId: string }[] = []
 
       for (const hw of toSend) {
