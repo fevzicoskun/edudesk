@@ -23,11 +23,5 @@ export async function createAnnouncement(_: unknown, formData: FormData) {
 
 export async function markAnnouncementRead(announcementId: string) {
   await AnnouncementService.markRead(announcementId)
-
-  const next = await AnnouncementService.getFirstUnread()
-  if (next) {
-    redirect('/duyuru')
-  } else {
-    redirect('/anasayfa')
-  }
+  redirect('/anasayfa')
 }

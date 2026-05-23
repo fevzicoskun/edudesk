@@ -4,29 +4,12 @@ import type { Announcement } from '../types'
 export const AnnouncementRepository = {
   async getFirstUnread(userId: string, userRole: string, schoolId: string): Promise<Announcement | null> {
     const supabase = await createClient()
-
-    const { data: reads } = await supabase
-      .from('announcement_reads')
-      .select('announcement_id')
-      .eq('user_id', userId)
-
-    const readIds = (reads ?? []).map(r => r.announcement_id as string)
-
-    let query = supabase
-      .from('announcements')
-      .select('*')
-      .eq('school_id', schoolId)
-      .neq('created_by', userId)
-      .contains('target_roles', [userRole])
-      .order('created_at', { ascending: true })
-      .limit(1)
-
-    if (readIds.length > 0) {
-      query = query.not('id', 'in', `(${readIds.join(',')})`)
-    }
-
-    const { data } = await query.maybeSingle()
-    return data ?? null
+    const { data } = await supabase.rpc('get_first_unread_announcement', {
+      p_user_id:   userId,
+      p_user_role: userRole,
+      p_school_id: schoolId,
+    })
+    return (data?.[0] as Announcement) ?? null
   },
 
   async markRead(announcementId: string, userId: string): Promise<void> {
