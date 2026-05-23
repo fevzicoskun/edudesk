@@ -1,10 +1,10 @@
 import { TokenRepository } from '../repositories/TokenRepository'
-import { getCurrentUser, requireSchoolId } from '@/src/shared/auth'
-import { getAbility } from '@/src/shared/authorization/server'
-import { P } from '@/src/shared/permissions'
+import { getCurrentUser, getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
 import { createPublicToken, extractJti } from '@/src/infrastructure/tokens'
 import { cacheRevocation } from '@/src/infrastructure/security/revocation'
 import type { TokenType } from '../types'
+
+const REVOKE_ROLES = ['zumre_baskani', 'mudur_yardimcisi', 'mudur'] as const
 
 export const TokenService = {
   async generateVeliToken(studentId: string): Promise<string> {
@@ -46,19 +46,25 @@ export const TokenService = {
     tokenType: TokenType,
     reason?:   string
   ): Promise<{ ok: boolean; error?: string }> {
-    const ability = await getAbility()
-    if (!ability) return { ok: false, error: 'Giriş gerekli' }
-    if (ability.cannot(P.ZUMRE.MANAGE)) {
-      return { ok: false, error: 'Bu işlem için Zümre Başkanı veya Yönetici yetkisi gereklidir.' }
-    }
+    const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+    if (!user || !profile) return { ok: false, error: 'Giriş gerekli' }
 
     const jti = token.startsWith('v1.') ? extractJti(token) : token
     if (!jti) return { ok: false, error: 'Geçersiz token formatı' }
 
+    const hasManagerRole = REVOKE_ROLES.includes(profile.role as typeof REVOKE_ROLES[number])
+
+    if (!hasManagerRole) {
+      const { data: veliToken } = await TokenRepository.findVeliTokenByJti(jti)
+      if (!veliToken || veliToken.issued_by !== user.id) {
+        return { ok: false, error: 'Bu linki yalnızca oluşturan kişi veya yöneticiler devre dışı bırakabilir.' }
+      }
+    }
+
     const { error } = await TokenRepository.insertRevokedToken({
       jti,
       token_type: tokenType,
-      revoked_by: ability.userId,
+      revoked_by: user.id,
       reason:     reason?.slice(0, 200) ?? null,
     })
 
@@ -86,8 +92,9 @@ export const TokenService = {
   },
 
   async listRevokedTokens() {
-    const ability = await getAbility()
-    if (!ability || ability.cannot(P.ZUMRE.MANAGE)) return { data: null, error: 'Yetersiz yetki' }
+    const profile = await getCurrentProfile()
+    const hasManagerRole = REVOKE_ROLES.includes(profile?.role as typeof REVOKE_ROLES[number])
+    if (!hasManagerRole) return { data: null, error: 'Yetersiz yetki' }
 
     const { data, error } = await TokenRepository.listRevokedTokens()
     return { data, error: error?.message }
