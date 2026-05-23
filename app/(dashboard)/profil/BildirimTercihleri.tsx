@@ -12,8 +12,7 @@ export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Prop
   const formRef = useRef<HTMLFormElement>(null)
 
   return (
-    <div className="px-4 md:px-6 pb-6 max-w-lg mx-auto">
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
+    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-4">Bildirim Tercihleri</h2>
         <form ref={formRef} action={saveNotificationPreferences} className="space-y-4">
           <div>
@@ -51,7 +50,6 @@ export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Prop
             Kaydet
           </button>
         </form>
-      </div>
     </div>
   )
 }
