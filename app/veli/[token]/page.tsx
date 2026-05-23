@@ -168,18 +168,18 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
-        <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center overflow-hidden">
             <p className="text-3xl font-bold text-gray-900">{total}</p>
-            <p className="text-xs text-gray-500 mt-1">Toplam Ödev</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 mt-1">Toplam Ödev</p>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center">
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 text-center overflow-hidden">
             <p className="text-3xl font-bold text-green-700">{done}</p>
-            <p className="text-xs text-green-600 mt-1">Tamamlandı</p>
+            <p className="text-[10px] sm:text-xs text-green-600 mt-1">Tamamlandı</p>
           </div>
-          <div className={`border rounded-2xl p-4 text-center ${missing > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
+          <div className={`border rounded-2xl p-4 text-center overflow-hidden col-span-2 sm:col-span-1 ${missing > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'}`}>
             <p className={`text-3xl font-bold ${missing > 0 ? 'text-red-600' : 'text-gray-400'}`}>{missing}</p>
-            <p className={`text-xs mt-1 ${missing > 0 ? 'text-red-500' : 'text-gray-400'}`}>Eksik/Yapılmadı</p>
+            <p className={`text-[10px] sm:text-xs mt-1 ${missing > 0 ? 'text-red-500' : 'text-gray-400'}`}>Eksik/Yapılmadı</p>
           </div>
         </div>
 
@@ -282,15 +282,15 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
             </div>
             {absenceDanger && <p className="text-xs text-red-600 font-medium mb-2">Devamsızlık sınırı aşıldı — lütfen okulla iletişime geçin.</p>}
             {absenceWarn && <p className="text-xs text-yellow-600 font-medium mb-2">Devamsızlık sınırına yaklaşılıyor.</p>}
-            <div className="grid grid-cols-3 gap-2 mt-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
               {[
                 { label: 'Yok', count: attendanceRecords.filter(r => r.status === 'absent').length, color: 'text-red-600' },
                 { label: 'Geç', count: attendanceRecords.filter(r => r.status === 'late').length, color: 'text-yellow-600' },
                 { label: 'Mazeretli', count: attendanceRecords.filter(r => r.status === 'excused').length, color: 'text-blue-600' },
               ].map(({ label, count, color }) => (
-                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center">
+                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center overflow-hidden">
                   <p className={`text-xl font-bold ${color}`}>{count}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{label}</p>
                 </div>
               ))}
             </div>
