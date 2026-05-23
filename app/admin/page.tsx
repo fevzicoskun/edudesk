@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import ProvisionForm from './ProvisionForm'
+import DeleteSchoolButton from './DeleteSchoolButton'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +45,7 @@ export default async function AdminPage() {
                     <th className="pb-2 font-medium text-center">Öğrenci</th>
                     <th className="pb-2 font-medium">Plan</th>
                     <th className="pb-2 font-medium">Durum</th>
+                    <th className="pb-2 font-medium"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -61,6 +63,9 @@ export default async function AdminPage() {
                         }`}>
                           {s.status}
                         </span>
+                      </td>
+                      <td className="py-2.5 text-right">
+                        <DeleteSchoolButton schoolId={s.school_id} schoolName={s.school_name} />
                       </td>
                     </tr>
                   ))}

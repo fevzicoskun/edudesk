@@ -107,3 +107,36 @@ export async function provisionSchool(
 
   return { success: true }
 }
+
+export async function deleteSchool(
+  schoolId: string
+): Promise<{ error?: string }> {
+  const user = await getCurrentUser()
+  if (!user) return { error: 'Giriş gerekli' }
+
+  const db = createServiceClient()
+
+  const { data: adminRow } = await db
+    .from('platform_admins')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (!adminRow) return { error: 'Yetki yok' }
+
+  // Auth user ID'lerini sil öncesi topla (profiles RPC'de silinecek)
+  const { data: profiles } = await db
+    .from('profiles')
+    .select('id')
+    .eq('school_id', schoolId)
+
+  // Tüm okul verisini tek transaction'da sil
+  const { error: delErr } = await db.rpc('delete_school', { p_school_id: schoolId })
+  if (delErr) return { error: 'Silme hatası: ' + delErr.message }
+
+  // Auth kullanıcılarını sil
+  for (const p of profiles ?? []) {
+    await db.auth.admin.deleteUser(p.id)
+  }
+
+  return {}
+}
