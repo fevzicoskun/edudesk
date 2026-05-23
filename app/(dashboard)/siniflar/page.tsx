@@ -68,7 +68,7 @@ export default async function SiniflarPage() {
             ...c,
             students: c.students.filter(s => !s.deleted_at),
           }))}
-          canManageClasses={canManageClasses}
+          isBaskan={canManageClasses}
         />
       )}
     </div>

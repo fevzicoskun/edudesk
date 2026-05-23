@@ -1,4 +1,4 @@
-﻿u import { createClient } from '@/src/infrastructure/supabase/server'
+﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
