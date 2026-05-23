@@ -118,17 +118,17 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
                   name="meeting_date"
                   required
                   defaultValue={todayStr}
-                  className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-2 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex-1 min-w-[8rem]">
+              <div className="flex-1 min-w-[6rem] sm:min-w-[8rem]">
                 <label className="block text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-1">Başlık</label>
                 <input
                   name="title"
                   required
                   minLength={2}
                   placeholder="Başlık…"
-                  className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-2.5 py-2 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
               <div>
@@ -136,7 +136,7 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
                 <select
                   name="meeting_type"
                   defaultValue="genel"
-                  className="px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="px-2.5 py-2 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="genel">Genel</option>
                   <option value="veli">Veli Toplantısı</option>
@@ -156,7 +156,7 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
                     key={p}
                     type="button"
                     onClick={() => setSelectedPriority(prev => prev === p ? '' : p)}
-                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-all ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all ${
                       selectedPriority === p
                         ? `${PRIORITY[p].badge} border-transparent`
                         : 'bg-white dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
@@ -177,7 +177,7 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
                 name="notes"
                 rows={2}
                 placeholder="Ek notlar…"
-                className="w-full px-2.5 py-1.5 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className="w-full px-2.5 py-2 text-xs border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>
 
