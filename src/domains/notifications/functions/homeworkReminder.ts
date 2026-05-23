@@ -116,21 +116,25 @@ export const homeworkReminderFn = inngest.createFunction(
 
     if (teacherEmailTargets.length) {
       await step.run('send-teacher-emails', async () => {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           teacherEmailTargets.map((c) =>
             mailer.sendMail({
               from: `EduDesk <${process.env.SMTP_USER}>`,
               to: c.teacherEmail,
               subject: `Ödev Hatırlatması: ${c.title}`,
-              html: `
+              html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
                 <p>Merhaba,</p>
                 <p><strong>${c.title}</strong> adlı ödevinizin teslim tarihi <strong>${c.dueDate}</strong>.</p>
                 <p>${c.daysBefore === 1 ? 'Yarın teslim alınacak.' : `${c.daysBefore} gün kaldı.`}</p>
                 <p>EduDesk'e giriş yaparak öğrenci teslim durumlarını görüntüleyebilirsiniz.</p>
-              `,
+              </body></html>`,
             })
           )
         )
+        const failed = results.filter((r) => r.status === 'rejected')
+        if (failed.length) {
+          console.error(`[homeworkReminder] ${failed.length}/${teacherEmailTargets.length} öğretmen e-postası gönderilemedi`, failed.map((r) => (r as PromiseRejectedResult).reason))
+        }
       })
     }
 
@@ -151,7 +155,7 @@ export const homeworkReminderFn = inngest.createFunction(
             .from('homework_submissions')
             .select('student_id')
             .eq('homework_id', hw.homeworkId)
-            .eq('status', 'teslim_edildi'),
+            .eq('status', 'yapildi'),
         ])
 
         if (!students?.length) continue
@@ -174,21 +178,25 @@ export const homeworkReminderFn = inngest.createFunction(
 
     if (veliEmails.length) {
       await step.run('send-veli-emails', async () => {
-        await Promise.allSettled(
+        const results = await Promise.allSettled(
           veliEmails.map((v) =>
             mailer.sendMail({
               from: `EduDesk <${process.env.SMTP_USER}>`,
               to: v.to,
               subject: `Ödev Hatırlatması — ${v.ogrenciAdi}`,
-              html: `
+              html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
                 <p>Sayın veli,</p>
                 <p><strong>${v.ogrenciAdi}</strong> adlı öğrencinizin <strong>"${v.odevBaslik}"</strong> ödevi <strong>${v.dueDate}</strong> tarihinde teslim edilmesi gerekmektedir.</p>
                 <p>Lütfen ödevin tamamlandığından emin olunuz.</p>
                 <p style="color:#888;font-size:12px;margin-top:16px">EduDesk — Okul Takip Sistemi</p>
-              `,
+              </body></html>`,
             })
           )
         )
+        const failed = results.filter((r) => r.status === 'rejected')
+        if (failed.length) {
+          console.error(`[homeworkReminder] ${failed.length}/${veliEmails.length} veli e-postası gönderilemedi`, failed.map((r) => (r as PromiseRejectedResult).reason))
+        }
       })
     }
 
