@@ -58,6 +58,8 @@ EduDesk'i bir adım öteye taşıyoruz. Artık sadece "zümre takip" değil, **o
 | **Öğretmen Dosyası** | MEB belge kontrol listesi, PDF export |
 | **Kişisel Notlar** | Not editörü, Excel export |
 | **Dark Mode** | Sistem teması veya manuel geçiş |
+| **Öğretmen Anasayfası** | Risk uyarıları, ödev özeti, interaktif takvim (ödev teslim tarihleri + resmi tatiller, dark mode) |
+| **Duyuru Sistemi** | Müdür/MY'den öğretmenlere tam ekran modal duyuru; rol bazlı hedefleme |
 
 ### Geliştirilmekte Olan Özellikler (AkademikOS v2)
 
@@ -147,6 +149,7 @@ Stratejik karar: Destek planı."
 | AI | OpenAI GPT-4 (planlı) |
 | Mobil UX | PWA (planlı) |
 | Tarih | date-fns v4 (tr locale) |
+| Test | Vitest (unit + integration + permissions, v8 coverage) |
 | Loglama | Pino |
 | Error Tracking | Sentry |
 | Deploy | Vercel |
@@ -194,4 +197,16 @@ MIT License — Eğitim amaçlı kullanım serbest.
 
 ---
 
-*Son güncelleme: Mayıs 2026 — AkademikOS v2 planı onaylandı* 🚀
+---
+
+## 📋 Son Değişiklikler
+
+### Mayıs 2026
+- **Test altyapısı:** Vitest unit + integration + permissions projeleri kuruldu; HomeworkService, UserService, AnnouncementService, TokenService, ClassService için 99 unit test yazıldı
+- **RLS bug fix:** Öğretmen artık kendi oluşturduğu veli tokenını devre dışı bırakabiliyor (`revoked_tokens` INSERT policy güncellendi — `issued_by = auth.uid()` koşulu eklendi)
+- **Takvim iyileştirmesi:** Öğretmen anasayfasındaki CalendarWidget artık ödev teslim tarihlerini gösteriyor; güne tıklanınca ödev/tatil detayı açılıyor; dark mode ve kompakt tasarım eklendi
+- **Duyuru sistemi:** Müdür ve MY'den öğretmenlere rol bazlı tam ekran modal duyuru gönderimi
+
+---
+
+*Son güncelleme: 23 Mayıs 2026 — Test coverage ve dashboard iyileştirmeleri* 🚀

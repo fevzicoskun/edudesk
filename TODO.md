@@ -35,6 +35,9 @@
 - [x] Pino structured logging + Sentry error tracking
 - [x] Defense-in-depth (explicit school_id filtreleri)
 - [x] Tüm bug fix'ler (BUG-001 ... BUG-017)
+- [x] Vitest test altyapısı — unit / integration / permissions projeleri, v8 coverage provider
+- [x] RLS bug fix: öğretmen kendi oluşturduğu veli tokenını revoke edebilir (migration 20260524110000)
+- [x] RLS policy dokümantasyonu: `revoked_tokens` policy drift migration (20260524100000)
 
 ### Özellikler (EduDesk v1)
 - [x] Sınıf & öğrenci yönetimi (toplu ekleme, liste, notlar, Excel export)
@@ -53,6 +56,10 @@
 - [x] Ders Programı modülü — PDF/resim yükleme, öğretmen/sınıf atama
 - [x] Müdür Yardımcısı dashboard
 - [x] Müdür dashboard
+- [x] Öğretmen anasayfası: risk uyarıları, ödev özeti, interaktif takvim (ödev teslim tarihleri + tatiller, dark mode, gün tıklama detayı)
+- [x] Duyuru sistemi: müdür/MY → öğretmen tam ekran modal duyuru, rol bazlı hedefleme
+- [x] Unit testler: HomeworkService, UserService, AnnouncementService, TokenService, ClassService (99 test, tümü geçiyor)
+- [x] Integration testler: HomeworkService RBAC, UserService RBAC, token RLS senaryoları
 
 ---
 
@@ -977,6 +984,6 @@ FAZ C: Launch (25-50 Okul — Ay 7-12)
 
 ---
 
-**Son Güncelleme:** 22 Mayıs 2026  
-**Versiyon:** 2.0  
-**Durum:** Plan onaylandı, Faz 1 Sprint 1 başlangıç bekleniyor
+**Son Güncelleme:** 23 Mayıs 2026  
+**Versiyon:** 2.1  
+**Durum:** Test altyapısı kuruldu, dashboard iyileştirmeleri tamamlandı — Faz 1 Sprint 1 başlangıç bekleniyor

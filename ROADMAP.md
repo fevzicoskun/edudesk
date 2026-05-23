@@ -477,6 +477,13 @@ Toplam: 24 hafta (6 ay) — Yarı zamanlı çalışma
 
 ## 📞 Sonraki Adımlar
 
+### Tamamlanan Altyapı (Mayıs 2026)
+
+- [x] Vitest test altyapısı (unit / integration / permissions, 99 test)
+- [x] RLS güvenlik fix: öğretmen kendi veli tokenını devre dışı bırakabiliyor
+- [x] Öğretmen anasayfası takvim iyileştirmesi (ödev tarihleri, dark mode)
+- [x] Duyuru sistemi (müdür/MY → öğretmen)
+
 ### Hemen Yapılacaklar (Bu Hafta)
 1. [x] Planı onayla
 2. [ ] Sprint 1 başlangıç
@@ -507,4 +514,4 @@ Toplam: 24 hafta (6 ay) — Yarı zamanlı çalışma
 
 ---
 
-*Son güncelleme: Mayıs 2026 — AkademikOS v2 planı onaylandı* 🚀
+*Son güncelleme: 23 Mayıs 2026 — Test altyapısı, RLS fix, dashboard takvim iyileştirmeleri tamamlandı* 🚀
