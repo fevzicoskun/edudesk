@@ -24,7 +24,7 @@ export default async function SiniflarPage() {
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{egitimYili} Eğitim Yılı</p>
       </div>
 
-      {canManageClasses ? (
+      {canManageClasses && (
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Yeni Sınıf Ekle</h2>
           <form action={createClass} className="flex gap-2 flex-wrap">
@@ -51,12 +51,6 @@ export default async function SiniflarPage() {
               Ekle
             </button>
           </form>
-        </div>
-      ) : (
-        <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 mb-5">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            Sınıf oluşturma ve silme yetkisi Müdür Yardımcısı&apos;na aittir.
-          </p>
         </div>
       )}
 

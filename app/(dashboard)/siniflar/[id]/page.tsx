@@ -41,6 +41,8 @@ export default async function SinifDetayPage({
   const students = studentsResult.data ?? []
   const egitimYili = getEgitimYili()
 
+  const canManage = profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
+
   const maxNumber = students.reduce((max, s) => {
     const n = parseInt(s.student_number ?? '', 10)
     return isNaN(n) ? max : Math.max(max, n)
@@ -60,33 +62,35 @@ export default async function SinifDetayPage({
         <SinifExportButton classId={id} className={cls.name} />
       </div>
 
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğrenci Ekle</h2>
-          <BulkStudentModal classId={id} maxNumber={maxNumber} />
+      {canManage && (
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğrenci Ekle</h2>
+            <BulkStudentModal classId={id} maxNumber={maxNumber} />
+          </div>
+          <form action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
+            <input
+              name="full_name"
+              type="text"
+              required
+              placeholder="Ad Soyad"
+              className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              name="student_number"
+              type="text"
+              placeholder="Numara"
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm w-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            >
+              Ekle
+            </button>
+          </form>
         </div>
-        <form action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
-          <input
-            name="full_name"
-            type="text"
-            required
-            placeholder="Ad Soyad"
-            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <input
-            name="student_number"
-            type="text"
-            placeholder="Numara"
-            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm w-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-          >
-            Ekle
-          </button>
-        </form>
-      </div>
+      )}
 
       {students.length === 0 ? (
         <div className="text-center py-20 text-gray-400 text-sm">Bu sınıfta henüz öğrenci yok.</div>
@@ -94,7 +98,7 @@ export default async function SinifDetayPage({
         <OgrenciListesi
           students={students}
           classId={id}
-          canDelete={profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'}
+          canDelete={canManage}
         />
       )}
     </div>
