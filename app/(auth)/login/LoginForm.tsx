@@ -51,9 +51,8 @@ export default function LoginForm() {
       </button>
 
       <p className="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
-        Hesabın yok mu?{' '}
-        <a href="/kayit" className="text-blue-600 hover:underline font-medium">Kayıt Ol</a>
-        {' '}· Okul kodunu müdürünüzden alın.
+        Okulunuz için EduDesk?{' '}
+        <a href="/kayit" className="text-blue-600 hover:underline font-medium">Bilgi alın</a>
       </p>
     </form>
   )

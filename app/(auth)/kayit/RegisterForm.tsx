@@ -1,13 +1,32 @@
 'use client'
 
 import { useActionState } from 'react'
-import { register } from '@/src/domains/auth/actions'
 import Link from 'next/link'
+import { applySchool } from './actions'
 
 const inputCls = 'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 placeholder:text-gray-400 dark:placeholder:text-slate-500'
 
 export default function RegisterForm() {
-  const [state, formAction, isPending] = useActionState(register, null)
+  const [state, formAction, isPending] = useActionState(applySchool, null)
+
+  if (state?.success) {
+    return (
+      <div className="text-center space-y-3 py-4">
+        <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+          <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">Başvurunuz alındı!</h3>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          En kısa sürede sizinle iletişime geçeceğiz.
+        </p>
+        <Link href="/login" className="inline-block text-sm text-blue-600 hover:underline font-medium mt-2">
+          Giriş sayfasına dön
+        </Link>
+      </div>
+    )
+  }
 
   return (
     <form action={formAction} className="space-y-4">
@@ -18,36 +37,66 @@ export default function RegisterForm() {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Ad Soyad</label>
-        <input name="full_name" type="text" required autoComplete="name" placeholder="Ahmet Yılmaz" className={inputCls} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">E-posta</label>
-        <input name="email" type="email" required autoComplete="email" placeholder="ornek@okul.com" className={inputCls} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Şifre</label>
-        <input name="password" type="password" required autoComplete="new-password" placeholder="En az 6 karakter" className={inputCls} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Branş</label>
-        <input name="subject" type="text" required placeholder="Matematik, Türkçe…" className={inputCls} />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Okul Kodu</label>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Okul Adı <span className="text-red-500">*</span>
+        </label>
         <input
-          name="school_code"
+          name="school_name"
           type="text"
           required
-          placeholder="Müdürünüzden alın (örn: ABK729)"
-          className={inputCls + ' uppercase tracking-widest'}
-          style={{ fontVariantNumeric: 'tabular-nums' }}
+          placeholder="Bahçeşehir Anadolu Lisesi"
+          className={inputCls}
         />
-        <p className="text-xs text-gray-400 mt-1">Okul kodunu müdürünüzden veya müdür yardımcınızdan alın.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Yetkili Adı Soyadı <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="contact_name"
+          type="text"
+          required
+          placeholder="Ahmet Yılmaz"
+          className={inputCls}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          E-posta <span className="text-red-500">*</span>
+        </label>
+        <input
+          name="email"
+          type="email"
+          required
+          placeholder="mudur@okul.com"
+          className={inputCls}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Telefon
+        </label>
+        <input
+          name="phone"
+          type="tel"
+          placeholder="0532 000 00 00"
+          className={inputCls}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Notunuz
+        </label>
+        <textarea
+          name="note"
+          rows={3}
+          placeholder="Kaç öğretmen var, ne tür ihtiyaçlarınız var..."
+          className={inputCls + ' resize-none'}
+        />
       </div>
 
       <button
@@ -55,7 +104,7 @@ export default function RegisterForm() {
         disabled={isPending}
         className="w-full bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        {isPending ? 'Kayıt yapılıyor...' : 'Kayıt Ol'}
+        {isPending ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
       </button>
 
       <p className="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
