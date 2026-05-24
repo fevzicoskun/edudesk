@@ -66,9 +66,13 @@ export default function YoklamaClient({ classes }: Props) {
       }))
       await saveYoklama(classId, date, entries)
       const absentCount = entries.filter(e => e.status !== 'present').length
-      setToast(absentCount > 0
-        ? `Kaydedildi. ${absentCount} öğrencinin velisine bildirim gönderiliyor.`
-        : 'Kaydedildi.')
+      if (absentCount > 0) {
+        const sendAt = new Date(Date.now() + 45 * 60 * 1000)
+        const saat   = sendAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+        setToast(`Kaydedildi. ${absentCount} öğrencinin velisine bildirim saat ${saat}'da gönderilecek.`)
+      } else {
+        setToast('Kaydedildi.')
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Kaydedilemedi')
     } finally {
