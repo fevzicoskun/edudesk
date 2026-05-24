@@ -65,11 +65,15 @@ export async function saveYoklama(
     .map(e => e.studentId)
 
   if (absentIds.length > 0) {
-    await inngest.send(
-      absentIds.map(studentId => ({
-        name: 'attendance/absent' as const,
-        data: { studentId, classId, date, schoolId: profile.school_id },
-      }))
-    )
+    try {
+      await inngest.send(
+        absentIds.map(studentId => ({
+          name: 'attendance/absent' as const,
+          data: { studentId, classId, date, schoolId: profile.school_id },
+        }))
+      )
+    } catch {
+      // Bildirim gönderilemedi, yoklama kaydı yine de tamamlandı
+    }
   }
 }
