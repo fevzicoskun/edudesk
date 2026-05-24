@@ -59,10 +59,10 @@ export default async function KullanicilarPage() {
   const isMudur = profile.role === 'mudur'
   const canAssign = isMudur || isMY
 
-  // Müdür: sadece mudur_yardimcisi atayabilir
+  // Müdür: mudur_yardimcisi dahil tüm alt rolleri atayabilir
   // Müdür yardımcısı: zumre_baskani ve ogretmen atayabilir
   const assignableRoles = (isMudur
-    ? ['mudur_yardimcisi']
+    ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
     : ['zumre_baskani', 'ogretmen']) as Role[]
 
   return (
@@ -92,9 +92,10 @@ export default async function KullanicilarPage() {
           <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
             {users.map((u) => {
               const isSelf = u.id === user.id
-              // MY yalnızca zumre_baskani satırlarında rol düşürebilir
+              // Müdür: kendisi ve diğer müdürler hariç herkesi düzenleyebilir
+              // MY: yalnızca ogretmen ve zumre_baskani satırlarını düzenleyebilir
               const canEditThis = canAssign && !isSelf && (
-                isMudur ? assignableRoles.includes(u.role) : ['ogretmen', 'zumre_baskani'].includes(u.role)
+                isMudur ? u.role !== 'mudur' : ['ogretmen', 'zumre_baskani'].includes(u.role)
               )
               const editableRoles = assignableRoles
               const stats = sessionMap.get(u.id)
@@ -141,7 +142,7 @@ export default async function KullanicilarPage() {
                   <td className="px-3 py-2 sm:px-4 sm:py-3">
                     {canAssign && !isSelf && (
                       isMudur
-                        ? u.role === 'mudur_yardimcisi'
+                        ? u.role !== 'mudur'
                         : ['zumre_baskani', 'ogretmen'].includes(u.role)
                     ) && (
                       <DeleteButton userId={u.id} userName={u.full_name} />
