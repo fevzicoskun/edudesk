@@ -1,4 +1,5 @@
 import LoginForm from './LoginForm'
+import EduDeskLogo from '@/components/EduDeskLogo'
 
 export default async function LoginPage({
   searchParams,
@@ -11,7 +12,7 @@ export default async function LoginPage({
       <div className="w-full max-w-md px-4">
         <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-700 p-8">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">EduDesk</h1>
+            <EduDeskLogo size="lg" className="mb-2" />
             <p className="text-gray-500 dark:text-slate-400 mt-1 text-sm">Hesabınıza giriş yapın</p>
           </div>
           {registered === '1' && (

@@ -10,6 +10,7 @@ import ThemeToggle from '@/components/ThemeToggle'
 import MobileNavDrawer from '@/components/layout/MobileNavDrawer'
 import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
+import EduDeskLogo from '@/components/EduDeskLogo'
 
 type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
 
@@ -104,7 +105,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       {/* Mobile header */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4">
         <div className="flex items-center gap-2">
-          <p className="font-bold text-gray-900 dark:text-slate-100">EduDesk</p>
+          <EduDeskLogo size="sm" />
           {isYoneticiUser && (
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold ${
               isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
@@ -124,7 +125,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       <aside className="hidden md:flex w-60 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 flex-col shrink-0">
         <div className="px-5 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <div>
-            <p className="font-bold text-gray-900 dark:text-slate-100 text-base">EduDesk</p>
+            <EduDeskLogo size="md" />
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{getEgitimYili()}</p>
           </div>
           <div className="flex items-center gap-1">
