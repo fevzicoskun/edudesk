@@ -1,5 +1,6 @@
 import { SchoolRepository } from '../repositories/SchoolRepository'
 import { getCurrentUser } from '@/src/shared/auth'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const OnboardingService = {
   async setupSchool(name: string): Promise<{ error?: string }> {
@@ -26,6 +27,11 @@ export const OnboardingService = {
     })
 
     if (error) return { error: error.message }
+
+    // school_id'yi JWT metadata'ya göm — middleware DB sorgusu yapmadan okuyabilsin
+    const supabase = await createClient()
+    await supabase.auth.updateUser({ data: { school_id: school.id } })
+
     return {}
   },
 
@@ -46,6 +52,11 @@ export const OnboardingService = {
     })
 
     if (error) return { error: error.message }
+
+    // school_id'yi JWT metadata'ya göm — middleware DB sorgusu yapmadan okuyabilsin
+    const supabase = await createClient()
+    await supabase.auth.updateUser({ data: { school_id: school.id } })
+
     return {}
   },
 }

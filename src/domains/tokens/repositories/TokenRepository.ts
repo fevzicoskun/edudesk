@@ -2,6 +2,17 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import type { TokenType } from '../types'
 
 export const TokenRepository = {
+  async findClassById(classId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('classes')
+      .select('id')
+      .eq('id', classId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+      .single()
+  },
+
   async findStudentById(studentId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase

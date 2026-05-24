@@ -23,7 +23,7 @@ export default async function OnboardingPage() {
 
     const slug = school?.slug ?? ''
     // Kurulum tamamsa dashboard'a geç
-    if (/^[A-Z]{3}\d{3}$/.test(slug)) redirect('/anasayfa')
+    if (/^[A-Z]{3,4}\d{3,4}$/.test(slug)) redirect('/anasayfa')
 
     return (
       <MudurOnboardingForm

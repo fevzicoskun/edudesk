@@ -37,8 +37,12 @@ export const TokenService = {
     const user = await getCurrentUser()
     if (!user) throw new Error('Giriş gerekli')
 
-    const token = await createPublicToken('yoklama', classId, 1, { date })
-    return token
+    const school_id = await requireSchoolId()
+
+    const { data: cls } = await TokenRepository.findClassById(classId, school_id)
+    if (!cls) throw new Error('Sınıf bulunamadı')
+
+    return createPublicToken('yoklama', classId, 1, { date, school_id })
   },
 
   async revokeToken(

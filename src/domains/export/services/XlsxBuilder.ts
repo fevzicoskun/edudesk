@@ -68,6 +68,8 @@ export async function uploadToStorage(
 
 // ─── Data fetchers ────────────────────────────────────────────
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
 async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   const db = createServiceClient()
   let q = db
@@ -78,8 +80,14 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     .limit(2000)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
-  if (params.since) q = q.gte('due_date', params.since)
-  if (params.until) q = q.lte('due_date', params.until)
+  if (params.since) {
+    if (!DATE_RE.test(params.since)) throw new Error('Geçersiz tarih formatı: since')
+    q = q.gte('due_date', params.since)
+  }
+  if (params.until) {
+    if (!DATE_RE.test(params.until)) throw new Error('Geçersiz tarih formatı: until')
+    q = q.lte('due_date', params.until)
+  }
 
   const { data, error } = await q
   if (error) throw new Error(`Ödevler sorgu hatası: ${error.message}`)

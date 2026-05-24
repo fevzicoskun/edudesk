@@ -4,7 +4,10 @@ import { withInternalAuth } from '@/src/infrastructure/api/middleware'
 import { parseSearchParams } from '@/src/infrastructure/api/validation'
 import { apiOk, apiErr } from '@/src/infrastructure/api/response'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { trackedQuery } from '@/src/infrastructure/observability/slow-query'
+import type { Ability } from '@/src/shared/authorization'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -15,6 +18,42 @@ const QuerySchema = z.object({
   student_id: z.string().uuid().optional(),
   period:     z.enum(['7d', '30d', '90d']).default('30d'),
 })
+
+// ─── Yetki yardımcıları ───────────────────────────────────────────────────────
+
+const FULL_ACCESS_ROLES = ['mudur', 'mudur_yardimcisi'] as const
+
+/**
+ * Çağıran kullanıcının hedef öğretmenin raporunu görme yetkisi var mı?
+ *
+ *   mudur / mudur_yardimcisi  → okuldaki herkesi görebilir
+ *   zumre_baskani             → aynı branştaki öğretmenleri görebilir
+ *   ogretmen                  → sadece kendi verisi
+ */
+async function canViewTeacherReport(
+  ability:          Ability,
+  targetTeacherId:  string,
+  supabase:         SupabaseClient,
+): Promise<boolean> {
+  if (targetTeacherId === ability.userId) return true
+
+  const callerProfile = await getCurrentProfile()
+  if (!callerProfile) return false
+
+  if ((FULL_ACCESS_ROLES as readonly string[]).includes(callerProfile.role)) return true
+
+  if (callerProfile.role === 'zumre_baskani' && callerProfile.subject) {
+    const { data: targetProfile } = await supabase
+      .from('profiles')
+      .select('subject')
+      .eq('id', targetTeacherId)
+      .eq('school_id', ability.schoolId)
+      .single()
+    return targetProfile?.subject === callerProfile.subject
+  }
+
+  return false
+}
 
 const PERIOD_DAYS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
@@ -108,6 +147,13 @@ export const GET = withInternalAuth(null, async (req, ctx) => {
   // ── teacher report ───────────────────────────────────────────────────────────
   if (type === 'teacher') {
     const targetId = teacher_id ?? ctx.ability.userId
+
+    if (targetId !== ctx.ability.userId) {
+      const allowed = await canViewTeacherReport(ctx.ability, targetId, supabase)
+      if (!allowed) {
+        return NextResponse.json(apiErr('UNAUTHORIZED', 'Bu öğretmenin raporunu görme yetkiniz yok', ctx), { status: 403 })
+      }
+    }
 
     // Fetch IDs first for the submissions subquery
     const { data: hwCreated } = await trackedQuery('reporting.teacher.hwIds', async () =>

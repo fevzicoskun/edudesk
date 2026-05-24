@@ -44,7 +44,7 @@ export default function JoinSchoolForm() {
               name="code"
               type="text"
               required
-              placeholder="Müdürünüzden alın (örn: ABK729)"
+              placeholder="Müdürünüzden alın (örn: ABCD1234)"
               className="w-full rounded-xl border border-gray-200 px-4 py-3 text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase tracking-widest"
             />
           </div>

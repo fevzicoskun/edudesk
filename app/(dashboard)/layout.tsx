@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       .single()
 
     const slug = school?.slug ?? ''
-    if (!/^[A-Z]{3}\d{3}$/.test(slug)) {
+    if (!/^[A-Z]{3,4}\d{3,4}$/.test(slug)) {
       redirect('/onboarding')
     }
   }

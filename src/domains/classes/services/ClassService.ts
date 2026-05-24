@@ -5,6 +5,7 @@ import {
   softDeleteStudent, restoreStudent,
   insertStudent, insertStudents,
   insertStudentNote, deleteStudentNote,
+  findClassInSchool, findStudentInSchool,
 } from '@/src/queries/classes'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { guard } from '@/src/shared/authorization'
@@ -61,6 +62,9 @@ export const ClassService = {
     const ability   = await requireAbility()
     guard(ability, P.STUDENTS.CREATE)
 
+    const { data: cls } = await findClassInSchool(classId, ability.schoolId)
+    if (!cls) throw new Error('Sınıf bulunamadı')
+
     await insertStudent({
       class_id: classId, full_name: data.full_name,
       student_number: data.student_number ?? null, school_id: ability.schoolId,
@@ -72,6 +76,9 @@ export const ClassService = {
 
     const ability   = await requireAbility()
     guard(ability, P.STUDENTS.CREATE)
+
+    const { data: cls } = await findClassInSchool(classId, ability.schoolId)
+    if (!cls) throw new Error('Sınıf bulunamadı')
 
     const valid = students
       .map(s => ({ full_name: s.full_name.trim().slice(0, 120), student_number: s.student_number?.slice(0, 20) ?? null }))
@@ -106,6 +113,9 @@ export const ClassService = {
   async addStudentNote(studentId: string, data: { body: string }) {
     const ability   = await requireAbility()
     guard(ability, P.NOTES.CREATE)
+
+    const { data: student } = await findStudentInSchool(studentId, ability.schoolId)
+    if (!student) throw new Error('Öğrenci bulunamadı')
 
     await insertStudentNote({ teacher_id: ability.userId, student_id: studentId, body: data.body, school_id: ability.schoolId })
   },

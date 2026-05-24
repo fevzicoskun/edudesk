@@ -103,3 +103,17 @@ export async function insertStudentNote(data: {
   const supabase = await createClient()
   return supabase.from('student_notes').insert(data)
 }
+
+export async function findClassInSchool(classId: string, schoolId: string) {
+  const supabase = await createClient()
+  return supabase.from('classes').select('id')
+    .eq('id', classId).eq('school_id', schoolId)
+    .is('deleted_at', null).single()
+}
+
+export async function findStudentInSchool(studentId: string, schoolId: string) {
+  const supabase = await createClient()
+  return supabase.from('students').select('id')
+    .eq('id', studentId).eq('school_id', schoolId)
+    .is('deleted_at', null).single()
+}
