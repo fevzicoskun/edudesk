@@ -77,7 +77,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     .order('due_date', { ascending: false })
     .limit(2000)
 
-  if (params.classId) { try { UUID.parse(params.classId); q = q.eq('class_id', params.classId) } catch { /**/ } }
+  if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) q = q.gte('due_date', params.since)
   if (params.until) q = q.lte('due_date', params.until)
 
@@ -119,9 +119,7 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     .order('full_name')
     .limit(2000)
 
-  if (params.classId) {
-    try { UUID.parse(params.classId); q = q.eq('class_id', params.classId) } catch { /**/ }
-  }
+  if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
 
   q = q.is('deleted_at', null)
 

@@ -31,7 +31,7 @@ export default async function MudurStatsWidget() {
   const [profilesRes, studentsRes, classesRes, meetingsRes, sessionsRes] = await Promise.all([
     supabase.from('profiles').select('id, full_name, role, subject').eq('school_id', school_id),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
-    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id),
+    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('school_meetings').select('id, meeting_date, meeting_type').eq('school_id', school_id),
     supabase.from('user_sessions').select('user_id, last_seen_at').eq('school_id', school_id),
   ])

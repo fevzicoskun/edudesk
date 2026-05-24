@@ -40,7 +40,7 @@ export async function restoreHomeworksByClass(classId: string, schoolId: string)
   const supabase = await createClient()
   return supabase.from('homeworks')
     .update({ deleted_at: null, deleted_by: null })
-    .eq('class_id', classId).eq('school_id', schoolId)
+    .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
 }
 
 export async function softDeleteStudentsByClass(classId: string, schoolId: string, deletedBy: string) {
@@ -54,7 +54,7 @@ export async function restoreStudentsByClass(classId: string, schoolId: string) 
   const supabase = await createClient()
   return supabase.from('students')
     .update({ deleted_at: null, deleted_by: null })
-    .eq('class_id', classId).eq('school_id', schoolId)
+    .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
 }
 
 export async function softDeleteStudent(studentId: string, schoolId: string, deletedBy: string) {
