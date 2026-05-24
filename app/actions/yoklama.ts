@@ -51,6 +51,7 @@ export async function saveYoklama(
     class_id:   classId,
     student_id: e.studentId,
     teacher_id: user.id,
+    school_id:  profile.school_id,
     date,
     status:     e.status,
   }))
