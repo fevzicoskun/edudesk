@@ -17,7 +17,7 @@ type FilterParams = {
 }
 
 const selectCls =
-  'px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all cursor-pointer'
+  'px-3 py-2 bg-white border border-gray-200 rounded-xl text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all cursor-pointer'
 
 export default function OdevlerFilterBar({
   classes,
@@ -109,7 +109,7 @@ export default function OdevlerFilterBar({
           placeholder="Ödev başlığında ara..."
           value={localQ}
           onChange={e => setLocalQ(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
+          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
         />
       </div>
       <div className="flex flex-wrap gap-2">

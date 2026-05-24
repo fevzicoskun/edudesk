@@ -7,7 +7,7 @@ import Link from 'next/link'
 type ClassItem = { id: string; name: string; grade: number }
 
 const field =
-  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
+  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
 export default function HomeworkForm({ classes }: { classes: ClassItem[] }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)

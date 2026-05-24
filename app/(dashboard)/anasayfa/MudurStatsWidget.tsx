@@ -12,7 +12,7 @@ function StatCard({ value, label, sub, href, gradient }: {
 }) {
   const inner = (
     <div className={`rounded-xl p-3 sm:p-4 h-full bg-gradient-to-br shadow-md transition-all ${href ? 'hover:scale-[1.02] hover:shadow-lg' : ''} ${gradient}`}>
-      <p className="text-2xl sm:text-3xl font-bold leading-none text-white">{value}</p>
+      <p className="text-2xl sm:text-3xl font-bold leading-none text-white tabular-nums truncate">{value}</p>
       <p className="text-xs sm:text-sm font-medium mt-1 text-white/90">{label}</p>
       {sub && <p className="text-[11px] text-white/65 mt-0.5">{sub}</p>}
     </div>

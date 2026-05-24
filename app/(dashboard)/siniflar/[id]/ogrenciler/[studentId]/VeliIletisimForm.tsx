@@ -31,7 +31,7 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
             type="text"
             defaultValue={defaultAd}
             placeholder="Ahmet Yılmaz"
-            className="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -41,7 +41,7 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
             type="email"
             defaultValue={defaultEmail}
             placeholder="veli@ornek.com"
-            className="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -51,7 +51,7 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
             type="tel"
             defaultValue={defaultTelefon}
             placeholder="905XX000000"
-            className="flex-1 min-w-40 px-3 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 min-w-40 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         <div className="flex items-center gap-3 mt-1">

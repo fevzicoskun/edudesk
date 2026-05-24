@@ -28,7 +28,7 @@ export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Prop
           <select
             name="days_before"
             defaultValue={defaultDays}
-            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             {[1, 2, 3, 5, 7].map(d => (
               <option key={d} value={d}>
