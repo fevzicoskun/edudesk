@@ -9,7 +9,7 @@ export const homeworkReminderFn = inngest.createFunction(
     triggers: [{ cron: '0 5 * * *' }], // 08:00 Türkiye saati (UTC+3)
   },
   async ({ step }) => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://edudesk.vercel.app'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://myedudesk.com.tr'
 
     // 1. Önümüzdeki 1-7 gün içinde teslimi olan ödevleri çek
     const candidates = await step.run('fetch-due-homeworks', async () => {

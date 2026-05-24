@@ -81,7 +81,7 @@ export async function provisionSchool(
   }
 
   // 4. Davet e-postası gönder
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://edudesk.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://myedudesk.com.tr'
   try {
     await mailer.sendMail({
       from: `EduDesk <${process.env.SMTP_USER}>`,

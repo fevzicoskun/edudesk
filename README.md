@@ -5,7 +5,7 @@
 
 Türk ortaöğretim öğretmenleri için Next.js + Supabase tabanlı, production-grade okul yönetim platformu. AI destekli akademik analiz, risk tahminleme ve akıllı öneri sistemi ile okulun akademik işletim sistemi.
 
-**Canlı:** https://zumre-takip.vercel.app
+**Canlı:** https://myedudesk.com.tr
 
 ---
 
