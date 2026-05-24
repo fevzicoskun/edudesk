@@ -105,45 +105,70 @@ export default function YoklamaClient({ classes }: Props) {
         ) : students.length === 0 ? (
           <p className="p-6 text-center text-sm text-gray-400">Bu sınıfta öğrenci yok.</p>
         ) : (
-          <ul className="divide-y divide-gray-100 dark:divide-slate-700">
-            {students.map((s, i) => {
-              const status = statuses[s.id] ?? 'present'
-              return (
-                <li key={s.id} className="flex items-center justify-between px-4 py-3">
-                  <span className="text-sm text-gray-800 dark:text-slate-100">
-                    <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums">{i + 1}.</span>
-                    {s.full_name}
-                    {s.student_number && <span className="ml-1.5 text-xs text-gray-400">#{s.student_number}</span>}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => toggle(s.id)}
-                    className={`text-xs font-medium px-3 py-1 rounded-full ring-1 ring-inset transition-colors ${STATUS_COLORS[status]}`}
-                  >
-                    {STATUS_LABELS[status]}
-                  </button>
-                </li>
-              )
-            })}
-          </ul>
+          <>
+            {/* Toplu işlem araç çubuğu */}
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60">
+              <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
+                {students.length} öğrenci
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus])))}
+                  className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                >
+                  Hepsini Mevcut
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus])))}
+                  className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                >
+                  Hepsini Devamsız
+                </button>
+              </div>
+            </div>
+            <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+              {students.map((s, i) => {
+                const status = statuses[s.id] ?? 'present'
+                return (
+                  <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
+                    <span className="text-sm text-gray-800 dark:text-slate-100">
+                      <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums">{i + 1}.</span>
+                      {s.full_name}
+                      {s.student_number && <span className="ml-1.5 text-xs text-gray-400">#{s.student_number}</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggle(s.id)}
+                      className={`text-xs font-semibold min-w-[80px] text-center min-h-[44px] px-3 py-2 rounded-xl ring-1 ring-inset transition-colors ${STATUS_COLORS[status]}`}
+                    >
+                      {STATUS_LABELS[status]}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </>
         )}
       </div>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
       {toast && <p className="text-sm text-green-600 dark:text-green-400">{toast}</p>}
 
-      <button
-        type="button"
-        onClick={handleSave}
-        disabled={saving || loading || students.length === 0}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
-      >
-        {saving ? 'Kaydediliyor…' : 'Kaydet'}
-      </button>
-
-      <p className="text-xs text-gray-400 dark:text-slate-500 text-center">
-        Butona her tıklayınca: Mevcut → Devamsız → Geç → Mevcut
-      </p>
+      <div className="sticky bottom-16 md:bottom-0 md:static bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none pt-2 pb-1 md:py-0">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || loading || students.length === 0}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/25 md:shadow-none"
+        >
+          {saving ? 'Kaydediliyor…' : 'Kaydet'}
+        </button>
+        <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-1.5">
+          Butona her tıklayınca: Mevcut → Devamsız → Geç → Mevcut
+        </p>
+      </div>
     </div>
   )
 }

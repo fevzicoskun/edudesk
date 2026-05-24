@@ -33,6 +33,7 @@ export default function OdevlerFilterBar({
   const router = useRouter()
   const pathname = usePathname()
   const [localQ, setLocalQ] = useState(currentParams.q ?? '')
+  const [showFilters, setShowFilters] = useState(false)
   const paramsRef = useRef(currentParams)
   paramsRef.current = currentParams
   const localQRef = useRef(localQ)
@@ -89,42 +90,20 @@ export default function OdevlerFilterBar({
     [router, pathname]
   )
 
-  const hasFilters =
-    currentParams.sinif ||
-    currentParams.baslangic ||
-    currentParams.bitis ||
-    currentParams.ders ||
-    currentParams.durum ||
-    currentParams.ogretmen ||
-    currentParams.q
+  const activeFilterCount = [
+    currentParams.sinif,
+    currentParams.baslangic,
+    currentParams.bitis,
+    currentParams.ders,
+    currentParams.durum,
+    currentParams.ogretmen,
+  ].filter(Boolean).length
 
-  return (
-    <div className="mb-5 space-y-2.5">
-      <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Ödev başlığında ara..."
-          value={localQ}
-          onChange={e => setLocalQ(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
-        />
-      </div>
+  const hasFilters = activeFilterCount > 0 || !!currentParams.q
+
+  const filterPanel = (
+    <>
       <div className="flex flex-wrap gap-2">
-        {/* Filter icon with tooltip */}
-        <div className="relative group">
-          <div className="flex items-center justify-center w-9 h-9 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all cursor-default">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
-            </svg>
-          </div>
-          <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-            Filtrele
-          </span>
-        </div>
-
         <select
           value={currentParams.sinif ?? ''}
           onChange={(e) => update('sinif', e.target.value)}
@@ -189,7 +168,7 @@ export default function OdevlerFilterBar({
         {hasFilters && (
           <button
             type="button"
-            onClick={() => router.replace(pathname)}
+            onClick={() => { router.replace(pathname); setShowFilters(false) }}
             className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -198,6 +177,49 @@ export default function OdevlerFilterBar({
             Temizle
           </button>
         )}
+      </div>
+    </>
+  )
+
+  return (
+    <div className="mb-5 space-y-2.5">
+      {/* Arama kutusu + mobil filtre toggle */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Ödev başlığında ara..."
+            value={localQ}
+            onChange={e => setLocalQ(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all"
+          />
+        </div>
+        {/* Mobilde toggle butonu */}
+        <button
+          type="button"
+          onClick={() => setShowFilters(v => !v)}
+          className={`sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+            activeFilterCount > 0
+              ? 'bg-blue-50 border-blue-200 text-blue-700'
+              : showFilters
+                ? 'bg-gray-100 border-gray-300 text-gray-700'
+                : 'bg-white border-gray-200 text-gray-500'
+          }`}
+          aria-label="Filtreleri aç/kapat"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+          </svg>
+          {activeFilterCount > 0 ? activeFilterCount : 'Filtre'}
+        </button>
+      </div>
+
+      {/* Masaüstünde her zaman göster, mobilde toggle ile */}
+      <div className={`space-y-2.5 sm:block ${showFilters ? 'block' : 'hidden'}`}>
+        {filterPanel}
       </div>
     </div>
   )

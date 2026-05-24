@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
 
@@ -11,9 +11,10 @@ interface SwipeableHomeworkCardProps {
   className: string
   dueDateStr: string
   overdue: boolean
+  description?: string
   teacherName?: string
   canWrite: boolean
-  onDelete: () => void
+  onDelete: () => unknown
 }
 
 export default function SwipeableHomeworkCard({
@@ -23,6 +24,7 @@ export default function SwipeableHomeworkCard({
   className,
   dueDateStr,
   overdue,
+  description,
   teacherName,
   canWrite,
   onDelete,
@@ -30,6 +32,7 @@ export default function SwipeableHomeworkCard({
   const [showConfirm, setShowConfirm] = useState(false)
   const [offset, setOffset] = useState(0)
   const [swiping, setSwiping] = useState(false)
+  const [isPending, startTransition] = useTransition()
 
   const handlers = useSwipeable({
     onSwiping: (e) => {
@@ -98,6 +101,10 @@ export default function SwipeableHomeworkCard({
             <span className="text-xs text-gray-500 dark:text-slate-400">{subject}</span>
           </div>
 
+          {description && (
+            <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{description}</p>
+          )}
+
           <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -142,10 +149,14 @@ export default function SwipeableHomeworkCard({
                 İptal
               </button>
               <button
-                onClick={() => { setShowConfirm(false); onDelete() }}
-                className="px-4 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-h-[44px]"
+                onClick={() => {
+                  setShowConfirm(false)
+                  startTransition(async () => { await onDelete() })
+                }}
+                disabled={isPending}
+                className="px-4 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-h-[44px] disabled:opacity-50"
               >
-                Sil
+                {isPending ? 'Siliniyor…' : 'Sil'}
               </button>
             </div>
           </div>

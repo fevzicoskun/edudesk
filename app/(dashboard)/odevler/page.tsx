@@ -4,8 +4,8 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import { deleteHomework } from '@/src/domains/homework/actions'
 import { format, isPast, parseISO } from '@/src/shared/date'
-import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import OdevlerFilterBar from './FilterBar'
+import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 
@@ -204,85 +204,19 @@ async function HomeworkSection({
             } catch { /* keep default */ }
 
             return (
-              <div
+              <SwipeableHomeworkCard
                 key={hw.id}
-                className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-              >
-                <div className={`h-0.5 ${overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
-
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-3 mb-2.5">
-                    <Link
-                      href={`/odevler/${hw.id}`}
-                      className="font-semibold text-gray-900 dark:text-slate-100 hover:text-red-700 dark:hover:text-red-400 transition-colors leading-snug text-base"
-                    >
-                      {hw.title}
-                    </Link>
-                    <span
-                      className={`shrink-0 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                        overdue
-                          ? 'bg-red-50 text-red-600 border-red-100'
-                          : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-                      }`}
-                    >
-                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${overdue ? 'bg-red-500' : 'bg-emerald-500'}`} />
-                      {overdue ? 'Geçmiş' : 'Aktif'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-                      {cls?.name ?? '—'}
-                    </span>
-                    <span className="text-gray-300 dark:text-slate-600">·</span>
-                    <span className="text-xs text-gray-500 dark:text-slate-400">{hw.subject}</span>
-                  </div>
-
-                  {hw.description && (
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">
-                      {hw.description}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>{dueDateStr}</span>
-                      </div>
-                      {teacher?.full_name && (
-                        <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          <span>{teacher.full_name}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <Link
-                        href={`/odevler/${hw.id}`}
-                        className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
-                      >
-                        Detay
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                      {canWrite && (
-                        <ConfirmDeleteButton
-                          action={deleteHomework.bind(null, hw.id)}
-                          message={`"${hw.title}" ödevini silmek istediğine emin misin?`}
-                          className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors disabled:opacity-50"
-                        />
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                id={hw.id}
+                title={hw.title}
+                subject={hw.subject}
+                className={cls?.name ?? '—'}
+                dueDateStr={dueDateStr}
+                overdue={overdue}
+                description={hw.description ?? undefined}
+                teacherName={teacher?.full_name ?? undefined}
+                canWrite={canWrite}
+                onDelete={deleteHomework.bind(null, hw.id)}
+              />
             )
           })}
         </div>
