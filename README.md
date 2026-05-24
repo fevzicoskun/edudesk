@@ -193,7 +193,7 @@ MIT License — Eğitim amaçlı kullanım serbest.
 
 - **Geliştirici:** Bahçeşehir Koleji Matematik Öğretmeni
 - **Proje:** [GitHub](https://github.com/fevzicoskun/zumre-takip)
-- **Canlı Uygulama:** https://zumre-takip.vercel.app
+- **Canlı Uygulama:** https://myedudesk.com.tr
 
 ---
 
@@ -202,11 +202,13 @@ MIT License — Eğitim amaçlı kullanım serbest.
 ## 📋 Son Değişiklikler
 
 ### Mayıs 2026
-- **Test altyapısı:** Vitest unit + integration + permissions projeleri kuruldu; HomeworkService, UserService, AnnouncementService, TokenService, ClassService için 99 unit test yazıldı
+- **Custom domain:** `myedudesk.com.tr` alındı, Vercel'e bağlandı
+- **Bildirim sistemi:** Inngest cron ile her gün 08:00'de ödev hatırlatması; öğretmene ve veliye e-posta gönderimi
+- **Test altyapısı:** Vitest unit + integration + permissions projeleri kuruldu; HomeworkService, UserService, AnnouncementService, TokenService, ClassService için 70 unit test yazıldı
 - **RLS bug fix:** Öğretmen artık kendi oluşturduğu veli tokenını devre dışı bırakabiliyor (`revoked_tokens` INSERT policy güncellendi — `issued_by = auth.uid()` koşulu eklendi)
 - **Takvim iyileştirmesi:** Öğretmen anasayfasındaki CalendarWidget artık ödev teslim tarihlerini gösteriyor; güne tıklanınca ödev/tatil detayı açılıyor; dark mode ve kompakt tasarım eklendi
 - **Duyuru sistemi:** Müdür ve MY'den öğretmenlere rol bazlı tam ekran modal duyuru gönderimi
 
 ---
 
-*Son güncelleme: 23 Mayıs 2026 — Test coverage ve dashboard iyileştirmeleri* 🚀
+*Son güncelleme: 24 Mayıs 2026 — Custom domain, bildirim sistemi* 🚀

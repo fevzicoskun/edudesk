@@ -58,8 +58,10 @@
 - [x] Müdür dashboard
 - [x] Öğretmen anasayfası: risk uyarıları, ödev özeti, interaktif takvim (ödev teslim tarihleri + tatiller, dark mode, gün tıklama detayı)
 - [x] Duyuru sistemi: müdür/MY → öğretmen tam ekran modal duyuru, rol bazlı hedefleme
-- [x] Unit testler: HomeworkService, UserService, AnnouncementService, TokenService, ClassService (99 test, tümü geçiyor)
+- [x] Unit testler: HomeworkService, UserService, AnnouncementService, TokenService, ClassService (70 test, tümü geçiyor)
 - [x] Integration testler: HomeworkService RBAC, UserService RBAC, token RLS senaryoları
+- [x] Bildirim sistemi: Inngest cron (her gün 08:00), ödev hatırlatması → öğretmen + veli e-posta
+- [x] Custom domain: `myedudesk.com.tr` alındı, Vercel'e bağlandı, env var ayarlandı
 
 ---
 
@@ -984,6 +986,6 @@ FAZ C: Launch (25-50 Okul — Ay 7-12)
 
 ---
 
-**Son Güncelleme:** 23 Mayıs 2026  
-**Versiyon:** 2.1  
-**Durum:** Test altyapısı kuruldu, dashboard iyileştirmeleri tamamlandı — Faz 1 Sprint 1 başlangıç bekleniyor
+**Son Güncelleme:** 24 Mayıs 2026  
+**Versiyon:** 2.2  
+**Durum:** EduDesk v1 tamamlandı, custom domain aktif — Faz 1 Sprint 1 başlangıç bekleniyor
