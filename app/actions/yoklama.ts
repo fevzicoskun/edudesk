@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { inngest } from '@/src/infrastructure/inngest'
 import { UUID } from '@/src/shared/validation'
@@ -56,7 +57,8 @@ export async function saveYoklama(
     status:     e.status,
   }))
 
-  const { error } = await supabase
+  const service = createServiceClient()
+  const { error } = await service
     .from('attendance')
     .upsert(rows, { onConflict: 'class_id,student_id,date' })
   if (error) throw new Error(error.message)
