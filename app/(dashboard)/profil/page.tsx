@@ -1,7 +1,7 @@
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import ProfilForm from './ProfilForm'
-import PasswordForm from './PasswordForm'
+
 export default async function ProfilPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
@@ -17,9 +17,6 @@ export default async function ProfilPage() {
         email={user.email ?? ''}
         role={profile?.role ?? 'ogretmen'}
       />
-      <div className="px-4 md:px-6 pb-6 max-w-lg mx-auto">
-        <PasswordForm />
-      </div>
     </div>
   )
 }
