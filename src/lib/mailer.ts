@@ -21,7 +21,9 @@ export const mailer = {
 
     const { error } = await resend.emails.send(payload)
     if (error) {
-      console.error('[mailer] Resend error:', JSON.stringify(error))
+      console.error('[mailer] Resend name:', (error as { name?: string }).name)
+      console.error('[mailer] Resend msg:', error.message)
+      console.error('[mailer] Resend full:', JSON.stringify(error))
       throw new Error(error.message)
     }
   },
