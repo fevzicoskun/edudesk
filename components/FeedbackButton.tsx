@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useTransition } from 'react'
+import { useState, useRef } from 'react'
 import { sendFeedback } from '@/app/actions/feedback'
 
 type Category = 'oneri' | 'istek' | 'sikayet'
@@ -16,16 +16,18 @@ export default function FeedbackButton() {
   const [category, setCategory] = useState<Category>('oneri')
   const [status, setStatus]     = useState<'idle' | 'ok' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
-  const [isPending, startTransition] = useTransition()
+  const [isPending, setIsPending] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   function handleOpen() { setOpen(true); setStatus('idle') }
   function handleClose() { setOpen(false); setStatus('idle'); setCategory('oneri'); formRef.current?.reset() }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    const fd = new FormData(e.currentTarget)
-    startTransition(async () => {
+    if (isPending) return
+    setIsPending(true)
+    try {
+      const fd = new FormData(e.currentTarget)
       const res = await sendFeedback(fd)
       if (res.ok) {
         setStatus('ok')
@@ -34,7 +36,12 @@ export default function FeedbackButton() {
         setStatus('error')
         setErrorMsg(res.error ?? 'Bir hata oluştu.')
       }
-    })
+    } catch {
+      setStatus('error')
+      setErrorMsg('Bağlantı hatası. Lütfen tekrar dene.')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   return (
