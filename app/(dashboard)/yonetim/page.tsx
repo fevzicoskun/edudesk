@@ -1,14 +1,17 @@
-﻿import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { isMudurOrAbove } from '@/src/shared/types'
+import { format } from '@/src/shared/date'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
+import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
+import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
+import MudurHizliAksiyonlar from '../anasayfa/MudurHizliAksiyonlar'
 
 export const revalidate = 0
 
 export default async function YonetimPage() {
   const profile = await getCurrentProfile()
-  if (!profile || !isMudurOrAbove(profile.role)) redirect('/anasayfa')
+  if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
 
   const supabase = await createClient()
   const { data } = await supabase
@@ -20,15 +23,34 @@ export default async function YonetimPage() {
   const meetings = data ?? []
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yönetim Toplantıları</h1>
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+
+      {/* Başlık */}
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Genel Bakış</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          Toplantı kayıtları, katılımcılar ve notlar
+          {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 
-      <SchoolMeetings initial={meetings} />
+      {/* Kademe kartları */}
+      <OkulSeviyesiKartlari />
+
+      {/* Genel istatistikler + pasif öğretmen uyarısı */}
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-4">Genel İstatistikler</h2>
+        <MudurStatsWidget />
+      </div>
+
+      {/* Hızlı erişim */}
+      <MudurHizliAksiyonlar />
+
+      {/* Toplantı kayıtları */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Toplantı Kayıtları</h2>
+        <SchoolMeetings initial={meetings} />
+      </div>
+
     </div>
   )
 }
