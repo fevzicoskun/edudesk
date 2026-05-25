@@ -20,6 +20,9 @@ export const mailer = {
     }
 
     const { error } = await resend.emails.send(payload)
-    if (error) throw new Error(error.message)
+    if (error) {
+      console.error('[mailer] Resend error:', JSON.stringify(error))
+      throw new Error(error.message)
+    }
   },
 }
