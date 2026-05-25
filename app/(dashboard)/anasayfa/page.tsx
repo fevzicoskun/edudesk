@@ -3,9 +3,13 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from '@/src/shared/date'
-import OgretmenDashboard from './OgretmenDashboard'
-import EtkinliklerWidget from './EtkinliklerWidget'
-import GundemWidget      from './GundemWidget'
+import OgretmenDashboard          from './OgretmenDashboard'
+import EtkinliklerWidget           from './EtkinliklerWidget'
+import GundemWidget                from './GundemWidget'
+import MudurGunlukOzetKartlari    from './MudurGunlukOzetKartlari'
+import MudurOgretmenAktivite      from './MudurOgretmenAktivite'
+import MudurSonDuyurular          from './MudurSonDuyurular'
+import MudurHizliAksiyonlar       from './MudurHizliAksiyonlar'
 
 import MYStatsWidget    from './MYStatsWidget'
 import MYSolSutunWidget from './MYSolSutunWidget'
@@ -39,6 +43,7 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
+      {/* Başlık */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Anasayfa</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
@@ -46,7 +51,25 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         </p>
       </div>
 
-      {/* ─── Gündem + Etkinlikler ─────────────────────────── */}
+      {/* Günlük özet kartları */}
+      <Suspense fallback={<WidgetSkeleton />}>
+        <MudurGunlukOzetKartlari />
+      </Suspense>
+
+      {/* Öğretmen aktivitesi + Son duyurular */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MudurOgretmenAktivite />
+        </Suspense>
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MudurSonDuyurular />
+        </Suspense>
+      </div>
+
+      {/* Hızlı aksiyonlar */}
+      <MudurHizliAksiyonlar />
+
+      {/* Gündem + Etkinlikler */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
           <GundemWidget />
