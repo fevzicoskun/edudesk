@@ -21,8 +21,6 @@ export async function sendFeedback(formData: FormData) {
 
   try {
     await mailer.sendMail({
-      from:    `"EduDesk Geri Bildirim" <${process.env.SMTP_USER}>`,
-      to:      process.env.FEEDBACK_TO ?? process.env.SMTP_USER,
       subject: `[EduDesk] ${categoryLabel} — ${now}`,
       text: [
         `Tür: ${categoryLabel}`,
