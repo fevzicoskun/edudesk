@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { updateProfile } from '@/src/domains/users/actions'
 import { logout } from '@/src/domains/auth/actions'
+import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
 
 const initialState = { error: undefined as string | undefined, success: false }
 
@@ -69,13 +70,16 @@ export default function ProfilForm({
               <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
                 Branş / Ders
               </label>
-              <input
+              <select
                 name="subject"
-                type="text"
-                defaultValue={defaultSubject}
-                placeholder="Örn: Matematik, Türkçe..."
+                defaultValue={defaultSubject || ''}
                 className={inputCls}
-              />
+              >
+                <option value="">— Seçiniz —</option>
+                {BRANS_LISTESI.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
             </div>
           )}
 

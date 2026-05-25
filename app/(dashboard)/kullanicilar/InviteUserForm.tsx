@@ -3,6 +3,7 @@
 import { useState, useActionState } from 'react'
 import { inviteUser } from '@/src/domains/users/actions'
 import type { Role } from '@/src/shared/types'
+import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
 import {
   Dialog,
   DialogContent,
@@ -136,12 +137,16 @@ function InviteFormContent({
           </div>
           <div>
             <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">Branş</label>
-            <input
+            <select
               name="subject"
-              type="text"
-              placeholder="Matematik, Türkçe…"
+              defaultValue=""
               className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+            >
+              <option value="">— Seçiniz —</option>
+              {BRANS_LISTESI.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">Rol *</label>
