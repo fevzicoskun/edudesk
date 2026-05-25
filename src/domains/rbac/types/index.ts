@@ -10,6 +10,7 @@ export type Resource =
   | 'school'
   | 'export'
   | 'notes'
+  | 'grades'
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage'
 

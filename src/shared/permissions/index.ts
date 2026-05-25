@@ -90,6 +90,12 @@ export const P = {
     UPDATE: p('notes', 'update'),
     DELETE: p('notes', 'delete'),
   },
+  GRADES: {
+    CREATE: p('grades', 'create'),
+    READ:   p('grades', 'read'),
+    UPDATE: p('grades', 'update'),
+    DELETE: p('grades', 'delete'),
+  },
 } as const
 
 export type { PermissionKey }

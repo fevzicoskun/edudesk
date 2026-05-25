@@ -7,6 +7,7 @@ const JOB_LABELS: Record<JobType, string> = {
   excel_odevler:           'Ödevler',
   excel_notlar:            'Öğrenci Notları',
   excel_sinif_ogrencileri: 'Sınıf Öğrencileri',
+  excel_not_defteri:       'Not Defteri',
 }
 
 export async function fetchRows(
@@ -18,6 +19,7 @@ export async function fetchRows(
     case 'excel_odevler':           return fetchOdevler(params, schoolId)
     case 'excel_notlar':            return fetchNotlar(schoolId)
     case 'excel_sinif_ogrencileri': return fetchSinifOgrencileri(params, schoolId)
+    case 'excel_not_defteri':       throw new Error('Not Defteri export route handler üzerinden çağrılmalı')
     default: throw new Error(`Bilinmeyen iş türü: ${jobType}`)
   }
 }
