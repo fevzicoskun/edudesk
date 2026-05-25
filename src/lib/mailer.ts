@@ -12,15 +12,10 @@ export const mailer = {
     text?:   string
     html?:   string
   }) {
-    const to  = opts.to ?? process.env.FEEDBACK_TO ?? ''
+    const to   = opts.to ?? process.env.FEEDBACK_TO ?? ''
     const from = opts.from ?? FROM
 
-    if (!to) {
-      console.error('[mailer] FEEDBACK_TO env var eksik veya boş!')
-      throw new Error('Alıcı adresi yapılandırılmamış.')
-    }
-
-    console.log('[mailer] from:', from, '| to:', to)
+    if (!to) throw new Error('Alıcı adresi yapılandırılmamış (FEEDBACK_TO eksik).')
 
     const payload = {
       from,
@@ -30,10 +25,6 @@ export const mailer = {
     }
 
     const { error } = await resend.emails.send(payload)
-    if (error) {
-      console.error('[mailer] Resend name:', (error as { name?: string }).name)
-      console.error('[mailer] Resend msg:', error.message)
-      throw new Error(error.message)
-    }
+    if (error) throw new Error(error.message)
   },
 }

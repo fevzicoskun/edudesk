@@ -122,7 +122,7 @@ export const homeworkReminderFn = inngest.createFunction(
         const results = await Promise.allSettled(
           teacherEmailTargets.map((c) =>
             mailer.sendMail({
-              from: `EduDesk <${process.env.SMTP_USER}>`,
+
               to: c.teacherEmail,
               subject: `Ödev Hatırlatması: ${c.title}`,
               html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
@@ -186,7 +186,7 @@ export const homeworkReminderFn = inngest.createFunction(
         const results = await Promise.allSettled(
           veliEmails.map((v) =>
             mailer.sendMail({
-              from: `EduDesk <${process.env.SMTP_USER}>`,
+
               to: v.to,
               subject: `Ödev Hatırlatması — ${v.ogrenciAdi}`,
               html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>

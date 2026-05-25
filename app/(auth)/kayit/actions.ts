@@ -20,8 +20,8 @@ export async function applySchool(_prev: unknown, formData: FormData) {
 
   try {
     await mailer.sendMail({
-      from: `"EduDesk Başvuru" <${process.env.SMTP_USER}>`,
-      to: process.env.SMTP_USER,
+
+      to: process.env.FEEDBACK_TO,
       subject: `Yeni Okul Başvurusu: ${schoolName}`,
       html: `
         <h2>Yeni EduDesk Okul Başvurusu</h2>

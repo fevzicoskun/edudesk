@@ -29,10 +29,8 @@ export async function sendFeedback(formData: FormData) {
         message.trim(),
       ].join('\n'),
     })
-    console.log('[feedback] başarılı, ok:true dönüyor')
     return { ok: true }
-  } catch (err) {
-    console.error('[feedback] sendMail fırlattı:', String(err))
+  } catch {
     return { ok: false, error: 'Mail gönderilemedi. Lütfen tekrar dene.' }
   }
 }

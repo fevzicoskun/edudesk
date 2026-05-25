@@ -49,7 +49,7 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
 
     await step.run('email-gonder', async () => {
       await mailer.sendMail({
-        from:    `"EduDesk Yönetim Sistemi" <${process.env.SMTP_USER}>`,
+
         to:      student.veli_email!,
         subject: `Devamsızlık Bildirimi — ${student.full_name}`,
         text:    `Sayın ${student.veli_ad ?? 'Veli'},\n\n${student.full_name} adlı öğrenci ${tarih} tarihinde ${durum}.\n\nEduDesk`,

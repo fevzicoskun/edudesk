@@ -84,7 +84,7 @@ export async function provisionSchool(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://myedudesk.com.tr'
   try {
     await mailer.sendMail({
-      from: `EduDesk <${process.env.SMTP_USER}>`,
+
       to: mudurEmail,
       subject: 'EduDesk — Okul Hesabınız Hazır',
       html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#1a1a1a">
