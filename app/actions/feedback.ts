@@ -30,7 +30,8 @@ export async function sendFeedback(formData: FormData) {
       ].join('\n'),
     })
     return { ok: true }
-  } catch {
+  } catch (err) {
+    console.error('[FB_ERR]', String(err))
     return { ok: false, error: 'Mail gönderilemedi. Lütfen tekrar dene.' }
   }
 }
