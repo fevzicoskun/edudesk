@@ -2,6 +2,11 @@
 
 import { useState, useCallback, useRef, useTransition } from 'react'
 import Button from '@/components/ui/Button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Table, TableBody, TableCell, TableFooter,
+  TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 import { upsertScoreAction, deleteColumnAction } from '@/app/actions/grades'
 import AddColumnModal from './AddColumnModal'
 import ExportButton from './ExportButton'
@@ -28,10 +33,10 @@ const GRADE_TYPE_LABEL: Record<string, string> = {
   proje:  'Proje',
 }
 
-const GRADE_TYPE_CLASS: Record<string, string> = {
-  yazili: 'bg-blue-100 text-blue-700',
-  quiz:   'bg-yellow-100 text-yellow-700',
-  proje:  'bg-green-100 text-green-700',
+const GRADE_TYPE_VARIANT: Record<string, 'default' | 'secondary' | 'outline'> = {
+  yazili: 'default',
+  quiz:   'secondary',
+  proje:  'outline',
 }
 
 function buildScoreState(columns: GradeColumn[], entries: GradeEntry[]): ScoreState {
@@ -116,6 +121,7 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
           <button type="button" onClick={() => setActionError(null)} className="ml-4 text-red-500 hover:text-red-700 font-bold">×</button>
         </div>
       )}
+
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Not Girişi</h2>
         <div className="flex gap-2">
@@ -128,54 +134,53 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-muted/50">
-              <th className="sticky left-0 z-10 bg-muted/80 px-4 py-3 text-left font-medium min-w-[180px]">
+      <div className="rounded-lg border">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead className="sticky left-0 z-10 bg-muted/80 min-w-[180px]">
                 Öğrenci
-              </th>
+              </TableHead>
               {columns.map(col => (
-                <th key={col.id} className="px-3 py-3 text-center font-medium min-w-[110px]">
+                <TableHead key={col.id} className="text-center min-w-[120px]">
                   <div className="flex flex-col items-center gap-1">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${GRADE_TYPE_CLASS[col.grade_type] ?? ''}`}
-                    >
+                    <Badge variant={GRADE_TYPE_VARIANT[col.grade_type] ?? 'secondary'}>
                       {GRADE_TYPE_LABEL[col.grade_type] ?? col.grade_type}
-                    </span>
-                    <span className="font-semibold">{col.title}</span>
+                    </Badge>
+                    <span className="font-semibold text-foreground">{col.title}</span>
                     {col.exam_date && (
-                      <span className="text-xs text-muted-foreground">{col.exam_date}</span>
+                      <span className="text-xs text-muted-foreground font-normal">{col.exam_date}</span>
                     )}
-                    <span className="text-xs text-muted-foreground">/{col.max_score}</span>
+                    <span className="text-xs text-muted-foreground font-normal">/{col.max_score}</span>
                     {canWrite && (
                       <button
                         type="button"
                         title="Sütunu Sil"
-                        className="text-xs text-red-500 hover:text-red-700 mt-1"
+                        className="text-xs text-destructive hover:text-destructive/80 mt-0.5"
                         onClick={() => handleDeleteColumn(col.id)}
                       >
                         Sil
                       </button>
                     )}
                   </div>
-                </th>
+                </TableHead>
               ))}
               {columns.length === 0 && (
-                <th className="px-4 py-3 text-muted-foreground italic font-normal">
+                <TableHead className="text-muted-foreground italic font-normal">
                   Henüz ölçme eklenmedi
-                </th>
+                </TableHead>
               )}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
             {students.map((student, stuIdx) => (
-              <tr key={student.id} className="border-t hover:bg-muted/30">
-                <td className="sticky left-0 z-10 bg-background px-4 py-2 font-medium">
+              <TableRow key={student.id}>
+                <TableCell className="sticky left-0 z-10 bg-background font-medium">
                   {student.full_name}
-                </td>
+                </TableCell>
                 {columns.map((col, colIdx) => (
-                  <td key={col.id} className="px-2 py-1 text-center">
+                  <TableCell key={col.id} className="text-center">
                     {canWrite ? (
                       <input
                         id={`cell-${col.id}-${student.id}`}
@@ -187,7 +192,7 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
                         onChange={e => handleChange(col.id, student.id, e.target.value)}
                         onBlur={e => handleBlur(col.id, student.id, e.target.value)}
                         onKeyDown={e => handleKeyDown(e, colIdx, stuIdx)}
-                        className="w-20 rounded border px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-20 rounded-md border bg-background px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         placeholder="—"
                       />
                     ) : (
@@ -195,36 +200,37 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
                         {scores[col.id]?.[student.id] || '—'}
                       </span>
                     )}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
             {students.length === 0 && (
-              <tr>
-                <td
+              <TableRow>
+                <TableCell
                   colSpan={columns.length + 1}
-                  className="px-4 py-8 text-center text-muted-foreground"
+                  className="py-8 text-center text-muted-foreground"
                 >
                   Bu sınıfa öğrenci eklenmemiş.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             )}
-          </tbody>
+          </TableBody>
+
           {columns.length > 0 && students.length > 0 && (
-            <tfoot>
-              <tr className="border-t bg-muted/30 font-medium">
-                <td className="sticky left-0 z-10 bg-muted/50 px-4 py-2 text-muted-foreground text-xs uppercase tracking-wide">
+            <TableFooter>
+              <TableRow>
+                <TableCell className="sticky left-0 z-10 bg-muted/50 text-muted-foreground text-xs uppercase tracking-wide">
                   Sınıf ort.
-                </td>
+                </TableCell>
                 {columnAverages.map((avg, i) => (
-                  <td key={columns[i]!.id} className="px-2 py-2 text-center text-sm">
+                  <TableCell key={columns[i]!.id} className="text-center text-sm font-medium">
                     {avg}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
-            </tfoot>
+              </TableRow>
+            </TableFooter>
           )}
-        </table>
+        </Table>
       </div>
 
       <AddColumnModal classId={classId} open={modalOpen} onClose={() => setModalOpen(false)} />
