@@ -12,21 +12,32 @@ export default async function NotDefteriPage() {
   const supabase = await createClient()
   const isManager = isMudurOrAbove(profile.role)
 
-  // Yöneticiler tüm sınıfları görür, öğretmenler yalnızca kendi sınıflarını
-  let classesQuery = supabase
+  const { data: classes } = await supabase
     .from('classes')
     .select(`
       id, name, grade, mentor_teacher_id,
-      grade_columns(count),
-      students(count)
+      grade_columns(count)
     `)
     .eq('school_id', profile.school_id)
     .is('deleted_at', null)
     .order('grade')
     .order('name')
 
+  const classIds = (classes ?? []).map(c => c.id)
 
-  const { data: classes } = await classesQuery
+  // Aktif öğrenci sayısı ayrı sorgu ile — RLS OR'u silinmişleri de saydırmasın
+  const { data: studentRows } = classIds.length
+    ? await supabase
+        .from('students')
+        .select('class_id')
+        .in('class_id', classIds)
+        .is('deleted_at', null)
+    : { data: [] }
+
+  const studentCountMap: Record<string, number> = {}
+  for (const row of studentRows ?? []) {
+    studentCountMap[row.class_id] = (studentCountMap[row.class_id] ?? 0) + 1
+  }
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -45,7 +56,7 @@ export default async function NotDefteriPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {classes.map((cls) => {
             const columnCount = (cls.grade_columns as unknown as { count: number }[])?.[0]?.count ?? 0
-            const studentCount = (cls.students as unknown as { count: number }[])?.[0]?.count ?? 0
+            const studentCount = studentCountMap[cls.id] ?? 0
 
             return (
               <Link
