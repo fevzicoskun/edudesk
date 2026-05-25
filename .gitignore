@@ -47,3 +47,5 @@ supabase/.temp/
 
 # local scripts
 push.bat
+
+.vercel
