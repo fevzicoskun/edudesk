@@ -12,9 +12,19 @@ export const mailer = {
     text?:   string
     html?:   string
   }) {
+    const to  = opts.to ?? process.env.FEEDBACK_TO ?? ''
+    const from = opts.from ?? FROM
+
+    if (!to) {
+      console.error('[mailer] FEEDBACK_TO env var eksik veya boş!')
+      throw new Error('Alıcı adresi yapılandırılmamış.')
+    }
+
+    console.log('[mailer] from:', from, '| to:', to)
+
     const payload = {
-      from:    opts.from ?? FROM,
-      to:      [opts.to ?? process.env.FEEDBACK_TO ?? ''],
+      from,
+      to:      [to],
       subject: opts.subject,
       ...(opts.html ? { html: opts.html } : { text: opts.text ?? '' }),
     }
@@ -23,7 +33,6 @@ export const mailer = {
     if (error) {
       console.error('[mailer] Resend name:', (error as { name?: string }).name)
       console.error('[mailer] Resend msg:', error.message)
-      console.error('[mailer] Resend full:', JSON.stringify(error))
       throw new Error(error.message)
     }
   },
