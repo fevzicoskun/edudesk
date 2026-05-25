@@ -1,7 +1,7 @@
-# TODO — AkademikOS (EduDesk v2)
+# TODO — EduDesk
 
-> **AkademikOS** = Okulun Akademik İşletim Sistemi  
-> **Vizyon:** "Sessiz otomasyon" — Öğretmene ekstra iş değil, değer. AI destekli öngörü. Tek veri girişi → Çoklu otomatik çıktı.
+> Türk ortaöğretim öğretmenleri için okul yönetim platformu.  
+> Canlı: https://myedudesk.com.tr
 
 ---
 
@@ -10,8 +10,8 @@
 | Durum | Değer |
 |---|---|
 | **Geliştirici** | Tek kişi (sen) |
-| **Mevcut Durum** | EduDesk v1 — Zümre takip sistemi (çalışıyor) |
-| **Hedef** | AkademikOS — Okulun akademik işletim sistemi |
+| **Mevcut Durum** | EduDesk — Canlıda (myedudesk.com.tr) |
+| **Hedef** | AI destekli özellikler + SaaS genişleme |
 | **Toplam Süre** | ~24 hafta (tek kişi, yarı zamanlı) |
 | **İlk Kullanıcı** | Bahçeşehir Koleji — Matematik Zümresi |
 
@@ -62,6 +62,10 @@
 - [x] Integration testler: HomeworkService RBAC, UserService RBAC, token RLS senaryoları
 - [x] Bildirim sistemi: Inngest cron (her gün 08:00), ödev hatırlatması → öğretmen + veli e-posta
 - [x] Custom domain: `myedudesk.com.tr` alındı, Vercel'e bağlandı, env var ayarlandı
+- [x] Not Defteri: yazılı/quiz/proje notları, inline düzenleme, sütun ortalamaları, Excel export (migration + types + TDD + service + actions + UI)
+- [x] E-posta altyapısı: Nodemailer → Resend geçişi (Gmail SMTP bloğuna karşı)
+- [x] Geri bildirim sistemi: FeedbackButton → Resend ile geliştirici e-postasına iletim
+- [x] GradeGrid silent error fix: server action hataları red banner ile gösteriliyor
 
 ---
 
@@ -968,24 +972,17 @@ FAZ C: Launch (25-50 Okul — Ay 7-12)
 
 ---
 
-## ❓ AÇIK SORULAR (Karar Bekleyen)
+## ✅ Altyapı Kararları (Verildi)
 
-```
-❓ AI Sağlayıcı: OpenAI GPT-4 (pahalı ama kaliteli) vs Anthropic Claude (daha ucuz)
-   → Öneri: OpenAI GPT-4 (kalite önce, maliyet sonra kontrol)
-
-❓ Cloud: Vercel (hızlı başlangıç, kolay) vs AWS (güçlü ama karmaşık)
-   → Öneri: Vercel (tek geliştirici için en kolay, Supabase ile uyumlu)
-
-❓ İlk AI özellik: Basit heuristic mi, gerçek AI mı?
-   → Öneri: Basit heuristic ile başla, 2. Faz'da gerçek AI ekle
-
-❓ Veri Migrasyonu: Mevcut EduDesk verileri korunacak mı?
-   → Evet: school_id migration ile mevcut veri korunacak
-```
+| Konu | Karar |
+|------|-------|
+| Cloud | Vercel |
+| Veritabanı | Supabase (PostgreSQL 17 + RLS) |
+| E-posta | Resend (Nodemailer → Resend geçişi tamamlandı) |
+| AI sağlayıcı | Faz 2'de değerlendirilecek |
+| İlk AI özellik | Basit heuristic ile başla, Faz 2'de gerçek AI |
 
 ---
 
-**Son Güncelleme:** 24 Mayıs 2026  
-**Versiyon:** 2.2  
-**Durum:** EduDesk v1 tamamlandı, custom domain aktif — Faz 1 Sprint 1 başlangıç bekleniyor
+**Son Güncelleme:** 26 Mayıs 2026  
+**Durum:** EduDesk canlıda — Not Defteri, Resend, feedback sistemi tamamlandı; Faz 1 Sprint 1 sırada

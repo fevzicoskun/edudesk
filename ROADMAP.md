@@ -1,8 +1,7 @@
-# AkademikOS Yol Haritası
+# EduDesk Yol Haritası
 
-> **Güncelleme:** 24 Mayıs 2026  
-> **Versiyon:** 2.1  
-> **Durum:** EduDesk v1 tamamlandı — domain aktif, Faz 1 Sprint 1 başlangıç bekleniyor
+> **Güncelleme:** 26 Mayıs 2026  
+> **Durum:** Temel platform canlıda (myedudesk.com.tr) — Faz 1 Sprint 1 sırada
 
 ---
 
@@ -479,12 +478,15 @@ Toplam: 24 hafta (6 ay) — Yarı zamanlı çalışma
 
 ### Tamamlanan Altyapı (Mayıs 2026)
 
-- [x] Vitest test altyapısı (unit / integration / permissions, 70 test)
+- [x] Vitest test altyapısı (unit / integration / permissions, 73+ test)
 - [x] RLS güvenlik fix: öğretmen kendi veli tokenını devre dışı bırakabiliyor
 - [x] Öğretmen anasayfası takvim iyileştirmesi (ödev tarihleri, dark mode)
 - [x] Duyuru sistemi (müdür/MY → öğretmen)
 - [x] Bildirim sistemi: Inngest cron, öğretmen + veli e-posta hatırlatması
 - [x] Custom domain: `myedudesk.com.tr` canlıda
+- [x] Not Defteri: yazılı/quiz/proje not tablosu, inline düzenleme, Excel export
+- [x] E-posta altyapısı: Nodemailer → Resend geçişi
+- [x] Geri bildirim sistemi: FeedbackButton → Resend e-posta
 
 ### Hemen Yapılacaklar (Bu Hafta)
 1. [x] Planı onayla
@@ -516,4 +518,4 @@ Toplam: 24 hafta (6 ay) — Yarı zamanlı çalışma
 
 ---
 
-*Son güncelleme: 24 Mayıs 2026 — EduDesk v1 tamamlandı, myedudesk.com.tr canlıda* 🚀
+*Son güncelleme: 26 Mayıs 2026 — Not Defteri + Resend + feedback sistemi tamamlandı*
