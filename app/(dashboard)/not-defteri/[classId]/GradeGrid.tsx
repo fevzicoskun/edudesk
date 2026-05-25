@@ -48,6 +48,7 @@ function buildScoreState(columns: GradeColumn[], entries: GradeEntry[]): ScoreSt
 export default function GradeGrid({ classId, columns, entries, students, canWrite }: Props) {
   const [scores, setScores] = useState<ScoreState>(() => buildScoreState(columns, entries))
   const [modalOpen, setModalOpen] = useState(false)
+  const [actionError, setActionError] = useState<string | null>(null)
   const [, startTransition] = useTransition()
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -56,7 +57,8 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
     if (value !== '' && isNaN(score!)) return
 
     startTransition(async () => {
-      await upsertScoreAction({ columnId, classId, studentId, score })
+      const result = await upsertScoreAction({ columnId, classId, studentId, score })
+      if (result?.error) setActionError(result.error)
     })
   }, [classId])
 
@@ -92,7 +94,8 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
   function handleDeleteColumn(columnId: string) {
     if (!confirm('Bu sütunu ve tüm notları silmek istediğinize emin misiniz?')) return
     startTransition(async () => {
-      await deleteColumnAction(columnId, classId)
+      const result = await deleteColumnAction(columnId, classId)
+      if (result?.error) setActionError(result.error)
     })
   }
 
@@ -107,6 +110,12 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
 
   return (
     <div className="space-y-4">
+      {actionError && (
+        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="ml-4 text-red-500 hover:text-red-700 font-bold">×</button>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Not Girişi</h2>
         <div className="flex gap-2">

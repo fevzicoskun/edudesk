@@ -16,7 +16,7 @@ export default async function NotDefteriPage() {
   let classesQuery = supabase
     .from('classes')
     .select(`
-      id, name, grade, teacher_id,
+      id, name, grade, mentor_teacher_id,
       grade_columns(count),
       students(count)
     `)
@@ -25,9 +25,6 @@ export default async function NotDefteriPage() {
     .order('grade')
     .order('name')
 
-  if (!isManager) {
-    classesQuery = classesQuery.eq('teacher_id', user.id)
-  }
 
   const { data: classes } = await classesQuery
 

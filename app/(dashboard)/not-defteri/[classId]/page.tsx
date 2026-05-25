@@ -25,7 +25,7 @@ export default async function NotDefteriDetailPage({
   const [classResult, studentsResult, columnsResult] = await Promise.all([
     supabase
       .from('classes')
-      .select('id, name, grade, teacher_id')
+      .select('id, name, grade, mentor_teacher_id')
       .eq('id', classId)
       .eq('school_id', schoolId)
       .single(),
@@ -48,10 +48,6 @@ export default async function NotDefteriDetailPage({
   if (!classResult.data) notFound()
 
   const cls = classResult.data
-  const isOwner = cls.teacher_id === user.id
-
-  // Öğretmen yalnızca kendi sınıfına erişebilir; yöneticiler hepsine
-  if (!isManager && !isOwner) notFound()
 
   const columns = (columnsResult.data ?? []) as GradeColumn[]
   const students = studentsResult.data ?? []
@@ -67,7 +63,7 @@ export default async function NotDefteriDetailPage({
     : { data: [] }
   const entries = (entriesResult.data ?? []) as GradeEntry[]
 
-  const canWrite = isOwner || false // yöneticiler salt okunur
+  const canWrite = !isManager // yöneticiler salt okunur, öğretmenler yazabilir
 
   return (
     <div className="p-6 max-w-full">
