@@ -1,9 +1,10 @@
 interface Props {
   className?: string
   size?: 'sm' | 'md' | 'lg'
+  white?: boolean
 }
 
-export default function EduDeskLogo({ className = '', size = 'md' }: Props) {
+export default function EduDeskLogo({ className = '', size = 'md', white = false }: Props) {
   const iconH = size === 'sm' ? 20 : size === 'lg' ? 32 : 26
   const iconW = Math.round(iconH * 0.96)
 
@@ -25,7 +26,7 @@ export default function EduDeskLogo({ className = '', size = 'md' }: Props) {
         <path d="M14 0 L25 7 L25 26 L14 26 Z" fill="#10B981" />
       </svg>
       <span
-        className={`font-bold tracking-tight text-gray-900 dark:text-slate-100 ${
+        className={`font-bold tracking-tight ${white ? 'text-white' : 'text-gray-900 dark:text-slate-100'} ${
           size === 'sm' ? 'text-sm' : size === 'lg' ? 'text-2xl' : 'text-base'
         }`}
       >
