@@ -94,7 +94,8 @@ export const DashboardRepository = {
       .eq('class_id', classId)
       .eq('teacher_id', teacherId)
       .is('deleted_at', null)
-    const hwIds = (homeworks ?? []).map((h: { id: string }) => h.id)
+    type HwIdRow = { id: string }
+    const hwIds = ((homeworks ?? []) as HwIdRow[]).map(h => h.id)
     if (hwIds.length === 0) return { data: [] }
     return supabase
       .from('homework_submissions')
