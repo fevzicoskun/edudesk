@@ -99,6 +99,26 @@ export default function RegisterForm() {
         />
       </div>
 
+      <div className="flex items-start gap-2.5">
+        <input
+          type="checkbox"
+          name="kvkk"
+          id="kvkk"
+          required
+          className="mt-0.5 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 shrink-0"
+        />
+        <label htmlFor="kvkk" className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed">
+          <Link href="/gizlilik" target="_blank" className="text-blue-600 hover:underline font-medium">
+            Aydınlatma metnini
+          </Link>{' '}
+          ve{' '}
+          <Link href="/kullanim-kosullari" target="_blank" className="text-blue-600 hover:underline font-medium">
+            kullanım koşullarını
+          </Link>{' '}
+          okudum, kabul ediyorum.
+        </label>
+      </div>
+
       <button
         type="submit"
         disabled={isPending}
