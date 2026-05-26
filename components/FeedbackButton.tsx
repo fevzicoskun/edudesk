@@ -53,7 +53,7 @@ export default function FeedbackButton() {
         <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
         </svg>
-        Geliştiriciye Yaz
+        Öneri & Destek
       </button>
 
       {open && (
@@ -62,7 +62,7 @@ export default function FeedbackButton() {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-md border border-gray-200 dark:border-slate-700">
               <div className="px-5 pt-5 pb-4 border-b border-gray-100 dark:border-slate-800 flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Geliştiriciye Yaz</h2>
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">Öneri & Destek</h2>
                 <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-300">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
