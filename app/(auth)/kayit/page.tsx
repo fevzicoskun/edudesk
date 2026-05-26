@@ -108,6 +108,14 @@ export default function KayitPage() {
           <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-6">
             myedudesk.com.tr · Türk okulları için tasarlandı
           </p>
+          <div className="flex justify-center gap-4 mt-2">
+            <a href="/gizlilik" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:underline">
+              Gizlilik Politikası
+            </a>
+            <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 hover:underline">
+              Kullanım Koşulları
+            </a>
+          </div>
         </div>
       </div>
 
