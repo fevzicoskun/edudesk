@@ -94,7 +94,7 @@ export default function KayitPage() {
           {/* Masaüstünde başlık */}
           <div className="hidden lg:block mb-8">
             <h2 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-              Tanıtım veya bilgi alın
+              Bilgi alın
             </h2>
             <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
               Formu doldurun, en kısa sürede dönelim.
