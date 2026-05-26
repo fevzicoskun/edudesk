@@ -46,7 +46,7 @@ export default function AddColumnModal({ classId, open, onClose }: Props) {
               required
               maxLength={100}
               placeholder="Yazılı 1, Quiz 3..."
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-md border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
 
@@ -56,7 +56,7 @@ export default function AddColumnModal({ classId, open, onClose }: Props) {
               id="add-type"
               name="grade_type"
               required
-              className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border bg-background px-3 py-2 text-base"
             >
               <option value="yazili">Yazılı</option>
               <option value="quiz">Quiz</option>
@@ -74,7 +74,7 @@ export default function AddColumnModal({ classId, open, onClose }: Props) {
                 defaultValue={100}
                 min={1}
                 max={1000}
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-md border bg-background px-3 py-2 text-base"
               />
             </div>
             <div className="space-y-1">
@@ -83,7 +83,7 @@ export default function AddColumnModal({ classId, open, onClose }: Props) {
                 id="add-date"
                 name="exam_date"
                 type="date"
-                className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                className="w-full rounded-md border bg-background px-3 py-2 text-base"
               />
             </div>
           </div>

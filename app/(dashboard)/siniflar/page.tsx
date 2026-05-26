@@ -42,7 +42,7 @@ export default async function SiniflarPage() {
               placeholder="Sınıf (9)"
               min="1"
               max="12"
-              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm w-28 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base w-28 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
               type="submit"

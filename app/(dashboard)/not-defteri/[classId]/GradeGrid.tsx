@@ -192,7 +192,7 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
                         onChange={e => handleChange(col.id, student.id, e.target.value)}
                         onBlur={e => handleBlur(col.id, student.id, e.target.value)}
                         onKeyDown={e => handleKeyDown(e, colIdx, stuIdx)}
-                        className="w-20 rounded-md border bg-background px-2 py-1 text-center text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        className="w-20 rounded-md border bg-background px-2 py-1 text-center text-base md:text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         placeholder="—"
                       />
                     ) : (
