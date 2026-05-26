@@ -7,6 +7,8 @@ import { getEgitimYili } from '@/src/shared/utils'
 import BulkStudentModal from './BulkStudentModal'
 import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
+import { Suspense } from 'react'
+import PerformansWidget from './PerformansWidget'
 
 export default async function SinifDetayPage({
   params,
@@ -91,6 +93,10 @@ export default async function SinifDetayPage({
           </form>
         </div>
       )}
+
+      <Suspense fallback={null}>
+        <PerformansWidget classId={id} />
+      </Suspense>
 
       {students.length === 0 ? (
         <div className="text-center py-20 text-gray-400 text-sm">Bu sınıfta henüz öğrenci yok.</div>
