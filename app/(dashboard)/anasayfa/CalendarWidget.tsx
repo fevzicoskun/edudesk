@@ -94,11 +94,11 @@ export default function CalendarWidget({ homeworks = [] }: { homeworks?: HwLite[
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Takvim</h2>
         <div className="flex items-center gap-1">
-          <button onClick={prev} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={prev} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
           <span className="text-xs font-medium text-gray-700 dark:text-slate-300 w-28 text-center">{MONTHS[month]} {year}</span>
-          <button onClick={next} className="w-6 h-6 flex items-center justify-center rounded text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={next} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
           </button>
         </div>
