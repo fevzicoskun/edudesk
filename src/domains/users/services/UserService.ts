@@ -96,8 +96,8 @@ export const UserService = {
 
     const canManage = ability.can(P.USERS.MANAGE)
     if (canManage) {
-      // Müdür → mudur_yardimcisi dahil tüm alt rolleri atayabilir, hedef müdür olamaz
-      if (!['mudur_yardimcisi', 'zumre_baskani', 'ogretmen'].includes(newRole))
+      // Müdür → sadece mudur_yardimcisi atayabilir (invite ile tutarlı)
+      if (newRole !== 'mudur_yardimcisi')
         throw new Error('Bu rolü atayamazsınız')
       if (target.role === 'mudur')
         throw new Error('Başka bir müdürün rolünü değiştiremezsiniz')

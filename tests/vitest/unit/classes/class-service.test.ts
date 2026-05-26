@@ -19,6 +19,8 @@ vi.mock('@/src/queries/classes', () => ({
   insertStudents:             vi.fn(),
   insertStudentNote:          vi.fn(),
   deleteStudentNote:          vi.fn(),
+  findClassInSchool:          vi.fn(),
+  findStudentInSchool:        vi.fn(),
 }))
 
 vi.mock('@/src/infrastructure/supabase/server', () => ({
@@ -27,9 +29,9 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
   }),
 }))
 
-const { requireAbility } = await import('@/src/shared/authorization/server')
-const { insertStudents }  = await import('@/src/queries/classes')
-const { ClassService }    = await import('@/src/domains/classes/services/ClassService')
+const { requireAbility }                   = await import('@/src/shared/authorization/server')
+const { insertStudents, findClassInSchool } = await import('@/src/queries/classes')
+const { ClassService }                     = await import('@/src/domains/classes/services/ClassService')
 
 const SCHOOL_ID = 'school-class-unit'
 const CLASS_ID  = 'class-unit-test'
@@ -48,6 +50,10 @@ beforeEach(() => { vi.clearAllMocks() })
 
 // ─────────────────────────────────────────────────────────────
 describe('ClassService.addStudentsBulk()', () => {
+  beforeEach(() => {
+    vi.mocked(findClassInSchool).mockResolvedValue({ data: { id: CLASS_ID }, error: null } as never)
+  })
+
   it('101 öğrenci → auth çağrılmadan hata fırlatır', async () => {
     const students = Array.from({ length: 101 }, (_, i) => ({
       full_name: `Öğrenci ${i}`, student_number: null,
