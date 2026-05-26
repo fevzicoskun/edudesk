@@ -7,7 +7,7 @@ export function computeRiskLevel(hwMisses: number, absences: number): RiskLevel 
 }
 
 export function computeRiskScore(hwMisses: number, absences: number): number {
-  const hwScore = Math.min(hwMisses / 5, 1) * 60
-  const attScore = Math.min(absences / 5, 1) * 40
+  const hwScore = Math.max(0, Math.min(hwMisses / 5, 1)) * 60
+  const attScore = Math.max(0, Math.min(absences / 5, 1)) * 40
   return Math.round(hwScore + attScore)
 }

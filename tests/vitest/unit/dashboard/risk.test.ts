@@ -38,4 +38,10 @@ describe('computeRiskScore', () => {
   it('0 miss 3 devamsız → 24', () => {
     expect(computeRiskScore(0, 3)).toBe(24)
   })
+  it('negatif miss → 0 (clamp)', () => {
+    expect(computeRiskScore(-5, 0)).toBe(0)
+  })
+  it('negatif devamsız → 0 (clamp)', () => {
+    expect(computeRiskScore(0, -3)).toBe(0)
+  })
 })
