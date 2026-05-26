@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 const ACTIONS = [
   {
-    href: '/yonetim',
+    href: '/yonetim#toplanti-kayitlari',
     label: 'Okul Toplantıları',
     sub: 'Ekle & Yönet',
     gradient: 'from-purple-500 to-purple-600',
