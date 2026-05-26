@@ -1,4 +1,27 @@
-﻿import { Suspense } from 'react'
+import { Suspense } from 'react'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { addDays, format, parseISO } from '@/src/shared/date'
+import CalendarWidget from './CalendarWidget'
+import RiskUyarilariWidget from './RiskUyarilariWidget'
+import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
+
+type Tone = 'blue' | 'orange' | 'rose'
+const TONE: Record<Tone, string> = {
+  blue:   'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
+  orange: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800',
+  rose:   'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800',
+}
+
+function SummaryCard({ label, value, tone }: { label: string; value: number; tone: Tone }) {
+  return (
+    <div className={`border rounded-xl p-4 ${TONE[tone]}`}>
+      <p className="text-3xl font-bold">{value}</p>
+      <p className="text-xs mt-1 opacity-90">{label}</p>
+    </div>
+  )
+}
 
 function RiskSkeleton() {
   return (
@@ -8,44 +31,21 @@ function RiskSkeleton() {
     </div>
   )
 }
-import { createClient } from '@/src/infrastructure/supabase/server'
-import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { addDays, format, parseISO } from '@/src/shared/date'
-import CalendarWidget from './CalendarWidget'
-import SubmissionsPanel, { SubmissionsPanelSkeleton } from './SubmissionsPanel'
-import RiskUyarilariWidget from './RiskUyarilariWidget'
-
-type ClassRel = { name: string; grade: number } | null
-type HwLite = {
-  id: string; title: string; subject: string
-  due_date: string; class_id: string; classes: ClassRel
-}
 
 export default async function OgretmenDashboard() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile) redirect('/login')
 
-  const supabase = await createClient()
+  const metrics = await TeacherDashboardService.getDashboardMetrics(user.id)
+
+  void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
+
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
-  const isZumreBaskani = profile.role === 'zumre_baskani'
 
-  let hwQuery = supabase
-    .from('homeworks')
-    .select('id, title, subject, due_date, class_id, classes(name, grade)')
-    .is('deleted_at', null)
-    .order('due_date', { ascending: false })
-  if (!isZumreBaskani) hwQuery = hwQuery.eq('teacher_id', user.id)
-
-  const { data: hwData } = await hwQuery
-
-  const homeworks = (hwData ?? []) as unknown as HwLite[]
-  const hwIds = homeworks.map(h => h.id)
-  const todayHws = homeworks.filter(h => h.due_date === todayStr)
-  const upcomingHws = homeworks
+  const todayHws = metrics.homeworks.filter(h => h.due_date === todayStr)
+  const upcomingHws = metrics.homeworks
     .filter(h => h.due_date > todayStr && h.due_date <= next7Str)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
@@ -58,17 +58,36 @@ export default async function OgretmenDashboard() {
         </p>
       </div>
 
-      <Suspense fallback={<SubmissionsPanelSkeleton />}>
-        <SubmissionsPanel
-          hwIds={hwIds}
-          homeworks={homeworks}
-          todayCount={todayHws.length}
-          upcomingCount={upcomingHws.length}
-        />
-      </Suspense>
+      {/* 3 Ana Kart */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
+        <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue" />
+        <SummaryCard label="Toplam eksik"   value={metrics.totalMissingCount}  tone="orange" />
+        <SummaryCard label="Aktif risk"     value={metrics.activeRiskCount}    tone="rose" />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+      {/* Haftalık Özet Şeridi */}
+      <div className="bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
+        <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Bu Hafta</span>
+        <div className="flex gap-6">
+          <div className="text-center">
+            <p className="text-sm font-bold text-gray-800 dark:text-slate-200">{metrics.weekly.submittedCount}</p>
+            <p className="text-[10px] text-gray-400">Teslim edilen</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-gray-800 dark:text-slate-200">%{metrics.weekly.avgCompletionPct}</p>
+            <p className="text-[10px] text-gray-400">Ort. tamamlanma</p>
+          </div>
+          <div className="text-center">
+            <p className="text-sm font-bold text-rose-600">{metrics.weekly.newRiskCount}</p>
+            <p className="text-[10px] text-gray-400">Yeni risk</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Alt Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="lg:col-span-2 space-y-4">
+          {/* Bugün ve Yaklaşan */}
           <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
             <header className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bugün ve Yaklaşan</h2>
@@ -109,13 +128,15 @@ export default async function OgretmenDashboard() {
             )}
           </section>
 
+          {/* Risk Uyarıları */}
           <Suspense fallback={<RiskSkeleton />}>
             <RiskUyarilariWidget />
           </Suspense>
         </section>
 
+        {/* Takvim */}
         <div className="space-y-4">
-          <CalendarWidget homeworks={homeworks} />
+          <CalendarWidget homeworks={metrics.homeworks} />
         </div>
       </div>
     </div>

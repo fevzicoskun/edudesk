@@ -1,18 +1,9 @@
 import Link from 'next/link'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
-import { subDays } from '@/src/shared/date'
+import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
+import type { RiskAlert } from '@/src/domains/dashboard/types'
 
-type RiskLevel = 'high' | 'medium' | 'low'
-
-interface RiskAlert {
-  studentId: string
-  studentName: string
-  classId: string
-  className: string
-  riskLevel: RiskLevel
-  reasons: string[]
-}
+type RiskLevel = RiskAlert['riskLevel']
 
 function RiskBadge({ level }: { level: RiskLevel }) {
   const config = {
@@ -56,118 +47,11 @@ function RiskBadge({ level }: { level: RiskLevel }) {
   )
 }
 
-type StudentRow = {
-  id: string
-  full_name: string
-  class_id: string
-  classes: { name: string } | null
-}
-
 export default async function RiskUyarilariWidget() {
   const user = await getCurrentUser()
   if (!user) return null
 
-  const supabase = await createClient()
-
-  const { data: hwData } = await supabase
-    .from('homeworks')
-    .select('id, class_id')
-    .eq('teacher_id', user.id)
-    .is('deleted_at', null)
-    .order('due_date', { ascending: false })
-
-  const homeworks = (hwData ?? []) as { id: string; class_id: string }[]
-  const hwIds = homeworks.map(h => h.id)
-  const classIds = [...new Set(homeworks.map(h => h.class_id))]
-
-  const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
-
-  const [subsResult, attResult, studentsResult] = await Promise.all([
-    hwIds.length > 0
-      ? supabase
-          .from('homework_submissions')
-          .select('homework_id, student_id, status')
-          .in('homework_id', hwIds)
-      : Promise.resolve({ data: [] as unknown }),
-    classIds.length > 0
-      ? supabase
-          .from('attendance')
-          .select('student_id, status')
-          .in('class_id', classIds)
-          .eq('teacher_id', user.id)
-          .gte('date', twoWeeksAgo)
-      : Promise.resolve({ data: [] as unknown }),
-    classIds.length > 0
-      ? supabase
-          .from('students')
-          .select('id, full_name, class_id, classes(name)')
-          .in('class_id', classIds)
-          .is('deleted_at', null)
-      : Promise.resolve({ data: [] as unknown }),
-  ])
-
-  const submissions = ((subsResult.data ?? []) as unknown) as { homework_id: string; student_id: string; status: string }[]
-  const attendanceRows = ((attResult.data ?? []) as unknown) as { student_id: string; status: string }[]
-  const students = ((studentsResult.data ?? []) as unknown) as StudentRow[]
-
-  // Son 5 ödev per sınıf
-  const lastHwByClass = new Map<string, string[]>()
-  for (const hw of homeworks) {
-    const arr = lastHwByClass.get(hw.class_id) ?? []
-    if (arr.length < 5) arr.push(hw.id)
-    lastHwByClass.set(hw.class_id, arr)
-  }
-  const hwToClass = new Map(homeworks.map(h => [h.id, h.class_id]))
-
-  // Ödev miss sayısı per öğrenci
-  const hwMissMap = new Map<string, number>()
-  for (const sub of submissions) {
-    const cid = hwToClass.get(sub.homework_id)
-    if (!cid) continue
-    if (!lastHwByClass.get(cid)?.includes(sub.homework_id)) continue
-    if (sub.status === 'eksik' || sub.status === 'yapilmadi' || sub.status === 'gec') {
-      hwMissMap.set(sub.student_id, (hwMissMap.get(sub.student_id) ?? 0) + 1)
-    }
-  }
-
-  // Devamsızlık sayısı per öğrenci (son 14 gün)
-  const absenceMap = new Map<string, number>()
-  for (const att of attendanceRows) {
-    if (att.status === 'absent') {
-      absenceMap.set(att.student_id, (absenceMap.get(att.student_id) ?? 0) + 1)
-    }
-  }
-
-  // Risk seviyesi hesapla
-  const alerts: RiskAlert[] = []
-  for (const student of students) {
-    const hwMisses = hwMissMap.get(student.id) ?? 0
-    const absences = absenceMap.get(student.id) ?? 0
-    if (hwMisses === 0 && absences === 0) continue
-
-    const reasons: string[] = []
-    if (hwMisses >= 1) reasons.push(`Son 5 ödevde ${hwMisses} eksik`)
-    if (absences >= 1) reasons.push(`Son 14 günde ${absences} gün devamsız`)
-
-    const hwRisk = hwMisses >= 3 ? 'high' : hwMisses >= 2 ? 'medium' : 'low'
-    const attRisk = absences >= 3 ? 'high' : absences >= 2 ? 'medium' : 'low'
-    const riskLevel: RiskLevel =
-      hwRisk === 'high' || attRisk === 'high' ? 'high' :
-      hwRisk === 'medium' || attRisk === 'medium' ? 'medium' : 'low'
-
-    alerts.push({
-      studentId: student.id,
-      studentName: student.full_name,
-      classId: student.class_id,
-      className: student.classes?.name ?? '—',
-      riskLevel,
-      reasons,
-    })
-  }
-
-  const order: Record<RiskLevel, number> = { high: 0, medium: 1, low: 2 }
-  alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel] || a.studentName.localeCompare(b.studentName, 'tr'))
-
+  const alerts = await TeacherDashboardService.getRiskAlerts(user.id)
   const displayed = alerts.slice(0, 5)
   const highCount = alerts.filter(a => a.riskLevel === 'high').length
 
