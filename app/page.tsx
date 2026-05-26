@@ -77,7 +77,7 @@ export default async function RootPage() {
               href="/kayit"
               className="text-sm bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg transition-colors"
             >
-              Demo İste
+              Tanıtım İste
             </Link>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default async function RootPage() {
                   href="/kayit"
                   className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl text-sm transition-colors"
                 >
-                  Okulunuz için demo alın →
+                  Okulunuz için tanıtım alın →
                 </Link>
                 <Link
                   href="/login"
@@ -213,7 +213,7 @@ export default async function RootPage() {
             href="/kayit"
             className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3.5 rounded-xl text-sm transition-colors"
           >
-            Demo veya bilgi alın →
+            Tanıtım veya bilgi alın →
           </Link>
         </div>
       </section>
