@@ -48,7 +48,7 @@ export default function MobileNavDrawer({ items, role }: { items: NavItem[]; rol
         <div className="flex justify-center pt-2.5 pb-1">
           <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-slate-600" />
         </div>
-        <nav className="px-4 pb-safe pb-6 grid grid-cols-3 gap-2 pt-3">
+        <nav className="px-4 pb-safe-or-4 grid grid-cols-3 gap-2 pt-3">
           {visible.map(item => {
             const active = pathname.startsWith(item.href)
             return (

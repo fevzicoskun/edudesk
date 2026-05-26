@@ -156,7 +156,7 @@ export default function YoklamaClient({ classes }: Props) {
       {error && <p className="text-sm text-red-500">{error}</p>}
       {toast && <p className="text-sm text-green-600 dark:text-green-400">{toast}</p>}
 
-      <div className="sticky bottom-16 md:bottom-0 md:static bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none pt-2 pb-1 md:py-0">
+      <div className="sticky sticky-above-nav md:bottom-0 md:static bg-white/90 dark:bg-slate-950/90 backdrop-blur-sm md:bg-transparent md:backdrop-blur-none pt-2 pb-1 md:py-0">
         <button
           type="button"
           onClick={handleSave}

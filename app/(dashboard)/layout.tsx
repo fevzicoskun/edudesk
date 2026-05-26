@@ -35,7 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <ToastProvider>
       <div className="flex h-full bg-gray-50 dark:bg-slate-950">
         <Sidebar profile={profile} email={user.email ?? ''} />
-        <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0">{children}</main>
+        <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main">{children}</main>
       </div>
       <SessionTracker />
     </ToastProvider>

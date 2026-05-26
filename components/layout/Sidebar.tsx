@@ -217,7 +217,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       </aside>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {(() => {
           const mobileItems = navItems.filter(i => i.mobile && (!i.roles || i.roles.includes(role as Role)))
           const drawerItems = navItems.filter(i => !i.mobile && (!i.roles || i.roles.includes(role as Role)))
@@ -232,7 +232,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                   <Link
                     key={href}
                     href={href}
-                    className={`flex-1 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
+                    className={`flex-1 h-16 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
                       active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'
                     }`}
                   >
