@@ -186,6 +186,7 @@ export async function deleteNotebookCheckAction(id: string) {
   const { error } = await InspectionRepository.deleteNotebookCheck(id, ability.userId)
   if (error) return { error: error.message }
 
+  revalidatePath('/profil/dosyam')
   revalidatePath('/profil/dosyam/defter-kontrolu')
   return {}
 }
