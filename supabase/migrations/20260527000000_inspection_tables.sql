@@ -20,17 +20,22 @@ CREATE TABLE daily_plans (
 
 CREATE INDEX ON daily_plans (teacher_id, plan_date DESC);
 CREATE INDEX ON daily_plans (school_id, class_id);
+CREATE UNIQUE INDEX ON daily_plans (teacher_id, class_id, plan_date, lesson_hour) WHERE deleted_at IS NULL;
 
 ALTER TABLE daily_plans ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "daily_plans_own_select" ON daily_plans
-  FOR SELECT USING (teacher_id = auth.uid() AND school_id = current_school_id() AND deleted_at IS NULL);
+  FOR SELECT TO authenticated
+  USING (teacher_id = auth.uid() AND school_id = current_school_id() AND deleted_at IS NULL);
 
 CREATE POLICY "daily_plans_own_insert" ON daily_plans
-  FOR INSERT WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR INSERT TO authenticated
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "daily_plans_own_update" ON daily_plans
-  FOR UPDATE USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR UPDATE TO authenticated
+  USING  (teacher_id = auth.uid() AND school_id = current_school_id())
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 -- ── annual_plans ─────────────────────────────────────────────────────────────
 CREATE TABLE annual_plans (
@@ -44,18 +49,22 @@ CREATE TABLE annual_plans (
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX ON annual_plans (teacher_id, academic_year, subject);
+CREATE UNIQUE INDEX ON annual_plans (teacher_id, school_id, academic_year, subject);
 
 ALTER TABLE annual_plans ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "annual_plans_own_select" ON annual_plans
-  FOR SELECT USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR SELECT TO authenticated
+  USING (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "annual_plans_own_insert" ON annual_plans
-  FOR INSERT WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR INSERT TO authenticated
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "annual_plans_own_update" ON annual_plans
-  FOR UPDATE USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR UPDATE TO authenticated
+  USING  (teacher_id = auth.uid() AND school_id = current_school_id())
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 -- ── sok_reports ───────────────────────────────────────────────────────────────
 CREATE TABLE sok_reports (
@@ -75,17 +84,22 @@ CREATE TABLE sok_reports (
 );
 
 CREATE INDEX ON sok_reports (teacher_id, meeting_date DESC);
+CREATE INDEX ON sok_reports (school_id, meeting_date DESC);
 
 ALTER TABLE sok_reports ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "sok_reports_own_select" ON sok_reports
-  FOR SELECT USING (teacher_id = auth.uid() AND school_id = current_school_id() AND deleted_at IS NULL);
+  FOR SELECT TO authenticated
+  USING (teacher_id = auth.uid() AND school_id = current_school_id() AND deleted_at IS NULL);
 
 CREATE POLICY "sok_reports_own_insert" ON sok_reports
-  FOR INSERT WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR INSERT TO authenticated
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "sok_reports_own_update" ON sok_reports
-  FOR UPDATE USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR UPDATE TO authenticated
+  USING  (teacher_id = auth.uid() AND school_id = current_school_id())
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 -- ── notebook_checks ───────────────────────────────────────────────────────────
 CREATE TABLE notebook_checks (
@@ -103,13 +117,18 @@ CREATE INDEX ON notebook_checks (teacher_id, check_date DESC);
 ALTER TABLE notebook_checks ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "notebook_checks_own_select" ON notebook_checks
-  FOR SELECT USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR SELECT TO authenticated
+  USING (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "notebook_checks_own_insert" ON notebook_checks
-  FOR INSERT WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR INSERT TO authenticated
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "notebook_checks_own_update" ON notebook_checks
-  FOR UPDATE USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR UPDATE TO authenticated
+  USING  (teacher_id = auth.uid() AND school_id = current_school_id())
+  WITH CHECK (teacher_id = auth.uid() AND school_id = current_school_id());
 
 CREATE POLICY "notebook_checks_own_delete" ON notebook_checks
-  FOR DELETE USING (teacher_id = auth.uid() AND school_id = current_school_id());
+  FOR DELETE TO authenticated
+  USING (teacher_id = auth.uid() AND school_id = current_school_id());
