@@ -30,10 +30,8 @@ export const TenantService = {
     securityLog('tenant.plan_changed', { school_id: schoolId, plan, admin_user_id: adminUserId })
   },
 
-  // TODO(security): RLS policies are not yet gated on school status per-table.
-  // Until supabase/migrations/20260519210000_wire_school_active_check.sql is audited
-  // and per-table RLS policies updated, callers must call isActive() at the service
-  // layer to deny access to suspended tenants.
+  // current_school_id() returns NULL for suspended schools (migration 20260519230000),
+  // so all downstream RLS policies automatically block suspended tenants.
   async isActive(schoolId: string): Promise<boolean> {
     const tenant = await TenantRepository.getTenant(schoolId)
     return tenant?.status === 'active'

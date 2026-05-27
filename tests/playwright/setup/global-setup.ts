@@ -107,7 +107,7 @@ async function ensureTestUser(
   if (existingUser) return  // Zaten var
 
   // Yeni kullanıcı oluştur
-  // Test okulu bul veya oluştur
+  // Test okulu bul veya oluştur (code kolonu yok — sadece name kullan)
   let schoolId: string
   const { data: schools } = await client
     .from('schools').select('id').ilike('name', '__PW_TEST__%').limit(1)
@@ -115,19 +115,21 @@ async function ensureTestUser(
   if (schools?.length) {
     schoolId = schools[0].id
   } else {
-    const { data: newSchool } = await client
+    const { data: newSchool, error: schoolErr } = await client
       .from('schools')
-      .insert({ name: '__PW_TEST__ Okul', code: 'PW_TEST_001' })
+      .insert({ name: '__PW_TEST__ Okul' })
       .select('id').single()
-    schoolId = newSchool!.id
+    if (schoolErr || !newSchool) throw new Error(`Test okulu oluşturulamadı: ${schoolErr?.message}`)
+    schoolId = newSchool.id
   }
 
-  const { data: authData } = await client.auth.admin.createUser({
+  const { data: authData, error: userErr } = await client.auth.admin.createUser({
     email, password, email_confirm: true,
   })
+  if (userErr || !authData.user) throw new Error(`Test kullanıcısı oluşturulamadı: ${userErr?.message}`)
 
   await client.rpc('admin_set_profile', {
-    p_id:        authData.user!.id,
+    p_id:        authData.user.id,
     p_full_name: `PW Test ${role}`,
     p_subject:   'Test',
     p_role:      role,
