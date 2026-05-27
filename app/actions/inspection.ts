@@ -90,6 +90,7 @@ export async function approveAnnualPlanAction(planId: string) {
   if (error) return { error: error.message }
 
   revalidatePath('/profil/dosyam')
+  revalidatePath('/profil/dosyam/yillik-plan')
   return {}
 }
 
