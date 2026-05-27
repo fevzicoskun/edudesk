@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useEffect } from 'react'
 import { useRouter }     from 'next/navigation'
-import { createDailyPlanAction } from '@/app/actions/inspection'
+import { createDailyPlanAction, updateDailyPlanAction } from '@/app/actions/inspection'
 import {
   DEFAULT_INTRO_TEXT,
   DEFAULT_DEVELOPMENT_TEXT,
@@ -26,10 +26,14 @@ interface Props {
     development_text: string
     conclusion_text:  string
   }
+  planId?: string
 }
 
-export default function GunlukPlanForm({ classes, defaultValues }: Props) {
-  const [state, action, pending] = useActionState(createDailyPlanAction, null)
+export default function GunlukPlanForm({ classes, defaultValues, planId }: Props) {
+  const boundAction = defaultValues && planId
+    ? updateDailyPlanAction.bind(null, planId)
+    : createDailyPlanAction
+  const [state, action, pending] = useActionState(boundAction, null)
   const router = useRouter()
 
   const [selectedMethods,   setSelectedMethods]   = useState<string[]>(defaultValues?.methods   ?? [])
@@ -49,7 +53,7 @@ export default function GunlukPlanForm({ classes, defaultValues }: Props) {
 
   return (
     <form action={action} className="flex flex-col gap-4 max-w-2xl">
-      <h1 className="text-lg font-bold">Yeni Günlük Plan</h1>
+      <h1 className="text-lg font-bold">{planId ? 'Planı Düzenle' : 'Yeni Günlük Plan'}</h1>
 
       {state?.error && (
         <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">

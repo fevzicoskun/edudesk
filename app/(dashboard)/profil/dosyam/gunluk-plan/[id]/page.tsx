@@ -23,6 +23,7 @@ export default async function GunlukPlanEditPage({ params }: { params: Promise<{
   return (
     <GunlukPlanForm
       classes={classes}
+      planId={plan.id}
       defaultValues={{
         class_id:         plan.class_id,
         plan_date:        plan.plan_date,
