@@ -102,6 +102,39 @@ const SokBaseSchema = z.object({
   academic_year: z.string().min(7).max(9),
 })
 
+const ParticipantSchema = z.object({
+  user_id:    z.string().min(1),
+  full_name:  z.string().min(1),
+  subject:    z.string().min(1),
+})
+
+const AgendaItemSchema = z.object({
+  order:      z.number().int().min(0),
+  text:       z.string().min(1),
+  discussed:  z.boolean(),
+  note:       z.string(),
+})
+
+const DecisionSchema = z.object({
+  order:  z.number().int().min(0),
+  text:   z.string().min(1),
+  note:   z.string(),
+})
+
+const StudentNoteSchema = z.object({
+  student_id:   z.string().min(1),
+  student_name: z.string().min(1),
+  status:       z.enum(['basarili', 'basarisiz', 'riskli']),
+  note:         z.string(),
+})
+
+const UpdateSokSchema = z.object({
+  participants:  z.array(ParticipantSchema).optional(),
+  agenda_items:  z.array(AgendaItemSchema).optional(),
+  decisions:     z.array(DecisionSchema).optional(),
+  student_notes: z.array(StudentNoteSchema).optional(),
+})
+
 export async function createSokReportAction(_: unknown, formData: FormData) {
   const ability = await getAbility()
   if (!ability) return { error: 'Giriş gerekli' }
@@ -114,11 +147,37 @@ export async function createSokReportAction(_: unknown, formData: FormData) {
   }))
   const decisions = DEFAULT_DECISIONS.map(d => ({ ...d, note: '' }))
 
+  // Validate participants with try/catch
+  let participants: z.infer<typeof ParticipantSchema>[] = []
   const participantsRaw = formData.get('participants')
-  const participants = participantsRaw ? JSON.parse(participantsRaw as string) : []
+  if (participantsRaw) {
+    try {
+      const parsed = JSON.parse(participantsRaw as string)
+      const validated = z.array(ParticipantSchema).safeParse(parsed)
+      if (!validated.success) {
+        return { error: validated.error.issues[0]?.message ?? 'Geçersiz katılımcı verisi' }
+      }
+      participants = validated.data
+    } catch {
+      return { error: 'Katılımcı verisi JSON biçiminde değil' }
+    }
+  }
 
+  // Validate agenda items with try/catch
+  let finalAgenda = agendaItems
   const agendaRaw = formData.get('agenda_items')
-  const finalAgenda = agendaRaw ? JSON.parse(agendaRaw as string) : agendaItems
+  if (agendaRaw) {
+    try {
+      const parsed = JSON.parse(agendaRaw as string)
+      const validated = z.array(AgendaItemSchema).safeParse(parsed)
+      if (!validated.success) {
+        return { error: validated.error.issues[0]?.message ?? 'Geçersiz gündemi verisi' }
+      }
+      finalAgenda = validated.data
+    } catch {
+      return { error: 'Gündemi verisi JSON biçiminde değil' }
+    }
+  }
 
   const { data, error } = await InspectionRepository.insertSokReport({
     ...parsed.data,
@@ -145,7 +204,12 @@ export async function updateSokReportAction(id: string, updates: {
   const ability = await getAbility()
   if (!ability) return { error: 'Giriş gerekli' }
 
-  const { error } = await InspectionRepository.updateSokReport(id, ability.userId, updates as never)
+  const validated = UpdateSokSchema.safeParse(updates)
+  if (!validated.success) {
+    return { error: validated.error.issues[0]?.message ?? 'Geçersiz güncelleme verisi' }
+  }
+
+  const { error } = await InspectionRepository.updateSokReport(id, ability.userId, validated.data as never)
   if (error) return { error: error.message }
 
   revalidatePath('/profil/dosyam/sok')
