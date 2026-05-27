@@ -81,7 +81,7 @@ export const InspectionRepository = {
     const supabase = await createClient()
     return supabase
       .from('annual_plans')
-      .upsert(data, { onConflict: 'teacher_id,academic_year,subject' })
+      .upsert(data, { onConflict: 'teacher_id,school_id,academic_year,subject' })
       .select()
       .single<AnnualPlan>()
   },
