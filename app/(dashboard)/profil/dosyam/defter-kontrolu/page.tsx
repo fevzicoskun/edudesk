@@ -1,5 +1,6 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect }          from 'next/navigation'
+import Link                  from 'next/link'
 import { createClient }      from '@/src/infrastructure/supabase/server'
 import { InspectionRepository } from '@/src/domains/inspection/repositories/InspectionRepository'
 import NotebookCheckClient   from './NotebookCheckClient'
@@ -19,7 +20,8 @@ export default async function DefterKontrolPage() {
   const classes = classesResult.data ?? []
 
   return (
-    <div>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <Link href="/profil/dosyam" className="text-xs text-gray-500 mb-4 inline-block">← Dosyam</Link>
       <h1 className="text-lg font-bold mb-4">Defter Kontrolü</h1>
       <NotebookCheckClient classes={classes} checks={checks} />
     </div>

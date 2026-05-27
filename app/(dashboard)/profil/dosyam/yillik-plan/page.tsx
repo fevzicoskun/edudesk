@@ -1,6 +1,7 @@
 // app/(dashboard)/profil/dosyam/yillik-plan/page.tsx
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect }          from 'next/navigation'
+import Link                  from 'next/link'
 import { AnnualPlanService } from '@/src/domains/inspection/services/AnnualPlanService'
 import { approveAnnualPlanAction } from '@/app/actions/inspection'
 
@@ -29,7 +30,8 @@ export default async function YillikPlanPage() {
   const plan = result.data!
 
   return (
-    <div>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <Link href="/profil/dosyam" className="text-xs text-gray-500 mb-4 inline-block">← Dosyam</Link>
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-lg font-bold">Yıllık Plan</h1>

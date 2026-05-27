@@ -11,7 +11,8 @@ export default async function GunlukPlanListPage() {
   const plans = plansData ?? []
 
   return (
-    <div>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <Link href="/profil/dosyam" className="text-xs text-gray-500 mb-4 inline-block">← Dosyam</Link>
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-lg font-bold">Günlük Ders Planları</h1>
         <Link

@@ -1,5 +1,6 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect, notFound } from 'next/navigation'
+import Link                   from 'next/link'
 import { createClient }       from '@/src/infrastructure/supabase/server'
 import { InspectionRepository } from '@/src/domains/inspection/repositories/InspectionRepository'
 import GunlukPlanForm from '../yeni/GunlukPlanForm'
@@ -21,10 +22,12 @@ export default async function GunlukPlanEditPage({ params }: { params: Promise<{
   const classes = (classesData ?? []) as { id: string; name: string; grade: number }[]
 
   return (
-    <GunlukPlanForm
-      classes={classes}
-      planId={plan.id}
-      defaultValues={{
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <Link href="/profil/dosyam/gunluk-plan" className="text-xs text-gray-500 mb-4 inline-block">← Günlük Planlar</Link>
+      <GunlukPlanForm
+        classes={classes}
+        planId={plan.id}
+        defaultValues={{
         class_id:         plan.class_id,
         plan_date:        plan.plan_date,
         lesson_hour:      plan.lesson_hour,
@@ -37,6 +40,7 @@ export default async function GunlukPlanEditPage({ params }: { params: Promise<{
         development_text: plan.development_text,
         conclusion_text:  plan.conclusion_text,
       }}
-    />
+      />
+    </div>
   )
 }

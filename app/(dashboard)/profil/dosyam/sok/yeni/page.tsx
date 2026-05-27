@@ -1,5 +1,6 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect }          from 'next/navigation'
+import Link                  from 'next/link'
 import { createClient }      from '@/src/infrastructure/supabase/server'
 import SokForm               from './SokForm'
 
@@ -28,11 +29,14 @@ export default async function YeniSokPage() {
   const currentTerm: 1 | 2 = (month >= 9 || month <= 1) ? 1 : 2
 
   return (
-    <SokForm
-      classes={classes}
-      teachers={teachers}
-      currentTerm={currentTerm}
-      academicYear={getCurrentAcademicYear()}
-    />
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <Link href="/profil/dosyam/sok" className="text-xs text-gray-500 mb-4 inline-block">← ŞÖK Tutanakları</Link>
+      <SokForm
+        classes={classes}
+        teachers={teachers}
+        currentTerm={currentTerm}
+        academicYear={getCurrentAcademicYear()}
+      />
+    </div>
   )
 }

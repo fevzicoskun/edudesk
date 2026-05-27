@@ -12,7 +12,7 @@ export default async function SokDetailPage({ params }: { params: Promise<{ id: 
   if (!report) notFound()
 
   return (
-    <div className="max-w-2xl">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-lg font-bold">ŞÖK Tutanağı</h1>
