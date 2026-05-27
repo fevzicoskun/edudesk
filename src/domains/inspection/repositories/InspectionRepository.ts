@@ -32,7 +32,11 @@ export const InspectionRepository = {
     return supabase.from('daily_plans').insert(data).select().single<DailyPlan>()
   },
 
-  async updateDailyPlan(id: string, teacherId: string, data: Partial<DailyPlan>) {
+  async updateDailyPlan(
+    id: string,
+    teacherId: string,
+    data: Partial<Omit<DailyPlan, 'id' | 'created_at' | 'deleted_at' | 'teacher_id' | 'school_id'>>
+  ) {
     const supabase = await createClient()
     return supabase
       .from('daily_plans')
@@ -111,7 +115,11 @@ export const InspectionRepository = {
     return supabase.from('sok_reports').insert(data).select().single<SokReport>()
   },
 
-  async updateSokReport(id: string, teacherId: string, data: Partial<SokReport>) {
+  async updateSokReport(
+    id: string,
+    teacherId: string,
+    data: Partial<Omit<SokReport, 'id' | 'created_at' | 'deleted_at' | 'teacher_id' | 'school_id'>>
+  ) {
     const supabase = await createClient()
     return supabase
       .from('sok_reports')
