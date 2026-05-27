@@ -58,5 +58,13 @@ describe('getCompletionStatus', () => {
     ;(InspectionRepository.countNotebookChecksThisTerm as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
     const result = await InspectionService.getCompletionStatus({ zumreCount: 0, examCount: 0 })
     expect(result.score).toBe(0)
+    expect(result.dailyPlans).toBe(false)
+    expect(result.annualPlan).toBe(false)
+  })
+
+  it('profil null ise hata fırlatır', async () => {
+    ;(getCurrentProfile as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    await expect(InspectionService.getCompletionStatus({ zumreCount: 0, examCount: 0 }))
+      .rejects.toThrow('Profil bulunamadı')
   })
 })
