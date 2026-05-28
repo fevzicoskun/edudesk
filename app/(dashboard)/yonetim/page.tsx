@@ -6,6 +6,7 @@ import SchoolMeetings from '../anasayfa/SchoolMeetings'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
 import MudurHizliAksiyonlar from '../anasayfa/MudurHizliAksiyonlar'
+import UyariBandi from './UyariBandi'
 
 export const revalidate = 0
 
@@ -32,6 +33,9 @@ export default async function YonetimPage() {
           {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Uyarı bandı — sadece uyarı varsa render edilir */}
+      <UyariBandi />
 
       {/* Kademe kartları */}
       <OkulSeviyesiKartlari />

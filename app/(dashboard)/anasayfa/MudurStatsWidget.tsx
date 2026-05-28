@@ -57,21 +57,6 @@ export default async function MudurStatsWidget() {
     return !ls || ls < twoWeeksAgo
   })
 
-  const alerts: { text: string; level: 'red' | 'yellow' | 'green' }[] = []
-  if (inactiveTeachers.length >= 3)      alerts.push({ text: `${inactiveTeachers.length} öğretmen 14+ gün pasif`, level: 'red' })
-  else if (inactiveTeachers.length > 0)  alerts.push({ text: `${inactiveTeachers.length} öğretmen 14+ gün pasif`, level: 'yellow' })
-  else                                   alerts.push({ text: 'Tüm öğretmenler aktif', level: 'green' })
-  if (thisMonthMeetings.length === 0)    alerts.push({ text: 'Bu ay toplantı kaydı yok', level: 'yellow' })
-
-  const ALERT_STYLE = {
-    red:    'bg-red-500/20 text-red-300 border border-red-500/30',
-    yellow: 'bg-amber-500/20 text-amber-200 border border-amber-500/30',
-    green:  'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30',
-  }
-  const ALERT_DOT = {
-    red: 'bg-red-400', yellow: 'bg-amber-400', green: 'bg-emerald-400',
-  }
-
   const activeCount = teacherProfiles.length - inactiveTeachers.length
   const activeGradient = inactiveTeachers.length > 0
     ? 'from-amber-500 to-amber-600'
@@ -79,15 +64,6 @@ export default async function MudurStatsWidget() {
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 mb-4">
-        {alerts.map((a, i) => (
-          <span key={i} className={`inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full ${ALERT_STYLE[a.level]}`}>
-            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${ALERT_DOT[a.level]}`} />
-            {a.text}
-          </span>
-        ))}
-      </div>
-
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
           value={studentCount} label="Öğrenci" sub={`${classCount} sınıf`} href="/siniflar"
@@ -113,20 +89,6 @@ export default async function MudurStatsWidget() {
         />
       </div>
 
-      {inactiveTeachers.length > 0 && (
-        <div className="flex items-start gap-3 p-4 mt-4 bg-amber-500/10 border border-amber-500/25 rounded-xl">
-          <svg className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <div>
-            <p className="text-sm font-semibold text-amber-200">{inactiveTeachers.length} öğretmen 14 gündür sisteme giriş yapmadı</p>
-            <p className="text-xs text-amber-300/80 mt-0.5">
-              {inactiveTeachers.slice(0, 4).map(t => t.full_name).join(', ')}
-              {inactiveTeachers.length > 4 && ` ve ${inactiveTeachers.length - 4} kişi daha`}
-            </p>
-          </div>
-        </div>
-      )}
     </>
   )
 }
