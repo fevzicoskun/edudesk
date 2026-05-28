@@ -5,7 +5,7 @@ export const HomeworkSourceRepository = {
     const supabase = await createClient()
     return supabase
       .from('homework_sources')
-      .select('id, name, subject, active, created_at')
+      .select('id, name, subject')
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .eq('active', true)

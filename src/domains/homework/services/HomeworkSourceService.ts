@@ -66,22 +66,20 @@ export const HomeworkSourceService = {
     const usageMap = new Map<string, { lastDate: string; thisMonth: number }>()
     for (const h of homeworks) {
       if (!h.source_id) continue
-      const prev      = usageMap.get(h.source_id)
-      const thisMonth = h.assigned_date >= thisMonthStart ? 1 : 0
+      const prev       = usageMap.get(h.source_id)
+      const isThisMonth = h.assigned_date >= thisMonthStart
       if (!prev) {
-        usageMap.set(h.source_id, { lastDate: h.assigned_date, thisMonth })
+        usageMap.set(h.source_id, { lastDate: h.assigned_date, thisMonth: isThisMonth ? 1 : 0 })
       } else {
-        usageMap.set(h.source_id, {
-          lastDate:  h.assigned_date > prev.lastDate ? h.assigned_date : prev.lastDate,
-          thisMonth: prev.thisMonth + thisMonth,
-        })
+        if (h.assigned_date > prev.lastDate) prev.lastDate = h.assigned_date
+        if (isThisMonth) prev.thisMonth++
       }
     }
 
     const data = sources.map(s => {
       const usage     = usageMap.get(s.id)
       const daysSince = usage
-        ? Math.floor((today.getTime() - new Date(usage.lastDate).getTime()) / MS_PER_DAY)
+        ? Math.floor((today.getTime() - Date.parse(usage.lastDate)) / MS_PER_DAY)
         : null
       return {
         id:        s.id,
