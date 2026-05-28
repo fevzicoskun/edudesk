@@ -1,14 +1,21 @@
+import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
-import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
-import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
-import MudurHizliAksiyonlar from '../anasayfa/MudurHizliAksiyonlar'
+import MudurOgretmenAktivite from '../anasayfa/MudurOgretmenAktivite'
+import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
+import OdevGirisWidget from './OdevGirisWidget'
 
 export const revalidate = 0
+
+function CardSkeleton({ tall }: { tall?: boolean }) {
+  return (
+    <div className={`animate-pulse rounded-2xl bg-gray-100 dark:bg-slate-800 ${tall ? 'h-64' : 'h-32'}`} />
+  )
+}
 
 export default async function YonetimPage() {
   const profile = await getCurrentProfile()
@@ -24,7 +31,7 @@ export default async function YonetimPage() {
   const meetings = data ?? []
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
 
       {/* Başlık */}
       <div>
@@ -35,23 +42,27 @@ export default async function YonetimPage() {
       </div>
 
       {/* Uyarı bandı — sadece uyarı varsa render edilir */}
-      <UyariBandi />
+      <Suspense fallback={null}>
+        <UyariBandi />
+      </Suspense>
 
-      {/* Kademe kartları */}
-      <OkulSeviyesiKartlari />
+      {/* Bugünkü yoklama */}
+      <Suspense fallback={<CardSkeleton />}>
+        <BugunYoklamaWidget />
+      </Suspense>
 
-      {/* Genel istatistikler + pasif öğretmen uyarısı */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-4">Genel İstatistikler</h2>
-        <MudurStatsWidget />
+      {/* 2 kolon: öğretmen aktivitesi + ödev girişi */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<CardSkeleton tall />}>
+          <MudurOgretmenAktivite />
+        </Suspense>
+        <Suspense fallback={<CardSkeleton tall />}>
+          <OdevGirisWidget />
+        </Suspense>
       </div>
-
-      {/* Hızlı erişim */}
-      <MudurHizliAksiyonlar />
 
       {/* Toplantı kayıtları */}
       <div id="toplanti-kayitlari">
-        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Toplantı Kayıtları</h2>
         <SchoolMeetings initial={meetings} />
       </div>
 
