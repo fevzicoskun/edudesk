@@ -1,24 +1,36 @@
 'use client'
 
-import { useActionState, useTransition, useOptimistic } from 'react'
+import { useActionState, useTransition, useOptimistic, useState } from 'react'
 import { createHomeworkSource, deleteHomeworkSource } from '@/app/actions/homework-source'
 
 type Source = { id: string; name: string; subject: string | null }
+type OptimisticAction = { type: 'add'; source: Source } | { type: 'remove'; id: string }
 
 const inputCls =
-  'flex-1 min-w-0 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all'
+  'px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all'
 
 export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
-  const [optimistic, addOptimistic] = useOptimistic<Source[], Source>(
+  const [optimistic, updateOptimistic] = useOptimistic<Source[], OptimisticAction>(
     initial,
-    (state, newSource) => [...state, newSource],
+    (state, action) => {
+      if (action.type === 'add')    return [...state, action.source]
+      if (action.type === 'remove') return state.filter(s => s.id !== action.id)
+      return state
+    },
   )
   const [, startTransition] = useTransition()
   const [state, formAction, isPending] = useActionState(createHomeworkSource, null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  async function handleDelete(id: string) {
+  function handleDelete(source: Source) {
+    setDeleteError(null)
     startTransition(async () => {
-      await deleteHomeworkSource(id)
+      updateOptimistic({ type: 'remove', id: source.id })
+      try {
+        await deleteHomeworkSource(source.id)
+      } catch {
+        setDeleteError(`"${source.name}" silinemedi. Lütfen tekrar deneyin.`)
+      }
     })
   }
 
@@ -42,7 +54,7 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
               )}
             </div>
             <button
-              onClick={() => handleDelete(s.id)}
+              onClick={() => handleDelete(s)}
               className="p-1.5 text-gray-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
               aria-label="Kaynağı sil"
             >
@@ -59,13 +71,18 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
         )}
       </ul>
 
+      {/* Hata mesajları */}
+      {deleteError && (
+        <p className="text-xs text-red-600 dark:text-red-400">{deleteError}</p>
+      )}
+
       {/* Yeni kaynak formu */}
       <form
         action={(formData) => {
           const name    = String(formData.get('name') ?? '').trim()
           const subject = String(formData.get('subject') ?? '').trim() || null
           if (!name) return
-          addOptimistic({ id: crypto.randomUUID(), name, subject })
+          updateOptimistic({ type: 'add', source: { id: crypto.randomUUID(), name, subject } })
           formAction(formData)
         }}
         className="space-y-2"
@@ -78,12 +95,12 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
             name="name"
             required
             placeholder="Kaynak adı (örn. Kondisyon Soru Bankası)"
-            className={inputCls}
+            className={`flex-1 min-w-0 ${inputCls}`}
           />
           <input
             name="subject"
             placeholder="Ders (opsiyonel)"
-            className="w-32 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all"
+            className={`w-32 ${inputCls}`}
           />
           <button
             type="submit"

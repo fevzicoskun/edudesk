@@ -2,6 +2,9 @@ import { HomeworkSourceRepository } from '../repositories/HomeworkSourceReposito
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 
+const MS_PER_DAY = 86_400_000
+const USAGE_LOOKBACK_DAYS = 120
+
 export const HomeworkSourceService = {
   async getSources() {
     const ability = await getAbility()
@@ -30,7 +33,7 @@ export const HomeworkSourceService = {
   async deleteSource(id: string) {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
-    if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.' }
+    if (ability.cannot(P.HOMEWORK.DELETE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
     const { error } = await HomeworkSourceRepository.deactivate(id, ability.userId, ability.schoolId)
     if (error) return { error: error.message }
@@ -41,24 +44,29 @@ export const HomeworkSourceService = {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli', data: null }
 
+    const lookbackDate = new Date()
+    lookbackDate.setDate(lookbackDate.getDate() - USAGE_LOOKBACK_DAYS)
+    const since = lookbackDate.toISOString().split('T')[0]
+
     const [sourcesRes, homeworksRes] = await Promise.all([
       HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId),
-      HomeworkSourceRepository.findHomeworkDates(ability.userId, ability.schoolId),
+      HomeworkSourceRepository.findHomeworkDates(ability.userId, ability.schoolId, since),
     ])
 
-    if (sourcesRes.error) return { error: sourcesRes.error.message, data: null }
+    if (sourcesRes.error)  return { error: sourcesRes.error.message,  data: null }
+    if (homeworksRes.error) return { error: homeworksRes.error.message, data: null }
 
-    const sources = sourcesRes.data ?? []
+    const sources   = sourcesRes.data  ?? []
     const homeworks = homeworksRes.data ?? []
 
-    const today = new Date()
+    const today          = new Date()
     const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
       .toISOString().split('T')[0]
 
     const usageMap = new Map<string, { lastDate: string; thisMonth: number }>()
     for (const h of homeworks) {
       if (!h.source_id) continue
-      const prev = usageMap.get(h.source_id)
+      const prev      = usageMap.get(h.source_id)
       const thisMonth = h.assigned_date >= thisMonthStart ? 1 : 0
       if (!prev) {
         usageMap.set(h.source_id, { lastDate: h.assigned_date, thisMonth })
@@ -71,17 +79,17 @@ export const HomeworkSourceService = {
     }
 
     const data = sources.map(s => {
-      const usage = usageMap.get(s.id)
+      const usage     = usageMap.get(s.id)
       const daysSince = usage
-        ? Math.floor((today.getTime() - new Date(usage.lastDate).getTime()) / 86_400_000)
+        ? Math.floor((today.getTime() - new Date(usage.lastDate).getTime()) / MS_PER_DAY)
         : null
       return {
-        id:         s.id,
-        name:       s.name,
-        subject:    s.subject,
-        lastDate:   usage?.lastDate ?? null,
+        id:        s.id,
+        name:      s.name,
+        subject:   s.subject,
+        lastDate:  usage?.lastDate ?? null,
         daysSince,
-        thisMonth:  usage?.thisMonth ?? 0,
+        thisMonth: usage?.thisMonth ?? 0,
       }
     })
 

@@ -32,7 +32,7 @@ export const HomeworkSourceRepository = {
       .eq('school_id', schoolId)
   },
 
-  async findHomeworkDates(teacherId: string, schoolId: string) {
+  async findHomeworkDates(teacherId: string, schoolId: string, since: string) {
     const supabase = await createClient()
     return supabase
       .from('homeworks')
@@ -41,5 +41,6 @@ export const HomeworkSourceRepository = {
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .not('source_id', 'is', null)
+      .gte('assigned_date', since)
   },
 }
