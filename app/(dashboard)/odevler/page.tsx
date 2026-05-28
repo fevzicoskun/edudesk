@@ -8,6 +8,7 @@ import OdevlerFilterBar from './FilterBar'
 import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
+import KaynakTakibiWidget from './KaynakTakibiWidget'
 
 export const revalidate = 30
 
@@ -73,6 +74,14 @@ export default async function OdevlerPage({
             )}
           </div>
         </div>
+
+        {canWrite && (
+          <Suspense fallback={null}>
+            <div className="mb-6">
+              <KaynakTakibiWidget />
+            </div>
+          </Suspense>
+        )}
 
         <OdevlerFilterBar
           classes={classes}

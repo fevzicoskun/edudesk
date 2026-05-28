@@ -47,6 +47,16 @@ export interface Student {
   created_at: string
 }
 
+export interface HomeworkSource {
+  id: string
+  teacher_id: string
+  school_id: string
+  name: string
+  subject: string | null
+  active: boolean
+  created_at: string
+}
+
 export interface Homework {
   id: string
   teacher_id: string
@@ -56,6 +66,7 @@ export interface Homework {
   subject: string
   assigned_date: string
   due_date: string
+  source_id: string | null
   created_at: string
 }
 

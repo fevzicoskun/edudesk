@@ -10,12 +10,21 @@ export default async function YeniOdevPage() {
   if (profile && isMudurOrAbove(profile.role)) redirect('/odevler')
 
   const supabase = await createClient()
-  const { data: classes } = await supabase
-    .from('classes')
-    .select('id, name, grade')
-    .eq('school_id', profile?.school_id ?? '')
-    .order('grade')
-    .order('name')
+  const [classesRes, sourcesRes] = await Promise.all([
+    supabase
+      .from('classes')
+      .select('id, name, grade')
+      .eq('school_id', profile?.school_id ?? '')
+      .order('grade')
+      .order('name'),
+    supabase
+      .from('homework_sources')
+      .select('id, name, subject')
+      .eq('teacher_id', profile?.id ?? '')
+      .eq('school_id', profile?.school_id ?? '')
+      .eq('active', true)
+      .order('name'),
+  ])
 
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-50">
@@ -34,7 +43,10 @@ export default async function YeniOdevPage() {
             <p className="text-xs text-gray-500">Sınıfınıza yeni bir görev tanımlayın</p>
           </div>
         </div>
-        <HomeworkForm classes={classes ?? []} />
+        <HomeworkForm
+          classes={classesRes.data ?? []}
+          sources={sourcesRes.data ?? []}
+        />
       </div>
     </div>
   )

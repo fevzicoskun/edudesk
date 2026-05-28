@@ -19,6 +19,7 @@ export const HomeworkService = {
     description: string | null
     subject:     string
     due_date:    string
+    source_id?:  string | null
   }): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
@@ -28,6 +29,7 @@ export const HomeworkService = {
       teacher_id: ability.userId,
       school_id:  ability.schoolId,
       ...data,
+      source_id: data.source_id ?? null,
     })
 
     if (error) return { error: error.message }

@@ -14,12 +14,14 @@ export async function createHomework(_: unknown, formData: FormData) {
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
     due_date:    formData.get('due_date'),
+    source_id:   formData.get('source_id') || null,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
   const result = await HomeworkService.createHomework({
     ...parsed.data,
     description: parsed.data.description ?? null,
+    source_id:   parsed.data.source_id ?? null,
   })
   if (result.error) return result
 

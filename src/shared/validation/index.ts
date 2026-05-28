@@ -30,11 +30,23 @@ export const studentNoteSchema = z.object({
 })
 
 export const createHomeworkSchema = z.object({
-  class_id: UUID,
-  title: z.string().min(1, 'Başlık gerekli').max(200),
+  class_id:  UUID,
+  title:     z.string().min(1, 'Başlık gerekli').max(200),
   description: z.string().max(2000).optional().nullable(),
-  subject: z.string().min(1, 'Ders gerekli').max(100),
-  due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı'),
+  subject:   z.string().min(1, 'Ders gerekli').max(100),
+  due_date:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı'),
+  source_id: UUID.optional().nullable(),
+})
+
+export const createHomeworkSourceSchema = z.object({
+  name:    z.string().min(1, 'Kaynak adı gerekli').max(100),
+  subject: z.string().max(100).optional().nullable(),
+})
+
+export const updateHomeworkSourceSchema = z.object({
+  id:      UUID,
+  name:    z.string().min(1).max(100).optional(),
+  active:  z.boolean().optional(),
 })
 
 export const createMeetingSchema = z.object({

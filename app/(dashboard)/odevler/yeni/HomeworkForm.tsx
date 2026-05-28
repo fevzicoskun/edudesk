@@ -4,12 +4,19 @@ import { useActionState } from 'react'
 import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 
-type ClassItem = { id: string; name: string; grade: number }
+type ClassItem  = { id: string; name: string; grade: number }
+type SourceItem = { id: string; name: string; subject: string | null }
 
 const field =
   'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
-export default function HomeworkForm({ classes }: { classes: ClassItem[] }) {
+export default function HomeworkForm({
+  classes,
+  sources,
+}: {
+  classes: ClassItem[]
+  sources: SourceItem[]
+}) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
 
   return (
@@ -59,6 +66,41 @@ export default function HomeworkForm({ classes }: { classes: ClassItem[] }) {
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
               <input name="subject" type="text" required placeholder="Matematik" className={field} />
             </div>
+          </div>
+
+          {/* Kaynak */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Kaynak <span className="text-gray-400 font-normal normal-case tracking-normal">(opsiyonel)</span>
+              </label>
+              <Link
+                href="/ayarlar#kaynaklar"
+                className="text-[11px] text-blue-500 hover:text-blue-700 transition-colors"
+              >
+                Kaynaklarımı yönet →
+              </Link>
+            </div>
+            {sources.length > 0 ? (
+              <select name="source_id" className={field}>
+                <option value="">Kaynak seçin</option>
+                {sources.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}{s.subject ? ` (${s.subject})` : ''}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Henüz kaynak eklemediniz.{' '}
+                <Link href="/ayarlar#kaynaklar" className="font-semibold underline underline-offset-2 hover:text-amber-900">
+                  Ayarlardan ekle
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Başlık */}

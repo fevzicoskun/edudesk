@@ -4,12 +4,13 @@ import type { SubmissionStatus } from '../types'
 export const HomeworkRepository = {
   async insertHomework(data: {
     teacher_id: string
-    school_id: string
-    class_id: string
-    title: string
+    school_id:  string
+    class_id:   string
+    title:      string
     description: string | null
-    subject: string
-    due_date: string
+    subject:    string
+    due_date:   string
+    source_id:  string | null
   }) {
     const supabase = await createClient()
     return supabase.from('homeworks').insert(data)
