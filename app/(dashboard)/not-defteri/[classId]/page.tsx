@@ -7,7 +7,7 @@ import { ChevronLeft } from 'lucide-react'
 import GradeGrid from './GradeGrid'
 import type { GradeColumn, GradeEntry } from '@/src/domains/grades/types'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export default async function NotDefteriDetailPage({
   params,

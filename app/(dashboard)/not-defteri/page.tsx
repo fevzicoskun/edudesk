@@ -3,7 +3,7 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import Link from 'next/link'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 3600
 
 export default async function NotDefteriPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])

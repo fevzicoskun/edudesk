@@ -26,7 +26,9 @@ export async function addColumnAction(_: unknown, formData: FormData) {
   const result = await GradeService.addColumn(parsed.data)
   if (result.error) return result
 
+  // Hem detay sayfası hem liste sayfası (sütun sayısı güncellenir)
   revalidatePath(`/not-defteri/${parsed.data.class_id}`)
+  revalidatePath('/not-defteri')
   return {}
 }
 
@@ -38,6 +40,7 @@ export async function deleteColumnAction(columnId: string, classId: string) {
   if (result.error) return result
 
   revalidatePath(`/not-defteri/${classId}`)
+  revalidatePath('/not-defteri')
   return {}
 }
 
@@ -61,6 +64,7 @@ export async function upsertScoreAction(params: {
   })
   if (result.error) return result
 
-  revalidatePath(`/not-defteri/${params.classId}`)
+  // revalidatePath YOK — not girişleri client state'te yönetiliyor,
+  // sayfa yapısı değişmediği için cache'i patlatmaya gerek yok
   return {}
 }
