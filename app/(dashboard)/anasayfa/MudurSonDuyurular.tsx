@@ -15,7 +15,7 @@ export default async function MudurSonDuyurular() {
 
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
-      <CardHeader className="pb-3 flex flex-row items-center justify-between">
+      <CardHeader className="px-4 pt-4 pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Son Duyurular
         </CardTitle>
@@ -26,7 +26,7 @@ export default async function MudurSonDuyurular() {
           Tümü
         </Link>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="px-4 pb-4 space-y-3">
         {duyurular.length === 0 && (
           <p className="text-sm text-gray-400 dark:text-slate-500 py-4 text-center">
             Henüz duyuru gönderilmedi.

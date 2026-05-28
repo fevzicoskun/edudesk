@@ -38,7 +38,7 @@ export default async function MudurOgretmenAktivite() {
 
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
-      <CardHeader className="pb-3">
+      <CardHeader className="px-4 pt-4 pb-2">
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Öğretmen Aktivitesi
         </CardTitle>
@@ -58,9 +58,13 @@ export default async function MudurOgretmenAktivite() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1 shrink-0">
-                  <Badge variant={isActive ? 'default' : 'destructive'} className="text-[10px] h-4 px-1.5">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    isActive
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'
+                  }`}>
                     {isActive ? 'Aktif' : 'Pasif'}
-                  </Badge>
+                  </span>
                   {t.lastSeen && (
                     <span className="text-[10px] text-gray-400 dark:text-slate-500">
                       {format(new Date(t.lastSeen), 'd MMM')}
