@@ -11,9 +11,10 @@ import MudurOgretmenAktivite      from './MudurOgretmenAktivite'
 import MudurSonDuyurular          from './MudurSonDuyurular'
 import MudurHizliAksiyonlar       from './MudurHizliAksiyonlar'
 
-import MYStatsWidget    from './MYStatsWidget'
-import MYSolSutunWidget from './MYSolSutunWidget'
-import AjandaSection    from './AjandaSection'
+import MYStatsWidget       from './MYStatsWidget'
+import MYSolSutunWidget    from './MYSolSutunWidget'
+import AjandaSection       from './AjandaSection'
+import SinavOrtalamaWidget from './SinavOrtalamaWidget'
 
 export const revalidate = 60
 
@@ -68,6 +69,11 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
 
       {/* Hızlı aksiyonlar */}
       <MudurHizliAksiyonlar />
+
+      {/* Sınav ortalamaları */}
+      <Suspense fallback={<WidgetSkeleton tall />}>
+        <SinavOrtalamaWidget />
+      </Suspense>
 
       {/* Gündem + Etkinlikler */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

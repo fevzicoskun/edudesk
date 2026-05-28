@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import CalendarWidget from './CalendarWidget'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
+import YoklamaTrendWidget from './YoklamaTrendWidget'
+import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
 type Tone = 'blue' | 'orange' | 'rose'
@@ -82,6 +84,16 @@ export default async function OgretmenDashboard() {
             <p className="text-[10px] text-gray-400">Yeni risk</p>
           </div>
         </div>
+      </div>
+
+      {/* Analitik Widgetlar */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <Suspense fallback={<div className="h-52 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800" />}>
+          <YoklamaTrendWidget />
+        </Suspense>
+        <Suspense fallback={<div className="h-52 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800" />}>
+          <OdevTamamlanmaWidget />
+        </Suspense>
       </div>
 
       {/* Alt Grid */}
