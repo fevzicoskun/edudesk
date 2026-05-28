@@ -3,6 +3,15 @@ import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus } from '../types'
 
+const LOCK_DAYS = 3
+
+function isHomeworkLocked(dueDate: string): boolean {
+  const lock = new Date(dueDate)
+  lock.setDate(lock.getDate() + LOCK_DAYS)
+  lock.setHours(23, 59, 59, 999)
+  return new Date() > lock
+}
+
 export const HomeworkService = {
   async createHomework(data: {
     class_id:    string
@@ -39,6 +48,9 @@ export const HomeworkService = {
     if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
+    if (isHomeworkLocked(hw.due_date)) {
+      return { error: 'Bu ödevin kontrol süresi doldu. Son tarihten 3 gün sonra girişler kilitlenir.' }
+    }
 
     const { error } = await HomeworkRepository.upsertSubmissionStatus({
       homework_id: homeworkId,
@@ -67,6 +79,9 @@ export const HomeworkService = {
     if (!hw) return { error: 'Ödev bulunamadı' }
     if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
+    }
+    if (isHomeworkLocked(hw.due_date)) {
+      return { error: 'Bu ödevin kontrol süresi doldu. Son tarihten 3 gün sonra girişler kilitlenir.' }
     }
 
     const rows = studentIds.map(studentId => ({
@@ -98,6 +113,9 @@ export const HomeworkService = {
     const { data: hw } = await HomeworkRepository.findHomeworkTeacher(homeworkId, ability.schoolId)
     if (!hw || ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Ödev bulunamadı veya yetkiniz yok.' }
+    }
+    if (isHomeworkLocked(hw.due_date)) {
+      return { error: 'Bu ödevin kontrol süresi doldu. Son tarihten 3 gün sonra girişler kilitlenir.' }
     }
 
     const { error } = await HomeworkRepository.upsertSubmissionNote({

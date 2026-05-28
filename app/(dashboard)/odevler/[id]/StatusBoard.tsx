@@ -23,6 +23,15 @@ const STYLES: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
+const LOCK_DAYS = 3
+
+function calcIsLocked(dueDate: string): boolean {
+  const lock = new Date(dueDate)
+  lock.setDate(lock.getDate() + LOCK_DAYS)
+  lock.setHours(23, 59, 59, 999)
+  return new Date() > lock
+}
+
 type StatusItem = {
   student_id: string
   full_name: string
@@ -35,11 +44,14 @@ export default function StatusBoard({
   homeworkId,
   items,
   homeworkTitle,
+  dueDate,
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
+  dueDate: string
 }) {
+  const isLocked = calcIsLocked(dueDate)
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map((item) => [item.student_id, item.status]))
   )
@@ -100,6 +112,20 @@ export default function StatusBoard({
 
   return (
     <div>
+      {isLocked && (
+        <div className="flex items-start gap-3 p-4 mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
+          <svg className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Ödev kontrolü kilitlendi</p>
+            <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-0.5">
+              Son tarihten {LOCK_DAYS} gün geçti. Artık durum değişikliği yapılamaz.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Toplu güncelle</p>
@@ -119,13 +145,13 @@ export default function StatusBoard({
           </button>
           <select
             defaultValue=""
-            disabled={isPending}
+            disabled={isPending || isLocked}
             onChange={(event) => {
               if (!event.target.value) return
               setAllStatuses(event.target.value as SubmissionStatus)
               event.target.value = ''
             }}
-            className="w-full sm:w-48 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full sm:w-48 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <option value="">Durum seç</option>
             {STATUS_OPTIONS.map((option) => (
@@ -164,8 +190,9 @@ export default function StatusBoard({
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <button
-                    onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                    className={`text-sm px-3 py-2 min-h-[44px] rounded-lg border transition-colors ${
+                    onClick={() => !isLocked && setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
+                    disabled={isLocked}
+                    className={`text-sm px-3 py-2 min-h-[44px] rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                       notes[item.student_id]
                         ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                         : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
@@ -175,9 +202,9 @@ export default function StatusBoard({
                   </button>
                   <select
                     value={status}
-                    disabled={isPending}
+                    disabled={isPending || isLocked}
                     onChange={(event) => setStatus(item.student_id, event.target.value as SubmissionStatus)}
-                    className={`px-3 py-2 rounded-full border text-sm font-semibold transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 ${STYLES[status]}`}
+                    className={`px-3 py-2 rounded-full border text-sm font-semibold transition-colors shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option} value={option}>{LABELS[option]}</option>
