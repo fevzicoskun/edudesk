@@ -2,7 +2,7 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 
-export const revalidate = 0
+export const revalidate = 30
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
 import VeliWhatsApp from './VeliWhatsApp'

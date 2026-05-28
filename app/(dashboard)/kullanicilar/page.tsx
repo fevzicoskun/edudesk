@@ -6,7 +6,7 @@ import RoleSelector from './RoleSelector'
 import InviteUserForm from './InviteUserForm'
 import DeleteButton from './DeleteButton'
 
-export const revalidate = 0
+export const revalidate = 60
 
 type UserRow = {
   id: string

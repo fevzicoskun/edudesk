@@ -1,3 +1,5 @@
+export const revalidate = 60
+
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClass } from '@/src/domains/classes/actions'

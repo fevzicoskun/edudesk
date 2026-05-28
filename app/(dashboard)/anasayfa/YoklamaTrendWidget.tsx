@@ -2,8 +2,10 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import { subDays } from '@/src/shared/date'
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import YoklamaTrendChart from './YoklamaTrendChart'
+
+const YoklamaTrendChart = dynamic(() => import('./YoklamaTrendChart'), { ssr: false })
 
 function mondayOf(dateStr: string): string {
   const d = new Date(dateStr)

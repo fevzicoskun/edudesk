@@ -1,3 +1,5 @@
+export const revalidate = 30
+
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili } from '@/src/shared/utils'

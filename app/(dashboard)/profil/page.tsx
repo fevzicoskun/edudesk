@@ -1,3 +1,5 @@
+export const revalidate = 300
+
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
