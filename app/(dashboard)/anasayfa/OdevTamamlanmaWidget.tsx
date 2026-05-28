@@ -1,10 +1,8 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const OdevTamamlanmaChart = dynamic(() => import('./OdevTamamlanmaChart'), { ssr: false })
+import OdevTamamlanmaChart from './OdevTamamlanmaChart'
 
 export default async function OdevTamamlanmaWidget() {
   const user = await getCurrentUser()

@@ -1,9 +1,7 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-
-const SinavOrtalamaChart = dynamic(() => import('./SinavOrtalamaChart'), { ssr: false })
+import SinavOrtalamaChart from './SinavOrtalamaChart'
 
 export default async function SinavOrtalamaWidget() {
   const supabase  = await createClient()
