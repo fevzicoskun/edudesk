@@ -1,4 +1,4 @@
-﻿import { Suspense } from 'react'
+import { Suspense } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
@@ -10,6 +10,8 @@ import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 
 export const revalidate = 30
+
+const LOCK_DAYS = 3
 
 type FilterParams = {
   sinif?: string
@@ -83,6 +85,7 @@ export default async function OdevlerPage({
           <HomeworkSection
             params={params}
             userId={user.id}
+            schoolId={sid}
             isZumreBaskani={isZumreBaskani}
             canWrite={canWrite}
           />
@@ -110,11 +113,13 @@ function HomeworkListSkeleton() {
 async function HomeworkSection({
   params,
   userId,
+  schoolId,
   isZumreBaskani,
   canWrite,
 }: {
   params: FilterParams
   userId: string
+  schoolId: string
   isZumreBaskani: boolean
   canWrite: boolean
 }) {
@@ -150,39 +155,161 @@ async function HomeworkSection({
   }
 
   const homeworks = (await query).data ?? []
-  const activeCount = homeworks.filter((hw) => !isPast(parseISO(hw.due_date + 'T23:59:59'))).length
-  const overdueCount = homeworks.length - activeCount
+
+  // Parallel: submission stats + class student counts
+  const homeworkIds = homeworks.map(h => h.id)
+  const classIds = [...new Set(homeworks.map(h => h.class_id as string))]
+
+  const [subStatsRes, classCountsRes] = await Promise.all([
+    homeworkIds.length > 0
+      ? supabase.from('homework_submissions').select('homework_id, status').in('homework_id', homeworkIds)
+      : Promise.resolve({ data: [] as { homework_id: string; status: string }[] }),
+    classIds.length > 0
+      ? supabase.from('students').select('class_id').in('class_id', classIds).eq('school_id', schoolId).is('deleted_at', null)
+      : Promise.resolve({ data: [] as { class_id: string }[] }),
+  ])
+
+  // checked = status != 'yapilmadi'
+  const checkedMap = new Map<string, number>()
+  for (const s of subStatsRes.data ?? []) {
+    if (s.status !== 'yapilmadi') {
+      checkedMap.set(s.homework_id, (checkedMap.get(s.homework_id) ?? 0) + 1)
+    }
+  }
+
+  const classStudentMap = new Map<string, number>()
+  for (const s of classCountsRes.data ?? []) {
+    classStudentMap.set(s.class_id, (classStudentMap.get(s.class_id) ?? 0) + 1)
+  }
+
+  // Categorize
+  const now = new Date()
+  const pendingCheck: typeof homeworks = []
+  const active:       typeof homeworks = []
+  const pastDone:     typeof homeworks = []
+
+  for (const hw of homeworks) {
+    const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
+    if (!overdue) { active.push(hw); continue }
+
+    const lockDate = new Date(hw.due_date)
+    lockDate.setDate(lockDate.getDate() + LOCK_DAYS)
+    lockDate.setHours(23, 59, 59, 999)
+    const locked = now > lockDate
+
+    const checked = checkedMap.get(hw.id) ?? 0
+    if (!locked && checked === 0) pendingCheck.push(hw)
+    else                          pastDone.push(hw)
+  }
+
+  function dueDateStr(due: string): string {
+    try { return format(parseISO(due), 'd MMM yyyy') } catch { return due }
+  }
+
+  function daysUntilLock(due: string): number {
+    const lock = new Date(due)
+    lock.setDate(lock.getDate() + LOCK_DAYS)
+    lock.setHours(23, 59, 59, 999)
+    return Math.max(0, Math.ceil((lock.getTime() - now.getTime()) / 86_400_000))
+  }
+
+  function isLocked(due: string): boolean {
+    const lock = new Date(due)
+    lock.setDate(lock.getDate() + LOCK_DAYS)
+    lock.setHours(23, 59, 59, 999)
+    return now > lock
+  }
+
+  const totalCount = homeworks.length
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 mt-4">
+      {/* İstatistik kartları */}
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 mt-4">
         {[
-          { label: 'Toplam', value: homeworks.length, color: 'text-gray-900' },
-          { label: 'Aktif', value: activeCount, color: 'text-emerald-600' },
-          { label: 'Geçmiş', value: overdueCount, color: 'text-red-500' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 shadow-sm">
-            <p className={`text-2xl font-bold ${color}`}>{value}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{label}</p>
+          { label: 'Toplam',   value: totalCount,          color: 'text-gray-900 dark:text-slate-100', dot: 'bg-gray-400' },
+          { label: 'Aktif',    value: active.length,       color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+          { label: 'Bekliyor', value: pendingCheck.length, color: 'text-amber-600 dark:text-amber-400',   dot: 'bg-amber-500' },
+          { label: 'Geçmiş',  value: pastDone.length,     color: 'text-slate-500 dark:text-slate-400',   dot: 'bg-slate-400' },
+        ].map(({ label, value, color, dot }) => (
+          <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 shadow-sm flex items-center gap-3">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
+            <div>
+              <p className={`text-2xl font-bold leading-none ${color}`}>{value}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{label}</p>
+            </div>
           </div>
         ))}
       </div>
 
-      {homeworks.length === 0 ? (
+      {/* Bekleyen kontroller uyarısı */}
+      {pendingCheck.length > 0 && (
+        <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl overflow-hidden">
+          <div className="flex items-start gap-3 px-4 py-3.5 border-b border-amber-200 dark:border-amber-800/60">
+            <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                {pendingCheck.length} ödev kontrol bekliyor
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
+                Son tarihi geçti, henüz hiç giriş yapılmadı — kilitlenmeden önce kontrol edin.
+              </p>
+            </div>
+          </div>
+          <div className="divide-y divide-amber-100 dark:divide-amber-900/40">
+            {pendingCheck.map(hw => {
+              const cls = hw.classes as { name: string } | null
+              const days = daysUntilLock(hw.due_date)
+              return (
+                <Link
+                  key={hw.id}
+                  href={`/odevler/${hw.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                      {hw.title}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                      {cls?.name ?? '—'} · Son: {dueDateStr(hw.due_date)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      days <= 1
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                    }`}>
+                      {days === 0 ? 'Bugün kilitlenir' : `${days}g kaldı`}
+                    </span>
+                    <svg className="w-4 h-4 text-amber-400 dark:text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {totalCount === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
             <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           </div>
-          <p className="text-gray-900 font-semibold text-base">Henüz ödev yok</p>
-          <p className="text-gray-400 text-sm mt-1 max-w-xs">
-            Sınıflarınıza ödev tanımlamak için yeni bir ödev oluşturun.
-          </p>
+          <p className="text-gray-900 dark:text-slate-100 font-semibold text-base">Henüz ödev yok</p>
+          <p className="text-gray-400 text-sm mt-1 max-w-xs">Sınıflarınıza ödev tanımlamak için yeni bir ödev oluşturun.</p>
           {canWrite && (
             <Link
               href="/odevler/yeni"
-              className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
+              className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -192,35 +319,63 @@ async function HomeworkSection({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {homeworks.map((hw) => {
-            const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
-            const cls = hw.classes as { name: string } | null
-            const teacher = (hw as typeof hw & { teacher?: { full_name: string } | null }).teacher
+        <>
+          {/* Aktif ödevler */}
+          {active.length > 0 && (
+            <section className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+                <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                  Aktif · {active.length}
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {active.map(hw => renderCard(hw, false, false))}
+              </div>
+            </section>
+          )}
 
-            let dueDateStr = 'Tarih yok'
-            try {
-              if (hw.due_date) dueDateStr = format(parseISO(hw.due_date), 'd MMM yyyy')
-            } catch { /* keep default */ }
-
-            return (
-              <SwipeableHomeworkCard
-                key={hw.id}
-                id={hw.id}
-                title={hw.title}
-                subject={hw.subject}
-                className={cls?.name ?? '—'}
-                dueDateStr={dueDateStr}
-                overdue={overdue}
-                description={hw.description ?? undefined}
-                teacherName={teacher?.full_name ?? undefined}
-                canWrite={canWrite}
-                onDelete={deleteHomework.bind(null, hw.id)}
-              />
-            )
-          })}
-        </div>
+          {/* Geçmiş ödevler */}
+          {pastDone.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1.5 h-4 bg-slate-300 dark:bg-slate-600 rounded-full" />
+                <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                  Geçmiş · {pastDone.length}
+                </h2>
+              </div>
+              <div className="space-y-3 opacity-80">
+                {pastDone.map(hw => renderCard(hw, true, isLocked(hw.due_date)))}
+              </div>
+            </section>
+          )}
+        </>
       )}
     </>
   )
+
+  function renderCard(hw: (typeof homeworks)[0], overdue: boolean, locked: boolean) {
+    const cls = hw.classes as { name: string } | null
+    const teacher = (hw as typeof hw & { teacher?: { full_name: string } | null }).teacher
+    const checkedCount = checkedMap.get(hw.id) ?? 0
+    const totalStudents = classStudentMap.get(hw.class_id as string) ?? 0
+    return (
+      <SwipeableHomeworkCard
+        key={hw.id}
+        id={hw.id}
+        title={hw.title}
+        subject={hw.subject}
+        className={cls?.name ?? '—'}
+        dueDateStr={dueDateStr(hw.due_date)}
+        overdue={overdue}
+        description={hw.description ?? undefined}
+        teacherName={teacher?.full_name ?? undefined}
+        canWrite={canWrite}
+        checkedCount={checkedCount}
+        totalStudents={totalStudents}
+        isLocked={locked}
+        onDelete={deleteHomework.bind(null, hw.id)}
+      />
+    )
+  }
 }
