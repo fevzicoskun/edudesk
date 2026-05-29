@@ -62,13 +62,6 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
   },
   {
-    href: '/ogretmen-dosyasi',
-    label: 'Öğretmen Dosyası',
-    mobile: false,
-    roles: ['ogretmen', 'zumre_baskani'],
-    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h3.586a1 1 0 01.707.293L11 7h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" /></svg>,
-  },
-  {
     href: '/ayarlar',
     label: 'Ayarlar',
     mobile: false,
@@ -79,14 +72,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     href: '/duyurular',
     label: 'Duyurular',
     mobile: false,
-    roles: ['mudur', 'mudur_yardimcisi'],
-    icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>,
-  },
-  {
-    href: '/zumre-duyuru',
-    label: 'Zümre Bildirimi',
-    mobile: false,
-    roles: ['zumre_baskani'],
+    roles: ['mudur', 'mudur_yardimcisi', 'zumre_baskani'],
     icon: <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>,
   },
   {

@@ -2,22 +2,20 @@ export const revalidate = 300
 
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import ProfilForm from './ProfilForm'
+import ProfilTabNav from './ProfilTabNav'
+import { isTeachingRole } from '@/src/shared/types'
 
 export default async function ProfilPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
   const profile = await getCurrentProfile()
+  const showTeacherTabs = isTeachingRole(profile?.role)
 
   return (
-    <div>
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
-        <span className="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
-          Profilim
-        </span>
-      </div>
+    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+      <ProfilTabNav active="profil" showTeacherTabs={showTeacherTabs} />
       <ProfilForm
         defaultFullName={profile?.full_name ?? ''}
         defaultSubject={profile?.subject ?? ''}
@@ -28,4 +26,3 @@ export default async function ProfilPage() {
     </div>
   )
 }
-

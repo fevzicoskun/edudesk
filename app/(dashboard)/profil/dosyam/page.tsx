@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { InspectionService } from '@/src/domains/inspection/services/InspectionService'
 import { createClient }      from '@/src/infrastructure/supabase/server'
 import DosyamPdfButton, { type DosyamPdfData } from './DosyamPdfButton'
+import ProfilTabNav from '../ProfilTabNav'
 
 function getCurrentAcademicYear(): string {
   const now = new Date()
@@ -119,17 +120,7 @@ export default async function DosyamPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
-        <Link
-          href="/profil"
-          className="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700"
-        >
-          Profilim
-        </Link>
-        <span className="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600">
-          Dosyam
-        </span>
-      </div>
+      <ProfilTabNav active="dosyam" showTeacherTabs={true} />
 
       <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-xl p-5 text-white mb-4">
         <div className="flex items-center justify-between mb-3">
