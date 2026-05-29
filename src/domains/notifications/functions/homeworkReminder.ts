@@ -130,6 +130,7 @@ export const homeworkReminderFn = inngest.createFunction(
                 <p><strong>${c.title}</strong> adlı ödevinizin teslim tarihi <strong>${c.dueDate}</strong>.</p>
                 <p>${c.daysBefore === 1 ? 'Yarın teslim alınacak.' : `${c.daysBefore} gün kaldı.`}</p>
                 <p>EduDesk'e giriş yaparak öğrenci teslim durumlarını görüntüleyebilirsiniz.</p>
+                <p style="color:#bbb;font-size:11px;margin-top:24px">Bu bildirimleri durdurmak veya sıklığını değiştirmek için <a href="${baseUrl}/ayarlar" style="color:#bbb">bildirim ayarlarınızı</a> güncelleyebilirsiniz.</p>
               </body></html>`,
             })
           )

@@ -4,6 +4,15 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentUser } from '@/src/shared/auth'
 import { mailer } from '@/src/lib/mailer'
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 function randomTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
   return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
@@ -88,11 +97,11 @@ export async function provisionSchool(
       to: mudurEmail,
       subject: 'EduDesk — Okul Hesabınız Hazır',
       html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#1a1a1a">
-        <h2 style="margin-bottom:4px">Hoş Geldiniz, ${mudurName}</h2>
-        <p style="color:#555;margin-top:0"><strong>${schoolName}</strong> için EduDesk hesabınız oluşturuldu.</p>
+        <h2 style="margin-bottom:4px">Hoş Geldiniz, ${escapeHtml(mudurName)}</h2>
+        <p style="color:#555;margin-top:0"><strong>${escapeHtml(schoolName)}</strong> için EduDesk hesabınız oluşturuldu.</p>
         <div style="background:#f4f6ff;border-radius:10px;padding:20px 24px;margin:24px 0">
           <p style="margin:0 0 8px 0;font-size:13px;color:#666">Giriş bilgileriniz:</p>
-          <p style="margin:4px 0"><strong>E-posta:</strong> ${mudurEmail}</p>
+          <p style="margin:4px 0"><strong>E-posta:</strong> ${escapeHtml(mudurEmail)}</p>
           <p style="margin:4px 0"><strong>Geçici Şifre:</strong> <code style="background:#e8ecff;padding:2px 8px;border-radius:4px;font-size:15px">${tempPassword}</code></p>
         </div>
         <a href="${appUrl}/login" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:15px">Giriş Yap →</a>

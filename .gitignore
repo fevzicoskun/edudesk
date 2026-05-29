@@ -52,3 +52,4 @@ supabase/.temp/
 push.bat
 
 .vercel
+test-emails.mjs
