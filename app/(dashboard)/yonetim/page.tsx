@@ -5,9 +5,12 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
 import MudurOgretmenAktivite from '../anasayfa/MudurOgretmenAktivite'
+import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
+import MudurHizliAksiyonlar from '../anasayfa/MudurHizliAksiyonlar'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OdevGirisWidget from './OdevGirisWidget'
+import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 
 export const revalidate = 0
 
@@ -50,6 +53,19 @@ export default async function YonetimPage() {
       <Suspense fallback={<CardSkeleton />}>
         <BugunYoklamaWidget />
       </Suspense>
+
+      {/* Kademe kartları */}
+      <Suspense fallback={<CardSkeleton />}>
+        <OkulSeviyesiKartlari />
+      </Suspense>
+
+      {/* Genel istatistikler */}
+      <Suspense fallback={<CardSkeleton />}>
+        <MudurStatsWidget />
+      </Suspense>
+
+      {/* Hızlı erişim */}
+      <MudurHizliAksiyonlar />
 
       {/* 2 kolon: öğretmen aktivitesi + ödev girişi */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

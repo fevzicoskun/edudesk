@@ -9,7 +9,7 @@ import GundemWidget                from './GundemWidget'
 import MudurGunlukOzetKartlari    from './MudurGunlukOzetKartlari'
 import MudurOgretmenAktivite      from './MudurOgretmenAktivite'
 import MudurSonDuyurular          from './MudurSonDuyurular'
-import MudurHizliAksiyonlar       from './MudurHizliAksiyonlar'
+
 
 import MYStatsWidget       from './MYStatsWidget'
 import MYSolSutunWidget    from './MYSolSutunWidget'
@@ -66,9 +66,6 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
           <MudurSonDuyurular />
         </Suspense>
       </div>
-
-      {/* Hızlı aksiyonlar */}
-      <MudurHizliAksiyonlar />
 
       {/* Sınav ortalamaları */}
       <Suspense fallback={<WidgetSkeleton tall />}>
