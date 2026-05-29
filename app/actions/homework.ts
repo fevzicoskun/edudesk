@@ -79,6 +79,7 @@ export async function deleteHomework(id: string) {
 
 export async function restoreHomework(id: string) {
   UUID.parse(id)
-  await HomeworkService.restoreHomework(id)
+  const result = await HomeworkService.restoreHomework(id)
+  if (result.error) throw new Error(result.error)
   revalidatePath('/odevler')
 }

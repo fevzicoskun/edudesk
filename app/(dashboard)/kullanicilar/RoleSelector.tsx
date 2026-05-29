@@ -23,6 +23,7 @@ export default function RoleSelector({
   const [role, setRole] = useState(currentRole)
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
   const [open, setOpen] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [, startTransition] = useTransition()
   const btnRef = useRef<HTMLButtonElement>(null)
 
@@ -47,14 +48,22 @@ export default function RoleSelector({
     startTransition(async () => {
       try {
         await assignRole(userId, newRole)
+        setErrorMsg(null)
       } catch {
         setRole(prev)
+        setErrorMsg('Rol değiştirilemedi. Lütfen tekrar deneyin.')
+        setTimeout(() => setErrorMsg(null), 3000)
       }
     })
   }
 
   return (
     <div className="relative inline-block">
+      {errorMsg && (
+        <div className="absolute bottom-full mb-1 left-0 z-30 whitespace-nowrap bg-red-600 text-white text-xs font-medium px-2 py-1 rounded shadow">
+          {errorMsg}
+        </div>
+      )}
       <button
         ref={btnRef}
         onClick={handleOpen}

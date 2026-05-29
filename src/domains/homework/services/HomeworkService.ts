@@ -149,13 +149,15 @@ export const HomeworkService = {
     return {}
   },
 
-  async restoreHomework(id: string): Promise<void> {
+  async restoreHomework(id: string): Promise<{ error?: string }> {
     const ability = await getAbility()
-    if (!ability) return
+    if (!ability) return { error: 'Giriş gerekli' }
     // Restore requires school-wide scope — own-scope teachers cannot restore
     const scope = ability.scope(P.HOMEWORK.UPDATE)
-    if (!scope || scope === 'own') return
+    if (!scope || scope === 'own') return { error: 'Bu işlem için yetkiniz yok.' }
 
-    await HomeworkRepository.restoreHomework(id, ability.schoolId)
+    const { error } = await HomeworkRepository.restoreHomework(id, ability.schoolId)
+    if (error) return { error: error.message }
+    return {}
   },
 }

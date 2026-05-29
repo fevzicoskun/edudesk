@@ -23,13 +23,14 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
 
     const record = await step.run('kontrol', async () => {
       const supabase = createServiceClient()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('attendance')
         .select('status, notified_at, students(full_name, veli_email, veli_ad, veli_email_opt_out)')
         .eq('student_id', studentId)
         .eq('class_id', classId)
         .eq('date', date)
-        .single()
+        .maybeSingle()
+      if (error) throw new Error(error.message) // Inngest retry tetiklensin
       return data
     })
 

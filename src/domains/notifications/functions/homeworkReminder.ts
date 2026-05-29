@@ -45,8 +45,6 @@ export const homeworkReminderFn = inngest.createFunction(
         authUsers?.users?.map((u) => [u.id, u.email ?? '']) ?? []
       )
 
-      const todayStr = today.toISOString().split('T')[0]
-
       return homeworks.flatMap((hw) => {
         const pref = prefMap.get(hw.teacher_id)
         if (!pref) return []
