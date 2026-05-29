@@ -2,7 +2,7 @@ export const revalidate = 30
 
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { getEgitimYili } from '@/src/shared/utils'
+import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
 import YoklamaClient from './YoklamaClient'
 
 export default async function YoklamaPage() {
@@ -17,12 +17,30 @@ export default async function YoklamaPage() {
     .order('grade')
     .order('name')
 
-  // Silinmiş öğrencileri filtrele
   const classes: ClassWithStudents[] = (rawClasses ?? []).map(cls => ({
     ...cls,
     students: ((cls.students ?? []) as (Student & { deleted_at: string | null })[])
       .filter(s => !s.deleted_at),
   }))
+
+  // Yıl içi devamsızlık sayaçları
+  const studentIds = classes.flatMap(c => c.students.map(s => s.id))
+  const absenceCounts: Record<string, number> = {}
+
+  if (studentIds.length > 0) {
+    const { data: absences } = await supabase
+      .from('attendance')
+      .select('student_id, status')
+      .eq('school_id', profile.school_id)
+      .in('student_id', studentIds)
+      .gte('date', schoolYearStart())
+      .in('status', ['absent', 'late'])
+
+    for (const a of absences ?? []) {
+      const increment = a.status === 'absent' ? 1 : 0.5
+      absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + increment
+    }
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -30,7 +48,7 @@ export default async function YoklamaPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Devamsız öğrencilerin velisine otomatik e-posta gider</p>
       </div>
-      <YoklamaClient classes={classes} />
+      <YoklamaClient classes={classes} absenceCounts={absenceCounts} />
     </div>
   )
 }

@@ -4,7 +4,10 @@ import { useState, useEffect, useCallback } from 'react'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 
-interface Props { classes: ClassWithStudents[] }
+interface Props {
+  classes: ClassWithStudents[]
+  absenceCounts: Record<string, number>
+}
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   present: 'Mevcut',
@@ -19,7 +22,7 @@ const STATUS_COLORS: Record<AttendanceStatus, string> = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10) }
 
-export default function YoklamaClient({ classes }: Props) {
+export default function YoklamaClient({ classes, absenceCounts }: Props) {
   const [classId,   setClassId]   = useState(classes[0]?.id ?? '')
   const [date,      setDate]      = useState(todayISO())
   const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>({})
@@ -133,10 +136,32 @@ export default function YoklamaClient({ classes }: Props) {
                 const status = statuses[s.id] ?? 'present'
                 return (
                   <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm text-gray-800 dark:text-slate-100">
-                      <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums">{i + 1}.</span>
-                      {s.full_name}
-                      {s.student_number && <span className="ml-1.5 text-xs text-gray-400">#{s.student_number}</span>}
+                    <span className="text-sm text-gray-800 dark:text-slate-100 flex items-center gap-1 min-w-0">
+                      <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums shrink-0">{i + 1}.</span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-medium text-gray-900 dark:text-slate-100 truncate text-sm">
+                          {s.full_name}
+                        </span>
+                        {(() => {
+                          const absent = absenceCounts[s.id] ?? 0
+                          if (absent === 0) return null
+                          const danger = absent >= 20
+                          const warn   = absent >= 15
+                          return (
+                            <span
+                              className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                danger ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                : warn  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
+                              }`}
+                              title={`Yıl içi devamsızlık: ${absent} gün (MEB sınırı: 20 gün)`}
+                            >
+                              {absent}g
+                            </span>
+                          )
+                        })()}
+                      </div>
+                      {s.student_number && <span className="ml-1.5 text-xs text-gray-400 shrink-0">#{s.student_number}</span>}
                     </span>
                     <button
                       type="button"
