@@ -1,5 +1,4 @@
 import { getCurrentProfile } from '@/src/shared/auth'
-import { isYonetici } from '@/src/shared/types'
 import { redirect } from 'next/navigation'
 import ExportPanel from './ExportPanel'
 
@@ -8,7 +7,6 @@ export const revalidate = 300
 export default async function RaporlarPage() {
   const profile = await getCurrentProfile()
   if (!profile) redirect('/login')
-  if (!isYonetici(profile.role)) redirect('/anasayfa')
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
