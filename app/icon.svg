@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 25 27">
+  <!-- Sol sayfa - mor -->
+  <path d="M0 7 L11 0 L11 26 L0 26 Z" fill="#7C3AED"/>
+  <!-- Sırt - koyu -->
+  <rect x="11" y="0" width="3" height="26" fill="#1a1035"/>
+  <!-- Sağ sayfa - yeşil -->
+  <path d="M14 0 L25 7 L25 26 L14 26 Z" fill="#10B981"/>
+</svg>
