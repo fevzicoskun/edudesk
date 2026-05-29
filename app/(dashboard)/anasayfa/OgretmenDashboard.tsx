@@ -16,13 +16,16 @@ const TONE: Record<Tone, string> = {
   rose:   'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800',
 }
 
-function SummaryCard({ label, value, tone }: { label: string; value: number; tone: Tone }) {
-  return (
-    <div className={`border rounded-xl p-4 ${TONE[tone]}`}>
+function SummaryCard({ label, value, tone, href }: { label: string; value: number; tone: Tone; href?: string }) {
+  const cls = `border rounded-xl p-4 transition-opacity ${TONE[tone]} ${href ? 'hover:opacity-80 cursor-pointer' : ''}`
+  const inner = (
+    <>
       <p className="text-3xl font-bold">{value}</p>
       <p className="text-xs mt-1 opacity-90">{label}</p>
-    </div>
+    </>
   )
+  if (href) return <Link href={href} className={cls}>{inner}</Link>
+  return <div className={cls}>{inner}</div>
 }
 
 function RiskSkeleton() {
@@ -62,9 +65,9 @@ export default async function OgretmenDashboard() {
 
       {/* 3 Ana Kart */}
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue" />
-        <SummaryCard label="Toplam eksik"   value={metrics.totalMissingCount}  tone="orange" />
-        <SummaryCard label="Aktif risk"     value={metrics.activeRiskCount}    tone="rose" />
+        <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue"   href="/odevler" />
+        <SummaryCard label="Toplam eksik"   value={metrics.totalMissingCount}  tone="orange" href="/odevler?durum=yapilmadi" />
+        <SummaryCard label="Aktif risk"     value={metrics.activeRiskCount}    tone="rose"   href="#risk-uyarilari" />
       </div>
 
       {/* Haftalık Özet Şeridi */}
@@ -141,9 +144,11 @@ export default async function OgretmenDashboard() {
           </section>
 
           {/* Risk Uyarıları */}
-          <Suspense fallback={<RiskSkeleton />}>
-            <RiskUyarilariWidget />
-          </Suspense>
+          <div id="risk-uyarilari">
+            <Suspense fallback={<RiskSkeleton />}>
+              <RiskUyarilariWidget />
+            </Suspense>
+          </div>
         </section>
 
         {/* Takvim */}

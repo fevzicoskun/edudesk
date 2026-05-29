@@ -55,6 +55,16 @@ export default async function SinavOrtalamaWidget() {
     }
   })
 
+  const schoolAvg = chartData.length > 0
+    ? Math.round(chartData.reduce((s, d) => s + d.ortalama, 0) / chartData.length)
+    : 0
+  const passRate = chartData.length > 0
+    ? Math.round(chartData.filter(d => d.ortalama >= 50).length / chartData.length * 100)
+    : 0
+  const bestExam = chartData.length > 0
+    ? chartData.reduce((best, d) => d.ortalama > best.ortalama ? d : best)
+    : null
+
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
       <CardHeader className="pb-1">
@@ -65,6 +75,26 @@ export default async function SinavOrtalamaWidget() {
       </CardHeader>
       <CardContent className="pt-2 pb-4">
         <SinavOrtalamaChart data={chartData} />
+        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-slate-700/50">
+          <div className="text-center">
+            <p className={`text-sm font-bold ${schoolAvg >= 70 ? 'text-indigo-600 dark:text-indigo-400' : schoolAvg >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+              {schoolAvg}
+            </p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Genel ort.</p>
+          </div>
+          <div className="text-center">
+            <p className={`text-sm font-bold ${passRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : passRate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+              %{passRate}
+            </p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Geçme oranı</p>
+          </div>
+          <div className="text-center overflow-hidden">
+            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate" title={bestExam?.title}>
+              {bestExam?.title ?? '—'}
+            </p>
+            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">En başarılı</p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
