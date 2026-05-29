@@ -2,7 +2,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import { redirect } from 'next/navigation'
-import HomeworkForm from './HomeworkForm'
+import HomeworkForm, { type Defaults } from './HomeworkForm'
 import Link from 'next/link'
 
 export default async function YeniOdevPage({
@@ -32,7 +32,7 @@ export default async function YeniOdevPage({
       .order('name'),
   ])
 
-  let defaults: { title?: string; subject?: string; description?: string | null; class_id?: string; source_id?: string | null } | undefined
+  let defaults: Defaults | undefined
 
   if (copy) {
     const { data: original } = await supabase

@@ -7,7 +7,7 @@ import Link from 'next/link'
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
 
-type Defaults = {
+export type Defaults = {
   title?: string
   subject?: string
   description?: string | null

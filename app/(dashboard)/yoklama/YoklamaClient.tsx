@@ -157,7 +157,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
                                   :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
                                 }`}
                               >
-                                {absent}g
+                                {absent % 1 === 0 ? `${absent}g` : `${absent.toFixed(1)}g`}
                               </span>
                             </Tooltip>
                           )
