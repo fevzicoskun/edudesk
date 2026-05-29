@@ -1,6 +1,7 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect }          from 'next/navigation'
 import { createClient }      from '@/src/infrastructure/supabase/server'
+import { isTeachingRole }    from '@/src/shared/types'
 import ChecklistClient       from './ChecklistClient'
 import ProfilTabNav from '../profil/ProfilTabNav'
 
@@ -15,6 +16,7 @@ function getCurrentAcademicYear(): string {
 export default async function OgretmenDosyasiPage() {
   const profile = await getCurrentProfile()
   if (!profile) redirect('/login')
+  if (!isTeachingRole(profile.role)) redirect('/anasayfa')
 
   const supabase = await createClient()
   const academicYear = getCurrentAcademicYear()

@@ -2,18 +2,16 @@ import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { AnnouncementService } from '@/src/domains/announcements/services/AnnouncementService'
 import { MUDUR_TARGET_ROLES, MY_TARGET_ROLES } from '@/src/domains/announcements/validators'
-import { ROLE_LABELS } from '@/src/shared/types'
+import { ROLE_LABELS, isYonetici } from '@/src/shared/types'
 import { format } from '@/src/shared/date'
 import DuyuruForm from './DuyuruForm'
 import ZumreDuyuruForm from '../zumre-duyuru/ZumreDuyuruForm'
 
 export const dynamic = 'force-dynamic'
 
-const ALLOWED = ['mudur', 'mudur_yardimcisi', 'zumre_baskani']
-
 export default async function DuyurularPage() {
   const profile = await getCurrentProfile()
-  if (!profile || !ALLOWED.includes(profile.role)) {
+  if (!profile || !isYonetici(profile.role)) {
     redirect('/anasayfa')
   }
 
@@ -27,7 +25,7 @@ export default async function DuyurularPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Duyurular</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {isZumreBaskani
-            ? `${profile.subject ?? ''} zümresine bildirim gönder`
+            ? profile.subject ? `${profile.subject} zümresine bildirim gönder` : 'Zümresine bildirim gönder'
             : 'Hedef gruba duyuru gönderin'}
         </p>
       </div>
