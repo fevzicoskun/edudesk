@@ -8,6 +8,8 @@ const JOB_LABELS: Record<JobType, string> = {
   excel_notlar:            'Öğrenci Notları',
   excel_sinif_ogrencileri: 'Sınıf Öğrencileri',
   excel_not_defteri:       'Not Defteri',
+  excel_yoklama:           'Yoklama',
+  excel_mufredat:          'Müfredat',
 }
 
 export async function fetchRows(
@@ -20,6 +22,8 @@ export async function fetchRows(
     case 'excel_notlar':            return fetchNotlar(schoolId)
     case 'excel_sinif_ogrencileri': return fetchSinifOgrencileri(params, schoolId)
     case 'excel_not_defteri':       throw new Error('Not Defteri export route handler üzerinden çağrılmalı')
+    case 'excel_yoklama':           return fetchYoklama(params, schoolId)
+    case 'excel_mufredat':          return fetchMufredat(params, schoolId)
     default: throw new Error(`Bilinmeyen iş türü: ${jobType}`)
   }
 }
@@ -140,5 +144,68 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     'No':      s.student_number ?? String(i + 1),
     'Ad Soyad': s.full_name,
     'Sınıf':   (s.classes as unknown as { name: string } | null)?.name ?? '—',
+  }))
+}
+
+async function fetchYoklama(params: Record<string, string>, schoolId: string) {
+  const db = createServiceClient()
+  let q = db
+    .from('attendance')
+    .select('date, status, students(full_name, student_number), classes(name)')
+    .eq('school_id', schoolId)
+    .order('date', { ascending: false })
+    .order('students(full_name)')
+    .limit(5000)
+
+  if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
+  if (params.since) {
+    if (!DATE_RE.test(params.since)) throw new Error('Geçersiz tarih formatı: since')
+    q = q.gte('date', params.since)
+  }
+  if (params.until) {
+    if (!DATE_RE.test(params.until)) throw new Error('Geçersiz tarih formatı: until')
+    q = q.lte('date', params.until)
+  }
+
+  const { data, error } = await q
+  if (error) throw new Error(`Yoklama sorgu hatası: ${error.message}`)
+
+  const STATUS_LABELS: Record<string, string> = { present: 'Geldi', absent: 'Gelmedi', late: 'Geç Geldi' }
+
+  return (data ?? []).map(r => {
+    const student = r.students as unknown as { full_name: string; student_number: string | null } | null
+    const cls     = r.classes  as unknown as { name: string } | null
+    return {
+      'Tarih':      r.date,
+      'Sınıf':      cls?.name ?? '—',
+      'Ad Soyad':   student?.full_name ?? '—',
+      'Numara':     student?.student_number ?? '—',
+      'Durum':      STATUS_LABELS[r.status] ?? r.status,
+    }
+  })
+}
+
+async function fetchMufredat(params: Record<string, string>, schoolId: string) {
+  const db = createServiceClient()
+  let q = db
+    .from('curriculum_progress')
+    .select('topic, week_number, status, completed, completion_date, classes(name)')
+    .eq('school_id', schoolId)
+    .order('week_number', { nullsFirst: false })
+    .order('topic')
+    .limit(2000)
+
+  if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
+
+  const { data, error } = await q
+  if (error) throw new Error(`Müfredat sorgu hatası: ${error.message}`)
+
+  return (data ?? []).map(r => ({
+    'Sınıf':           (r.classes as unknown as { name: string } | null)?.name ?? '—',
+    'Hafta':           r.week_number ?? '—',
+    'Konu':            r.topic,
+    'Durum':           r.status,
+    'Tamamlandı':      r.completed ? 'Evet' : 'Hayır',
+    'Tamamlanma Tarihi': r.completion_date ?? '—',
   }))
 }
