@@ -7,15 +7,25 @@ import Link from 'next/link'
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
 
+type Defaults = {
+  title?: string
+  subject?: string
+  description?: string | null
+  class_id?: string
+  source_id?: string | null
+}
+
 const field =
   'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
 export default function HomeworkForm({
   classes,
   sources,
+  defaults,
 }: {
   classes: ClassItem[]
   sources: SourceItem[]
+  defaults?: Defaults
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
 
@@ -34,7 +44,9 @@ export default function HomeworkForm({
           </div>
           <div>
             <p className="text-white font-semibold text-lg leading-tight">Yeni Ödev Oluştur</p>
-            <p className="text-blue-200 text-sm mt-0.5">Öğrencilerinize yeni bir görev tanımlayın</p>
+            <p className="text-blue-200 text-sm mt-0.5">
+              {defaults ? 'Kopyadan yeni ödev oluşturun' : 'Öğrencilerinize yeni bir görev tanımlayın'}
+            </p>
           </div>
         </div>
       </div>
@@ -55,7 +67,7 @@ export default function HomeworkForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Sınıf</label>
-              <select name="class_id" required className={field}>
+              <select name="class_id" required className={field} defaultValue={defaults?.class_id ?? ''}>
                 <option value="">Sınıf seçin</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -64,7 +76,7 @@ export default function HomeworkForm({
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-              <input name="subject" type="text" required placeholder="Matematik" className={field} />
+              <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? ''} />
             </div>
           </div>
 
@@ -82,7 +94,7 @@ export default function HomeworkForm({
               </Link>
             </div>
             {sources.length > 0 ? (
-              <select name="source_id" className={field}>
+              <select name="source_id" className={field} defaultValue={defaults?.source_id ?? ''}>
                 <option value="">Kaynak seçin</option>
                 {sources.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -106,7 +118,7 @@ export default function HomeworkForm({
           {/* Başlık */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Başlık</label>
-            <input name="title" type="text" required placeholder="Ödev başlığını girin" className={field} />
+            <input name="title" type="text" required placeholder="Ödev başlığını girin" className={field} defaultValue={defaults?.title ?? ''} />
           </div>
 
           {/* Açıklama */}
@@ -119,6 +131,7 @@ export default function HomeworkForm({
               rows={3}
               placeholder="Ödev hakkında notlar veya açıklamalar..."
               className={`${field} resize-none`}
+              defaultValue={defaults?.description ?? ''}
             />
           </div>
 

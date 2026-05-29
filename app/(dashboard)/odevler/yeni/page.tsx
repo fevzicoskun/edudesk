@@ -1,13 +1,19 @@
-﻿import { createClient } from '@/src/infrastructure/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import { redirect } from 'next/navigation'
 import HomeworkForm from './HomeworkForm'
 import Link from 'next/link'
 
-export default async function YeniOdevPage() {
+export default async function YeniOdevPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ copy?: string }>
+}) {
   const profile = await getCurrentProfile()
   if (profile && isMudurOrAbove(profile.role)) redirect('/odevler')
+
+  const { copy } = await searchParams
 
   const supabase = await createClient()
   const [classesRes, sourcesRes] = await Promise.all([
@@ -26,6 +32,26 @@ export default async function YeniOdevPage() {
       .order('name'),
   ])
 
+  let defaults: { title?: string; subject?: string; description?: string | null; class_id?: string; source_id?: string | null } | undefined
+
+  if (copy) {
+    const { data: original } = await supabase
+      .from('homeworks')
+      .select('title, subject, description, source_id')
+      .eq('id', copy)
+      .eq('school_id', profile?.school_id ?? '')
+      .is('deleted_at', null)
+      .single()
+    if (original) {
+      defaults = {
+        title: `${original.title} (Kopya)`,
+        subject: original.subject ?? '',
+        description: original.description,
+        source_id: original.source_id,
+      }
+    }
+  }
+
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-50">
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
@@ -39,13 +65,18 @@ export default async function YeniOdevPage() {
             </svg>
           </Link>
           <div>
-            <h1 className="text-base font-bold text-gray-900 leading-tight">Ödev Oluştur</h1>
-            <p className="text-xs text-gray-500">Sınıfınıza yeni bir görev tanımlayın</p>
+            <h1 className="text-base font-bold text-gray-900 leading-tight">
+              {defaults ? 'Ödev Kopyala' : 'Ödev Oluştur'}
+            </h1>
+            <p className="text-xs text-gray-500">
+              {defaults ? 'Sınıf ve tarihi seçerek kopyayı kaydedin' : 'Sınıfınıza yeni bir görev tanımlayın'}
+            </p>
           </div>
         </div>
         <HomeworkForm
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
+          defaults={defaults}
         />
       </div>
     </div>
