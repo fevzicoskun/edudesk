@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 export default function Tooltip({
   children,
@@ -12,20 +12,25 @@ export default function Tooltip({
   position?: 'top' | 'bottom'
 }) {
   const [show, setShow] = useState(false)
+  const tooltipId = useId()
 
   return (
     <span className="relative inline-flex items-center">
       <span
+        aria-describedby={show ? tooltipId : undefined}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         onFocus={() => setShow(true)}
         onBlur={() => setShow(false)}
-        className="cursor-help"
+        tabIndex={0}
+        className="cursor-help outline-none"
       >
         {children}
       </span>
       {show && (
         <span
+          id={tooltipId}
+          role="tooltip"
           className={`absolute z-50 w-max max-w-64 px-2.5 py-1.5 bg-gray-900 dark:bg-slate-700 text-white text-xs rounded-lg shadow-lg leading-snug pointer-events-none ${
             position === 'top'
               ? 'bottom-full left-1/2 -translate-x-1/2 mb-1.5'
