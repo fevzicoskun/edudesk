@@ -46,12 +46,13 @@ export default async function OgrenciDetayPage({
 
   const schoolId = currentProfile?.school_id ?? ''
 
-  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
+  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
+    supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
@@ -75,7 +76,25 @@ export default async function OgrenciDetayPage({
   }, 0)
   const absentPct = Math.min((absentDays / MEB_LIMIT) * 100, 100)
   const absenceDanger = absentDays >= MEB_LIMIT
-  const absenceWarn = absentDays >= 15 && !absenceDanger
+  const absenceWarn   = absentDays >= 15 && !absenceDanger
+
+  // Performans skoru
+  const totalSubmissions = submissions.length
+  const completedCount   = (statusCounts['yapildi'] ?? 0) + (statusCounts['gec'] ?? 0) * 0.5
+  const completionRate   = totalSubmissions > 0 ? completedCount / totalSubmissions : 1
+  const isRisk   = absenceDanger || completionRate < 0.4
+  const isWarn   = !isRisk && (absenceWarn || completionRate < 0.6)
+  const riskLabel = isRisk ? 'Risk' : isWarn ? 'Dikkat' : 'İyi'
+  const riskColor = isRisk
+    ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
+    : isWarn
+      ? 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800'
+      : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+
+  // Not defteri
+  type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
+  const grades = (gradesRes.data ?? []) as unknown as GradeRow[]
+  const GRADE_TYPE_LABELS: Record<string, string> = { yazili: 'Yazılı', quiz: 'Quiz', proje: 'Proje', odev: 'Ödev', performans: 'Performans' }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -91,6 +110,46 @@ export default async function OgrenciDetayPage({
           </p>
         </div>
         <CopyVeliLink studentId={studentId} />
+      </div>
+
+      {/* Performans özeti */}
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-5">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Performans Özeti</h2>
+        <div className="grid grid-cols-3 gap-4">
+          {/* Risk skoru */}
+          <div className="flex flex-col items-center justify-center text-center">
+            <span className={`text-xs font-bold px-3 py-1.5 rounded-full border mb-1 ${riskColor}`}>{riskLabel}</span>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500">Genel Durum</p>
+          </div>
+          {/* Ödev tamamlanma */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-xs text-gray-500 dark:text-slate-400">Ödev Tamamlanma</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-slate-200">{Math.round(completionRate * 100)}%</p>
+            </div>
+            <div className="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${completionRate >= 0.8 ? 'bg-green-400' : completionRate >= 0.6 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                style={{ width: `${Math.round(completionRate * 100)}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">{totalSubmissions} ödev kaydı</p>
+          </div>
+          {/* Devamsızlık */}
+          <div>
+            <div className="flex justify-between items-center mb-1">
+              <p className="text-xs text-gray-500 dark:text-slate-400">Devamsızlık</p>
+              <p className={`text-xs font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-700 dark:text-slate-200'}`}>{absentDays} / {MEB_LIMIT}</p>
+            </div>
+            <div className="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full ${absenceDanger ? 'bg-red-500' : absenceWarn ? 'bg-yellow-400' : 'bg-green-400'}`}
+                style={{ width: `${absentPct}%` }}
+              />
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">MEB sınırı {MEB_LIMIT} gün</p>
+          </div>
+        </div>
       </div>
 
       <VeliIletisimForm
@@ -227,6 +286,66 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
+
+      {/* Not defteri */}
+      {grades.length > 0 && (
+        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mt-4">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Not Defteri</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 dark:border-slate-700">
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Sınav / Etkinlik</th>
+                  <th className="text-left text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Tür</th>
+                  <th className="text-right text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Puan</th>
+                  <th className="text-right text-xs font-medium text-gray-500 dark:text-slate-400 pb-2">Tarih</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
+                {grades.map((g, i) => {
+                  const pct = g.score != null && g.grade_columns.max_score > 0
+                    ? g.score / g.grade_columns.max_score
+                    : null
+                  return (
+                    <tr key={i}>
+                      <td className="py-2 pr-4 font-medium text-gray-900 dark:text-slate-100">{g.grade_columns.title}</td>
+                      <td className="py-2 pr-4 text-gray-500 dark:text-slate-400 text-xs">{GRADE_TYPE_LABELS[g.grade_columns.grade_type] ?? g.grade_columns.grade_type}</td>
+                      <td className="py-2 pr-4 text-right">
+                        {g.score != null ? (
+                          <span className={`font-bold ${pct != null && pct >= 0.7 ? 'text-green-600 dark:text-green-400' : pct != null && pct >= 0.5 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {g.score}
+                            <span className="text-xs font-normal text-gray-400 dark:text-slate-500"> / {g.grade_columns.max_score}</span>
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 dark:text-slate-500">—</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-right text-xs text-gray-400 dark:text-slate-500">
+                        {g.grade_columns.exam_date ? format(parseISO(g.grade_columns.exam_date), 'd MMM yyyy') : '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+              {grades.length > 1 && (() => {
+                const scoredGrades = grades.filter(g => g.score != null)
+                const avg = scoredGrades.length > 0
+                  ? scoredGrades.reduce((sum, g) => sum + ((g.score! / g.grade_columns.max_score) * 100), 0) / scoredGrades.length
+                  : null
+                return avg != null ? (
+                  <tfoot>
+                    <tr className="border-t border-gray-200 dark:border-slate-600">
+                      <td colSpan={2} className="pt-2 text-xs text-gray-500 dark:text-slate-400 font-medium">Ortalama (100 üzerinden)</td>
+                      <td className="pt-2 text-right font-bold text-gray-900 dark:text-slate-100">{Math.round(avg)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                ) : null
+              })()}
+            </table>
+          </div>
+        </section>
+      )}
 
     </div>
   )
