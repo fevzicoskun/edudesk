@@ -2,11 +2,14 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import ExportPanel from './ExportPanel'
 
+const ALLOWED_ROLES = ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi', 'mudur'] as const
+
 export const revalidate = 300
 
 export default async function RaporlarPage() {
   const profile = await getCurrentProfile()
   if (!profile) redirect('/login')
+  if (!profile.role || !(ALLOWED_ROLES as readonly string[]).includes(profile.role)) redirect('/anasayfa')
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
