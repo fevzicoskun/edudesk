@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // ─── Public paths ─────────────────────────────────────────────
-const PUBLIC_PATHS = ['/', '/login', '/kayit', '/veli', '/yoklama-yazdir', '/onboarding', '/api/inngest', '/gizlilik', '/kullanim-kosullari']
+const PUBLIC_PATHS = ['/', '/login', '/kayit', '/veli', '/yoklama-yazdir', '/onboarding', '/api/inngest', '/gizlilik', '/kullanim-kosullari', '/sifremi-unuttum', '/auth/callback']
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
@@ -139,6 +139,12 @@ export async function proxy(request: NextRequest) {
   // /kayit POST = başvuru formu e-posta gönderir — spam koruması
   if (pathname === '/kayit' && request.method === 'POST') {
     if (!(await checkRateLimit(`kayit:${ip}`, 3, 60_000, true))) {
+      return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
+    }
+  }
+  // /sifremi-unuttum POST = şifre sıfırlama e-posta talebi — brute-force koruması
+  if (pathname === '/sifremi-unuttum' && request.method === 'POST') {
+    if (!(await checkRateLimit(`reset:${ip}`, 3, 60_000, true))) {
       return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
     }
   }

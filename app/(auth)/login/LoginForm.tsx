@@ -42,6 +42,12 @@ export default function LoginForm() {
         />
       </div>
 
+      <div className="flex justify-end -mt-1">
+        <a href="/sifremi-unuttum" className="text-xs text-blue-600 hover:underline">
+          Şifremi unuttum
+        </a>
+      </div>
+
       <button
         type="submit"
         disabled={isPending}
