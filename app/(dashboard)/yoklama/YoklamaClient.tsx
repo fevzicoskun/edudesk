@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
+import Tooltip from '@/components/ui/Tooltip'
 
 interface Props {
   classes: ClassWithStudents[]
@@ -148,16 +149,17 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
                           const danger = absent >= 20
                           const warn   = absent >= 15
                           return (
-                            <span
-                              className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                danger ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                : warn  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
-                              }`}
-                              title={`Yıl içi devamsızlık: ${absent} gün (MEB sınırı: 20 gün)`}
-                            >
-                              {absent}g
-                            </span>
+                            <Tooltip content={`Yıl içi devamsızlık: ${absent} gün (MEB sınırı 20 gün)`}>
+                              <span
+                                className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                                  danger ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                  : warn  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                  :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
+                                }`}
+                              >
+                                {absent}g
+                              </span>
+                            </Tooltip>
                           )
                         })()}
                       </div>
