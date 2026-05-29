@@ -46,7 +46,7 @@ export default async function OkulSeviyesiKartlari() {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Kademeler</h2>
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {stats.map(({ level, classCount, studentCount }) => {
           const cfg = LEVEL_CONFIG[level]
           return (

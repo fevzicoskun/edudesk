@@ -64,7 +64,7 @@ export default async function OgretmenDashboard() {
       </div>
 
       {/* 3 Ana Kart */}
-      <div className="grid grid-cols-3 gap-3 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue"   href="/odevler" />
         <SummaryCard label="Toplam eksik"   value={metrics.totalMissingCount}  tone="orange" href="/odevler?durum=yapilmadi" />
         <SummaryCard label="Aktif risk"     value={metrics.activeRiskCount}    tone="rose"   href="#risk-uyarilari" />

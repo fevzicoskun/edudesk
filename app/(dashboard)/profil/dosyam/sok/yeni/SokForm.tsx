@@ -62,7 +62,7 @@ export default function SokForm({ classes, teachers, currentTerm, academicYear }
       <input type="hidden" name="decisions"     value={JSON.stringify(defaultDecisions)} />
       <input type="hidden" name="academic_year" value={academicYear} />
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
           <label className="text-xs font-semibold text-gray-700">Şube *</label>
           <select name="class_id" required

@@ -21,7 +21,7 @@ export default function NotebookCheckClient({ classes, checks }: Props) {
             {state.error}
           </div>
         )}
-        <div className="grid grid-cols-3 gap-2 mb-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-2">
           <div>
             <label className="text-xs font-medium text-gray-600">Sınıf *</label>
             <select name="class_id" required

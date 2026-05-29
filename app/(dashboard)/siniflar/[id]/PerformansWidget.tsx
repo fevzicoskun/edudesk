@@ -31,7 +31,7 @@ export default async function PerformansWidget({ classId }: { classId: string })
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-4">Sınıf Performansı</h2>
 
       {/* 3 Metrik */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-center">
           <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">%{summary.avgCompletionPct}</p>
           <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">Ort. tamamlanma</p>

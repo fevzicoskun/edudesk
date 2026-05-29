@@ -112,7 +112,7 @@ export default function RaporButton({ classes = [] }: { classes?: ClassOption[] 
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={close} />
-          <div className="absolute right-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg w-64">
+          <div className="absolute right-0 top-full mt-1.5 z-20 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg w-[calc(100vw-2rem)] sm:w-64">
 
             {/* Hata bandı */}
             {error && (

@@ -65,7 +65,7 @@ export default function GunlukPlanForm({ classes, defaultValues, planId }: Props
       <input type="hidden" name="methods"   value={selectedMethods.join(',')} />
       <input type="hidden" name="materials" value={selectedMaterials.join(',')} />
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <label className="text-xs font-semibold text-gray-700">Sınıf *</label>
           <select name="class_id" required defaultValue={defaultValues?.class_id ?? ''}

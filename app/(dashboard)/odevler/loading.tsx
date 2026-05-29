@@ -16,7 +16,7 @@ export default function OdevlerLoading() {
         </div>
 
         {/* 3 stat kart */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 space-y-2">
               <Sk className="h-8 w-10" />

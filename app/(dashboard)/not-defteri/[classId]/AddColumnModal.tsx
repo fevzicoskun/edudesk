@@ -64,7 +64,7 @@ export default function AddColumnModal({ classId, open, onClose }: Props) {
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1">
               <label htmlFor="add-max" className="text-sm font-medium">Maks. Puan</label>
               <input

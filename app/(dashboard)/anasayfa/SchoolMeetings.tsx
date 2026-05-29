@@ -91,7 +91,7 @@ export default function SchoolMeetings({ initial }: { initial: Meeting[] }) {
       {/* Add form */}
       {showAdd && (
         <form action={addAction} className="mb-4 space-y-2 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="col-span-2">
               <input
                 name="title"

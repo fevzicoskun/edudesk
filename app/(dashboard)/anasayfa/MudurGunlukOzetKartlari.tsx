@@ -73,7 +73,7 @@ export default async function MudurGunlukOzetKartlari() {
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {cards.map(c => (
         <Card key={c.label} className="border-gray-200 dark:border-slate-700 shadow-sm">
           <CardContent className="pt-5 pb-4">
