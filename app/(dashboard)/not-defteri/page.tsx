@@ -43,7 +43,9 @@ export default async function NotDefteriPage() {
     <div className="p-6 max-w-5xl mx-auto">
       <h1 className="text-2xl font-bold mb-2">Not Defteri</h1>
       <p className="text-muted-foreground mb-6">
-        Yazılı, quiz ve proje notlarınızı sınıf bazında girin ve yönetin.
+        {isManager
+          ? 'Okul genelindeki not kayıtlarını görüntüleyin ve denetleyin.'
+          : 'Yazılı, quiz ve proje notlarınızı sınıf bazında girin ve yönetin.'}
       </p>
 
       {!classes?.length ? (
