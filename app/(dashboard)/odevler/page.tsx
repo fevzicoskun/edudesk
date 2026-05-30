@@ -64,12 +64,12 @@ export default async function OdevlerPage({
             {canWrite && (
               <Link
                 href="/odevler/yeni"
-                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-3 sm:px-4 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25 hover:shadow-blue-500/35 transition-all duration-200"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                Yeni Ödev
+                <span className="hidden sm:inline">Yeni Ödev</span>
               </Link>
             )}
           </div>
@@ -234,7 +234,7 @@ async function HomeworkSection({
   return (
     <>
       {/* İstatistik kartları */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 mb-6 mt-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 mt-4">
         {[
           { label: 'Toplam',   value: totalCount,          color: 'text-gray-900 dark:text-slate-100', dot: 'bg-gray-400' },
           { label: 'Aktif',    value: active.length,       color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
