@@ -61,20 +61,29 @@ export default async function OkulSeviyesiKartlari() {
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4">
         <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">Bu Hafta Yoklama</p>
-        <p className={`text-2xl font-bold tabular-nums ${
-          aktifRatio === 1
-            ? 'text-emerald-600 dark:text-emerald-400'
-            : aktifRatio >= 0.7
-              ? 'text-amber-500'
-              : 'text-red-500'
-        }`}>
-          {activeCount}
-          <span className="text-base font-normal text-gray-400 dark:text-slate-500">
-            {' '}/ {totalWithClasses}
-          </span>
-        </p>
-        <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">öğretmen girdi</p>
-        <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">son 7 gün</p>
+        {totalWithClasses === 0 ? (
+          <>
+            <p className="text-2xl font-bold text-gray-300 dark:text-slate-600">—</p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">sınıf ataması yok</p>
+          </>
+        ) : (
+          <>
+            <p className={`text-2xl font-bold tabular-nums ${
+              aktifRatio === 1
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : aktifRatio >= 0.7
+                  ? 'text-amber-500'
+                  : 'text-red-500'
+            }`}>
+              {activeCount}
+              <span className="text-base font-normal text-gray-400 dark:text-slate-500">
+                {' '}/ {totalWithClasses}
+              </span>
+            </p>
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">öğretmen girdi</p>
+            <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">son 7 gün</p>
+          </>
+        )}
       </div>
 
     </div>
