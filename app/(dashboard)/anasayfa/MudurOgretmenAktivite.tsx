@@ -30,17 +30,15 @@ export default async function MudurOgretmenAktivite() {
   const withActivity = teachers
     .map(t => {
       const myClasses = teacherClassMap.get(t.id) ?? []
-      const hasClasses = myClasses.length > 0
-      const enteredAttendance = hasClasses && myClasses.some(cid => classesWithAttendance.has(cid))
-      return { ...t, hasClasses, enteredAttendance }
+      const enteredAttendance = myClasses.length > 0 && myClasses.some(cid => classesWithAttendance.has(cid))
+      return { ...t, hasClasses: myClasses.length > 0, enteredAttendance }
     })
+    .filter(t => t.hasClasses) // sınıfı olmayan öğretmenler yoklama sorumluluğu taşımaz
     .sort((a, b) => {
-      // Sınıfı olup yoklama girmeyenler üste
-      if (a.hasClasses && !a.enteredAttendance && !(b.hasClasses && !b.enteredAttendance)) return -1
-      if (b.hasClasses && !b.enteredAttendance && !(a.hasClasses && !a.enteredAttendance)) return 1
+      if (!a.enteredAttendance && b.enteredAttendance) return -1
+      if (a.enteredAttendance && !b.enteredAttendance) return 1
       return (a.full_name ?? '').localeCompare(b.full_name ?? '', 'tr')
     })
-    .slice(0, 8)
 
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
@@ -51,16 +49,11 @@ export default async function MudurOgretmenAktivite() {
         <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Son 7 gün</p>
       </CardHeader>
       <CardContent className="p-0">
-        <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+        <ul className="divide-y divide-gray-100 dark:divide-slate-700 max-h-96 overflow-y-auto">
           {withActivity.map(t => {
-            let badge: { label: string; cls: string }
-            if (!t.hasClasses) {
-              badge = { label: 'Sınıf yok', cls: 'bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500' }
-            } else if (t.enteredAttendance) {
-              badge = { label: 'Yoklama girdi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }
-            } else {
-              badge = { label: 'Girilmedi', cls: 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400' }
-            }
+            const badge = t.enteredAttendance
+              ? { label: 'Girdi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }
+              : { label: 'Girilmedi', cls: 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400' }
             return (
               <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
@@ -79,7 +72,7 @@ export default async function MudurOgretmenAktivite() {
           })}
           {withActivity.length === 0 && (
             <li className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">
-              Henüz öğretmen yok.
+              Sınıfa atanmış öğretmen yok.
             </li>
           )}
         </ul>

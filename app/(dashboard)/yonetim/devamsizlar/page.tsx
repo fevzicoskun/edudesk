@@ -11,15 +11,26 @@ export default async function DevamsizlarPage() {
   if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
 
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date()
+  const todayStr = today.toISOString().split('T')[0]
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
 
-  const { data } = await supabase
-    .from('attendance')
-    .select('student_id, status, students(full_name, student_number), classes(name, grade)')
-    .eq('school_id', profile.school_id!)
-    .eq('date', today)
-    .in('status', ['absent', 'late'])
-    .order('status')
+  const [todayRes, monthRes] = await Promise.all([
+    supabase
+      .from('attendance')
+      .select('student_id, status, students(full_name, student_number), classes(name, grade)')
+      .eq('school_id', profile.school_id!)
+      .eq('date', todayStr)
+      .in('status', ['absent', 'late'])
+      .order('status'),
+    supabase
+      .from('attendance')
+      .select('student_id')
+      .eq('school_id', profile.school_id!)
+      .gte('date', monthStart)
+      .lte('date', todayStr)
+      .in('status', ['absent', 'late']),
+  ])
 
   type Row = {
     student_id: string
@@ -27,7 +38,13 @@ export default async function DevamsizlarPage() {
     students: { full_name: string; student_number: string | null } | null
     classes: { name: string; grade: number } | null
   }
-  const rows = (data ?? []) as unknown as Row[]
+  const rows = (todayRes.data ?? []) as unknown as Row[]
+
+  // Bu ay her öğrencinin kaç kez devamsız/geç kaldığı
+  const monthlyCount = new Map<string, number>()
+  for (const a of monthRes.data ?? []) {
+    monthlyCount.set(a.student_id, (monthlyCount.get(a.student_id) ?? 0) + 1)
+  }
 
   const byClass = rows.reduce<Record<string, typeof rows>>((acc, row) => {
     const key = row.classes?.name ?? 'Bilinmeyen'
@@ -70,25 +87,38 @@ export default async function DevamsizlarPage() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">{byClass[className].length} kişi</span>
               </div>
               <ul className="divide-y divide-gray-100 dark:divide-slate-800">
-                {byClass[className].map(row => (
-                  <li key={row.student_id} className="flex items-center justify-between px-4 py-3">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
-                        {row.students?.full_name ?? '—'}
-                      </p>
-                      {row.students?.student_number && (
-                        <p className="text-xs text-gray-400 dark:text-slate-500">No: {row.students.student_number}</p>
-                      )}
-                    </div>
-                    <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                      row.status === 'absent'
-                        ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
-                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300'
-                    }`}>
-                      {row.status === 'absent' ? 'Devamsız' : 'Geç'}
-                    </span>
-                  </li>
-                ))}
+                {byClass[className].map(row => {
+                  const aylikSayi = monthlyCount.get(row.student_id) ?? 1
+                  const kronik = aylikSayi >= 5
+                  return (
+                    <li key={row.student_id} className="flex items-center justify-between px-4 py-3 gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                          {row.students?.full_name ?? '—'}
+                        </p>
+                        {row.students?.student_number && (
+                          <p className="text-xs text-gray-400 dark:text-slate-500">No: {row.students.student_number}</p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                          kronik
+                            ? 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900'
+                            : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
+                        }`}>
+                          Bu ay: {aylikSayi}. devamsızlık
+                        </span>
+                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                          row.status === 'absent'
+                            ? 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-300'
+                            : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-300'
+                        }`}>
+                          {row.status === 'absent' ? 'Devamsız' : 'Geç'}
+                        </span>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
           ))}

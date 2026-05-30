@@ -4,7 +4,6 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
-import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
@@ -57,11 +56,6 @@ export default async function YonetimPage() {
           <BugunYoklamaWidget />
         </Suspense>
       </div>
-
-      {/* Genel istatistikler */}
-      <Suspense fallback={<CardSkeleton />}>
-        <MudurStatsWidget />
-      </Suspense>
 
       {/* Toplantı kayıtları */}
       <div id="toplanti-kayitlari">

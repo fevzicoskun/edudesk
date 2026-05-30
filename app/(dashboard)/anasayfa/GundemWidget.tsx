@@ -9,13 +9,22 @@ export default async function GundemWidget() {
   const todayStr   = new Date().toISOString().split('T')[0]
   const maxDateStr = addDays(new Date(), 30).toISOString().split('T')[0]
 
-  const { data } = await supabase
-    .from('school_meetings')
-    .select('id, title, meeting_date, meeting_type, attendees, notes')
-    .eq('school_id', school_id)
-    .gte('meeting_date', todayStr)
-    .lte('meeting_date', maxDateStr)
-    .order('meeting_date', { ascending: true })
+  const [upcomingRes, pastRes] = await Promise.all([
+    supabase
+      .from('school_meetings')
+      .select('id, title, meeting_date, meeting_type, attendees, notes')
+      .eq('school_id', school_id)
+      .gte('meeting_date', todayStr)
+      .lte('meeting_date', maxDateStr)
+      .order('meeting_date', { ascending: true }),
+    supabase
+      .from('school_meetings')
+      .select('id, title, meeting_date, meeting_type, attendees, notes')
+      .eq('school_id', school_id)
+      .lt('meeting_date', todayStr)
+      .order('meeting_date', { ascending: false })
+      .limit(3),
+  ])
 
-  return <GundemClient initial={data ?? []} />
+  return <GundemClient initial={upcomingRes.data ?? []} past={pastRes.data ?? []} />
 }

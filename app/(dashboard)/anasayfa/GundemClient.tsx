@@ -53,7 +53,7 @@ function dateLabel(dateStr: string): string {
   return format(d, 'd MMMM EEEE')
 }
 
-export default function GundemClient({ initial }: { initial: Meeting[] }) {
+export default function GundemClient({ initial, past = [] }: { initial: Meeting[]; past?: Meeting[] }) {
   const [meetings, setMeetings] = useState<Meeting[]>(initial)
   const [showForm, setShowForm] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -200,7 +200,29 @@ export default function GundemClient({ initial }: { initial: Meeting[] }) {
       {/* List */}
       <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-700/50">
         {grouped.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">Yaklaşan etkinlik yok.</p>
+          past.length > 0 ? (
+            <div className="px-4 py-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500 mb-3">
+                Son Toplantılar
+              </p>
+              <ul className="space-y-1.5">
+                {past.map(m => (
+                  <li key={m.id} className="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-gray-50 dark:bg-slate-700/30 opacity-60">
+                    <span className="text-[10px] text-gray-400 dark:text-slate-500 shrink-0 w-14 tabular-nums">
+                      {format(parseISO(m.meeting_date), 'd MMM')}
+                    </span>
+                    <span className="text-xs text-gray-600 dark:text-slate-400 truncate">{m.title}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${TYPE_BADGE[m.meeting_type] ?? TYPE_BADGE.diger}`}>
+                      {TYPE_LABELS[m.meeting_type] ?? m.meeting_type}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-3 text-center">Yaklaşan etkinlik yok.</p>
+            </div>
+          ) : (
+            <p className="px-4 py-10 text-center text-sm text-gray-400 dark:text-slate-500">Yaklaşan etkinlik yok.</p>
+          )
         ) : grouped.map(([dateStr, items]) => (
           <div key={dateStr} className="px-4 py-3">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-slate-500 mb-2">
