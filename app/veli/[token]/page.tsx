@@ -4,10 +4,6 @@ import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
-import { schoolYearStart } from '@/src/shared/utils'
-
-const MEB_LIMIT = 20
-
 type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 
 const LABELS: Record<SubmissionStatus, string> = {
@@ -87,7 +83,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
 
   const schoolFilter = tokenSchoolId
-  const [studentResult, submissionsResult, notesResult, attendanceRes] = await Promise.all([
+  const [studentResult, submissionsResult, notesResult] = await Promise.all([
     studentQuery.single(),
     (() => {
       let q = supabase
@@ -106,16 +102,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q
     })(),
-    (() => {
-      let q = supabase
-        .from('attendance')
-        .select('date, status')
-        .eq('student_id', studentId)
-        .gte('date', schoolYearStart())
-        .order('date', { ascending: false })
-      if (schoolFilter) q = q.eq('school_id', schoolFilter)
-      return q
-    })(),
   ])
 
   if (!studentResult.data) notFound()
@@ -126,17 +112,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
   const notes = (notesResult.data ?? []) as NoteRow[]
-
-  const attendanceTableExists = attendanceRes.error?.code !== '42P01'
-  const attendanceRecords = (attendanceRes.data ?? []) as { date: string; status: string }[]
-  const absentDays = attendanceRecords.reduce((sum, r) => {
-    if (r.status === 'absent') return sum + 1
-    if (r.status === 'late') return sum + 0.5
-    return sum
-  }, 0)
-  const absentPct = Math.min((absentDays / MEB_LIMIT) * 100, 100)
-  const absenceDanger = absentDays >= MEB_LIMIT
-  const absenceWarn = absentDays >= 15 && !absenceDanger
 
   const total = submissions.length
   const done = submissions.filter(s => s.status === 'yapildi').length
@@ -262,62 +237,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
                 </div>
               ))}
             </div>
-          </section>
-        )}
-
-        {attendanceTableExists && (
-          <section className="bg-white border border-gray-200 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-1">Yıl İçi Devamsızlık</h2>
-            <p className="text-xs text-gray-400 mb-3">MEB sınırı: {MEB_LIMIT} gün · Geç giriş = 0,5 gün</p>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all ${absenceDanger ? 'bg-red-500' : absenceWarn ? 'bg-yellow-400' : 'bg-green-400'}`}
-                  style={{ width: `${absentPct}%` }}
-                />
-              </div>
-              <span className={`text-sm font-bold shrink-0 ${absenceDanger ? 'text-red-600' : absenceWarn ? 'text-yellow-600' : 'text-gray-700'}`}>
-                {absentDays} / {MEB_LIMIT} gün
-              </span>
-            </div>
-            {absenceDanger && <p className="text-xs text-red-600 font-medium mb-2">Devamsızlık sınırı aşıldı — lütfen okulla iletişime geçin.</p>}
-            {absenceWarn && <p className="text-xs text-yellow-600 font-medium mb-2">Devamsızlık sınırına yaklaşılıyor.</p>}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
-              {[
-                { label: 'Yok', count: attendanceRecords.filter(r => r.status === 'absent').length, color: 'text-red-600' },
-                { label: 'Geç', count: attendanceRecords.filter(r => r.status === 'late').length, color: 'text-yellow-600' },
-                { label: 'Mazeretli', count: attendanceRecords.filter(r => r.status === 'excused').length, color: 'text-blue-600' },
-              ].map(({ label, count, color }) => (
-                <div key={label} className="bg-gray-50 rounded-xl p-3 text-center overflow-hidden">
-                  <p className={`text-xl font-bold ${color}`}>{count}</p>
-                  <p className="text-[10px] sm:text-xs text-gray-500 mt-0.5">{label}</p>
-                </div>
-              ))}
-            </div>
-            {attendanceRecords.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-medium text-gray-600 mb-2">Son Kayıtlar</p>
-                <div className="space-y-1.5">
-                  {attendanceRecords.slice(0, 10).map((r, i) => {
-                    const statusLabel: Record<string, string> = { present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli' }
-                    const statusColor: Record<string, string> = {
-                      present: 'bg-green-100 text-green-700',
-                      absent: 'bg-red-100 text-red-700',
-                      late: 'bg-yellow-100 text-yellow-700',
-                      excused: 'bg-blue-100 text-blue-700',
-                    }
-                    return (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <span className="text-gray-600">{format(parseISO(r.date), 'd MMMM yyyy')}</span>
-                        <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
-                          {statusLabel[r.status] ?? r.status}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
           </section>
         )}
 

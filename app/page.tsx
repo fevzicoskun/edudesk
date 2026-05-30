@@ -1,9 +1,5 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getCurrentUser } from '@/src/shared/auth'
 import EduDeskLogo from '@/components/EduDeskLogo'
-
-export const dynamic = 'force-dynamic'
 
 const features = [
   {
@@ -55,10 +51,7 @@ const mockupStudents = [
   { name: 'Zeynep Çelik', present: true },
 ]
 
-export default async function RootPage() {
-  const user = await getCurrentUser()
-  if (user) redirect('/anasayfa')
-
+export default function RootPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950">
 
