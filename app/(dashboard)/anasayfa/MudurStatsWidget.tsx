@@ -66,7 +66,7 @@ export default async function MudurStatsWidget() {
     <>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard
-          value={studentCount} label="Öğrenci" sub={`${classCount} sınıf`} href="/siniflar"
+          value={studentCount} label="Öğrenci" sub={`${classCount} sınıf`} href="/yonetim/ogrenciler"
           gradient="from-blue-500 to-blue-600"
         />
         <StatCard
