@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
@@ -94,11 +95,11 @@ export default async function MYStatsWidget() {
           <p className="text-sm font-medium mt-1.5">Yoklama Alınan Sınıf</p>
           <p className="text-[11px] opacity-70 mt-0.5">bugün</p>
         </div>
-        <div className={`rounded-xl border p-4 ${statColor(todayAbsent === 0, todayAbsent >= 5)}`}>
+        <Link href="/yonetim/devamsizlar" className={`rounded-xl border p-4 block hover:opacity-80 transition-opacity ${statColor(todayAbsent === 0, todayAbsent >= 5)}`}>
           <p className="text-3xl font-bold leading-none">{todayAbsent}</p>
           <p className="text-sm font-medium mt-1.5">Devamsız Öğrenci</p>
-          <p className="text-[11px] opacity-70 mt-0.5">bugün · {totalStudents} toplam</p>
-        </div>
+          <p className="text-[11px] opacity-70 mt-0.5">bugün · {totalStudents} toplam · tıkla →</p>
+        </Link>
         <div className={`rounded-xl border p-4 ${statColor(inactiveCount === 0, false)}`}>
           <p className="text-3xl font-bold leading-none">
             {activeCount}<span className="text-base font-medium opacity-60">/{teachers.length}</span>

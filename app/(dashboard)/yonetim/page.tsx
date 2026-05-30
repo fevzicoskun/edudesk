@@ -4,9 +4,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 import SchoolMeetings from '../anasayfa/SchoolMeetings'
-import MudurOgretmenAktivite from '../anasayfa/MudurOgretmenAktivite'
 import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
-import MudurHizliAksiyonlar from '../anasayfa/MudurHizliAksiyonlar'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OdevGirisWidget from './OdevGirisWidget'
@@ -64,18 +62,10 @@ export default async function YonetimPage() {
         <MudurStatsWidget />
       </Suspense>
 
-      {/* Hızlı erişim */}
-      <MudurHizliAksiyonlar />
-
-      {/* 2 kolon: öğretmen aktivitesi + ödev girişi */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<CardSkeleton tall />}>
-          <MudurOgretmenAktivite />
-        </Suspense>
-        <Suspense fallback={<CardSkeleton tall />}>
-          <OdevGirisWidget />
-        </Suspense>
-      </div>
+      {/* Ödev girişi */}
+      <Suspense fallback={<CardSkeleton tall />}>
+        <OdevGirisWidget />
+      </Suspense>
 
       {/* Toplantı kayıtları */}
       <div id="toplanti-kayitlari">
