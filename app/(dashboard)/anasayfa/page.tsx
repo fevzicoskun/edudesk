@@ -57,16 +57,6 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         <MudurGunlukOzetKartlari />
       </Suspense>
 
-      {/* Öğretmen aktivitesi + Son duyurular */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurOgretmenAktivite />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurSonDuyurular />
-        </Suspense>
-      </div>
-
       {/* Gündem + Etkinlikler */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
@@ -74,6 +64,16 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         </Suspense>
         <Suspense fallback={<WidgetSkeleton tall />}>
           <EtkinliklerWidget />
+        </Suspense>
+      </div>
+
+      {/* Öğretmen aktivitesi + Son duyurular */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MudurOgretmenAktivite />
+        </Suspense>
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MudurSonDuyurular />
         </Suspense>
       </div>
 
