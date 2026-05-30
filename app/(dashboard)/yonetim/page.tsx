@@ -57,6 +57,11 @@ export default async function YonetimPage() {
         <OkulSeviyesiKartlari />
       </Suspense>
 
+      {/* Toplantı kayıtları */}
+      <div id="toplanti-kayitlari">
+        <SchoolMeetings initial={meetings} />
+      </div>
+
       {/* Genel istatistikler */}
       <Suspense fallback={<CardSkeleton />}>
         <MudurStatsWidget />
@@ -66,11 +71,6 @@ export default async function YonetimPage() {
       <Suspense fallback={<CardSkeleton tall />}>
         <OdevGirisWidget />
       </Suspense>
-
-      {/* Toplantı kayıtları */}
-      <div id="toplanti-kayitlari">
-        <SchoolMeetings initial={meetings} />
-      </div>
 
     </div>
   )
