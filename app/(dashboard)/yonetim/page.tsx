@@ -52,9 +52,11 @@ export default async function YonetimPage() {
       </Suspense>
 
       {/* Bugünkü yoklama */}
-      <Suspense fallback={<CardSkeleton />}>
-        <BugunYoklamaWidget />
-      </Suspense>
+      <div id="bugun-yoklama">
+        <Suspense fallback={<CardSkeleton />}>
+          <BugunYoklamaWidget />
+        </Suspense>
+      </div>
 
       {/* Genel istatistikler */}
       <Suspense fallback={<CardSkeleton />}>

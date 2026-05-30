@@ -61,7 +61,7 @@ export default async function MudurGunlukOzetKartlari() {
       value: `${completedCount}/${totalClasses}`,
       label: 'Yoklama Girilen',
       sub: 'sınıf',
-      href: '/yonetim' as string | null,
+      href: '/yonetim#bugun-yoklama' as string | null,
       color: yoklamaRatio === 1
         ? 'text-emerald-600 dark:text-emerald-400'
         : yoklamaRatio >= 0.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400',
