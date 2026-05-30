@@ -4,22 +4,21 @@ import { subDays } from '@/src/shared/date'
 import { getLevel } from './BugunYoklamaWidget'
 
 export default async function OkulSeviyesiKartlari() {
-  const supabase    = await createClient()
-  const school_id   = await requireSchoolId()
-  const weekAgoStr  = subDays(new Date(), 7).toISOString().split('T')[0]
+  const supabase   = await createClient()
+  const school_id  = await requireSchoolId()
+  const weekAgoStr = subDays(new Date(), 7).toISOString().split('T')[0]
 
-  const [classesRes, studentsRes, teachersRes, attendanceWeekRes, teacherClassesRes] =
-    await Promise.all([
-      supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null),
-      supabase.from('students').select('id, class_id').eq('school_id', school_id).is('deleted_at', null),
-      supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
-      supabase.from('attendance').select('class_id').eq('school_id', school_id).gte('date', weekAgoStr),
-      supabase.from('teacher_classes').select('teacher_id, class_id').eq('school_id', school_id),
-    ])
+  const [classesRes, studentsRes, teachersRes, homeworksRes] = await Promise.all([
+    supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null),
+    supabase.from('students').select('id, class_id').eq('school_id', school_id).is('deleted_at', null),
+    supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
+    supabase.from('homeworks').select('teacher_id').eq('school_id', school_id)
+      .gte('assigned_date', weekAgoStr).is('deleted_at', null),
+  ])
 
-  const classes    = classesRes.data  ?? []
-  const students   = studentsRes.data ?? []
-  const teachers   = teachersRes.data ?? []
+  const classes  = classesRes.data  ?? []
+  const students = studentsRes.data ?? []
+  const teachers = teachersRes.data ?? []
 
   const anaOkulClassIds = new Set(
     classes.filter(c => getLevel(c.name, c.grade) === 'Anaokulu').map(c => c.id)
@@ -27,19 +26,10 @@ export default async function OkulSeviyesiKartlari() {
   const anaOkulStudentCount = students.filter(s => anaOkulClassIds.has(s.class_id)).length
   const anaOkulClassCount   = anaOkulClassIds.size
 
-  const classesWithAttendance = new Set((attendanceWeekRes.data ?? []).map(a => a.class_id))
-  const teacherClassMap = new Map<string, string[]>()
-  for (const tc of teacherClassesRes.data ?? []) {
-    if (!teacherClassMap.has(tc.teacher_id)) teacherClassMap.set(tc.teacher_id, [])
-    teacherClassMap.get(tc.teacher_id)!.push(tc.class_id)
-  }
-
-  const teachersWithClasses = teachers.filter(t => (teacherClassMap.get(t.id)?.length ?? 0) > 0)
-  const activeCount = teachersWithClasses.filter(t =>
-    (teacherClassMap.get(t.id) ?? []).some(cid => classesWithAttendance.has(cid))
-  ).length
-  const totalWithClasses = teachersWithClasses.length
-  const aktifRatio = totalWithClasses > 0 ? activeCount / totalWithClasses : 1
+  const teachersWithHomework = new Set((homeworksRes.data ?? []).map(h => h.teacher_id))
+  const activeCount  = teachers.filter(t => teachersWithHomework.has(t.id)).length
+  const totalTeachers = teachers.length
+  const aktifRatio   = totalTeachers > 0 ? activeCount / totalTeachers : 1
 
   const cols = anaOkulClassCount > 0 ? 'grid-cols-2' : 'grid-cols-1 max-w-xs'
 
@@ -60,30 +50,21 @@ export default async function OkulSeviyesiKartlari() {
       )}
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4">
-        <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">Bu Hafta Yoklama</p>
-        {totalWithClasses === 0 ? (
-          <>
-            <p className="text-2xl font-bold text-gray-300 dark:text-slate-600">—</p>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">sınıf ataması yok</p>
-          </>
-        ) : (
-          <>
-            <p className={`text-2xl font-bold tabular-nums ${
-              aktifRatio === 1
-                ? 'text-emerald-600 dark:text-emerald-400'
-                : aktifRatio >= 0.7
-                  ? 'text-amber-500'
-                  : 'text-red-500'
-            }`}>
-              {activeCount}
-              <span className="text-base font-normal text-gray-400 dark:text-slate-500">
-                {' '}/ {totalWithClasses}
-              </span>
-            </p>
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">öğretmen girdi</p>
-            <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">son 7 gün</p>
-          </>
-        )}
+        <p className="text-[11px] text-gray-500 dark:text-slate-400 mb-2">Bu Hafta Ödev Girişi</p>
+        <p className={`text-2xl font-bold tabular-nums ${
+          aktifRatio === 1
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : aktifRatio >= 0.7
+              ? 'text-amber-500'
+              : 'text-red-500'
+        }`}>
+          {activeCount}
+          <span className="text-base font-normal text-gray-400 dark:text-slate-500">
+            {' '}/ {totalTeachers}
+          </span>
+        </p>
+        <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">öğretmen girdi</p>
+        <p className="text-xs text-gray-300 dark:text-slate-600 mt-1">son 7 gün</p>
       </div>
 
     </div>
