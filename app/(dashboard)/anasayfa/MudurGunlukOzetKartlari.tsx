@@ -5,50 +5,53 @@ import { subDays } from '@/src/shared/date'
 import { Card, CardContent } from '@/components/ui/card'
 
 export default async function MudurGunlukOzetKartlari() {
-  const supabase   = await createClient()
-  const school_id  = await requireSchoolId()
-  const todayStr   = new Date().toISOString().split('T')[0]
-  const twoWeeksAgo = subDays(new Date(), 14).toISOString()
+  const supabase     = await createClient()
+  const school_id    = await requireSchoolId()
+  const todayStr     = new Date().toISOString().split('T')[0]
+  const yesterdayStr = subDays(new Date(), 1).toISOString().split('T')[0]
+  const weekAgoStr   = subDays(new Date(), 7).toISOString().split('T')[0]
 
-  const [classesRes, attendanceRes, profilesRes, sessionsRes] = await Promise.all([
+  const [classesRes, attendanceRes, weekAbsenceRes] = await Promise.all([
     supabase.from('classes').select('id', { count: 'exact', head: true })
       .eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status')
       .eq('school_id', school_id).eq('date', todayStr),
-    supabase.from('profiles').select('id, role')
-      .eq('school_id', school_id)
-      .in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
-    supabase.from('user_sessions').select('user_id, last_seen_at')
-      .eq('school_id', school_id),
+    supabase.from('attendance').select('date')
+      .eq('school_id', school_id).eq('status', 'absent')
+      .gte('date', weekAgoStr).lt('date', todayStr),
   ])
 
-  const totalClasses     = classesRes.count ?? 0
-  const attendance       = attendanceRes.data ?? []
-  const teachers         = profilesRes.data ?? []
-  const sessions         = sessionsRes.data ?? []
+  const totalClasses = classesRes.count ?? 0
+  const attendance   = attendanceRes.data ?? []
+  const weekAbsences = weekAbsenceRes.data ?? []
 
   const classesWithAttendance = new Set(attendance.map(a => a.class_id))
-  const completedCount   = classesWithAttendance.size
-  const absentCount      = attendance.filter(a => a.status === 'absent').length
+  const completedCount = classesWithAttendance.size
+  const absentCount    = attendance.filter(a => a.status === 'absent').length
 
-  const lastSeenMap = new Map<string, string>()
-  for (const s of sessions) {
-    const prev = lastSeenMap.get(s.user_id)
-    if (!prev || s.last_seen_at > prev) lastSeenMap.set(s.user_id, s.last_seen_at)
+  const absenceByDay = new Map<string, number>()
+  for (const a of weekAbsences) {
+    absenceByDay.set(a.date, (absenceByDay.get(a.date) ?? 0) + 1)
   }
-  const inactiveCount = teachers.filter(t => {
-    const ls = lastSeenMap.get(t.id)
-    return !ls || ls < twoWeeksAgo
-  }).length
+  const yesterdayAbsent = absenceByDay.get(yesterdayStr) ?? null
+  const weekDays = [...absenceByDay.values()]
+  const weekAvg  = weekDays.length > 0
+    ? Math.round(weekDays.reduce((s, n) => s + n, 0) / weekDays.length)
+    : null
 
   const yoklamaRatio = totalClasses > 0 ? completedCount / totalClasses : 1
+
+  const absentSub = [
+    yesterdayAbsent !== null ? `dün: ${yesterdayAbsent}` : null,
+    weekAvg !== null ? `haftalık ort: ${weekAvg}` : null,
+  ].filter(Boolean).join(' · ') || 'öğrenci'
 
   const cards = [
     {
       value: absentCount,
       label: 'Bugün Devamsız',
-      sub: 'öğrenci',
-      href: '/yonetim/devamsizlar',
+      sub: absentSub,
+      href: '/yonetim/devamsizlar' as string | null,
       color: absentCount === 0
         ? 'text-emerald-600 dark:text-emerald-400'
         : absentCount > 10 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400',
@@ -58,26 +61,16 @@ export default async function MudurGunlukOzetKartlari() {
       value: `${completedCount}/${totalClasses}`,
       label: 'Yoklama Girilen',
       sub: 'sınıf',
-      href: null,
+      href: '/yonetim' as string | null,
       color: yoklamaRatio === 1
         ? 'text-emerald-600 dark:text-emerald-400'
         : yoklamaRatio >= 0.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400',
       dot: yoklamaRatio === 1 ? 'bg-emerald-500' : yoklamaRatio >= 0.5 ? 'bg-amber-500' : 'bg-red-500',
     },
-    {
-      value: inactiveCount,
-      label: 'Pasif Öğretmen',
-      sub: '14+ gün giriş yok',
-      href: null,
-      color: inactiveCount === 0
-        ? 'text-emerald-600 dark:text-emerald-400'
-        : inactiveCount >= 3 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400',
-      dot: inactiveCount === 0 ? 'bg-emerald-500' : inactiveCount >= 3 ? 'bg-red-500' : 'bg-amber-500',
-    },
   ]
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {cards.map(c => {
         const inner = (
           <CardContent className="pt-5 pb-4">

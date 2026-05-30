@@ -42,4 +42,26 @@ export const AnnouncementRepository = {
       .order('created_at', { ascending: false })
     return data ?? []
   },
+
+  async listBySchool(schoolId: string): Promise<AnnouncementWithSender[]> {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('announcements')
+      .select('*')
+      .eq('school_id', schoolId)
+      .order('created_at', { ascending: false })
+      .limit(6)
+
+    const rows = data ?? []
+    if (rows.length === 0) return []
+
+    const creatorIds = [...new Set(rows.map(r => r.created_by))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', creatorIds)
+
+    const nameMap = new Map((profiles ?? []).map(p => [p.id, p.full_name]))
+    return rows.map(r => ({ ...r, sender_name: nameMap.get(r.created_by) ?? 'Bilinmiyor' }))
+  },
 }

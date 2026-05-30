@@ -1,38 +1,44 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import { subDays, format } from '@/src/shared/date'
+import { subDays } from '@/src/shared/date'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 
 export default async function MudurOgretmenAktivite() {
   const supabase   = await createClient()
   const school_id  = await requireSchoolId()
-  const twoWeeksAgo = subDays(new Date(), 14).toISOString()
+  const weekAgoStr = subDays(new Date(), 7).toISOString().split('T')[0]
 
-  const [profilesRes, sessionsRes] = await Promise.all([
+  const [profilesRes, attendanceRes, teacherClassesRes] = await Promise.all([
     supabase.from('profiles').select('id, full_name, subject, role')
       .eq('school_id', school_id)
       .in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
-    supabase.from('user_sessions').select('user_id, last_seen_at')
+    supabase.from('attendance').select('class_id')
+      .eq('school_id', school_id).gte('date', weekAgoStr),
+    supabase.from('teacher_classes').select('teacher_id, class_id')
       .eq('school_id', school_id),
   ])
 
-  const teachers = profilesRes.data ?? []
-  const sessions = sessionsRes.data ?? []
+  const teachers   = profilesRes.data ?? []
+  const classesWithAttendance = new Set((attendanceRes.data ?? []).map(a => a.class_id))
 
-  const lastSeenMap = new Map<string, string>()
-  for (const s of sessions) {
-    const prev = lastSeenMap.get(s.user_id)
-    if (!prev || s.last_seen_at > prev) lastSeenMap.set(s.user_id, s.last_seen_at)
+  const teacherClassMap = new Map<string, string[]>()
+  for (const tc of teacherClassesRes.data ?? []) {
+    if (!teacherClassMap.has(tc.teacher_id)) teacherClassMap.set(tc.teacher_id, [])
+    teacherClassMap.get(tc.teacher_id)!.push(tc.class_id)
   }
 
   const withActivity = teachers
-    .map(t => ({ ...t, lastSeen: lastSeenMap.get(t.id) ?? null }))
+    .map(t => {
+      const myClasses = teacherClassMap.get(t.id) ?? []
+      const hasClasses = myClasses.length > 0
+      const enteredAttendance = hasClasses && myClasses.some(cid => classesWithAttendance.has(cid))
+      return { ...t, hasClasses, enteredAttendance }
+    })
     .sort((a, b) => {
-      if (!a.lastSeen && !b.lastSeen) return 0
-      if (!a.lastSeen) return 1
-      if (!b.lastSeen) return -1
-      return b.lastSeen.localeCompare(a.lastSeen)
+      // Sınıfı olup yoklama girmeyenler üste
+      if (a.hasClasses && !a.enteredAttendance && !(b.hasClasses && !b.enteredAttendance)) return -1
+      if (b.hasClasses && !b.enteredAttendance && !(a.hasClasses && !a.enteredAttendance)) return 1
+      return (a.full_name ?? '').localeCompare(b.full_name ?? '', 'tr')
     })
     .slice(0, 8)
 
@@ -40,13 +46,21 @@ export default async function MudurOgretmenAktivite() {
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
       <CardHeader className="px-4 pt-4 pb-2">
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-          Öğretmen Aktivitesi
+          Öğretmen Yoklama Durumu
         </CardTitle>
+        <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">Son 7 gün</p>
       </CardHeader>
       <CardContent className="p-0">
         <ul className="divide-y divide-gray-100 dark:divide-slate-700">
           {withActivity.map(t => {
-            const isActive = t.lastSeen && t.lastSeen >= twoWeeksAgo
+            let badge: { label: string; cls: string }
+            if (!t.hasClasses) {
+              badge = { label: 'Sınıf yok', cls: 'bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500' }
+            } else if (t.enteredAttendance) {
+              badge = { label: 'Yoklama girdi', cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300' }
+            } else {
+              badge = { label: 'Girilmedi', cls: 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400' }
+            }
             return (
               <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
                 <div className="min-w-0">
@@ -57,20 +71,9 @@ export default async function MudurOgretmenAktivite() {
                     {t.subject ?? '—'}
                   </p>
                 </div>
-                <div className="flex flex-col items-end gap-1 shrink-0">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                    isActive
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'
-                  }`}>
-                    {isActive ? 'Aktif' : 'Pasif'}
-                  </span>
-                  {t.lastSeen && (
-                    <span className="text-[10px] text-gray-400 dark:text-slate-500">
-                      {format(new Date(t.lastSeen), 'd MMM')}
-                    </span>
-                  )}
-                </div>
+                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${badge.cls}`}>
+                  {badge.label}
+                </span>
               </li>
             )
           })}

@@ -4,7 +4,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from '@/src/shared/date'
 import OgretmenDashboard          from './OgretmenDashboard'
-import EtkinliklerWidget           from './EtkinliklerWidget'
 import GundemWidget                from './GundemWidget'
 import MudurGunlukOzetKartlari    from './MudurGunlukOzetKartlari'
 import MudurOgretmenAktivite      from './MudurOgretmenAktivite'
@@ -57,15 +56,10 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         <MudurGunlukOzetKartlari />
       </Suspense>
 
-      {/* Gündem + Etkinlikler */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <GundemWidget />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <EtkinliklerWidget />
-        </Suspense>
-      </div>
+      {/* Gündem */}
+      <Suspense fallback={<WidgetSkeleton tall />}>
+        <GundemWidget />
+      </Suspense>
 
       {/* Öğretmen aktivitesi + Son duyurular */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
