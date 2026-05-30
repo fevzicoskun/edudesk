@@ -45,7 +45,7 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
 
       {/* Başlık */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Anasayfa</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Günlük Durum</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {fullName} · {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>

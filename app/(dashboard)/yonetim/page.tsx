@@ -6,6 +6,7 @@ import { format } from '@/src/shared/date'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
+import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
 
 export const revalidate = 0
 
@@ -25,7 +26,7 @@ export default async function YonetimPage() {
       {/* Başlık */}
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Genel Bakış</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Durumu</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
           </p>
@@ -43,16 +44,21 @@ export default async function YonetimPage() {
         <OkulSeviyesiKartlari />
       </Suspense>
 
-      {/* Uyarı bandı — sadece uyarı varsa render edilir */}
+      {/* Uyarı bandı */}
       <Suspense fallback={null}>
         <UyariBandi />
       </Suspense>
 
-      {/* Bugünkü yoklama */}
-      <div id="bugun-yoklama">
-        <Suspense fallback={<CardSkeleton />}>
-          <BugunYoklamaWidget />
+      {/* Bu ay devamsızlık + Bugünkü yoklama yan yana */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<CardSkeleton tall />}>
+          <AylikDevamsizlikWidget />
         </Suspense>
+        <div id="bugun-yoklama">
+          <Suspense fallback={<CardSkeleton tall />}>
+            <BugunYoklamaWidget />
+          </Suspense>
+        </div>
       </div>
 
     </div>
