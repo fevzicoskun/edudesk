@@ -1,26 +1,11 @@
 ﻿import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { isMudurOrAbove, ROLE_LABELS, type Role } from '@/src/shared/types'
-import RoleSelector from './RoleSelector'
+import { isMudurOrAbove, type Role } from '@/src/shared/types'
 import InviteUserForm from './InviteUserForm'
-import DeleteButton from './DeleteButton'
+import KullaniciFiltreli, { type UserRow, type SessionSummary } from './KullaniciFiltreli'
 
 export const revalidate = 60
-
-type UserRow = {
-  id: string
-  full_name: string
-  subject: string | null
-  role: Role
-}
-
-const ROLE_BADGE: Record<Role, string> = {
-  mudur:            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
-  mudur_yardimcisi: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-  zumre_baskani:    'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  ogretmen:         'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300',
-}
 
 export default async function KullanicilarPage() {
   const profile = await getCurrentProfile()
@@ -42,32 +27,28 @@ export default async function KullanicilarPage() {
 
   const users = (data ?? []) as UserRow[]
 
-  // Kullanıcı başına oturum özeti
-  type SessionSummary = { count: number; totalMinutes: number; lastSeen: string | null }
-  const sessionMap = new Map<string, SessionSummary>()
+  // Kullanıcı başına oturum özeti — plain object olarak geçir (client component için serialize edilebilir)
+  const sessions: Record<string, SessionSummary> = {}
   for (const s of (sessionsRaw ?? [])) {
-    const prev = sessionMap.get(s.user_id) ?? { count: 0, totalMinutes: 0, lastSeen: null }
+    const prev = sessions[s.user_id] ?? { count: 0, totalMinutes: 0, lastSeen: null }
     prev.count += 1
-    // Kapalı oturum: duration_minutes kullan. Açık: last_seen_at - login_at tahmini
     const mins = s.duration_minutes ?? Math.round(
       (new Date(s.last_seen_at).getTime() - new Date(s.login_at).getTime()) / 60000
     )
     prev.totalMinutes += Math.max(mins, 1)
     if (!prev.lastSeen || s.last_seen_at > prev.lastSeen) prev.lastSeen = s.last_seen_at
-    sessionMap.set(s.user_id, prev)
+    sessions[s.user_id] = prev
   }
+
   const isMudur = profile.role === 'mudur'
   const canAssign = isMudur || isMY
-
-  // Müdür: mudur_yardimcisi dahil tüm alt rolleri atayabilir
-  // Müdür yardımcısı: zumre_baskani ve ogretmen atayabilir
   const assignableRoles = (isMudur
     ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
     : ['zumre_baskani', 'ogretmen']) as Role[]
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
-      <div className="mb-5 flex items-start justify-between gap-3 flex-wrap">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Kullanıcılar</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
@@ -77,84 +58,14 @@ export default async function KullanicilarPage() {
         {canAssign && <InviteUserForm canAssignRoles={assignableRoles} />}
       </div>
 
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
-        <table className="w-full text-sm min-w-full">
-          <thead className="bg-gray-50 dark:bg-slate-700 border-b border-gray-200 dark:border-slate-600">
-            <tr>
-              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ad Soyad</th>
-              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden sm:table-cell">Branş</th>
-              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rol</th>
-              <th className="text-left px-3 py-2 sm:px-4 sm:py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide hidden md:table-cell">Kullanım</th>
-              <th className="px-3 py-2 sm:px-4 sm:py-3 w-10"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
-            {users.map((u) => {
-              const isSelf = u.id === user.id
-              // Müdür: kendisi ve diğer müdürler hariç herkesi düzenleyebilir
-              // MY: yalnızca ogretmen ve zumre_baskani satırlarını düzenleyebilir
-              const canEditThis = canAssign && !isSelf && (
-                isMudur ? u.role !== 'mudur' : ['ogretmen', 'zumre_baskani'].includes(u.role)
-              )
-              const editableRoles = assignableRoles
-              const stats = sessionMap.get(u.id)
-              const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : null
-
-              return (
-                <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                  <td className="px-3 py-2 sm:px-4 sm:py-3">
-                    <p className="font-medium text-gray-900 dark:text-slate-100">
-                      {u.full_name}
-                      {isSelf && <span className="ml-2 text-[10px] text-gray-400">(sen)</span>}
-                    </p>
-                  </td>
-                  <td className="px-3 py-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
-                    {u.subject ?? '—'}
-                  </td>
-                  <td className="px-3 py-2 sm:px-4 sm:py-3">
-                    {canEditThis ? (
-                      <RoleSelector
-                        userId={u.id}
-                        currentRole={u.role}
-                        assignableRoles={editableRoles}
-                      />
-                    ) : (
-                      <span className={`inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full ${ROLE_BADGE[u.role] ?? ROLE_BADGE.ogretmen}`}>
-                        {ROLE_LABELS[u.role] ?? u.role}
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 sm:px-4 sm:py-3 hidden md:table-cell">
-                    {stats ? (
-                      <div>
-                        <p className="text-xs font-medium text-gray-900 dark:text-slate-100">{stats.count} giriş · {totalHours} saat</p>
-                        {stats.lastSeen && (
-                          <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
-                            Son: {new Date(stats.lastSeen).toLocaleDateString('tr-TR')}
-                          </p>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 sm:px-4 sm:py-3">
-                    {canAssign && !isSelf && (
-                      isMudur
-                        ? u.role !== 'mudur'
-                        : ['zumre_baskani', 'ogretmen'].includes(u.role)
-                    ) && (
-                      <DeleteButton userId={u.id} userName={u.full_name} />
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-          </tbody>
-        </table>
-        </div>
-      </div>
+      <KullaniciFiltreli
+        users={users}
+        sessions={sessions}
+        currentUserId={user.id}
+        isMudur={isMudur}
+        canAssign={canAssign}
+        assignableRoles={assignableRoles}
+      />
     </div>
   )
 }
