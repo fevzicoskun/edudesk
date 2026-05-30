@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import Link from 'next/link'
 
 interface Student {
   id: string
@@ -81,18 +82,26 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-slate-800">
               {cls.students.map(s => (
-                <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
-                    <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                      {s.full_name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.full_name}</p>
-                  </div>
-                  {s.student_number && (
-                    <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">#{s.student_number}</span>
-                  )}
+                <li key={s.id}>
+                  <Link
+                    href={`/siniflar/${cls.id}/ogrenciler/${s.id}`}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
+                  >
+                    <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
+                      <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        {s.full_name.charAt(0)}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.full_name}</p>
+                    </div>
+                    {s.student_number && (
+                      <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">#{s.student_number}</span>
+                    )}
+                    <svg className="w-4 h-4 text-gray-300 dark:text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
                 </li>
               ))}
             </ul>
