@@ -7,7 +7,6 @@ import SchoolMeetings from '../anasayfa/SchoolMeetings'
 import MudurStatsWidget from '../anasayfa/MudurStatsWidget'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
-import OdevGirisWidget from './OdevGirisWidget'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 
 export const revalidate = 0
@@ -42,6 +41,11 @@ export default async function YonetimPage() {
         </p>
       </div>
 
+      {/* Kademe kartları */}
+      <Suspense fallback={<CardSkeleton />}>
+        <OkulSeviyesiKartlari />
+      </Suspense>
+
       {/* Uyarı bandı — sadece uyarı varsa render edilir */}
       <Suspense fallback={null}>
         <UyariBandi />
@@ -52,19 +56,9 @@ export default async function YonetimPage() {
         <BugunYoklamaWidget />
       </Suspense>
 
-      {/* Kademe kartları */}
-      <Suspense fallback={<CardSkeleton />}>
-        <OkulSeviyesiKartlari />
-      </Suspense>
-
       {/* Genel istatistikler */}
       <Suspense fallback={<CardSkeleton />}>
         <MudurStatsWidget />
-      </Suspense>
-
-      {/* Ödev girişi */}
-      <Suspense fallback={<CardSkeleton tall />}>
-        <OdevGirisWidget />
       </Suspense>
 
       {/* Toplantı kayıtları */}
