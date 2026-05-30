@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
@@ -47,6 +48,7 @@ export default async function MudurGunlukOzetKartlari() {
       value: absentCount,
       label: 'Bugün Devamsız',
       sub: 'öğrenci',
+      href: '/yonetim/devamsizlar',
       color: absentCount === 0
         ? 'text-emerald-600 dark:text-emerald-400'
         : absentCount > 10 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400',
@@ -56,6 +58,7 @@ export default async function MudurGunlukOzetKartlari() {
       value: `${completedCount}/${totalClasses}`,
       label: 'Yoklama Girilen',
       sub: 'sınıf',
+      href: null,
       color: yoklamaRatio === 1
         ? 'text-emerald-600 dark:text-emerald-400'
         : yoklamaRatio >= 0.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400',
@@ -65,6 +68,7 @@ export default async function MudurGunlukOzetKartlari() {
       value: inactiveCount,
       label: 'Pasif Öğretmen',
       sub: '14+ gün giriş yok',
+      href: null,
       color: inactiveCount === 0
         ? 'text-emerald-600 dark:text-emerald-400'
         : inactiveCount >= 3 ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400',
@@ -74,8 +78,8 @@ export default async function MudurGunlukOzetKartlari() {
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-      {cards.map(c => (
-        <Card key={c.label} className="border-gray-200 dark:border-slate-700 shadow-sm">
+      {cards.map(c => {
+        const inner = (
           <CardContent className="pt-5 pb-4">
             <div className="flex items-center gap-1.5 mb-2">
               <span className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`} />
@@ -84,8 +88,19 @@ export default async function MudurGunlukOzetKartlari() {
             <p className={`text-3xl font-bold tabular-nums leading-none ${c.color}`}>{c.value}</p>
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{c.sub}</p>
           </CardContent>
-        </Card>
-      ))}
+        )
+        return c.href ? (
+          <Link key={c.label} href={c.href}>
+            <Card className="border-gray-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:border-gray-300 dark:hover:border-slate-600 transition-all cursor-pointer">
+              {inner}
+            </Card>
+          </Link>
+        ) : (
+          <Card key={c.label} className="border-gray-200 dark:border-slate-700 shadow-sm">
+            {inner}
+          </Card>
+        )
+      })}
     </div>
   )
 }
