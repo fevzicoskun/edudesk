@@ -1,9 +1,8 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import Link from 'next/link'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
-import SchoolMeetings from '../anasayfa/SchoolMeetings'
 import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
@@ -20,24 +19,23 @@ export default async function YonetimPage() {
   const profile = await getCurrentProfile()
   if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
 
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('school_meetings')
-    .select('id, title, meeting_date, meeting_type, attendees, notes')
-    .eq('school_id', profile.school_id!)
-    .order('meeting_date', { ascending: false })
-
-  const meetings = data ?? []
-
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
 
       {/* Başlık */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Genel Bakış</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Genel Bakış</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
+          </p>
+        </div>
+        <Link
+          href="/toplantilar"
+          className="shrink-0 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          Toplantı Kayıtları →
+        </Link>
       </div>
 
       {/* Kademe kartları */}
@@ -55,11 +53,6 @@ export default async function YonetimPage() {
         <Suspense fallback={<CardSkeleton />}>
           <BugunYoklamaWidget />
         </Suspense>
-      </div>
-
-      {/* Toplantı kayıtları */}
-      <div id="toplanti-kayitlari">
-        <SchoolMeetings initial={meetings} />
       </div>
 
     </div>

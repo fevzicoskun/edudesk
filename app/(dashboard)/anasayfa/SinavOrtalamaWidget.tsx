@@ -1,5 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
+import { format, parseISO } from '@/src/shared/date'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import SinavOrtalamaChart from './SinavOrtalamaChart'
 
@@ -20,7 +21,7 @@ export default async function SinavOrtalamaWidget() {
       <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
         <CardHeader className="pb-1">
           <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-            Sınav Ortalamaları
+            Sınav Sonuçları
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -38,9 +39,11 @@ export default async function SinavOrtalamaWidget() {
     .select('exam_id, grade')
     .in('exam_id', examIds)
 
+  const allEntries = entries ?? []
+
   const avgMap = new Map<string, { sum: number; count: number }>()
   for (const e of exams) avgMap.set(e.id, { sum: 0, count: 0 })
-  for (const entry of entries ?? []) {
+  for (const entry of allEntries) {
     const m = avgMap.get(entry.exam_id)
     if (m) { m.sum += entry.grade; m.count++ }
   }
@@ -55,45 +58,57 @@ export default async function SinavOrtalamaWidget() {
     }
   })
 
-  const schoolAvg = chartData.length > 0
-    ? Math.round(chartData.reduce((s, d) => s + d.ortalama, 0) / chartData.length)
-    : 0
-  const passRate = chartData.length > 0
-    ? Math.round(chartData.filter(d => d.ortalama >= 50).length / chartData.length * 100)
-    : 0
-  const bestExam = chartData.length > 0
-    ? chartData.reduce((best, d) => d.ortalama > best.ortalama ? d : best)
-    : null
+  // Son sınav detayı — anlamlı metrikler
+  const latestExam   = exams[0]
+  const latestEntries = allEntries.filter(e => e.exam_id === latestExam.id)
+  const total   = latestEntries.length
+  const below50 = latestEntries.filter(e => e.grade < 50).length
+  const above85 = latestEntries.filter(e => e.grade >= 85).length
+  const latestAvg = total > 0 ? Math.round(latestEntries.reduce((s, e) => s + e.grade, 0) / total) : null
 
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
       <CardHeader className="pb-1">
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-          Sınav Ortalamaları
+          Sınav Sonuçları
         </CardTitle>
         <p className="text-xs text-gray-400 dark:text-slate-500">Son 6 ortak sınav · puan</p>
       </CardHeader>
       <CardContent className="pt-2 pb-4">
         <SinavOrtalamaChart data={chartData} />
-        <div className="grid grid-cols-3 gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-slate-700/50">
-          <div className="text-center">
-            <p className={`text-sm font-bold ${schoolAvg >= 70 ? 'text-indigo-600 dark:text-indigo-400' : schoolAvg >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
-              {schoolAvg}
-            </p>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Genel ort.</p>
-          </div>
-          <div className="text-center">
-            <p className={`text-sm font-bold ${passRate >= 80 ? 'text-emerald-600 dark:text-emerald-400' : passRate >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
-              %{passRate}
-            </p>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Geçme oranı</p>
-          </div>
-          <div className="text-center overflow-hidden">
-            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 truncate" title={bestExam?.title}>
-              {bestExam?.title ?? '—'}
-            </p>
-            <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">En başarılı</p>
-          </div>
+
+        {/* Son sınav — anlamlı breakdown */}
+        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-slate-700/50">
+          <p className="text-[11px] text-gray-400 dark:text-slate-500 mb-2">
+            Son sınav:{' '}
+            <span className="font-semibold text-gray-600 dark:text-slate-300">{latestExam.title}</span>
+            {' · '}{format(parseISO(latestExam.exam_date), 'd MMM')}
+            {total > 0 && ` · ${total} öğrenci`}
+          </p>
+          {total === 0 ? (
+            <p className="text-xs text-gray-400 dark:text-slate-500">Henüz sonuç girilmemiş.</p>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="rounded-lg bg-red-50 dark:bg-red-950/30 px-3 py-2 text-center">
+                <p className={`text-lg font-bold tabular-nums ${below50 > 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {below50}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Risk &lt;50</p>
+              </div>
+              <div className="rounded-lg bg-gray-50 dark:bg-slate-700/40 px-3 py-2 text-center">
+                <p className={`text-lg font-bold tabular-nums ${latestAvg !== null && latestAvg >= 70 ? 'text-indigo-600 dark:text-indigo-400' : latestAvg !== null && latestAvg >= 50 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
+                  {latestAvg ?? '—'}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Ort. puan</p>
+              </div>
+              <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2 text-center">
+                <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {above85}
+                </p>
+                <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Başarılı ≥85</p>
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
