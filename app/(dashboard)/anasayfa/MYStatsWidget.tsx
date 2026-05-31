@@ -4,6 +4,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
+import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -33,17 +34,17 @@ export default async function MYStatsWidget() {
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [profilesRes, classesRes, studentsRes, todayAttRes, absentYearRes, sessionsRes] = await Promise.all([
+  const [profilesRes, classesRes, studentsRes, todayAttRes, absentYearRows, sessionRows] = await Promise.all([
     supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
-    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', yearStart),
-    supabase.from('user_sessions').select('user_id, last_seen_at').eq('school_id', school_id),
+    getAbsentYearRows(school_id, yearStart),
+    getSessionRows(school_id),
   ])
 
-  const teachers   = profilesRes.data ?? []
-  const classCount = classesRes.count  ?? 0
+  const teachers      = profilesRes.data ?? []
+  const classCount    = classesRes.count  ?? 0
   const totalStudents = studentsRes.count ?? 0
 
   const todayAtt       = todayAttRes.data ?? []
@@ -51,13 +52,13 @@ export default async function MYStatsWidget() {
   const todayAbsent    = todayAtt.filter(a => a.status === 'absent').length
 
   const absenceMap = new Map<string, number>()
-  for (const a of absentYearRes.data ?? []) {
+  for (const a of absentYearRows) {
     absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
   }
   const riskCount = [...absenceMap.values()].filter(n => n >= ATTENDANCE_WARN_DAYS).length
 
   const lastSeenMap = new Map<string, string>()
-  for (const s of sessionsRes.data ?? []) {
+  for (const s of sessionRows) {
     const prev = lastSeenMap.get(s.user_id)
     if (!prev || s.last_seen_at > prev) lastSeenMap.set(s.user_id, s.last_seen_at)
   }

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { subDays } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
+import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
 
 export default async function MYSolSutunWidget() {
   const supabase  = await createClient()
@@ -13,12 +14,12 @@ export default async function MYSolSutunWidget() {
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [studentsRes, absentYearRes, classesRes, profilesRes, sessionsRes] = await Promise.all([
+  const [studentsRes, classesRes, profilesRes, absentYearRows, sessionRows] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
-    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', yearStart),
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).order('grade').order('name'),
     supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']).order('full_name'),
-    supabase.from('user_sessions').select('user_id, last_seen_at').eq('school_id', school_id),
+    getAbsentYearRows(school_id, yearStart),
+    getSessionRows(school_id),
   ])
 
   const students = studentsRes.data ?? []
@@ -26,7 +27,7 @@ export default async function MYSolSutunWidget() {
   const teachers = profilesRes.data ?? []
 
   const absenceMap = new Map<string, number>()
-  for (const a of absentYearRes.data ?? []) {
+  for (const a of absentYearRows) {
     absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
   }
   const riskStudents = students
@@ -38,7 +39,7 @@ export default async function MYSolSutunWidget() {
   const classMap = new Map(classes.map(c => [c.id, c]))
 
   const sessionMap = new Map<string, string>()
-  for (const s of sessionsRes.data ?? []) {
+  for (const s of sessionRows) {
     const prev = sessionMap.get(s.user_id)
     if (!prev || s.last_seen_at > prev) sessionMap.set(s.user_id, s.last_seen_at)
   }
