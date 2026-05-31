@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import Tooltip from '@/components/ui/Tooltip'
@@ -160,8 +161,8 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
                         {(() => {
                           const absent = absenceCounts[s.id] ?? 0
                           if (absent === 0) return null
-                          const danger = absent >= 20
-                          const warn   = absent >= 15
+                          const danger = absent >= ATTENDANCE_LIMIT_DAYS
+                          const warn   = absent >= ATTENDANCE_WARN_DAYS
                           return (
                             <Tooltip content={`Yıl içi devamsızlık: ${absent} gün (MEB sınırı 20 gün)`}>
                               <span

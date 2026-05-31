@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
+import { schoolYearStart } from '@/src/shared/utils'
+import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -26,17 +28,17 @@ export default async function MYStatsWidget() {
   const supabase  = await createClient()
   const school_id = await requireSchoolId()
 
-  const today        = new Date()
-  const todayStr     = today.toISOString().split('T')[0]
-  const twoWeeksAgo  = subDays(today, 14).toISOString()
-  const thirtyDaysAgo = subDays(today, 30).toISOString().split('T')[0]
+  const today       = new Date()
+  const todayStr    = today.toISOString().split('T')[0]
+  const twoWeeksAgo = subDays(today, 14).toISOString()
+  const yearStart   = schoolYearStart()
 
-  const [profilesRes, classesRes, studentsRes, todayAttRes, absent30Res, sessionsRes] = await Promise.all([
+  const [profilesRes, classesRes, studentsRes, todayAttRes, absentYearRes, sessionsRes] = await Promise.all([
     supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
-    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', thirtyDaysAgo),
+    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', yearStart),
     supabase.from('user_sessions').select('user_id, last_seen_at').eq('school_id', school_id),
   ])
 
@@ -49,10 +51,10 @@ export default async function MYStatsWidget() {
   const todayAbsent    = todayAtt.filter(a => a.status === 'absent').length
 
   const absenceMap = new Map<string, number>()
-  for (const a of absent30Res.data ?? []) {
+  for (const a of absentYearRes.data ?? []) {
     absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
   }
-  const riskCount = [...absenceMap.values()].filter(n => n >= 5).length
+  const riskCount = [...absenceMap.values()].filter(n => n >= ATTENDANCE_WARN_DAYS).length
 
   const lastSeenMap = new Map<string, string>()
   for (const s of sessionsRes.data ?? []) {

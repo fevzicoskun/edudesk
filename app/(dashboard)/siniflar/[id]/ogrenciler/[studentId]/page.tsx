@@ -9,10 +9,9 @@ import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 
 export const revalidate = 60
-
-const MEB_LIMIT = 20
 
 const LABELS: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı',
@@ -74,9 +73,9 @@ export default async function OgrenciDetayPage({
     if (r.status === 'late') return sum + 0.5
     return sum
   }, 0)
-  const absentPct = Math.min((absentDays / MEB_LIMIT) * 100, 100)
-  const absenceDanger = absentDays >= MEB_LIMIT
-  const absenceWarn   = absentDays >= 15 && !absenceDanger
+  const absentPct = Math.min((absentDays / ATTENDANCE_LIMIT_DAYS) * 100, 100)
+  const absenceDanger = absentDays >= ATTENDANCE_LIMIT_DAYS
+  const absenceWarn   = absentDays >= ATTENDANCE_WARN_DAYS && !absenceDanger
 
   // Performans skoru
   const totalSubmissions = submissions.length
@@ -139,7 +138,7 @@ export default async function OgrenciDetayPage({
           <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-xs text-gray-500 dark:text-slate-400">Devamsızlık</p>
-              <p className={`text-xs font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-700 dark:text-slate-200'}`}>{absentDays} / {MEB_LIMIT}</p>
+              <p className={`text-xs font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-700 dark:text-slate-200'}`}>{absentDays} / {ATTENDANCE_LIMIT_DAYS}</p>
             </div>
             <div className="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
               <div
@@ -147,7 +146,7 @@ export default async function OgrenciDetayPage({
                 style={{ width: `${absentPct}%` }}
               />
             </div>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">MEB sınırı {MEB_LIMIT} gün</p>
+            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">MEB sınırı {ATTENDANCE_LIMIT_DAYS} gün</p>
           </div>
         </div>
       </div>
@@ -175,7 +174,7 @@ export default async function OgrenciDetayPage({
           <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yıl İçi Devamsızlık</h2>
             <span className={`text-sm font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-500 dark:text-slate-400'}`}>
-              {absentDays} / {MEB_LIMIT} gün
+              {absentDays} / {ATTENDANCE_LIMIT_DAYS} gün
             </span>
           </div>
           <div className="w-full h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2">

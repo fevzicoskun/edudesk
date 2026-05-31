@@ -2,19 +2,20 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import Link from 'next/link'
 import { subDays } from '@/src/shared/date'
+import { schoolYearStart } from '@/src/shared/utils'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 
 export default async function MYSolSutunWidget() {
   const supabase  = await createClient()
   const school_id = await requireSchoolId()
 
-  const today         = new Date()
-  const todayStr      = today.toISOString().split('T')[0]
-  const twoWeeksAgo   = subDays(today, 14).toISOString()
-  const thirtyDaysAgo = subDays(today, 30).toISOString().split('T')[0]
+  const today       = new Date()
+  const twoWeeksAgo = subDays(today, 14).toISOString()
+  const yearStart   = schoolYearStart()
 
-  const [studentsRes, absent30Res, classesRes, profilesRes, sessionsRes] = await Promise.all([
+  const [studentsRes, absentYearRes, classesRes, profilesRes, sessionsRes] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
-    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', thirtyDaysAgo),
+    supabase.from('attendance').select('student_id').eq('school_id', school_id).eq('status', 'absent').gte('date', yearStart),
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).order('grade').order('name'),
     supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']).order('full_name'),
     supabase.from('user_sessions').select('user_id, last_seen_at').eq('school_id', school_id),
@@ -25,12 +26,12 @@ export default async function MYSolSutunWidget() {
   const teachers = profilesRes.data ?? []
 
   const absenceMap = new Map<string, number>()
-  for (const a of absent30Res.data ?? []) {
+  for (const a of absentYearRes.data ?? []) {
     absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
   }
   const riskStudents = students
     .map(s => ({ ...s, absences: absenceMap.get(s.id) ?? 0 }))
-    .filter(s => s.absences >= 5)
+    .filter(s => s.absences >= ATTENDANCE_WARN_DAYS)
     .sort((a, b) => b.absences - a.absences)
     .slice(0, 10)
 
@@ -47,7 +48,7 @@ export default async function MYSolSutunWidget() {
       <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Devamsızlık Riski</h2>
-          <span className="text-[11px] text-gray-400 dark:text-slate-500">son 30 gün &middot; 5+ devamsız</span>
+          <span className="text-[11px] text-gray-400 dark:text-slate-500">yıl içi &middot; {ATTENDANCE_WARN_DAYS}+ devamsız</span>
         </div>
         {riskStudents.length === 0 ? (
           <p className="px-4 py-7 text-center text-sm text-gray-400 dark:text-slate-500">Riskli öğrenci yok.</p>
@@ -55,7 +56,7 @@ export default async function MYSolSutunWidget() {
           <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
             {riskStudents.map(s => {
               const cls    = classMap.get(s.class_id)
-              const danger = s.absences >= 10
+              const danger = s.absences >= ATTENDANCE_LIMIT_DAYS
               return (
                 <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${danger ? 'bg-red-500' : 'bg-amber-400'}`} />
