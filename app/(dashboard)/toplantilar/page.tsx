@@ -8,7 +8,7 @@ export const revalidate = 0
 
 export default async function ToplantilarPage() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
+  if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   const supabase = await createClient()
   const { data } = await supabase

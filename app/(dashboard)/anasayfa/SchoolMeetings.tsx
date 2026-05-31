@@ -36,7 +36,9 @@ export default function SchoolMeetings({ initial }: { initial: Meeting[] }) {
   const [isPendingDel, startDelTransition] = useTransition()
   const [isPendingNotes, startNotesTransition] = useTransition()
 
-  const today = new Date().toISOString().split('T')[0]
+  const _d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const today = `${_d.getFullYear()}-${pad(_d.getMonth() + 1)}-${pad(_d.getDate())}`
 
   const [addState, addAction, addPending] = useActionState(
     async (_: unknown, fd: FormData) => {
@@ -59,7 +61,8 @@ export default function SchoolMeetings({ initial }: { initial: Meeting[] }) {
     null
   )
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, title: string) => {
+    if (!confirm(`"${title}" toplantısını silmek istediğinize emin misiniz?`)) return
     startDelTransition(async () => {
       const res = await deleteMeeting(id)
       if (!res.error) setMeetings(prev => prev.filter(m => m.id !== id))
@@ -177,7 +180,7 @@ export default function SchoolMeetings({ initial }: { initial: Meeting[] }) {
                   </div>
                 </div>
                 <button
-                  onClick={e => { e.stopPropagation(); handleDelete(m.id) }}
+                  onClick={e => { e.stopPropagation(); handleDelete(m.id, m.title) }}
                   disabled={isPendingDel}
                   className="shrink-0 text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors mt-0.5"
                   title="Sil"
