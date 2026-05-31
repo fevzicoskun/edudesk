@@ -96,6 +96,11 @@ export const P = {
     UPDATE: p('grades', 'update'),
     DELETE: p('grades', 'delete'),
   },
+  KANAAT: {
+    CREATE: p('kanaat', 'create'),
+    READ:   p('kanaat', 'read'),
+    UPDATE: p('kanaat', 'update'),
+  },
 } as const
 
 export type { PermissionKey }

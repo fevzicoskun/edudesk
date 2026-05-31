@@ -11,6 +11,7 @@ export type Resource =
   | 'export'
   | 'notes'
   | 'grades'
+  | 'kanaat'
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage'
 

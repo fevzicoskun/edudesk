@@ -78,6 +78,9 @@ export const OGRETMEN_PERMS: GrantedPermission[] = [
   { resource: 'grades',     action: 'read',   scope: 'own',    source: 'role' },
   { resource: 'grades',     action: 'update', scope: 'own',    source: 'role' },
   { resource: 'grades',     action: 'delete', scope: 'own',    source: 'role' },
+  { resource: 'kanaat',     action: 'create', scope: 'own',    source: 'role' },
+  { resource: 'kanaat',     action: 'read',   scope: 'own',    source: 'role' },
+  { resource: 'kanaat',     action: 'update', scope: 'own',    source: 'role' },
 ]
 
 /** Müdür için tam izin seti (temsili — gerçek DB'den farklı olabilir) */
