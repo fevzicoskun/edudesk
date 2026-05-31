@@ -90,34 +90,50 @@ function computeAlerts(
   return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
 }
 
+async function fetchRiskInputs(teacherId: string) {
+  const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
+
+  const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
+  const homeworks  = (hwData ?? []) as unknown as HwRow[]
+  const hwIds      = homeworks.map(h => h.id)
+  const classIds   = [...new Set(homeworks.map(h => h.class_id))]
+
+  const [subsResult, attResult, studentsResult] = await Promise.all([
+    DashboardRepository.getSubmissions(hwIds),
+    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
+    DashboardRepository.getStudentsByClasses(classIds),
+  ])
+
+  return {
+    homeworks,
+    hwIds,
+    classIds,
+    submissions:    (subsResult.data    ?? []) as SubmissionRow[],
+    attendanceRows: (attResult.data      ?? []) as { student_id: string; status: string }[],
+    students:       (studentsResult.data ?? []) as unknown as StudentRow[],
+  }
+}
+
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
-    const today = todayLocalISO()
-    const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
+    const today         = todayLocalISO()
     const eightWeeksAgo = subDays(new Date(), 56).toISOString().split('T')[0]
-    const weekStart = getWeekStart()
+    const weekStart     = getWeekStart()
 
-    const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
-    const homeworks = (hwData ?? []) as unknown as HwRow[]
-    const hwIds = homeworks.map(h => h.id)
-    const classIds = [...new Set(homeworks.map(h => h.class_id))]
+    // Aşama 1: risk verisi (hwIds ve classIds buradan geliyor)
+    const { homeworks, hwIds, classIds, submissions, attendanceRows, students } =
+      await fetchRiskInputs(teacherId)
 
-    const [subsResult, attResult, studentsResult, weeklyResult, trendResult, todayAttResult] = await Promise.all([
-      DashboardRepository.getSubmissions(hwIds),
-      DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
-      DashboardRepository.getStudentsByClasses(classIds),
+    // Aşama 2: hwIds/classIds gerektiren diğer 3 sorgu
+    const [weeklyResult, trendResult, todayAttResult] = await Promise.all([
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
       DashboardRepository.getAttendanceTrend(classIds, eightWeeksAgo),
       DashboardRepository.getTodayClassAttendance(classIds, today),
     ])
 
     const classesWithAttToday = new Set((todayAttResult.data ?? []).map(a => (a as { class_id: string }).class_id))
-
-    const submissions       = (subsResult.data    ?? []) as SubmissionRow[]
-    const attendanceRows    = (attResult.data      ?? []) as { student_id: string; status: string }[]
-    const students          = (studentsResult.data ?? []) as unknown as StudentRow[]
-    const weeklySubmissions = (weeklyResult.data   ?? []) as SubmissionRow[]
-    const trendRows         = (trendResult.data    ?? []) as { date: string; status: string }[]
+    const weeklySubmissions   = (weeklyResult.data ?? []) as SubmissionRow[]
+    const trendRows           = (trendResult.data  ?? []) as { date: string; status: string }[]
 
     const todayHomeworkCount = homeworks.filter(h => h.due_date === today).length
     const totalMissingCount  = submissions.filter(s => s.status === 'eksik').length
@@ -205,23 +221,8 @@ export const TeacherDashboardService = {
   },
 
   async getRiskAlerts(teacherId: string): Promise<RiskAlert[]> {
-    const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
-
-    const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
-    const homeworks = (hwData ?? []) as unknown as HwRow[]
-    const hwIds = homeworks.map(h => h.id)
-    const classIds = [...new Set(homeworks.map(h => h.class_id))]
-
-    const [subsResult, attResult, studentsResult] = await Promise.all([
-      DashboardRepository.getSubmissions(hwIds),
-      DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
-      DashboardRepository.getStudentsByClasses(classIds),
-    ])
-
-    const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
-    const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
-    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
-
+    const { homeworks, submissions, attendanceRows, students } =
+      await fetchRiskInputs(teacherId)
     return computeAlerts(homeworks, submissions, attendanceRows, students)
   },
 
