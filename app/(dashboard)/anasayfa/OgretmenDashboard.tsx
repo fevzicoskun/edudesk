@@ -2,6 +2,7 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
+import { getGreeting } from '@/src/shared/utils'
 import CalendarWidget from './CalendarWidget'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
 import YoklamaTrendWidget from './YoklamaTrendWidget'
@@ -40,9 +41,7 @@ export default async function OgretmenDashboard() {
   const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
 
-  const firstName = (profile.full_name ?? '').split(' ')[0]
-  const hour = today.getHours()
-  const greeting = hour < 12 ? `Günaydın, ${firstName}` : hour < 18 ? `İyi günler, ${firstName}` : `İyi akşamlar, ${firstName}`
+  const greeting = getGreeting(profile.full_name ?? '')
 
   const todayHws = metrics.homeworks.filter(h => h.due_date === todayStr)
   const upcomingHws = metrics.homeworks

@@ -112,13 +112,13 @@ export const TeacherDashboardService = {
       DashboardRepository.getTodayClassAttendance(classIds, today),
     ])
 
-    const classesWithAttToday = new Set(((todayAttResult.data ?? []) as { class_id: string }[]).map(a => a.class_id))
+    const classesWithAttToday = new Set((todayAttResult.data ?? []).map(a => (a as { class_id: string }).class_id))
 
-    const submissions    = ((subsResult.data    ?? []) as unknown) as SubmissionRow[]
-    const attendanceRows = ((attResult.data      ?? []) as unknown) as { student_id: string; status: string }[]
-    const students       = ((studentsResult.data ?? []) as unknown) as StudentRow[]
-    const weeklySubmissions = ((weeklyResult.data ?? []) as unknown) as SubmissionRow[]
-    const trendRows      = ((trendResult.data    ?? []) as unknown) as { date: string; status: string }[]
+    const submissions       = (subsResult.data    ?? []) as SubmissionRow[]
+    const attendanceRows    = (attResult.data      ?? []) as { student_id: string; status: string }[]
+    const students          = (studentsResult.data ?? []) as unknown as StudentRow[]
+    const weeklySubmissions = (weeklyResult.data   ?? []) as SubmissionRow[]
+    const trendRows         = (trendResult.data    ?? []) as { date: string; status: string }[]
 
     const todayHomeworkCount = homeworks.filter(h => h.due_date === today).length
     const totalMissingCount  = submissions.filter(s => s.status === 'eksik').length
@@ -213,7 +213,7 @@ export const TeacherDashboardService = {
         avgCompletionPct,
         newRiskCount: weeklyRiskCount,
       },
-      homeworks: homeworks as unknown as HomeworkLite[],
+      homeworks: homeworks as HomeworkLite[],
       tamamlanmaData,
       yoklamaTrendData,
       yoklamaDurumu,
@@ -237,9 +237,9 @@ export const TeacherDashboardService = {
       DashboardRepository.getStudentsByClasses(classIds),
     ])
 
-    const submissions = ((subsResult.data ?? []) as unknown) as SubmissionRow[]
-    const attendanceRows = ((attResult.data ?? []) as unknown) as { student_id: string; status: string }[]
-    const students = ((studentsResult.data ?? []) as unknown) as StudentRow[]
+    const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
+    const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
+    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
 
     const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
 
@@ -269,9 +269,9 @@ export const TeacherDashboardService = {
       DashboardRepository.getAttendanceRows([classId], teacherId, twoWeeksAgo),
     ])
 
-    const submissions = ((subsResult.data ?? []) as unknown) as SubmissionRow[]
-    const students = ((studentsResult.data ?? []) as unknown) as StudentRow[]
-    const attendanceRows = ((attResult.data ?? []) as unknown) as { student_id: string; status: string }[]
+    const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
+    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
+    const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
 
     if (students.length === 0) return null
 

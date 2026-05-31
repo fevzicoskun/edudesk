@@ -4,7 +4,7 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import Link from 'next/link'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export default async function NotDefteriPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])

@@ -10,6 +10,7 @@ import MYStatsWidget          from './MYStatsWidget'
 import MYSolSutunWidget       from './MYSolSutunWidget'
 import AjandaSection          from './AjandaSection'
 import SinavOrtalamaWidget    from './SinavOrtalamaWidget'
+import { getGreeting }        from '@/src/shared/utils'
 
 export const revalidate = 60
 
@@ -35,14 +36,6 @@ function DashboardSkeleton() {
   )
 }
 
-function getMudurGreeting(fullName: string): string {
-  const hour = (new Date().getUTCHours() + 3) % 24
-  const firstName = fullName.split(' ')[0]
-  if (hour < 12) return `Günaydın, ${firstName}`
-  if (hour < 18) return `İyi günler, ${firstName}`
-  return `İyi akşamlar, ${firstName}`
-}
-
 async function MudurWidgets({ fullName }: { fullName: string }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
@@ -50,7 +43,7 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
       {/* Başlık */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-          {getMudurGreeting(fullName)}
+          {getGreeting(fullName)}
         </h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {format(new Date(), 'd MMMM yyyy, EEEE')}
@@ -92,14 +85,10 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
 }
 
 async function MYWidgets({ fullName }: { fullName: string }) {
-  const hour = (new Date().getUTCHours() + 3) % 24
-  const firstName = fullName.split(' ')[0]
-  const greeting = hour < 12 ? `Günaydın, ${firstName}` : hour < 18 ? `İyi günler, ${firstName}` : `İyi akşamlar, ${firstName}`
-
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{greeting}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{getGreeting(fullName)}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
