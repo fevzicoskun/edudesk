@@ -3,17 +3,14 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format } from '@/src/shared/date'
-import OgretmenDashboard          from './OgretmenDashboard'
-import GundemWidget                from './GundemWidget'
-import MudurGunlukOzetKartlari    from './MudurGunlukOzetKartlari'
-import MudurOgretmenAktivite      from './MudurOgretmenAktivite'
-import MudurSonDuyurular          from './MudurSonDuyurular'
-
-
-import MYStatsWidget       from './MYStatsWidget'
-import MYSolSutunWidget    from './MYSolSutunWidget'
-import AjandaSection       from './AjandaSection'
-import SinavOrtalamaWidget from './SinavOrtalamaWidget'
+import OgretmenDashboard     from './OgretmenDashboard'
+import GundemWidget           from './GundemWidget'
+import MudurOgretmenAktivite from './MudurOgretmenAktivite'
+import MudurSonDuyurular     from './MudurSonDuyurular'
+import MYStatsWidget          from './MYStatsWidget'
+import MYSolSutunWidget       from './MYSolSutunWidget'
+import AjandaSection          from './AjandaSection'
+import SinavOrtalamaWidget    from './SinavOrtalamaWidget'
 
 export const revalidate = 60
 
@@ -61,19 +58,24 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         </p>
       </div>
 
-      {/* Günlük özet kartları */}
-      <Suspense fallback={<WidgetSkeleton />}>
-        <MudurGunlukOzetKartlari />
+      {/* Alert + Stat kartları */}
+      <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
+        <MYStatsWidget />
       </Suspense>
 
-      {/* Gündem + Öğretmen yoklama durumu */}
+      {/* Ana grid: Sol (risk + öğretmenler) | Sağ (gündem + öğretmen aktivite) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <GundemWidget />
+          <MYSolSutunWidget />
         </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurOgretmenAktivite />
-        </Suspense>
+        <div className="space-y-4">
+          <Suspense fallback={<WidgetSkeleton tall />}>
+            <GundemWidget />
+          </Suspense>
+          <Suspense fallback={<WidgetSkeleton tall />}>
+            <MudurOgretmenAktivite />
+          </Suspense>
+        </div>
       </div>
 
       {/* Son duyurular */}
