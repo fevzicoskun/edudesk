@@ -23,6 +23,7 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
 const { getAbility }         = await import('@/src/shared/authorization/server')
 const { KanaatRepository }   = await import('@/src/domains/kanaat/repositories/KanaatRepository')
 const { KanaatService }      = await import('@/src/domains/kanaat/services/KanaatService')
+const { createClient }       = await import('@/src/infrastructure/supabase/server')
 
 const SCHOOL_ID  = 'school-kanaat-unit'
 const TEACHER_ID = 'teacher-kanaat-unit'
@@ -109,5 +110,49 @@ describe('KanaatService.saveKanaatKayitlari()', () => {
     } as never)
     const r = await KanaatService.saveKanaatKayitlari(CLASS_ID, DONEM, kayitlar)
     expect(r.error).toBeDefined()
+  })
+})
+
+// ── generateKanaatHesap ──────────────────────────────────────
+describe('KanaatService.generateKanaatHesap()', () => {
+  it('giriş yoksa → error', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const r = await KanaatService.generateKanaatHesap(CLASS_ID, DONEM)
+    expect(r.error).toBe('Giriş gerekli')
+  })
+
+  it('kanaat:create izni yoksa → error', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    const r = await KanaatService.generateKanaatHesap(CLASS_ID, DONEM)
+    expect(r.error).toBe('Bu işlem için yetkiniz yok.')
+  })
+
+  it('öğrenci yoksa → boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const mockDb = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq:     vi.fn().mockReturnThis(),
+        is:     vi.fn().mockResolvedValue({ data: [], error: null }),
+      }),
+    }
+    vi.mocked(createClient).mockResolvedValue(mockDb as never)
+    const r = await KanaatService.generateKanaatHesap(CLASS_ID, DONEM)
+    expect(r.error).toBeUndefined()
+    expect(r.data).toEqual([])
+  })
+
+  it('DB hatası (students sorgusu) → error döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const mockDb = {
+      from: vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnThis(),
+        eq:     vi.fn().mockReturnThis(),
+        is:     vi.fn().mockResolvedValue({ data: null, error: { message: 'DB bağlantı hatası' } }),
+      }),
+    }
+    vi.mocked(createClient).mockResolvedValue(mockDb as never)
+    const r = await KanaatService.generateKanaatHesap(CLASS_ID, DONEM)
+    expect(r.error).toBe('DB bağlantı hatası')
   })
 })

@@ -108,6 +108,7 @@ export const KanaatService = {
       .select('student_id, status')
       .in('student_id', studentIds)
       .eq('school_id', ability.schoolId)
+      .eq('class_id', classId)
       .eq('status', 'absent')
       .gte('date', donemStart)
       .lte('date', donemEnd)
