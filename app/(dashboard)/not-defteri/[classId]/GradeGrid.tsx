@@ -13,8 +13,9 @@ import ExportButton from './ExportButton'
 import type { GradeColumn, GradeEntry } from '@/src/domains/grades/types'
 
 interface Student {
-  id:        string
-  full_name: string
+  id:             string
+  full_name:      string
+  student_number: string | null
 }
 
 interface Props {
@@ -104,8 +105,6 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
     })
   }
 
-  const lastColIdx = columns.length - 1
-
   const columnAverages = columns.map(col => {
     const vals = students
       .map(s => scores[col.id]?.[s.id])
@@ -136,15 +135,15 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
         </div>
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="sticky left-0 z-10 bg-muted/80 min-w-[180px]">
                 Öğrenci
               </TableHead>
-              {columns.map((col, colIdx) => (
-                <TableHead key={col.id} className={`text-center min-w-[120px] ${colIdx !== lastColIdx ? 'hidden sm:table-cell' : ''}`}>
+              {columns.map((col) => (
+                <TableHead key={col.id} className="text-center min-w-[120px]">
                   <div className="flex flex-col items-center gap-1">
                     <Badge variant={GRADE_TYPE_VARIANT[col.grade_type] ?? 'secondary'}>
                       {GRADE_TYPE_LABEL[col.grade_type] ?? col.grade_type}
@@ -179,10 +178,13 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
             {students.map((student, stuIdx) => (
               <TableRow key={student.id}>
                 <TableCell className="sticky left-0 z-10 bg-background font-medium">
-                  {student.full_name}
+                  <span>{student.full_name}</span>
+                  {student.student_number && (
+                    <span className="ml-1.5 text-xs text-muted-foreground font-normal">#{student.student_number}</span>
+                  )}
                 </TableCell>
                 {columns.map((col, colIdx) => (
-                  <TableCell key={col.id} className={`text-center ${colIdx !== lastColIdx ? 'hidden sm:table-cell' : ''}`}>
+                  <TableCell key={col.id} className="text-center">
                     {canWrite ? (
                       <input
                         id={`cell-${col.id}-${student.id}`}
@@ -225,7 +227,7 @@ export default function GradeGrid({ classId, columns, entries, students, canWrit
                   Sınıf ort.
                 </TableCell>
                 {columnAverages.map((avg, i) => (
-                  <TableCell key={columns[i]!.id} className={`text-center text-sm font-medium ${i !== lastColIdx ? 'hidden sm:table-cell' : ''}`}>
+                  <TableCell key={columns[i]!.id} className="text-center text-sm font-medium">
                     {avg}
                   </TableCell>
                 ))}

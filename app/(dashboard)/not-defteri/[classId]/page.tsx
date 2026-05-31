@@ -7,7 +7,7 @@ import { ChevronLeft } from 'lucide-react'
 import GradeGrid from './GradeGrid'
 import type { GradeColumn, GradeEntry } from '@/src/domains/grades/types'
 
-export const revalidate = 3600
+export const revalidate = 60
 
 export default async function NotDefteriDetailPage({
   params,
@@ -31,10 +31,11 @@ export default async function NotDefteriDetailPage({
       .single(),
     supabase
       .from('students')
-      .select('id, full_name')
+      .select('id, full_name, student_number')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
+      .order('student_number', { nullsFirst: false })
       .order('full_name'),
     supabase
       .from('grade_columns')
