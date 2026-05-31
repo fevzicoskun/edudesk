@@ -23,12 +23,12 @@ type SubmissionRow = { homework_id: string; student_id: string; status: string }
 type HwRow = { id: string; title: string; subject: string; due_date: string; class_id: string; classes: { name: string; grade: number } | null }
 
 function getWeekStart(): string {
-  const d = new Date()
+  // Europe/Istanbul'da Pazartesi'yi bul
+  const nowTR = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  const d = new Date(nowTR)
   const day = d.getDay()
-  const diff = (day === 0 ? -6 : 1 - day)
+  const diff = day === 0 ? -6 : 1 - day
   d.setDate(d.getDate() + diff)
-  d.setHours(0, 0, 0, 0)
-  // Lokal Pazartesi başlangıcını UTC timestamp olarak döndür
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
 }
