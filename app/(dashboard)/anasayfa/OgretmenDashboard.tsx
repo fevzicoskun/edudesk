@@ -8,6 +8,7 @@ import RiskUyarilariWidget from './RiskUyarilariWidget'
 import YoklamaTrendWidget from './YoklamaTrendWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
+import type { OdevTamamlanmaItem, YoklamaTrendItem } from '@/src/domains/dashboard/types'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -42,8 +43,6 @@ export default async function OgretmenDashboard() {
   if (!user || !profile) redirect('/login')
 
   const metrics = await TeacherDashboardService.getDashboardMetrics(user.id)
-
-  void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
@@ -91,12 +90,8 @@ export default async function OgretmenDashboard() {
 
       {/* Analitik Widgetlar */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <Suspense fallback={<div className="h-52 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800" />}>
-          <YoklamaTrendWidget />
-        </Suspense>
-        <Suspense fallback={<div className="h-52 animate-pulse rounded-xl bg-gray-100 dark:bg-slate-800" />}>
-          <OdevTamamlanmaWidget />
-        </Suspense>
+        <YoklamaTrendWidget data={metrics.yoklamaTrendData} />
+        <OdevTamamlanmaWidget data={metrics.tamamlanmaData} />
       </div>
 
       {/* Alt Grid */}

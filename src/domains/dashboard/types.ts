@@ -16,12 +16,28 @@ export type WeeklyStats = {
   newRiskCount: number
 }
 
+export type OdevTamamlanmaItem = {
+  title:   string
+  yapildi: number
+  eksik:   number
+  diger:   number
+}
+
+export type YoklamaTrendItem = {
+  hafta:    string
+  oran:     number
+  devamsiz: number
+  toplam:   number
+}
+
 export type DashboardMetrics = {
   todayHomeworkCount: number
   totalMissingCount: number
   activeRiskCount: number
   weekly: WeeklyStats
   homeworks: HomeworkLite[]
+  tamamlanmaData: OdevTamamlanmaItem[]
+  yoklamaTrendData: YoklamaTrendItem[]
 }
 
 export type RiskAlert = {

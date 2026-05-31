@@ -86,6 +86,16 @@ export const DashboardRepository = {
     await supabase.from('teacher_activity_log').insert(row)
   },
 
+  async getAttendanceTrend(teacherId: string, since: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('attendance')
+      .select('date, status')
+      .eq('teacher_id', teacherId)
+      .gte('date', since)
+      .order('date')
+  },
+
   async getClassSubmissions(classId: string, teacherId: string) {
     const supabase = await createClient()
     const { data: homeworks } = await supabase

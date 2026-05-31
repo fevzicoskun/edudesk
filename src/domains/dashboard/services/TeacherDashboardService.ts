@@ -2,7 +2,21 @@ import { DashboardRepository } from '../repositories/DashboardRepository'
 import { computeRiskLevel, computeRiskScore } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
-import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite } from '../types'
+import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem } from '../types'
+
+function mondayOf(dateStr: string): string {
+  const d = new Date(dateStr)
+  const day = d.getDay()
+  const diff = day === 0 ? -6 : 1 - day
+  d.setDate(d.getDate() + diff)
+  return d.toISOString().split('T')[0]
+}
+
+function shortLabel(isoDate: string): string {
+  const d = new Date(isoDate)
+  const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+  return `${d.getDate()} ${months[d.getMonth()]}`
+}
 
 type StudentRow = { id: string; full_name: string; class_id: string; classes: { name: string } | null }
 type SubmissionRow = { homework_id: string; student_id: string; status: string }
@@ -78,6 +92,7 @@ export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
     const today = new Date().toISOString().split('T')[0]
     const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
+    const eightWeeksAgo = subDays(new Date(), 56).toISOString().split('T')[0]
     const weekStart = getWeekStart()
 
     const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
@@ -85,21 +100,23 @@ export const TeacherDashboardService = {
     const hwIds = homeworks.map(h => h.id)
     const classIds = [...new Set(homeworks.map(h => h.class_id))]
 
-    const [subsResult, attResult, studentsResult, weeklyResult, weeklyRiskCount] = await Promise.all([
+    const [subsResult, attResult, studentsResult, weeklyResult, weeklyRiskCount, trendResult] = await Promise.all([
       DashboardRepository.getSubmissions(hwIds),
       DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
       DashboardRepository.getStudentsByClasses(classIds),
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
       DashboardRepository.getWeeklyRiskCount(teacherId, weekStart),
+      DashboardRepository.getAttendanceTrend(teacherId, eightWeeksAgo),
     ])
 
-    const submissions = ((subsResult.data ?? []) as unknown) as SubmissionRow[]
-    const attendanceRows = ((attResult.data ?? []) as unknown) as { student_id: string; status: string }[]
-    const students = ((studentsResult.data ?? []) as unknown) as StudentRow[]
+    const submissions    = ((subsResult.data    ?? []) as unknown) as SubmissionRow[]
+    const attendanceRows = ((attResult.data      ?? []) as unknown) as { student_id: string; status: string }[]
+    const students       = ((studentsResult.data ?? []) as unknown) as StudentRow[]
     const weeklySubmissions = ((weeklyResult.data ?? []) as unknown) as SubmissionRow[]
+    const trendRows      = ((trendResult.data    ?? []) as unknown) as { date: string; status: string }[]
 
     const todayHomeworkCount = homeworks.filter(h => h.due_date === today).length
-    const totalMissingCount = submissions.filter(s => s.status === 'eksik').length
+    const totalMissingCount  = submissions.filter(s => s.status === 'eksik').length
 
     const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
     const activeRiskCount = alerts.filter(a => a.riskLevel !== 'low').length
@@ -108,6 +125,48 @@ export const TeacherDashboardService = {
     const avgCompletionPct = weeklySubmissions.length > 0
       ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
       : 0
+
+    // Ödev tamamlanma chart: son 6 geçmiş ödev
+    const pastHws = homeworks.filter(h => h.due_date <= today).slice(0, 6)
+    const subByHw = new Map<string, { yapildi: number; eksik: number; diger: number; toplam: number }>()
+    for (const hw of pastHws) subByHw.set(hw.id, { yapildi: 0, eksik: 0, diger: 0, toplam: 0 })
+    for (const s of submissions) {
+      const e = subByHw.get(s.homework_id)
+      if (!e) continue
+      e.toplam++
+      if      (s.status === 'yapildi') e.yapildi++
+      else if (s.status === 'eksik')   e.eksik++
+      else                              e.diger++
+    }
+    const tamamlanmaData: OdevTamamlanmaItem[] = [...pastHws].reverse().map(hw => {
+      const s = subByHw.get(hw.id)!
+      const t = s.toplam
+      const title = hw.title.length > 14 ? hw.title.slice(0, 13) + '…' : hw.title
+      return {
+        title,
+        yapildi: t > 0 ? Math.round((s.yapildi / t) * 100) : 0,
+        eksik:   t > 0 ? Math.round((s.eksik   / t) * 100) : 0,
+        diger:   t > 0 ? Math.round((s.diger   / t) * 100) : 0,
+      }
+    })
+
+    // Yoklama trend chart: son 8 hafta
+    const weekMap = new Map<string, { devamsiz: number; toplam: number }>()
+    for (const r of trendRows) {
+      const key = mondayOf(r.date)
+      if (!weekMap.has(key)) weekMap.set(key, { devamsiz: 0, toplam: 0 })
+      const e = weekMap.get(key)!
+      e.toplam++
+      if (r.status === 'absent') e.devamsiz++
+    }
+    const yoklamaTrendData: YoklamaTrendItem[] = Array.from(weekMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([week, { devamsiz, toplam }]) => ({
+        hafta: shortLabel(week),
+        oran:  toplam > 0 ? Math.round((devamsiz / toplam) * 100) : 0,
+        devamsiz,
+        toplam,
+      }))
 
     return {
       todayHomeworkCount,
@@ -119,6 +178,8 @@ export const TeacherDashboardService = {
         newRiskCount: weeklyRiskCount,
       },
       homeworks: homeworks as unknown as HomeworkLite[],
+      tamamlanmaData,
+      yoklamaTrendData,
     }
   },
 
