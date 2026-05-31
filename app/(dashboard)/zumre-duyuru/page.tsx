@@ -11,7 +11,7 @@ export default async function ZumreDuyuruPage() {
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Zümre Bildirimi</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {profile.subject} branşındaki öğretmenlerin bildirim kutusuna düşer
+          {profile.subject ? `${profile.subject} branşındaki öğretmenlerin bildirim kutusuna düşer` : 'Zümre öğretmenlerinin bildirim kutusuna düşer'}
         </p>
       </div>
 
