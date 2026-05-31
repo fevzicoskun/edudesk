@@ -3,7 +3,8 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { addStudent } from '@/src/domains/classes/actions'
-import { getEgitimYili } from '@/src/shared/utils'
+import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import BulkStudentModal from './BulkStudentModal'
 import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
@@ -20,7 +21,9 @@ export default async function SinifDetayPage({
 
   const schoolId = profile?.school_id ?? ''
 
-  const [clsResult, studentsResult] = await Promise.all([
+  const yearStart = schoolYearStart()
+
+  const [clsResult, studentsResult, absenceResult] = await Promise.all([
     supabase
       .from('classes')
       .select('name')
@@ -35,13 +38,26 @@ export default async function SinifDetayPage({
       .is('deleted_at', null)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
+    supabase
+      .from('attendance')
+      .select('student_id, status')
+      .eq('class_id', id)
+      .eq('school_id', schoolId)
+      .in('status', ['absent', 'late'])
+      .gte('date', yearStart),
   ])
 
   if (!clsResult.data) notFound()
 
-  const cls = clsResult.data
+  const cls      = clsResult.data
   const students = studentsResult.data ?? []
   const egitimYili = getEgitimYili()
+
+  const absenceCounts: Record<string, number> = {}
+  for (const a of absenceResult.data ?? []) {
+    const inc = a.status === 'absent' ? 1 : 0.5
+    absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + inc
+  }
 
   const canManage = profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
 
@@ -105,6 +121,9 @@ export default async function SinifDetayPage({
           students={students}
           classId={id}
           canDelete={canManage}
+          absenceCounts={absenceCounts}
+          warnDays={ATTENDANCE_WARN_DAYS}
+          limitDays={ATTENDANCE_LIMIT_DAYS}
         />
       )}
     </div>

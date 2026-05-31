@@ -17,6 +17,9 @@ interface Props {
   students: Student[]
   classId: string
   canDelete: boolean
+  absenceCounts: Record<string, number>
+  warnDays: number
+  limitDays: number
 }
 
 function waLink(telefon: string): string {
@@ -28,9 +31,10 @@ function waLink(telefon: string): string {
 }
 
 function OgrenciSatiri({
-  s, classId, canDelete, index,
+  s, classId, canDelete, index, absenceCount, warnDays, limitDays,
 }: {
   s: Student; classId: string; canDelete: boolean; index: number
+  absenceCount: number; warnDays: number; limitDays: number
 }) {
   const [open, setOpen] = useState(false)
 
@@ -50,12 +54,25 @@ function OgrenciSatiri({
         <span className="text-xs text-gray-400 w-6 text-right shrink-0">{index + 1}</span>
 
         <div className="flex-1 min-w-0">
-          <Link
-            href={`/siniflar/${classId}/ogrenciler/${s.id}`}
-            className="text-sm font-medium text-gray-900 dark:text-slate-100 hover:text-blue-700 dark:hover:text-blue-400"
-          >
-            {s.full_name}
-          </Link>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link
+              href={`/siniflar/${classId}/ogrenciler/${s.id}`}
+              className="text-sm font-medium text-gray-900 dark:text-slate-100 hover:text-blue-700 dark:hover:text-blue-400"
+            >
+              {s.full_name}
+            </Link>
+            {absenceCount > 0 && (
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
+                absenceCount >= limitDays
+                  ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                  : absenceCount >= warnDays
+                  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                  : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
+              }`}>
+                {absenceCount % 1 === 0 ? `${absenceCount}g` : `${absenceCount.toFixed(1)}g`}
+              </span>
+            )}
+          </div>
           {s.student_number && (
             <p className="text-xs text-gray-400">No: {s.student_number}</p>
           )}
@@ -163,7 +180,7 @@ function OgrenciSatiri({
   )
 }
 
-export default function OgrenciListesi({ students, classId, canDelete }: Props) {
+export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays }: Props) {
   const [q, setQ] = useState('')
 
   const filtered = q.trim()
@@ -205,6 +222,9 @@ export default function OgrenciListesi({ students, classId, canDelete }: Props) 
               classId={classId}
               canDelete={canDelete}
               index={i}
+              absenceCount={absenceCounts[s.id] ?? 0}
+              warnDays={warnDays}
+              limitDays={limitDays}
             />
           ))}
         </div>
