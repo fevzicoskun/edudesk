@@ -50,8 +50,17 @@ export default async function SinifDetayPage({
   if (!clsResult.data) notFound()
 
   const cls      = clsResult.data
-  const students = studentsResult.data ?? []
   const egitimYili = getEgitimYili()
+
+  // Sayısal sıralama: text alanda '9' > '100' olur, JS'de parseInt ile düzeltiyoruz
+  const students = (studentsResult.data ?? []).sort((a, b) => {
+    const na = parseInt(a.student_number ?? '', 10)
+    const nb = parseInt(b.student_number ?? '', 10)
+    if (!isNaN(na) && !isNaN(nb)) return na - nb
+    if (!isNaN(na)) return -1
+    if (!isNaN(nb)) return 1
+    return a.full_name.localeCompare(b.full_name, 'tr')
+  })
 
   const absenceCounts: Record<string, number> = {}
   for (const a of absenceResult.data ?? []) {

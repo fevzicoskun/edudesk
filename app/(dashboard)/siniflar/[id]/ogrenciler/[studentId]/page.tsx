@@ -29,7 +29,7 @@ const BADGE: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
-type HomeworkRel = { title: string; subject: string; due_date: string } | null
+type HomeworkRel = { id: string; title: string; subject: string; due_date: string } | null
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 
@@ -48,9 +48,9 @@ export default async function OgrenciDetayPage({
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
-    supabase.from('homework_submissions').select('id, status, updated_at, homeworks(title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
+    supabase.from('homework_submissions').select('id, status, updated_at, homeworks(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
-    supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).gte('date', schoolYearStart()).order('date', { ascending: false }),
+    supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
   ])
 
@@ -191,27 +191,30 @@ export default async function OgrenciDetayPage({
             {absenceWarn && <span className="text-yellow-600 dark:text-yellow-400 font-semibold ml-auto">Sınıra yakın</span>}
           </div>
           {attendanceRecords.length > 0 && (
-            <div className="mt-3 space-y-1">
-              <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">Son Kayıtlar</p>
-              {attendanceRecords.slice(0, 8).map((r, i) => {
-                const statusLabel: Record<string, string> = { present: 'Var', absent: 'Yok', late: 'Geç', excused: 'Mazeretli' }
-                const statusColor: Record<string, string> = {
-                  present: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-                  absent: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-                  late: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
-                  excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-                }
-                return (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="text-gray-600 dark:text-slate-400">
-                      {format(parseISO(r.date), 'd MMM yyyy')}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
-                      {statusLabel[r.status] ?? r.status}
-                    </span>
-                  </div>
-                )
-              })}
+            <div className="mt-3">
+              <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">
+                Devamsızlık Kayıtları ({attendanceRecords.length})
+              </p>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {attendanceRecords.map((r, i) => {
+                  const statusLabel: Record<string, string> = { absent: 'Yok', late: 'Geç', excused: 'Mazeretli' }
+                  const statusColor: Record<string, string> = {
+                    absent:  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+                    late:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+                    excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+                  }
+                  return (
+                    <div key={i} className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-slate-400">
+                        {format(parseISO(r.date), 'd MMM yyyy')}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
+                        {statusLabel[r.status] ?? r.status}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           )}
         </div>
@@ -225,7 +228,11 @@ export default async function OgrenciDetayPage({
           ) : (
             <div className="space-y-2">
               {submissions.map((s) => (
-                <div key={s.id} className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+                <Link
+                  key={s.id}
+                  href={s.homeworks?.id ? `/odevler/${s.homeworks.id}` : '#'}
+                  className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors block"
+                >
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.homeworks?.title ?? 'Ödev'}</p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
@@ -236,7 +243,7 @@ export default async function OgrenciDetayPage({
                   <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${BADGE[s.status]}`}>
                     {LABELS[s.status]}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
           )}
