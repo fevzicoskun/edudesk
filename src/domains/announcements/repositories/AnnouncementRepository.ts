@@ -40,6 +40,7 @@ export const AnnouncementRepository = {
       .select('*')
       .eq('created_by', userId)
       .order('created_at', { ascending: false })
+      .limit(50)
     return data ?? []
   },
 

@@ -32,7 +32,7 @@ export default async function MudurSonDuyurular() {
               Henüz duyuru gönderilmedi.
             </p>
             <Link
-              href="/duyurular/yeni"
+              href="/duyurular"
               className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
             >
               + Yeni Duyuru Oluştur
