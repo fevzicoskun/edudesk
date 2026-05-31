@@ -46,6 +46,7 @@ export type DashboardMetrics = {
   tamamlanmaData: OdevTamamlanmaItem[]
   yoklamaTrendData: YoklamaTrendItem[]
   yoklamaDurumu: YoklamaDurumItem[]
+  riskAlerts: RiskAlert[]
 }
 
 export type RiskAlert = {

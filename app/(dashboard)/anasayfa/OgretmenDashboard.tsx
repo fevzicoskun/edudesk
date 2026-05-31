@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -29,14 +28,6 @@ function SummaryCard({ label, value, tone, href }: { label: string; value: numbe
   return <div className={cls}>{inner}</div>
 }
 
-function RiskSkeleton() {
-  return (
-    <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 space-y-3 animate-pulse">
-      <div className="h-4 w-32 bg-gray-200 dark:bg-slate-700 rounded" />
-      {[0, 1, 2].map(i => <div key={i} className="h-12 bg-gray-100 dark:bg-slate-700/50 rounded-lg" />)}
-    </div>
-  )
-}
 
 export default async function OgretmenDashboard() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
@@ -142,9 +133,7 @@ export default async function OgretmenDashboard() {
 
           {/* Risk Uyarıları */}
           <div id="risk-uyarilari">
-            <Suspense fallback={<RiskSkeleton />}>
-              <RiskUyarilariWidget />
-            </Suspense>
+            <RiskUyarilariWidget alerts={metrics.riskAlerts} />
           </div>
         </section>
 

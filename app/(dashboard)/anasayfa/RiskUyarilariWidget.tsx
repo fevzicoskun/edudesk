@@ -1,6 +1,4 @@
 import Link from 'next/link'
-import { getCurrentUser } from '@/src/shared/auth'
-import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 import type { RiskAlert } from '@/src/domains/dashboard/types'
 
 type RiskLevel = RiskAlert['riskLevel']
@@ -47,13 +45,9 @@ function RiskBadge({ level }: { level: RiskLevel }) {
   )
 }
 
-export default async function RiskUyarilariWidget() {
-  const user = await getCurrentUser()
-  if (!user) return null
-
-  const alerts = await TeacherDashboardService.getRiskAlerts(user.id)
-  const displayed = alerts.slice(0, 5)
-  const highCount = alerts.filter(a => a.riskLevel === 'high').length
+export default function RiskUyarilariWidget({ alerts }: { alerts: RiskAlert[] }) {
+  const displayed  = alerts.slice(0, 5)
+  const highCount  = alerts.filter(a => a.riskLevel === 'high').length
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">

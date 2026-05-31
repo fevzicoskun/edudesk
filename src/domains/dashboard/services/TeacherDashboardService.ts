@@ -126,6 +126,22 @@ export const TeacherDashboardService = {
     const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
     const activeRiskCount = alerts.filter(a => a.riskLevel !== 'low').length
 
+    // Risk snapshot'larını fire-and-forget yaz (haftalık metrik için)
+    const profile = await getCurrentProfile()
+    if (alerts.length > 0 && profile?.school_id) {
+      void DashboardRepository.insertRiskSnapshots(
+        alerts.map(a => ({
+          student_id: a.studentId,
+          school_id:  profile.school_id!,
+          teacher_id: teacherId,
+          risk_level: a.riskLevel,
+          risk_score: computeRiskScore(a.hwMisses, a.absences),
+          hw_misses:  a.hwMisses,
+          absences:   a.absences,
+        }))
+      ).catch(() => {})
+    }
+
     const weeklyDoneCount = weeklySubmissions.filter(s => s.status === 'yapildi').length
     const avgCompletionPct = weeklySubmissions.length > 0
       ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
@@ -201,6 +217,7 @@ export const TeacherDashboardService = {
       tamamlanmaData,
       yoklamaTrendData,
       yoklamaDurumu,
+      riskAlerts: alerts,
     }
   },
 
