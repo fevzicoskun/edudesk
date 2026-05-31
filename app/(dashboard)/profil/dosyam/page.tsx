@@ -57,9 +57,11 @@ export default async function DosyamPage() {
       .maybeSingle(),
     supabase.from('zumre_meetings')
       .select('title, meeting_date')
+      .eq('school_id', profile.school_id)
       .order('meeting_date', { ascending: false }),
     supabase.from('common_exams')
       .select('title, exam_date, subject')
+      .eq('school_id', profile.school_id)
       .order('exam_date', { ascending: false }),
     supabase.from('sok_reports')
       .select('meeting_date, term, academic_year, class_id, classes(name)')
@@ -126,7 +128,7 @@ export default async function DosyamPage() {
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="font-bold">{profile.full_name} · {profile.subject ?? 'Öğretmen'}</div>
-            <div className="text-xs opacity-75 mt-1">2025–2026 · Dönem Dosyası</div>
+            <div className="text-xs opacity-75 mt-1">{academicYear} · Dönem Dosyası</div>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
