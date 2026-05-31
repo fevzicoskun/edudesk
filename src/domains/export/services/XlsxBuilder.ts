@@ -181,9 +181,10 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     .from('attendance')
     .select('date, status, students(full_name, student_number), classes(name)')
     .eq('school_id', schoolId)
-    .order('date', { ascending: false })
+    .in('status', ['absent', 'late'])   // present kayıtları rapora dahil edilmez
     .order('full_name', { referencedTable: 'students' })
-    .limit(5000)
+    .order('date', { ascending: true })
+    .limit(10000)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
@@ -198,16 +199,16 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
   const { data, error } = await q
   if (error) throw new Error(`Yoklama sorgu hatası: ${error.message}`)
 
-  const STATUS_LABELS: Record<string, string> = { present: 'Geldi', absent: 'Gelmedi', late: 'Geç Geldi' }
+  const STATUS_LABELS: Record<string, string> = { absent: 'Gelmedi', late: 'Geç Geldi' }
 
   return (data ?? []).map(r => {
     const student = r.students as unknown as { full_name: string; student_number: string | null } | null
     const cls     = r.classes  as unknown as { name: string } | null
     return {
-      'Tarih':    fmtDate(r.date),
       'Sınıf':    cls?.name ?? '—',
+      'No':       student?.student_number ?? '—',
       'Ad Soyad': student?.full_name ?? '—',
-      'Numara':   student?.student_number ?? '—',
+      'Tarih':    fmtDate(r.date),
       'Durum':    STATUS_LABELS[r.status] ?? r.status,
     }
   })
