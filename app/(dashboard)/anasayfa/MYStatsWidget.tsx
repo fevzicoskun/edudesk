@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import { subDays } from '@/src/shared/date'
+import { subDays, todayLocalISO } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
 import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
@@ -30,7 +30,7 @@ export default async function MYStatsWidget() {
   const school_id = await requireSchoolId()
 
   const today       = new Date()
-  const todayStr    = today.toISOString().split('T')[0]
+  const todayStr    = todayLocalISO()
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 

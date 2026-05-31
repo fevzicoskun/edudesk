@@ -45,3 +45,9 @@ export {
   addMonths,
   subMonths,
 }
+
+/** Türkiye (Europe/Istanbul) yerel tarihi YYYY-MM-DD formatında döndürür.
+ *  Vercel gibi UTC sunucularda da doğru çalışır. */
+export function todayLocalISO(): string {
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
+}

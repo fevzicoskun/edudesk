@@ -1,7 +1,7 @@
 import { DashboardRepository } from '../repositories/DashboardRepository'
 import { computeRiskLevel } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { subDays } from '@/src/shared/date'
+import { subDays, todayLocalISO } from '@/src/shared/date'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
 function mondayOf(dateStr: string): string {
@@ -92,7 +92,7 @@ function computeAlerts(
 
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayLocalISO()
     const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
     const eightWeeksAgo = subDays(new Date(), 56).toISOString().split('T')[0]
     const weekStart = getWeekStart()
