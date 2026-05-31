@@ -13,7 +13,7 @@ export type HomeworkLite = {
 export type WeeklyStats = {
   submittedCount: number
   avgCompletionPct: number
-  newRiskCount: number
+  activeRiskCount: number
 }
 
 export type OdevTamamlanmaItem = {

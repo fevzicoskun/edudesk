@@ -194,7 +194,7 @@ export const TeacherDashboardService = {
       weekly: {
         submittedCount: weeklyDoneCount,
         avgCompletionPct,
-        newRiskCount: activeRiskCount,
+        activeRiskCount: activeRiskCount,
       },
       homeworks: homeworks as HomeworkLite[],
       tamamlanmaData,
