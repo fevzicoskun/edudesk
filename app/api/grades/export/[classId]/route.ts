@@ -20,7 +20,7 @@ export async function GET(
   const { data: cols, error: colErr } = await GradeRepository.findColumnsByClass(classId, ability.schoolId)
   if (colErr) return NextResponse.json({ error: colErr.message }, { status: 500 })
   if (!cols?.length) {
-    const empty = buildXlsx([{ 'Bilgi': 'Henüz ölçme eklenmedi' }], 'excel_not_defteri')
+    const empty = await buildXlsx([{ 'Bilgi': 'Henüz ölçme eklenmedi' }], 'excel_not_defteri')
     return xlsxResponse(empty, `not-defteri-${classId}.xlsx`)
   }
 
@@ -45,7 +45,7 @@ export async function GET(
     return row
   })
 
-  const buffer = buildXlsx(rows, 'excel_not_defteri')
+  const buffer = await buildXlsx(rows, 'excel_not_defteri')
   const date = new Date().toISOString().split('T')[0]
   return xlsxResponse(buffer, `not-defteri-${date}.xlsx`)
 }

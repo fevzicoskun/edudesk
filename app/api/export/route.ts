@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const rows = await fetchRows(jobType, body.params ?? {}, schoolId)
-    const buffer = buildXlsx(rows, jobType)
+    const buffer = await buildXlsx(rows, jobType)
     const date = new Date().toISOString().split('T')[0]
     const filename = `${jobType}-${date}.xlsx`
 

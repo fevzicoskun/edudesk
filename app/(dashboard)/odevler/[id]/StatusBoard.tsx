@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo } from 'react'
-import * as XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
 
@@ -81,25 +81,50 @@ export default function StatusBoard({
     })
   }
 
-  function exportToExcel() {
-    const rows = items.map((item, i) => [
-      i + 1,
-      item.student_number ?? '',
-      item.full_name,
-      LABELS[statuses[item.student_id] ?? 'yapilmadi'],
-      notes[item.student_id] ?? '',
-    ])
-    const ws = XLSX.utils.aoa_to_sheet([
-      ['No', 'Numara', 'Ad Soyad', 'Durum', 'Not'],
-      ...rows,
-    ])
-    ws['!cols'] = [{ wch: 4 }, { wch: 10 }, { wch: 24 }, { wch: 14 }, { wch: 30 }]
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, ws, 'Ödevler')
-    const filename = homeworkTitle
+  async function exportToExcel() {
+    const workbook = new ExcelJS.Workbook()
+    const sheet = workbook.addWorksheet('Ödevler')
+
+    const headers = ['No', 'Numara', 'Ad Soyad', 'Durum', 'Not']
+    sheet.addRow(headers)
+    const headerRow = sheet.getRow(1)
+    headerRow.font = { bold: true }
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFD9EAD3' },
+    }
+
+    items.forEach((item, i) => {
+      sheet.addRow([
+        i + 1,
+        item.student_number ?? '',
+        item.full_name,
+        LABELS[statuses[item.student_id] ?? 'yapilmadi'],
+        notes[item.student_id] ?? '',
+      ])
+    })
+
+    sheet.columns = [
+      { width: 6 },
+      { width: 12 },
+      { width: 26 },
+      { width: 16 },
+      { width: 32 },
+    ]
+
+    const buffer = await workbook.xlsx.writeBuffer()
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = homeworkTitle
       ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx`
       : 'odev_durumu.xlsx'
-    XLSX.writeFile(wb, filename)
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const counts = useMemo(() => STATUS_OPTIONS.reduce(

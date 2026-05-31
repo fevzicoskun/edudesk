@@ -33,7 +33,7 @@ export const exportXlsxFn = inngest.createFunction(
 
     const { url, filename } = await step.run('build-and-upload', async () => {
       await ExportRepository.updateProgress(jobId, 60, 'Excel oluşturuluyor…')
-      const buffer = buildXlsx(rows, jobType)
+      const buffer = await buildXlsx(rows, jobType)
       await ExportRepository.updateProgress(jobId, 80, 'Dosya yükleniyor…')
       return uploadToStorage(buffer, userId, jobType)
     })

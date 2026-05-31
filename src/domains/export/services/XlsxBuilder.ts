@@ -1,6 +1,6 @@
-﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
+﻿import ExcelJS from 'exceljs'
+import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { UUID } from '@/src/shared/validation'
-import * as XLSX from 'xlsx'
 import type { JobType } from '../types'
 
 const JOB_LABELS: Record<JobType, string> = {
@@ -26,22 +26,45 @@ export async function fetchRows(
   }
 }
 
-export function buildXlsx(rows: Record<string, unknown>[], jobType: JobType): Buffer {
-  const wb = XLSX.utils.book_new()
-  const ws = XLSX.utils.json_to_sheet(
-    rows.length ? rows : [{ 'Bilgi': 'Veri bulunamadı' }]
-  )
+export async function buildXlsx(rows: Record<string, unknown>[], jobType: JobType): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook()
+  const sheetTitle = JOB_LABELS[jobType]
+  const sheet = workbook.addWorksheet(sheetTitle)
 
-  if (rows.length) {
-    ws['!cols'] = Object.keys(rows[0]).map(k =>
-      ({
-        wch: Math.min(50, Math.max(k.length, ...rows.slice(0, 50).map(r => String(r[k] ?? '').length))),
-      })
-    )
+  if (rows.length === 0) {
+    sheet.addRow(['Bilgi'])
+    sheet.addRow(['Veri bulunamadı'])
+    const buffer = await workbook.xlsx.writeBuffer()
+    return Buffer.from(buffer)
   }
 
-  XLSX.utils.book_append_sheet(wb, ws, JOB_LABELS[jobType])
-  return XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer
+  // Başlık satırı
+  const headers = Object.keys(rows[0])
+  sheet.addRow(headers)
+  const headerRow = sheet.getRow(1)
+  headerRow.font = { bold: true }
+  headerRow.fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFD9EAD3' },
+  }
+
+  // Veri satırları
+  for (const row of rows) {
+    sheet.addRow(headers.map(h => row[h]))
+  }
+
+  // Kolon genişlikleri — ilk 50 satıra göre otomatik
+  sheet.columns.forEach((col, i) => {
+    const header = headers[i] ?? ''
+    const maxDataLen = rows.slice(0, 50).reduce((max, row) => {
+      return Math.max(max, String(row[header] ?? '').length)
+    }, 0)
+    col.width = Math.min(50, Math.max(12, header.length, maxDataLen) + 2)
+  })
+
+  const buffer = await workbook.xlsx.writeBuffer()
+  return Buffer.from(buffer)
 }
 
 export async function uploadToStorage(
