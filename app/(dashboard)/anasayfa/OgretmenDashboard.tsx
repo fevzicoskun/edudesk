@@ -45,8 +45,13 @@ export default async function OgretmenDashboard() {
   const metrics = await TeacherDashboardService.getDashboardMetrics(user.id)
 
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
+
+  const firstName = (profile.full_name ?? '').split(' ')[0]
+  const hour = today.getHours()
+  const greeting = hour < 12 ? `Günaydın, ${firstName}` : hour < 18 ? `İyi günler, ${firstName}` : `İyi akşamlar, ${firstName}`
 
   const todayHws = metrics.homeworks.filter(h => h.due_date === todayStr)
   const upcomingHws = metrics.homeworks
@@ -56,9 +61,9 @@ export default async function OgretmenDashboard() {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="mb-5">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Anasayfa</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{greeting}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          Merhaba {profile.full_name ?? ''} · hızlı özet aşağıda.
+          {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 

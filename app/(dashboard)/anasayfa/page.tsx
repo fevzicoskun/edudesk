@@ -92,12 +92,16 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
 }
 
 async function MYWidgets({ fullName }: { fullName: string }) {
+  const hour = (new Date().getUTCHours() + 3) % 24
+  const firstName = fullName.split(' ')[0]
+  const greeting = hour < 12 ? `Günaydın, ${firstName}` : hour < 18 ? `İyi günler, ${firstName}` : `İyi akşamlar, ${firstName}`
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yönetim Paneli</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{greeting}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {fullName} · {format(new Date(), 'd MMMM yyyy, EEEE')}
+          {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 
