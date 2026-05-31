@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
@@ -7,7 +8,7 @@ export const revalidate = 3600
 
 export default async function NotDefteriPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
-  if (!user || !profile?.school_id) return null
+  if (!user || !profile?.school_id) redirect('/anasayfa')
 
   const supabase = await createClient()
   const isManager = isMudurOrAbove(profile.role)

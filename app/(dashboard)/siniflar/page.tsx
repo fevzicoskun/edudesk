@@ -1,6 +1,7 @@
 export const revalidate = 60
 
-﻿import { createClient } from '@/src/infrastructure/supabase/server'
+﻿import { redirect } from 'next/navigation'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClass } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'
@@ -8,12 +9,13 @@ import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
-  const canManageClasses = profile?.role === 'mudur_yardimcisi' || profile?.role === 'mudur'
+  if (!profile?.school_id) redirect('/anasayfa')
+  const canManageClasses = profile.role === 'mudur_yardimcisi' || profile.role === 'mudur'
 
   const { data: classes } = await supabase
     .from('classes')
     .select('id, name, grade, students(id, deleted_at)')
-    .eq('school_id', profile?.school_id ?? '')
+    .eq('school_id', profile.school_id)
     .order('grade')
     .order('name')
 

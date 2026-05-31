@@ -8,7 +8,7 @@ export const revalidate = 60
 
 export default async function OgrencilerPage() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
+  if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   const supabase = await createClient()
 

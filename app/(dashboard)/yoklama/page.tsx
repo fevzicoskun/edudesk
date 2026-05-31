@@ -1,5 +1,6 @@
 export const revalidate = 30
 
+import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
@@ -7,7 +8,7 @@ import YoklamaClient from './YoklamaClient'
 
 export default async function YoklamaPage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
-  if (!profile?.school_id) return null
+  if (!profile?.school_id) redirect('/anasayfa')
 
   const { data: rawClasses } = await supabase
     .from('classes')

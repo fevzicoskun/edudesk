@@ -31,7 +31,7 @@ export default async function OdevlerPage({
 }) {
   const params = await searchParams
   const [user, profile, supabase] = await Promise.all([getCurrentUser(), getCurrentProfile(), createClient()])
-  if (!user || !profile?.school_id) return null
+  if (!user || !profile?.school_id) redirect('/anasayfa')
   const sid = profile.school_id
 
   const isZumreBaskani = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)

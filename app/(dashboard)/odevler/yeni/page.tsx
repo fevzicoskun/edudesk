@@ -11,7 +11,8 @@ export default async function YeniOdevPage({
   searchParams: Promise<{ copy?: string }>
 }) {
   const profile = await getCurrentProfile()
-  if (profile && isMudurOrAbove(profile.role)) redirect('/odevler')
+  if (!profile?.school_id) redirect('/anasayfa')
+  if (isMudurOrAbove(profile.role)) redirect('/odevler')
 
   const { copy } = await searchParams
 
