@@ -12,6 +12,13 @@ function clamp15(val: number): number {
   return Math.max(1, Math.min(5, val))
 }
 
+/**
+ * Computes a kanaat (teacher evaluation) score from student performance metrics.
+ * @param input.homeworkDone should be <= homeworkTotal
+ * @param input.examAverage 0-100 or null; values outside range are clamped
+ * @param input.absenceDays non-negative integer
+ * @returns A score between 1 and 5
+ */
 export function computeKanaat(input: KanaatInput): 1 | 2 | 3 | 4 | 5 {
   const { homeworkTotal, homeworkDone, absenceDays, examAverage } = input
 

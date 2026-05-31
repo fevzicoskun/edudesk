@@ -16,7 +16,7 @@ export interface KanaatNotu {
   class_id:   string
   teacher_id: string
   school_id:  string
-  score:      number
+  score:      1 | 2 | 3 | 4 | 5
   text:       string
   donem:      string
   created_at: string
