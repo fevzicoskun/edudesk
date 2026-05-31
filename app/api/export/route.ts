@@ -7,7 +7,6 @@ import type { JobType } from '@/src/domains/export/types'
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',
   'excel_yoklama',
-  'excel_mufredat',
   'excel_notlar',
   'excel_sinif_ogrencileri',
 ]

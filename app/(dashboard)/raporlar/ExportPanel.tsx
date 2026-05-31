@@ -2,13 +2,12 @@
 
 import { useState } from 'react'
 
-type JobType = 'excel_odevler' | 'excel_yoklama' | 'excel_mufredat' | 'excel_notlar' | 'excel_sinif_ogrencileri'
+type JobType = 'excel_odevler' | 'excel_yoklama' | 'excel_notlar' | 'excel_sinif_ogrencileri'
 
 const REPORTS: { jobType: JobType; label: string; desc: string }[] = [
-  { jobType: 'excel_odevler',          label: 'Ödevler',           desc: 'Tüm ödevler ve teslim durumları' },
-  { jobType: 'excel_yoklama',          label: 'Yoklama',           desc: 'Devamsızlık kayıtları' },
-  { jobType: 'excel_mufredat',         label: 'Müfredat',          desc: 'Müfredat ilerleme durumu' },
-  { jobType: 'excel_notlar',           label: 'Öğrenci Notları',   desc: 'Öğrenci not kayıtları' },
+  { jobType: 'excel_odevler',           label: 'Ödevler',           desc: 'Tüm ödevler ve son tarihleri' },
+  { jobType: 'excel_yoklama',           label: 'Yoklama',           desc: 'Devamsızlık kayıtları' },
+  { jobType: 'excel_notlar',            label: 'Öğrenci Notları',   desc: 'Öğrenciler hakkındaki notlar' },
   { jobType: 'excel_sinif_ogrencileri', label: 'Sınıf Öğrencileri', desc: 'Tüm sınıflardaki öğrenci listeleri' },
 ]
 

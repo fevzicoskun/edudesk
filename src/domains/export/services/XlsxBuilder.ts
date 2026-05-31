@@ -9,7 +9,6 @@ const JOB_LABELS: Record<JobType, string> = {
   excel_sinif_ogrencileri: 'Sınıf Öğrencileri',
   excel_not_defteri:       'Not Defteri',
   excel_yoklama:           'Yoklama',
-  excel_mufredat:          'Müfredat',
 }
 
 export async function fetchRows(
@@ -23,7 +22,6 @@ export async function fetchRows(
     case 'excel_sinif_ogrencileri': return fetchSinifOgrencileri(params, schoolId)
     case 'excel_not_defteri':       throw new Error('Not Defteri export route handler üzerinden çağrılmalı')
     case 'excel_yoklama':           return fetchYoklama(params, schoolId)
-    case 'excel_mufredat':          return fetchMufredat(params, schoolId)
     default: throw new Error(`Bilinmeyen iş türü: ${jobType}`)
   }
 }
@@ -82,6 +80,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     .from('homeworks')
     .select('title, subject, due_date, classes(name)')
     .eq('school_id', schoolId)
+    .is('deleted_at', null)
     .order('due_date', { ascending: false })
     .limit(2000)
 
@@ -154,7 +153,7 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     .select('date, status, students(full_name, student_number), classes(name)')
     .eq('school_id', schoolId)
     .order('date', { ascending: false })
-    .order('students(full_name)')
+    .order('full_name', { referencedTable: 'students' })
     .limit(5000)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
@@ -185,27 +184,3 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
   })
 }
 
-async function fetchMufredat(params: Record<string, string>, schoolId: string) {
-  const db = createServiceClient()
-  let q = db
-    .from('curriculum_progress')
-    .select('topic, week_number, status, completed, completion_date, classes(name)')
-    .eq('school_id', schoolId)
-    .order('week_number', { nullsFirst: false })
-    .order('topic')
-    .limit(2000)
-
-  if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
-
-  const { data, error } = await q
-  if (error) throw new Error(`Müfredat sorgu hatası: ${error.message}`)
-
-  return (data ?? []).map(r => ({
-    'Sınıf':           (r.classes as unknown as { name: string } | null)?.name ?? '—',
-    'Hafta':           r.week_number ?? '—',
-    'Konu':            r.topic,
-    'Durum':           r.status,
-    'Tamamlandı':      r.completed ? 'Evet' : 'Hayır',
-    'Tamamlanma Tarihi': r.completion_date ?? '—',
-  }))
-}
