@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
