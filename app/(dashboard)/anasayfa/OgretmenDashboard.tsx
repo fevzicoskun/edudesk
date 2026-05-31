@@ -85,7 +85,7 @@ export default async function OgretmenDashboard() {
           </div>
           <div className="text-center">
             <p className="text-sm font-bold text-rose-600">{metrics.weekly.newRiskCount}</p>
-            <p className="text-[10px] text-gray-400">Yeni risk</p>
+            <p className="text-[10px] text-gray-400">Aktif risk</p>
           </div>
         </div>
       </div>

@@ -51,17 +51,6 @@ export const DashboardRepository = {
       .gte('updated_at', weekStart)
   },
 
-  async getWeeklyRiskCount(teacherId: string, weekStart: string) {
-    const supabase = await createClient()
-    const { count } = await supabase
-      .from('student_risk_history')
-      .select('id', { count: 'exact', head: true })
-      .eq('teacher_id', teacherId)
-      .neq('risk_level', 'low')
-      .gte('snapshot_at', weekStart)
-    return count ?? 0
-  },
-
   async insertRiskSnapshots(rows: {
     student_id: string
     school_id: string

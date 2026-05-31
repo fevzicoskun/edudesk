@@ -7,10 +7,11 @@ vi.mock('@/src/domains/dashboard/repositories/DashboardRepository', () => ({
     getAttendanceRows:        vi.fn(),
     getStudentsByClasses:     vi.fn(),
     getWeeklySubmissionStats: vi.fn(),
-    getWeeklyRiskCount:       vi.fn(),
     insertRiskSnapshots:      vi.fn(),
     insertActivityLog:        vi.fn(),
     getClassSubmissions:      vi.fn(),
+    getTodayClassAttendance:  vi.fn(),
+    getAttendanceTrend:       vi.fn(),
   },
 }))
 
@@ -43,7 +44,8 @@ describe('getDashboardMetrics', () => {
     ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getWeeklyRiskCount as ReturnType<typeof vi.fn>).mockResolvedValue(0)
+    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.todayHomeworkCount).toBe(1)
@@ -63,7 +65,8 @@ describe('getDashboardMetrics', () => {
     ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getWeeklyRiskCount as ReturnType<typeof vi.fn>).mockResolvedValue(0)
+    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.totalMissingCount).toBe(1)
@@ -86,7 +89,8 @@ describe('getDashboardMetrics', () => {
       data: [{ id: STUDENT_ID, full_name: 'Ahmet', class_id: CLASS_ID, classes: { name: '10-A' } }],
     })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getWeeklyRiskCount as ReturnType<typeof vi.fn>).mockResolvedValue(0)
+    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.activeRiskCount).toBe(1)
@@ -94,7 +98,7 @@ describe('getDashboardMetrics', () => {
 })
 
 describe('getRiskAlerts', () => {
-  it('risk olan öğrencileri döner ve history snapshot yazar', async () => {
+  it('risk olan öğrencileri döner, snapshot yazmaz', async () => {
     const pastDate = '2020-01-01'
     ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: Array.from({ length: 5 }, (_, i) => ({
@@ -110,12 +114,11 @@ describe('getRiskAlerts', () => {
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [{ id: STUDENT_ID, full_name: 'Ahmet', class_id: CLASS_ID, classes: { name: '10-A' } }],
     })
-    ;(DashboardRepository.insertRiskSnapshots as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
 
     const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
     expect(alerts).toHaveLength(1)
     expect(alerts[0].riskLevel).toBe('high')
-    expect(DashboardRepository.insertRiskSnapshots).toHaveBeenCalledOnce()
+    expect(DashboardRepository.insertRiskSnapshots).not.toHaveBeenCalled()
   })
 
   it('risk olmayan öğrencileri döndürmez', async () => {
@@ -123,10 +126,10 @@ describe('getRiskAlerts', () => {
     ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.insertRiskSnapshots as ReturnType<typeof vi.fn>).mockResolvedValue(undefined)
 
     const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
     expect(alerts).toHaveLength(0)
+    expect(DashboardRepository.insertRiskSnapshots).not.toHaveBeenCalled()
   })
 })
 

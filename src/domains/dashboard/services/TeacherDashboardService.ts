@@ -1,5 +1,5 @@
 import { DashboardRepository } from '../repositories/DashboardRepository'
-import { computeRiskLevel, computeRiskScore } from '../risk'
+import { computeRiskLevel } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
@@ -102,12 +102,11 @@ export const TeacherDashboardService = {
     const hwIds = homeworks.map(h => h.id)
     const classIds = [...new Set(homeworks.map(h => h.class_id))]
 
-    const [subsResult, attResult, studentsResult, weeklyResult, weeklyRiskCount, trendResult, todayAttResult] = await Promise.all([
+    const [subsResult, attResult, studentsResult, weeklyResult, trendResult, todayAttResult] = await Promise.all([
       DashboardRepository.getSubmissions(hwIds),
       DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
       DashboardRepository.getStudentsByClasses(classIds),
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
-      DashboardRepository.getWeeklyRiskCount(teacherId, weekStart),
       DashboardRepository.getAttendanceTrend(classIds, eightWeeksAgo),
       DashboardRepository.getTodayClassAttendance(classIds, today),
     ])
@@ -125,22 +124,6 @@ export const TeacherDashboardService = {
 
     const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
     const activeRiskCount = alerts.filter(a => a.riskLevel !== 'low').length
-
-    // Risk snapshot'larını fire-and-forget yaz (haftalık metrik için)
-    const profile = await getCurrentProfile()
-    if (alerts.length > 0 && profile?.school_id) {
-      void DashboardRepository.insertRiskSnapshots(
-        alerts.map(a => ({
-          student_id: a.studentId,
-          school_id:  profile.school_id!,
-          teacher_id: teacherId,
-          risk_level: a.riskLevel,
-          risk_score: computeRiskScore(a.hwMisses, a.absences),
-          hw_misses:  a.hwMisses,
-          absences:   a.absences,
-        }))
-      ).catch(() => {})
-    }
 
     const weeklyDoneCount = weeklySubmissions.filter(s => s.status === 'yapildi').length
     const avgCompletionPct = weeklySubmissions.length > 0
@@ -211,7 +194,7 @@ export const TeacherDashboardService = {
       weekly: {
         submittedCount: weeklyDoneCount,
         avgCompletionPct,
-        newRiskCount: weeklyRiskCount,
+        newRiskCount: activeRiskCount,
       },
       homeworks: homeworks as HomeworkLite[],
       tamamlanmaData,
@@ -222,8 +205,6 @@ export const TeacherDashboardService = {
   },
 
   async getRiskAlerts(teacherId: string): Promise<RiskAlert[]> {
-    const profile = await getCurrentProfile()
-    const schoolId = profile?.school_id ?? ''
     const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
 
     const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
@@ -241,23 +222,7 @@ export const TeacherDashboardService = {
     const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
     const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
 
-    const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
-
-    if (alerts.length > 0 && schoolId) {
-      await DashboardRepository.insertRiskSnapshots(
-        alerts.map(a => ({
-          student_id: a.studentId,
-          school_id: schoolId,
-          teacher_id: teacherId,
-          risk_level: a.riskLevel,
-          risk_score: computeRiskScore(a.hwMisses, a.absences),
-          hw_misses: a.hwMisses,
-          absences: a.absences,
-        }))
-      )
-    }
-
-    return alerts
+    return computeAlerts(homeworks, submissions, attendanceRows, students)
   },
 
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
