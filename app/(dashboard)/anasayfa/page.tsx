@@ -62,25 +62,25 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         <MYStatsWidget />
       </Suspense>
 
-      {/* Ana grid: Sol (risk + öğretmenler) | Sağ (gündem + öğretmen aktivite) */}
+      {/* Ana grid: Sol (risk + öğretmenler) | Sağ (gündem) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
           <MYSolSutunWidget />
         </Suspense>
-        <div className="space-y-4">
-          <Suspense fallback={<WidgetSkeleton tall />}>
-            <GundemWidget />
-          </Suspense>
-          <Suspense fallback={<WidgetSkeleton tall />}>
-            <MudurOgretmenAktivite />
-          </Suspense>
-        </div>
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <GundemWidget />
+        </Suspense>
       </div>
 
-      {/* Son duyurular */}
-      <Suspense fallback={<WidgetSkeleton />}>
-        <MudurSonDuyurular />
-      </Suspense>
+      {/* Alt grid: öğretmen aktivitesi | son duyurular */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MudurOgretmenAktivite />
+        </Suspense>
+        <Suspense fallback={<WidgetSkeleton />}>
+          <MudurSonDuyurular />
+        </Suspense>
+      </div>
 
       {/* Sınav ortalamaları */}
       <Suspense fallback={<WidgetSkeleton tall />}>

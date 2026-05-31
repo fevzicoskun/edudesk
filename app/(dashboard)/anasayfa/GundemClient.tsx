@@ -91,7 +91,7 @@ export default function GundemClient({ initial, past = [] }: { initial: Meeting[
   }
 
   return (
-    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col h-full min-h-[420px]">
+    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden flex flex-col">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between shrink-0">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Gündem</h2>
@@ -198,7 +198,7 @@ export default function GundemClient({ initial, past = [] }: { initial: Meeting[
       )}
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto divide-y divide-gray-50 dark:divide-slate-700/50">
+      <div className="divide-y divide-gray-50 dark:divide-slate-700/50">
         {grouped.length === 0 ? (
           past.length > 0 ? (
             <div className="px-4 py-4">

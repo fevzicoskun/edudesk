@@ -57,7 +57,7 @@ export default async function MudurOgretmenAktivite() {
   const inactiveCount = rows.filter(t => !t.hasHomework && !t.hasAttendance).length
 
   return (
-    <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
+    <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
       <CardHeader className="px-4 pt-4 pb-2">
         <div className="flex items-start justify-between gap-2">
           <div>

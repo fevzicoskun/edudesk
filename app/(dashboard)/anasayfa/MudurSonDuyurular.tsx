@@ -13,7 +13,7 @@ export default async function MudurSonDuyurular() {
   const duyurular = await AnnouncementRepository.listBySchool(school_id)
 
   return (
-    <Card className="border-gray-200 dark:border-slate-700 shadow-sm h-full">
+    <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
       <CardHeader className="px-4 pt-4 pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Son Duyurular
