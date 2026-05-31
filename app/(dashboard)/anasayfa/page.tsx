@@ -39,15 +39,25 @@ function DashboardSkeleton() {
   )
 }
 
+function getMudurGreeting(fullName: string): string {
+  const hour = (new Date().getUTCHours() + 3) % 24
+  const firstName = fullName.split(' ')[0]
+  if (hour < 12) return `Günaydın, ${firstName}`
+  if (hour < 18) return `İyi günler, ${firstName}`
+  return `İyi akşamlar, ${firstName}`
+}
+
 async function MudurWidgets({ fullName }: { fullName: string }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
       {/* Başlık */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Günlük Durum</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+          {getMudurGreeting(fullName)}
+        </h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {fullName} · {format(new Date(), 'd MMMM yyyy, EEEE')}
+          {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 

@@ -23,6 +23,12 @@ const STATUS_COLORS: Record<AttendanceStatus, string> = {
 
 function todayISO() { return new Date().toISOString().slice(0, 10) }
 
+function isWeekend(iso: string) {
+  const [y, m, d] = iso.split('-').map(Number)
+  const day = new Date(y, m - 1, d).getDay()
+  return day === 0 || day === 6
+}
+
 export default function YoklamaClient({ classes, absenceCounts }: Props) {
   const [classId,   setClassId]   = useState(classes[0]?.id ?? '')
   const [date,      setDate]      = useState(todayISO())
@@ -34,6 +40,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
 
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
+  const weekend = isWeekend(date)
 
   const loadYoklama = useCallback(async () => {
     if (!classId) return
@@ -101,6 +108,13 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
         </div>
       </div>
+
+      {weekend && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300">
+          <span>⚠️</span>
+          <span>Seçilen tarih hafta sonuna denk geliyor. Yoklama alınamaz.</span>
+        </div>
+      )}
 
       {/* Öğrenci Listesi */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -187,7 +201,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || loading || students.length === 0}
+          disabled={saving || loading || students.length === 0 || weekend}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/25 md:shadow-none"
         >
           {saving ? 'Kaydediliyor…' : 'Kaydet'}

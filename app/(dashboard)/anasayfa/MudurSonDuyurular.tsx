@@ -27,9 +27,17 @@ export default async function MudurSonDuyurular() {
       </CardHeader>
       <CardContent className="px-4 pb-4 space-y-3">
         {duyurular.length === 0 && (
-          <p className="text-sm text-gray-400 dark:text-slate-500 py-4 text-center">
-            Henüz duyuru gönderilmedi.
-          </p>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <p className="text-sm text-gray-400 dark:text-slate-500">
+              Henüz duyuru gönderilmedi.
+            </p>
+            <Link
+              href="/duyurular/yeni"
+              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              + Yeni Duyuru Oluştur
+            </Link>
+          </div>
         )}
         {duyurular.map(a => (
           <div

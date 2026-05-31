@@ -30,13 +30,16 @@ export default async function YoklamaPage() {
   if (studentIds.length > 0) {
     const { data: absences } = await supabase
       .from('attendance')
-      .select('student_id, status')
+      .select('student_id, status, date')
       .eq('school_id', profile.school_id)
       .in('student_id', studentIds)
       .gte('date', schoolYearStart())
       .in('status', ['absent', 'late'])
 
     for (const a of absences ?? []) {
+      const [y, m, d] = (a.date as string).split('-').map(Number)
+      const dow = new Date(y, m - 1, d).getDay()
+      if (dow === 0 || dow === 6) continue  // hafta sonu kayıtları sayılmaz
       const increment = a.status === 'absent' ? 1 : 0.5
       absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + increment
     }
