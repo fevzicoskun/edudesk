@@ -143,21 +143,35 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     .from('students')
     .select('full_name, student_number, classes(name)')
     .eq('school_id', schoolId)
-    .order('student_number', { nullsFirst: false })
+    .is('deleted_at', null)
     .order('full_name')
     .limit(2000)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
 
-  q = q.is('deleted_at', null)
-
   const { data, error } = await q
   if (error) throw new Error(`Öğrenciler sorgu hatası: ${error.message}`)
 
-  return (data ?? []).map((s, i) => ({
-    'No':      s.student_number ?? String(i + 1),
+  const rows = (data ?? []).map(s => ({
+    className: (s.classes as unknown as { name: string } | null)?.name ?? '',
+    full_name: s.full_name,
+    student_number: s.student_number,
+  }))
+
+  // Sınıf adına göre grupla, grup içinde numara sırasına göre sırala
+  rows.sort((a, b) => {
+    const cls = a.className.localeCompare(b.className, 'tr')
+    if (cls !== 0) return cls
+    const na = parseInt(a.student_number ?? '', 10)
+    const nb = parseInt(b.student_number ?? '', 10)
+    if (!isNaN(na) && !isNaN(nb)) return na - nb
+    return a.full_name.localeCompare(b.full_name, 'tr')
+  })
+
+  return rows.map(s => ({
+    'Sınıf':    s.className || '—',
+    'No':       s.student_number ?? '—',
     'Ad Soyad': s.full_name,
-    'Sınıf':   (s.classes as unknown as { name: string } | null)?.name ?? '—',
   }))
 }
 
