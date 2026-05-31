@@ -178,7 +178,7 @@ describe('HomeworkService.restoreHomework()', () => {
 
   it('school-scope yönetici restore edebilir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
-    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue(undefined as never)
+    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ data: null, error: null } as never)
     await HomeworkService.restoreHomework('hw-1')
     expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith('hw-1', SCHOOL_ID)
   })

@@ -51,20 +51,6 @@ export const DashboardRepository = {
       .gte('updated_at', weekStart)
   },
 
-  async insertRiskSnapshots(rows: {
-    student_id: string
-    school_id: string
-    teacher_id: string
-    risk_level: string
-    risk_score: number
-    hw_misses: number
-    absences: number
-  }[]) {
-    if (rows.length === 0) return
-    const supabase = await createClient()
-    await supabase.from('student_risk_history').insert(rows)
-  },
-
   async insertActivityLog(row: {
     teacher_id: string
     school_id: string

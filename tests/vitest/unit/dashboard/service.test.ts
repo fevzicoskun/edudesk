@@ -7,7 +7,6 @@ vi.mock('@/src/domains/dashboard/repositories/DashboardRepository', () => ({
     getAttendanceRows:        vi.fn(),
     getStudentsByClasses:     vi.fn(),
     getWeeklySubmissionStats: vi.fn(),
-    insertRiskSnapshots:      vi.fn(),
     insertActivityLog:        vi.fn(),
     getClassSubmissions:      vi.fn(),
     getTodayClassAttendance:  vi.fn(),
@@ -22,6 +21,7 @@ vi.mock('@/src/shared/auth', () => ({
 const { DashboardRepository } = await import('@/src/domains/dashboard/repositories/DashboardRepository')
 const { getCurrentProfile }   = await import('@/src/shared/auth')
 const { TeacherDashboardService } = await import('@/src/domains/dashboard/services/TeacherDashboardService')
+const { todayLocalISO } = await import('@/src/shared/date')
 
 const TEACHER_ID = 'teacher-1'
 const SCHOOL_ID  = 'school-1'
@@ -36,7 +36,7 @@ beforeEach(() => {
 
 describe('getDashboardMetrics', () => {
   it('bugün teslim ödev sayısını doğru sayar', async () => {
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayLocalISO()
     ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [{ id: HW_ID, title: 'Test', subject: 'Mat', due_date: today, class_id: CLASS_ID, classes: { name: '10-A', grade: 10 } }],
     })
@@ -118,7 +118,6 @@ describe('getRiskAlerts', () => {
     const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
     expect(alerts).toHaveLength(1)
     expect(alerts[0].riskLevel).toBe('high')
-    expect(DashboardRepository.insertRiskSnapshots).not.toHaveBeenCalled()
   })
 
   it('risk olmayan öğrencileri döndürmez', async () => {
@@ -129,7 +128,6 @@ describe('getRiskAlerts', () => {
 
     const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
     expect(alerts).toHaveLength(0)
-    expect(DashboardRepository.insertRiskSnapshots).not.toHaveBeenCalled()
   })
 })
 
