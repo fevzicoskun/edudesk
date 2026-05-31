@@ -21,7 +21,8 @@ export default async function YeniOdevPage({
     supabase
       .from('classes')
       .select('id, name, grade')
-      .eq('school_id', profile?.school_id ?? '')
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
       .order('grade')
       .order('name'),
     supabase
