@@ -90,6 +90,51 @@ function computeAlerts(
   return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
 }
 
+function computeClassRisk(
+  submissions:    { student_id: string; homework_id: string; status: string }[],
+  attendanceRows: { student_id: string; status: string }[],
+  students:       StudentRow[],
+): RiskAlert[] {
+  const hwMissMap = new Map<string, number>()
+  for (const sub of submissions) {
+    if (sub.status === 'eksik' || sub.status === 'yapilmadi' || sub.status === 'gec') {
+      hwMissMap.set(sub.student_id, (hwMissMap.get(sub.student_id) ?? 0) + 1)
+    }
+  }
+
+  const absenceMap = new Map<string, number>()
+  for (const att of attendanceRows) {
+    if (att.status === 'absent') {
+      absenceMap.set(att.student_id, (absenceMap.get(att.student_id) ?? 0) + 1)
+    }
+  }
+
+  const alerts: RiskAlert[] = []
+  for (const student of students) {
+    const hwMisses = hwMissMap.get(student.id) ?? 0
+    const absences = absenceMap.get(student.id) ?? 0
+    if (hwMisses === 0 && absences === 0) continue
+
+    const reasons: string[] = []
+    if (hwMisses >= 1) reasons.push(`${hwMisses} eksik odev`)
+    if (absences >= 1) reasons.push(`Son 14 gunde ${absences} gun devamsiz`)
+
+    alerts.push({
+      studentId:   student.id,
+      studentName: student.full_name,
+      classId:     student.class_id,
+      className:   student.classes?.name ?? '—',
+      riskLevel:   computeRiskLevel(hwMisses, absences),
+      reasons,
+      hwMisses,
+      absences,
+    })
+  }
+
+  const order = { high: 0, medium: 1, low: 2 } as const
+  return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
+}
+
 async function fetchRiskInputs(teacherId: string) {
   const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
 
@@ -247,11 +292,7 @@ export const TeacherDashboardService = {
       : 0
     const totalMissingCount = submissions.filter(s => s.status === 'eksik').length
 
-    const fakeHomeworks = [...new Set(submissions.map(s => s.homework_id))].map(id => ({
-      id, title: '', subject: '', due_date: '', class_id: classId, classes: null,
-    }))
-
-    const alerts = computeAlerts(fakeHomeworks, submissions, attendanceRows, students)
+    const alerts = computeClassRisk(submissions, attendanceRows, students)
     const riskyStudents = alerts.filter(a => a.riskLevel !== 'low')
     const highRiskCount = alerts.filter(a => a.riskLevel === 'high').length
 
