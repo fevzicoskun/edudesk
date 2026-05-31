@@ -30,6 +30,13 @@ export type YoklamaTrendItem = {
   toplam:   number
 }
 
+export type YoklamaDurumItem = {
+  classId:   string
+  className: string
+  grade:     number
+  alindi:    boolean
+}
+
 export type DashboardMetrics = {
   todayHomeworkCount: number
   totalMissingCount: number
@@ -38,6 +45,7 @@ export type DashboardMetrics = {
   homeworks: HomeworkLite[]
   tamamlanmaData: OdevTamamlanmaItem[]
   yoklamaTrendData: YoklamaTrendItem[]
+  yoklamaDurumu: YoklamaDurumItem[]
 }
 
 export type RiskAlert = {

@@ -8,7 +8,7 @@ import RiskUyarilariWidget from './RiskUyarilariWidget'
 import YoklamaTrendWidget from './YoklamaTrendWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
-import type { OdevTamamlanmaItem, YoklamaTrendItem } from '@/src/domains/dashboard/types'
+import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -67,6 +67,13 @@ export default async function OgretmenDashboard() {
         </p>
       </div>
 
+      {/* Bugün Yapılacaklar */}
+      <BugunYapilacaklarWidget
+        yoklamaDurumu={metrics.yoklamaDurumu}
+        todayHomeworks={todayHws}
+        activeRiskCount={metrics.activeRiskCount}
+      />
+
       {/* 3 Ana Kart */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
         <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue"   href="/odevler" />
@@ -102,22 +109,15 @@ export default async function OgretmenDashboard() {
       {/* Alt Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <section className="lg:col-span-2 space-y-4">
-          {/* Bugün ve Yaklaşan */}
-          <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-            <header className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bugün ve Yaklaşan</h2>
-              <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
-            </header>
-            {todayHws.length + upcomingHws.length === 0 ? (
-              <p className="text-center text-gray-400 text-sm py-8">
-                Bugün veya önümüzdeki 7 gün için ödev yok.
-              </p>
-            ) : (
+          {/* Yaklaşan Ödevler */}
+          {upcomingHws.length > 0 && (
+            <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+              <header className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yaklaşan Ödevler</h2>
+                <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
+              </header>
               <ul className="space-y-2">
-                {[
-                  ...todayHws.map(h => ({ ...h, isToday: true })),
-                  ...upcomingHws.map(h => ({ ...h, isToday: false })),
-                ].map(hw => (
+                {upcomingHws.map(hw => (
                   <li key={hw.id}>
                     <Link
                       href={`/odevler/${hw.id}`}
@@ -125,9 +125,6 @@ export default async function OgretmenDashboard() {
                     >
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{hw.title}</span>
-                        {hw.isToday && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold">BUGÜN</span>
-                        )}
                       </div>
                       <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
                         {hw.classes?.name ?? '—'} · {hw.subject} ·{' '}
@@ -140,8 +137,8 @@ export default async function OgretmenDashboard() {
                   </li>
                 ))}
               </ul>
-            )}
-          </section>
+            </section>
+          )}
 
           {/* Risk Uyarıları */}
           <div id="risk-uyarilari">

@@ -86,6 +86,16 @@ export const DashboardRepository = {
     await supabase.from('teacher_activity_log').insert(row)
   },
 
+  async getTodayClassAttendance(classIds: string[], todayStr: string) {
+    if (classIds.length === 0) return { data: [] }
+    const supabase = await createClient()
+    return supabase
+      .from('attendance')
+      .select('class_id')
+      .in('class_id', classIds)
+      .eq('date', todayStr)
+  },
+
   async getAttendanceTrend(classIds: string[], since: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()

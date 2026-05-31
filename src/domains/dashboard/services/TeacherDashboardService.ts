@@ -2,7 +2,7 @@ import { DashboardRepository } from '../repositories/DashboardRepository'
 import { computeRiskLevel, computeRiskScore } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
-import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem } from '../types'
+import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
 function mondayOf(dateStr: string): string {
   const d = new Date(dateStr)
@@ -102,14 +102,17 @@ export const TeacherDashboardService = {
     const hwIds = homeworks.map(h => h.id)
     const classIds = [...new Set(homeworks.map(h => h.class_id))]
 
-    const [subsResult, attResult, studentsResult, weeklyResult, weeklyRiskCount, trendResult] = await Promise.all([
+    const [subsResult, attResult, studentsResult, weeklyResult, weeklyRiskCount, trendResult, todayAttResult] = await Promise.all([
       DashboardRepository.getSubmissions(hwIds),
       DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
       DashboardRepository.getStudentsByClasses(classIds),
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
       DashboardRepository.getWeeklyRiskCount(teacherId, weekStart),
       DashboardRepository.getAttendanceTrend(classIds, eightWeeksAgo),
+      DashboardRepository.getTodayClassAttendance(classIds, today),
     ])
+
+    const classesWithAttToday = new Set(((todayAttResult.data ?? []) as { class_id: string }[]).map(a => a.class_id))
 
     const submissions    = ((subsResult.data    ?? []) as unknown) as SubmissionRow[]
     const attendanceRows = ((attResult.data      ?? []) as unknown) as { student_id: string; status: string }[]
@@ -170,6 +173,21 @@ export const TeacherDashboardService = {
         toplam,
       }))
 
+    // Öğretmenin sınıflarını unique listele, grade+name'e göre sırala
+    const seenClasses = new Map<string, { classId: string; className: string; grade: number }>()
+    for (const hw of homeworks) {
+      if (!seenClasses.has(hw.class_id)) {
+        seenClasses.set(hw.class_id, {
+          classId:   hw.class_id,
+          className: hw.classes?.name ?? '—',
+          grade:     hw.classes?.grade ?? 0,
+        })
+      }
+    }
+    const yoklamaDurumu: YoklamaDurumItem[] = [...seenClasses.values()]
+      .sort((a, b) => a.grade - b.grade || a.className.localeCompare(b.className, 'tr'))
+      .map(c => ({ ...c, alindi: classesWithAttToday.has(c.classId) }))
+
     return {
       todayHomeworkCount,
       totalMissingCount,
@@ -182,6 +200,7 @@ export const TeacherDashboardService = {
       homeworks: homeworks as unknown as HomeworkLite[],
       tamamlanmaData,
       yoklamaTrendData,
+      yoklamaDurumu,
     }
   },
 
