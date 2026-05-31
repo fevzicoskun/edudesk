@@ -5,8 +5,9 @@ import { isMudurOrAbove } from '@/src/shared/types'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import GradeGrid from './GradeGrid'
 import type { GradeColumn, GradeEntry } from '@/src/domains/grades/types'
+import NotDefteriTabs from './NotDefteriTabs'
+import { KanaatService } from '@/src/domains/kanaat/services/KanaatService'
 
 export const revalidate = 60
 
@@ -21,9 +22,17 @@ export default async function NotDefteriDetailPage({
 
   const supabase = await createClient()
   const schoolId = profile.school_id
+
+  const now = new Date(new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date()))
+  const ay = now.getMonth() + 1
+  const yil = now.getFullYear()
+  const egitimYil1 = ay >= 9 ? yil : yil - 1
+  const yarim = ay >= 9 || ay <= 1 ? '1' : '2'
+  const currentDonem = `${egitimYil1}-${egitimYil1 + 1}-${yarim}`
+
   const isManager = isMudurOrAbove(profile.role)
 
-  const [classResult, studentsResult, columnsResult] = await Promise.all([
+  const [classResult, studentsResult, columnsResult, kanaatResult] = await Promise.all([
     supabase
       .from('classes')
       .select('id, name, grade, mentor_teacher_id')
@@ -45,6 +54,7 @@ export default async function NotDefteriDetailPage({
       .eq('school_id', schoolId)
       .order('exam_date', { nullsFirst: false })
       .order('created_at'),
+    KanaatService.getKanaatKayitlari(classId, currentDonem),
   ])
 
   if (!classResult.data) notFound()
@@ -66,6 +76,7 @@ export default async function NotDefteriDetailPage({
   const entries = (entriesResult.data ?? []) as GradeEntry[]
 
   const canWrite = !isManager // yöneticiler salt okunur, öğretmenler yazabilir
+  const kanaatKayitlari = kanaatResult.data ?? []
 
   return (
     <div className="p-6 max-w-full">
@@ -82,11 +93,13 @@ export default async function NotDefteriDetailPage({
       </h1>
       <p className="text-sm text-muted-foreground mb-6">{students.length} öğrenci</p>
 
-      <GradeGrid
+      <NotDefteriTabs
         classId={classId}
         columns={columns}
         entries={entries}
         students={students}
+        kanaatKayitlari={kanaatKayitlari}
+        currentDonem={currentDonem}
         canWrite={canWrite}
       />
     </div>
