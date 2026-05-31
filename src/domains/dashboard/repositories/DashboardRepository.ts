@@ -86,12 +86,13 @@ export const DashboardRepository = {
     await supabase.from('teacher_activity_log').insert(row)
   },
 
-  async getAttendanceTrend(teacherId: string, since: string) {
+  async getAttendanceTrend(classIds: string[], since: string) {
+    if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
       .from('attendance')
       .select('date, status')
-      .eq('teacher_id', teacherId)
+      .in('class_id', classIds)
       .gte('date', since)
       .order('date')
   },

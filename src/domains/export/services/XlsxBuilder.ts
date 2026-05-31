@@ -83,11 +83,11 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   const db = createServiceClient()
   let q = db
     .from('homeworks')
-    .select('title, subject, due_date, classes(name), homework_submissions(status)')
+    .select('id, title, subject, due_date, classes(name)')
     .eq('school_id', schoolId)
     .is('deleted_at', null)
     .order('due_date', { ascending: false })
-    .limit(500)
+    .limit(200)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
@@ -99,23 +99,46 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     q = q.lte('due_date', params.until)
   }
 
-  const { data, error } = await q
-  if (error) throw new Error(`Ödevler sorgu hatası: ${error.message}`)
+  const { data: hwData, error: hwErr } = await q
+  if (hwErr) throw new Error(`Ödevler sorgu hatası: ${hwErr.message}`)
 
-  return (data ?? []).map(h => {
-    const subs = (h.homework_submissions ?? []) as { status: string }[]
-    const count = (s: string) => subs.filter(x => x.status === s).length
+  const homeworks = hwData ?? []
+  const hwIds = homeworks.map(h => h.id)
+
+  const subMap = new Map<string, { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number; toplam: number }>()
+  for (const id of hwIds) subMap.set(id, { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, toplam: 0 })
+
+  if (hwIds.length > 0) {
+    const { data: subData, error: subErr } = await db
+      .from('homework_submissions')
+      .select('homework_id, status')
+      .in('homework_id', hwIds)
+    if (subErr) throw new Error(`Teslim sorgu hatası: ${subErr.message}`)
+    for (const s of subData ?? []) {
+      const e = subMap.get(s.homework_id)
+      if (!e) continue
+      e.toplam++
+      if      (s.status === 'yapildi')   e.yapildi++
+      else if (s.status === 'eksik')     e.eksik++
+      else if (s.status === 'yapilmadi') e.yapilmadi++
+      else if (s.status === 'gec')       e.gec++
+      else if (s.status === 'mazeretli') e.mazeretli++
+    }
+  }
+
+  return homeworks.map(h => {
+    const s = subMap.get(h.id)!
     return {
       'Sınıf':      (h.classes as unknown as { name: string } | null)?.name ?? '—',
       'Ders':       h.subject,
       'Ödev':       h.title,
       'Son Tarih':  fmtDate(h.due_date),
-      'Yapıldı':    count('yapildi'),
-      'Eksik':      count('eksik'),
-      'Yapılmadı':  count('yapilmadi'),
-      'Geç':        count('gec'),
-      'Mazeretli':  count('mazeretli'),
-      'Toplam':     subs.length,
+      'Yapıldı':    s.yapildi,
+      'Eksik':      s.eksik,
+      'Yapılmadı':  s.yapilmadi,
+      'Geç':        s.gec,
+      'Mazeretli':  s.mazeretli,
+      'Toplam':     s.toplam,
     }
   })
 }

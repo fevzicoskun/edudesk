@@ -7,9 +7,9 @@ export const getAbsentYearRows = cache(async (schoolId: string, yearStart: strin
   const db = await createClient()
   const { data } = await db
     .from('attendance')
-    .select('student_id')
+    .select('student_id, status')
     .eq('school_id', schoolId)
-    .eq('status', 'absent')
+    .in('status', ['absent', 'late'])
     .gte('date', yearStart)
   return data ?? []
 })

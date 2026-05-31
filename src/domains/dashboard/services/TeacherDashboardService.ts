@@ -28,7 +28,9 @@ function getWeekStart(): string {
   const diff = (day === 0 ? -6 : 1 - day)
   d.setDate(d.getDate() + diff)
   d.setHours(0, 0, 0, 0)
-  return d.toISOString()
+  // Lokal Pazartesi başlangıcını UTC timestamp olarak döndür
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
 }
 
 function computeAlerts(
@@ -106,7 +108,7 @@ export const TeacherDashboardService = {
       DashboardRepository.getStudentsByClasses(classIds),
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
       DashboardRepository.getWeeklyRiskCount(teacherId, weekStart),
-      DashboardRepository.getAttendanceTrend(teacherId, eightWeeksAgo),
+      DashboardRepository.getAttendanceTrend(classIds, eightWeeksAgo),
     ])
 
     const submissions    = ((subsResult.data    ?? []) as unknown) as SubmissionRow[]

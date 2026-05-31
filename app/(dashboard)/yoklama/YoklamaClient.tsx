@@ -22,7 +22,11 @@ const STATUS_COLORS: Record<AttendanceStatus, string> = {
   late:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 ring-yellow-500',
 }
 
-function todayISO() { return new Date().toISOString().slice(0, 10) }
+function todayISO() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
 function isWeekend(iso: string) {
   const [y, m, d] = iso.split('-').map(Number)

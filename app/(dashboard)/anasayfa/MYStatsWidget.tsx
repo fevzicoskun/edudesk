@@ -53,7 +53,8 @@ export default async function MYStatsWidget() {
 
   const absenceMap = new Map<string, number>()
   for (const a of absentYearRows) {
-    absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + 1)
+    const inc = a.status === 'absent' ? 1 : 0.5
+    absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + inc)
   }
   const riskCount = [...absenceMap.values()].filter(n => n >= ATTENDANCE_WARN_DAYS).length
 
