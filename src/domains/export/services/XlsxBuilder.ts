@@ -74,15 +74,20 @@ export async function uploadToStorage(
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
+function fmtDate(iso: string) {
+  const [y, m, d] = iso.split('-')
+  return `${d}.${m}.${y}`
+}
+
 async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   const db = createServiceClient()
   let q = db
     .from('homeworks')
-    .select('title, subject, due_date, classes(name)')
+    .select('title, subject, due_date, classes(name), homework_submissions(status)')
     .eq('school_id', schoolId)
     .is('deleted_at', null)
     .order('due_date', { ascending: false })
-    .limit(2000)
+    .limit(500)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
@@ -97,12 +102,22 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   const { data, error } = await q
   if (error) throw new Error(`Ödevler sorgu hatası: ${error.message}`)
 
-  return (data ?? []).map(h => ({
-    'Ödev Başlığı': h.title,
-    'Ders':         h.subject,
-    'Son Tarih':    h.due_date,
-    'Sınıf':        (h.classes as unknown as { name: string } | null)?.name ?? '—',
-  }))
+  return (data ?? []).map(h => {
+    const subs = (h.homework_submissions ?? []) as { status: string }[]
+    const count = (s: string) => subs.filter(x => x.status === s).length
+    return {
+      'Sınıf':      (h.classes as unknown as { name: string } | null)?.name ?? '—',
+      'Ders':       h.subject,
+      'Ödev':       h.title,
+      'Son Tarih':  fmtDate(h.due_date),
+      'Yapıldı':    count('yapildi'),
+      'Eksik':      count('eksik'),
+      'Yapılmadı':  count('yapilmadi'),
+      'Geç':        count('gec'),
+      'Mazeretli':  count('mazeretli'),
+      'Toplam':     subs.length,
+    }
+  })
 }
 
 async function fetchNotlar(schoolId: string) {
@@ -118,7 +133,7 @@ async function fetchNotlar(schoolId: string) {
   return (data ?? []).map(n => ({
     'Öğrenci': (n.students as unknown as { full_name: string } | null)?.full_name ?? '—',
     'Not':     n.body,
-    'Tarih':   n.created_at?.split('T')[0] ?? '—',
+    'Tarih':   n.created_at ? fmtDate(n.created_at.split('T')[0]) : '—',
   }))
 }
 
@@ -175,11 +190,11 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     const student = r.students as unknown as { full_name: string; student_number: string | null } | null
     const cls     = r.classes  as unknown as { name: string } | null
     return {
-      'Tarih':      r.date,
-      'Sınıf':      cls?.name ?? '—',
-      'Ad Soyad':   student?.full_name ?? '—',
-      'Numara':     student?.student_number ?? '—',
-      'Durum':      STATUS_LABELS[r.status] ?? r.status,
+      'Tarih':    fmtDate(r.date),
+      'Sınıf':    cls?.name ?? '—',
+      'Ad Soyad': student?.full_name ?? '—',
+      'Numara':   student?.student_number ?? '—',
+      'Durum':    STATUS_LABELS[r.status] ?? r.status,
     }
   })
 }
