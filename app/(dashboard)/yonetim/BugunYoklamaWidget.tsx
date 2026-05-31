@@ -19,7 +19,9 @@ const LEVEL_COLOR: Record<ReturnType<typeof getLevel>, string> = {
 export default async function BugunYoklamaWidget() {
   const supabase    = await createClient()
   const school_id   = await requireSchoolId()
-  const todayStr    = new Date().toISOString().split('T')[0]
+  const _d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayStr = `${_d.getFullYear()}-${pad(_d.getMonth() + 1)}-${pad(_d.getDate())}`
 
   const [classesRes, attendanceRes] = await Promise.all([
     supabase

@@ -18,7 +18,7 @@ function CardSkeleton({ tall }: { tall?: boolean }) {
 
 export default async function YonetimPage() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
+  if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">

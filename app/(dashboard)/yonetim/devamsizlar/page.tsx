@@ -8,12 +8,13 @@ export const revalidate = 0
 
 export default async function DevamsizlarPage() {
   const profile = await getCurrentProfile()
-  if (!profile || profile.role !== 'mudur') redirect('/anasayfa')
+  if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   const supabase = await createClient()
   const today = new Date()
-  const todayStr = today.toISOString().split('T')[0]
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const todayStr   = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+  const monthStart = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-01`
 
   const [todayRes, monthRes] = await Promise.all([
     supabase
@@ -46,14 +47,15 @@ export default async function DevamsizlarPage() {
     monthlyCount.set(a.student_id, (monthlyCount.get(a.student_id) ?? 0) + 1)
   }
 
-  const byClass = rows.reduce<Record<string, typeof rows>>((acc, row) => {
+  const byClass = rows.reduce<Record<string, { rows: typeof rows; grade: number }>>((acc, row) => {
     const key = row.classes?.name ?? 'Bilinmeyen'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(row)
+    if (!acc[key]) acc[key] = { rows: [], grade: row.classes?.grade ?? 999 }
+    acc[key].rows.push(row)
     return acc
   }, {})
 
-  const sortedClasses = Object.keys(byClass).sort()
+  const sortedClasses = Object.entries(byClass)
+    .sort(([nameA, a], [nameB, b]) => a.grade - b.grade || nameA.localeCompare(nameB, 'tr'))
 
   return (
     <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
@@ -80,15 +82,15 @@ export default async function DevamsizlarPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {sortedClasses.map(className => (
+          {sortedClasses.map(([className, { rows: classRows }]) => (
             <div key={className} className="rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
               <div className="px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
                 <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">{className}</span>
-                <span className="text-xs text-gray-500 dark:text-slate-400">{byClass[className].length} kişi</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">{classRows.length} kişi</span>
               </div>
               <ul className="divide-y divide-gray-100 dark:divide-slate-800">
-                {byClass[className].map(row => {
-                  const aylikSayi = monthlyCount.get(row.student_id) ?? 1
+                {classRows.map(row => {
+                  const aylikSayi = monthlyCount.get(row.student_id) ?? 0
                   const kronik = aylikSayi >= 5
                   return (
                     <li key={row.student_id} className="flex items-center justify-between px-4 py-3 gap-3">
