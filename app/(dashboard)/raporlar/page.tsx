@@ -1,4 +1,5 @@
 import { getCurrentProfile } from '@/src/shared/auth'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { redirect } from 'next/navigation'
 import ExportPanel from './ExportPanel'
 
@@ -11,6 +12,15 @@ export default async function RaporlarPage() {
   if (!profile) redirect('/login')
   if (!profile.role || !(ALLOWED_ROLES as readonly string[]).includes(profile.role)) redirect('/anasayfa')
 
+  const supabase = await createClient()
+  const { data: classes } = await supabase
+    .from('classes')
+    .select('id, name, grade')
+    .eq('school_id', profile.school_id!)
+    .is('deleted_at', null)
+    .order('grade')
+    .order('name')
+
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-5">
@@ -19,7 +29,7 @@ export default async function RaporlarPage() {
           Excel formatında dışa aktarma
         </p>
       </div>
-      <ExportPanel />
+      <ExportPanel classes={classes ?? []} />
     </div>
   )
 }
