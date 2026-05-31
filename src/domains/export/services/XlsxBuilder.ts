@@ -124,16 +124,42 @@ async function fetchNotlar(schoolId: string) {
   const db = createServiceClient()
   const { data, error } = await db
     .from('student_notes')
-    .select('body, created_at, students(full_name)')
+    .select('body, created_at, students(full_name, student_number, deleted_at, classes(name))')
     .eq('school_id', schoolId)
-    .order('created_at', { ascending: false })
-    .limit(2000)
+    .order('created_at', { ascending: true })
+    .limit(5000)
   if (error) throw new Error(`Notlar sorgu hatası: ${error.message}`)
 
-  return (data ?? []).map(n => ({
-    'Öğrenci': (n.students as unknown as { full_name: string } | null)?.full_name ?? '—',
-    'Not':     n.body,
-    'Tarih':   n.created_at ? fmtDate(n.created_at.split('T')[0]) : '—',
+  type StudentRow = { full_name: string; student_number: string | null; deleted_at: string | null; classes: { name: string } | null }
+
+  const rows = (data ?? [])
+    .filter(n => {
+      const s = n.students as unknown as StudentRow | null
+      return !s?.deleted_at
+    })
+    .map(n => {
+      const s = n.students as unknown as StudentRow | null
+      return {
+        className:  s?.classes?.name ?? '',
+        full_name:  s?.full_name ?? '—',
+        student_number: s?.student_number ?? null,
+        body:       n.body,
+        created_at: n.created_at,
+      }
+    })
+
+  rows.sort((a, b) => {
+    const cls = a.className.localeCompare(b.className, 'tr')
+    if (cls !== 0) return cls
+    return a.full_name.localeCompare(b.full_name, 'tr')
+  })
+
+  return rows.map(n => ({
+    'Sınıf':    n.className || '—',
+    'No':       n.student_number ?? '—',
+    'Ad Soyad': n.full_name,
+    'Not':      n.body,
+    'Tarih':    n.created_at ? fmtDate(n.created_at.split('T')[0]) : '—',
   }))
 }
 
