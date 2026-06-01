@@ -2,6 +2,7 @@ import { HomeworkRepository } from '../repositories/HomeworkRepository'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus } from '../types'
+import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 export const HomeworkService = {
   async createHomework(data: {
@@ -155,5 +156,43 @@ export const HomeworkService = {
     const { error } = await HomeworkRepository.restoreHomework(id, ability.schoolId)
     if (error) return { error: error.message }
     return {}
+  },
+
+  async getStudentHomeworkProfile(
+    studentId: string,
+    classId: string,
+  ): Promise<
+    | { error: string }
+    | {
+        student: { full_name: string; student_number: string | null; veli_ad: string | null; veli_telefon: string | null }
+        homeworks: HomeworkRecord[]
+        stats: ReturnType<typeof computeStudentHomeworkStats>
+      }
+  > {
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.READ)) return { error: 'Bu işlem için yetkiniz yok.' }
+
+    const profileData = await HomeworkRepository.findStudentHomeworkProfile(
+      studentId, classId, ability.schoolId,
+    )
+
+    if ('error' in profileData && profileData.error) return { error: profileData.error }
+    if (!profileData.student) return { error: 'Öğrenci bulunamadı' }
+
+    const subMap = new Map(profileData.submissions.map(s => [s.homework_id, s]))
+    const records: HomeworkRecord[] = profileData.homeworks.map(hw => {
+      const sub = subMap.get(hw.id)
+      return {
+        id: hw.id,
+        title: hw.title,
+        subject: hw.subject,
+        due_date: hw.due_date,
+        status: ((sub?.status ?? 'yapilmadi') as HomeworkRecord['status']),
+        note: sub?.note ?? null,
+      }
+    })
+
+    return { student: profileData.student, homeworks: records, stats: computeStudentHomeworkStats(records) }
   },
 }

@@ -25,6 +25,7 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
     softDeleteHomework:           vi.fn(),
     softDeleteHomeworkAsManager:  vi.fn(),
     restoreHomework:              vi.fn(),
+    findStudentHomeworkProfile:   vi.fn(),
   },
 }))
 
@@ -181,5 +182,88 @@ describe('HomeworkService.restoreHomework()', () => {
     vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ data: null, error: null } as never)
     await HomeworkService.restoreHomework('hw-1')
     expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith('hw-1', SCHOOL_ID)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.getStudentHomeworkProfile()', () => {
+  const STU_ID = 'student-1'
+  const CLS_ID = 'class-1'
+
+  it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    expect(result).toMatchObject({ error: 'Giriş gerekli' })
+  })
+
+  it('homework:read izni yoksa hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    expect(result).toMatchObject({ error: 'Bu işlem için yetkiniz yok.' })
+  })
+
+  it('öğrenci bulunamazsa hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: null, homeworks: [], submissions: [],
+    } as never)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    expect(result).toMatchObject({ error: 'Öğrenci bulunamadı' })
+  })
+
+  it('ödev yoksa boş liste + stats döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: { full_name: 'Ayşe', student_number: '5', veli_ad: 'Anne', veli_telefon: '05001234567' },
+      homeworks: [],
+      submissions: [],
+    } as never)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    if ('error' in result) throw new Error(result.error)
+    expect(result.homeworks).toHaveLength(0)
+    expect(result.stats.total).toBe(0)
+    expect(result.stats.completionRate).toBe(0)
+  })
+
+  it('submission yoksa tümü yapilmadi sayılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: { full_name: 'Ali', student_number: null, veli_ad: null, veli_telefon: null },
+      homeworks: [
+        { id: 'hw-1', title: 'Ödev A', subject: 'Matematik', due_date: '2026-05-01' },
+        { id: 'hw-2', title: 'Ödev B', subject: 'Fen', due_date: '2026-05-10' },
+      ],
+      submissions: [],
+    } as never)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    if ('error' in result) throw new Error(result.error)
+    expect(result.homeworks).toHaveLength(2)
+    expect(result.homeworks.every(h => h.status === 'yapilmadi')).toBe(true)
+    expect(result.stats.yapilmadi).toBe(2)
+    expect(result.stats.completionRate).toBe(0)
+  })
+
+  it('submission varsa doğru statüsü kullanır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: { full_name: 'Ali', student_number: null, veli_ad: null, veli_telefon: null },
+      homeworks: [
+        { id: 'hw-1', title: 'Ödev A', subject: 'Matematik', due_date: '2026-05-01' },
+        { id: 'hw-2', title: 'Ödev B', subject: 'Fen', due_date: '2026-05-10' },
+      ],
+      submissions: [
+        { homework_id: 'hw-1', status: 'yapildi', note: null },
+        { homework_id: 'hw-2', status: 'eksik', note: 'Yarısı eksik' },
+      ],
+    } as never)
+    const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    if ('error' in result) throw new Error(result.error)
+    const hw1 = result.homeworks.find(h => h.id === 'hw-1')!
+    const hw2 = result.homeworks.find(h => h.id === 'hw-2')!
+    expect(hw1.status).toBe('yapildi')
+    expect(hw2.status).toBe('eksik')
+    expect(hw2.note).toBe('Yarısı eksik')
+    expect(result.stats.yapildi).toBe(1)
+    expect(result.stats.completionRate).toBe(50)
   })
 })
