@@ -39,6 +39,9 @@ export async function createHomework(_: unknown, formData: FormData) {
   if (result.id && !isTemplate) {
     redirect(`/odevler/${result.id}`)
   }
+  if (isTemplate) {
+    redirect('/odevler/yeni?templateSaved=1')
+  }
   redirect('/odevler')
 }
 
