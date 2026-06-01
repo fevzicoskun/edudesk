@@ -30,6 +30,9 @@ export async function createHomework(_: unknown, formData: FormData) {
   if (result.error) return result
 
   revalidatePath('/odevler')
+  if (result.id && !isTemplate) {
+    redirect(`/odevler/${result.id}`)
+  }
   redirect('/odevler')
 }
 

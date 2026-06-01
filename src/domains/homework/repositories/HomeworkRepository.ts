@@ -14,7 +14,7 @@ export const HomeworkRepository = {
     is_template?: boolean
   }) {
     const supabase = await createClient()
-    return supabase.from('homeworks').insert(data)
+    return supabase.from('homeworks').insert(data).select('id').single()
   },
 
   async findHomeworkTeacher(homeworkId: string, schoolId: string) {

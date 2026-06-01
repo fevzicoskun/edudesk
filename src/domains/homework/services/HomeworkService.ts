@@ -12,12 +12,12 @@ export const HomeworkService = {
     due_date:    string | null
     source_id?:  string | null
     is_template?: boolean
-  }): Promise<{ error?: string }> {
+  }): Promise<{ error?: string; id?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const { error } = await HomeworkRepository.insertHomework({
+    const { data: created, error } = await HomeworkRepository.insertHomework({
       teacher_id: ability.userId,
       school_id:  ability.schoolId,
       ...data,
@@ -25,7 +25,7 @@ export const HomeworkService = {
     })
 
     if (error) return { error: error.message }
-    return {}
+    return { id: created?.id }
   },
 
   async updateSubmissionStatus(
