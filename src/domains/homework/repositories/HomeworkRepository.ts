@@ -127,6 +127,13 @@ export const HomeworkRepository = {
         .order('due_date', { ascending: false }),
     ])
 
+    if (studentRes.error || homeworksRes.error) {
+      return {
+        error: studentRes.error?.message ?? homeworksRes.error?.message,
+        student: null, homeworks: [], submissions: [],
+      }
+    }
+
     const homeworkIds = (homeworksRes.data ?? []).map(h => h.id)
     const subsRes = homeworkIds.length > 0
       ? await supabase
@@ -134,6 +141,7 @@ export const HomeworkRepository = {
           .select('homework_id, status, note')
           .in('homework_id', homeworkIds)
           .eq('student_id', studentId)
+          .eq('school_id', schoolId)
       : { data: [] as { homework_id: string; status: string; note: string | null }[] }
 
     return {
