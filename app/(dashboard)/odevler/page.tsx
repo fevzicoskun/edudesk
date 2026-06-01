@@ -9,7 +9,6 @@ import OdevlerFilterBar from './FilterBar'
 import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
-import KaynakTakibiWidget from './KaynakTakibiWidget'
 
 export const revalidate = 30
 
@@ -36,10 +35,7 @@ function isLocked(due: string, now: Date): boolean {
 
 type FilterParams = {
   sinif?: string
-  baslangic?: string
-  bitis?: string
   ders?: string
-  durum?: string
   ogretmen?: string
   q?: string
 }
@@ -95,14 +91,6 @@ export default async function OdevlerPage({
           </div>
         </div>
 
-        {canWrite && (
-          <Suspense fallback={null}>
-            <div className="mb-6">
-              <KaynakTakibiWidget />
-            </div>
-          </Suspense>
-        )}
-
         <OdevlerFilterBar
           classes={classes}
           subjects={subjects}
@@ -154,14 +142,6 @@ async function HomeworkSection({
 }) {
   const supabase = await createClient()
 
-  const durumResult = params.durum
-    ? await supabase.from('homework_submissions').select('homework_id').eq('status', params.durum)
-    : { data: null as { homework_id: string }[] | null }
-
-  const durumIds = durumResult.data
-    ? [...new Set(durumResult.data.map((s) => s.homework_id))]
-    : null
-
   let query = supabase
     .from('homeworks')
     .select('*, classes(id, name, grade), teacher:profiles(full_name)')
@@ -176,13 +156,8 @@ async function HomeworkSection({
   }
 
   if (params.sinif) query = query.eq('class_id', params.sinif)
-  if (params.baslangic) query = query.gte('due_date', params.baslangic)
-  if (params.bitis) query = query.lte('due_date', params.bitis)
   if (params.ders) query = query.eq('subject', params.ders)
   if (params.q) query = query.ilike('title', `%${params.q}%`)
-  if (durumIds !== null) {
-    query = query.in('id', durumIds.length > 0 ? durumIds : ['00000000-0000-0000-0000-000000000000'])
-  }
 
   const homeworks = (await query).data ?? []
 
@@ -235,12 +210,10 @@ async function HomeworkSection({
   return (
     <>
       {/* İstatistik kartları */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 mt-4">
+      <div className="grid grid-cols-2 gap-3 mb-6 mt-4">
         {[
-          { label: 'Toplam',   value: totalCount,          color: 'text-gray-900 dark:text-slate-100', dot: 'bg-gray-400' },
-          { label: 'Aktif',    value: active.length,       color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
-          { label: 'Bekliyor', value: pendingCheck.length, color: 'text-amber-600 dark:text-amber-400',   dot: 'bg-amber-500' },
-          { label: 'Geçmiş',  value: pastDone.length,     color: 'text-slate-500 dark:text-slate-400',   dot: 'bg-slate-400' },
+          { label: 'Aktif Ödev',        value: active.length,       color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
+          { label: 'Kontrol Bekliyor',  value: pendingCheck.length, color: 'text-amber-600 dark:text-amber-400',     dot: 'bg-amber-500'  },
         ].map(({ label, value, color, dot }) => (
           <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 shadow-sm flex items-center gap-3">
             <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
