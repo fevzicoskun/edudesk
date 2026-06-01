@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from 'react'
 import ExcelJS from 'exceljs'
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
+import StudentHomeworkProfileModal from './StudentHomeworkProfileModal'
 
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
 const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
@@ -40,12 +41,14 @@ export default function StatusBoard({
   homeworkTitle,
   totalHomeworks,
   initialRecordCount,
+  classId,
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
   totalHomeworks: number
   initialRecordCount: number
+  classId: string
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map((item) => [item.student_id, item.status]))
@@ -57,6 +60,7 @@ export default function StatusBoard({
   const [isPending, startTransition] = useTransition()
   const [hasInteracted, setHasInteracted] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
   const showCounts = initialRecordCount > 0 || hasInteracted
 
   useEffect(() => {
@@ -209,7 +213,12 @@ export default function StatusBoard({
               {/* Üst satır: isim + not butonu */}
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div className="min-w-0 pt-0.5">
-                  <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{item.full_name}</p>
+                  <button
+                    onClick={() => setSelectedStudentId(item.student_id)}
+                    className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    {item.full_name}
+                  </button>
                   <div className="flex items-center gap-2 mt-0.5">
                     {item.student_number && (
                       <span className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</span>
@@ -283,6 +292,12 @@ export default function StatusBoard({
           {errorMsg}
         </div>
       )}
+
+      <StudentHomeworkProfileModal
+        studentId={selectedStudentId}
+        classId={classId}
+        onClose={() => setSelectedStudentId(null)}
+      />
     </div>
   )
 }
