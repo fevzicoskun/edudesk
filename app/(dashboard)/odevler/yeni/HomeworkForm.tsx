@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 
@@ -13,6 +13,7 @@ export type Defaults = {
   description?: string | null
   class_id?: string
   source_id?: string | null
+  fromTemplate?: boolean
 }
 
 const field =
@@ -28,6 +29,7 @@ export default function HomeworkForm({
   defaults?: Defaults
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
+  const [isTemplate, setIsTemplate] = useState(false)
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-xl shadow-gray-200/70 border border-gray-100/80">
@@ -43,9 +45,15 @@ export default function HomeworkForm({
             </svg>
           </div>
           <div>
-            <p className="text-white font-semibold text-lg leading-tight">Yeni Ödev Oluştur</p>
+            <p className="text-white font-semibold text-lg leading-tight">
+              {defaults?.fromTemplate ? 'Şablondan Ödev Oluştur' : 'Yeni Ödev Oluştur'}
+            </p>
             <p className="text-blue-200 text-sm mt-0.5">
-              {defaults ? 'Kopyadan yeni ödev oluşturun' : 'Öğrencilerinize yeni bir görev tanımlayın'}
+              {defaults?.fromTemplate
+                ? 'Tarihi belirleyin ve kaydedin'
+                : defaults
+                  ? 'Kopyadan yeni ödev oluşturun'
+                  : 'Öğrencilerinize yeni bir görev tanımlayın'}
             </p>
           </div>
         </div>
@@ -136,10 +144,34 @@ export default function HomeworkForm({
           </div>
 
           {/* Son Teslim Tarihi */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-            <input name="due_date" type="date" required className={field} />
-          </div>
+          {!isTemplate && (
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
+              <input name="due_date" type="date" required={!isTemplate} className={field} />
+            </div>
+          )}
+
+          {/* Şablon toggle — şablon olarak kaydedilince tarih gerekmez */}
+          {!defaults?.fromTemplate && (
+            <label className="flex items-center gap-3 cursor-pointer select-none group">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  name="is_template"
+                  value="true"
+                  checked={isTemplate}
+                  onChange={e => setIsTemplate(e.target.checked)}
+                  className="sr-only"
+                />
+                <div className={`w-10 h-6 rounded-full transition-colors ${isTemplate ? 'bg-blue-600' : 'bg-gray-200 dark:bg-slate-600'}`} />
+                <div className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow transition-transform ${isTemplate ? 'translate-x-4' : ''}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Şablon olarak kaydet</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500">Ödev listesinde görünmez, tekrar kullanmak için şablonlardan seçilir</p>
+              </div>
+            </label>
+          )}
 
         </div>
 

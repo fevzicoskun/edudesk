@@ -54,7 +54,10 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
         to:      student.veli_email!,
         subject: `Devamsızlık Bildirimi — ${student.full_name}`,
         text:    `Sayın ${student.veli_ad ?? 'Veli'},\n\n${student.full_name} adlı öğrenci ${tarih} tarihinde ${durum}.\n\nEduDesk`,
-        html:    `<p>Sayın <strong>${student.veli_ad ?? 'Veli'}</strong>,</p><p><strong>${student.full_name}</strong> adlı öğrenci <strong>${tarih}</strong> tarihinde <strong>${durum}</strong>.</p><p style="color:#6b7280;font-size:12px">EduDesk okul yönetim sistemi</p>`,
+        html:    (() => {
+          const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+          return `<p>Sayın <strong>${esc(student.veli_ad ?? 'Veli')}</strong>,</p><p><strong>${esc(student.full_name)}</strong> adlı öğrenci <strong>${esc(tarih)}</strong> tarihinde <strong>${esc(durum)}</strong>.</p><p style="color:#6b7280;font-size:12px">EduDesk okul yönetim sistemi</p>`
+        })(),
       })
     })
 

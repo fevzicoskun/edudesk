@@ -8,20 +8,24 @@ import { HomeworkService } from '@/src/domains/homework/services/HomeworkService
 import type { SubmissionStatus } from '@/src/domains/homework/types'
 
 export async function createHomework(_: unknown, formData: FormData) {
+  const isTemplate = formData.get('is_template') === 'true'
   const parsed = createHomeworkSchema.safeParse({
     class_id:    formData.get('class_id'),
     title:       formData.get('title'),
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
-    due_date:    formData.get('due_date'),
+    due_date:    formData.get('due_date') || null,
     source_id:   formData.get('source_id') || null,
+    is_template: isTemplate,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+  if (!isTemplate && !parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
 
   const result = await HomeworkService.createHomework({
     ...parsed.data,
     description: parsed.data.description ?? null,
     source_id:   parsed.data.source_id ?? null,
+    due_date:    parsed.data.due_date ?? null,
   })
   if (result.error) return result
 

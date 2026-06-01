@@ -115,6 +115,9 @@ export const homeworkReminderFn = inngest.createFunction(
     // 4. Öğretmene e-posta gönder (email_on = true olanlar)
     const teacherEmailTargets = toSend.filter((c) => c.emailOn && c.teacherEmail)
 
+    const esc = (s: string) =>
+      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
     if (teacherEmailTargets.length) {
       await step.run('send-teacher-emails', async () => {
         const results = await Promise.allSettled(
@@ -125,10 +128,10 @@ export const homeworkReminderFn = inngest.createFunction(
               subject: `Ödev Hatırlatması: ${c.title}`,
               html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
                 <p>Merhaba,</p>
-                <p><strong>${c.title}</strong> adlı ödevinizin teslim tarihi <strong>${c.dueDate}</strong>.</p>
+                <p><strong>${esc(c.title)}</strong> adlı ödevinizin teslim tarihi <strong>${esc(c.dueDate)}</strong>.</p>
                 <p>${c.daysBefore === 1 ? 'Yarın teslim alınacak.' : `${c.daysBefore} gün kaldı.`}</p>
                 <p>EduDesk'e giriş yaparak öğrenci teslim durumlarını görüntüleyebilirsiniz.</p>
-                <p style="color:#bbb;font-size:11px;margin-top:24px">Bu bildirimleri durdurmak veya sıklığını değiştirmek için <a href="${baseUrl}/ayarlar" style="color:#bbb">bildirim ayarlarınızı</a> güncelleyebilirsiniz.</p>
+                <p style="color:#bbb;font-size:11px;margin-top:24px">Bu bildirimleri durdurmak veya sıklığını değiştirmek için <a href="${esc(baseUrl)}/ayarlar" style="color:#bbb">bildirim ayarlarınızı</a> güncelleyebilirsiniz.</p>
               </body></html>`,
             })
           )
@@ -190,7 +193,7 @@ export const homeworkReminderFn = inngest.createFunction(
               subject: `Ödev Hatırlatması — ${v.ogrenciAdi}`,
               html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
                 <p>Sayın veli,</p>
-                <p><strong>${v.ogrenciAdi}</strong> adlı öğrencinizin <strong>"${v.odevBaslik}"</strong> ödevi <strong>${v.dueDate}</strong> tarihinde teslim edilmesi gerekmektedir.</p>
+                <p><strong>${esc(v.ogrenciAdi)}</strong> adlı öğrencinizin <strong>"${esc(v.odevBaslik)}"</strong> ödevi <strong>${esc(v.dueDate)}</strong> tarihinde teslim edilmesi gerekmektedir.</p>
                 <p>Lütfen ödevin tamamlandığından emin olunuz.</p>
                 <p style="color:#888;font-size:12px;margin-top:16px">EduDesk — Okul Takip Sistemi</p>
                 <p style="color:#bbb;font-size:11px;margin-top:8px">Bu bildirimleri durdurmak için <a href="${unsubscribeUrl(v.studentId, baseUrl)}" style="color:#bbb">buraya tıklayın</a>.</p>

@@ -30,11 +30,22 @@ export default async function OdevDetayPage({
     .is('deleted_at', null)
     .single()
 
-  if (!hw) notFound()
+  if (!hw || hw.is_template) notFound()
 
   const canWrite = isTeachingRole(profile.role)
 
-  const [studentsResult, subsResult] = await Promise.all([
+  // Kümülatif sorgu için önce diğer ödev ID'lerini al
+  const otherHomeworkIds = (await supabase
+    .from('homeworks')
+    .select('id')
+    .eq('class_id', hw.class_id)
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+    .eq('is_template', false)
+    .neq('id', id)
+  ).data?.map(h => h.id) ?? []
+
+  const [studentsResult, subsResult, cumulativeResult] = await Promise.all([
     supabase
       .from('students')
       .select('id, full_name, student_number, veli_telefon, veli_ad')
@@ -42,11 +53,28 @@ export default async function OdevDetayPage({
       .eq('school_id', profile.school_id)
       .is('deleted_at', null),
     supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
+    otherHomeworkIds.length > 0
+      ? supabase
+          .from('homework_submissions')
+          .select('student_id, status, homework_id')
+          .in('homework_id', otherHomeworkIds)
+      : Promise.resolve({ data: [] as { student_id: string; status: string; homework_id: string }[] }),
   ])
 
   const students = studentsResult.data ?? []
   const subs = subsResult.data ?? []
   const subMap = new Map(subs.map((s) => [s.student_id, s]))
+
+  // Kümülatif: öğrenci başına geçmiş ödev sicili
+  const cumulativeSubs = cumulativeResult.data ?? []
+  // homework_id bazında unique ödev sayısı
+  const totalHomeworkCount = new Set(cumulativeSubs.map(s => s.homework_id)).size
+  const missedByStudent = new Map<string, number>()
+  for (const s of cumulativeSubs) {
+    if (s.status === 'yapilmadi' || s.status === 'eksik') {
+      missedByStudent.set(s.student_id, (missedByStudent.get(s.student_id) ?? 0) + 1)
+    }
+  }
 
   const items = students
     .map((student) => {
@@ -59,6 +87,8 @@ export default async function OdevDetayPage({
         veli_ad: student.veli_ad ?? null,
         status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note: sub?.note ?? null,
+        missedCount: missedByStudent.get(student.id) ?? 0,
+        totalHomeworks: totalHomeworkCount,
       }
     })
     .sort((a, b) =>
@@ -92,8 +122,8 @@ export default async function OdevDetayPage({
       <div className="mb-6">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{hw.title}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {cls?.name ?? '—'} · {hw.subject} · Son:{' '}
-          {format(parseISO(hw.due_date), 'd MMMM yyyy')}
+          {cls?.name ?? '—'} · {hw.subject}
+          {hw.due_date ? ` · Son: ${format(parseISO(hw.due_date), 'd MMMM yyyy')}` : ''}
         </p>
         {hw.description && (
           <p className="text-sm text-gray-700 dark:text-slate-300 mt-3 bg-gray-50 dark:bg-slate-800 rounded-xl p-3 border border-gray-200 dark:border-slate-700">
@@ -108,11 +138,11 @@ export default async function OdevDetayPage({
         </p>
       ) : (
         <>
-          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} dueDate={hw.due_date} />
+          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} dueDate={hw.due_date ?? ''} totalHomeworks={totalHomeworkCount} />
           <VeliWhatsApp
             items={items}
             homeworkTitle={hw.title}
-            dueDate={format(parseISO(hw.due_date), 'd MMMM yyyy')}
+            dueDate={hw.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : ''}
             className={cls?.name ?? ''}
           />
         </>

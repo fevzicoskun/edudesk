@@ -166,6 +166,7 @@ async function HomeworkSection({
     .from('homeworks')
     .select('*, classes(id, name, grade), teacher:profiles(full_name)')
     .is('deleted_at', null)
+    .eq('is_template', false)
     .order('due_date', { ascending: false })
 
   if (!isZumreBaskani) {

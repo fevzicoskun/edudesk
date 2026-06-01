@@ -38,6 +38,8 @@ type StatusItem = {
   student_number: string | null
   status: SubmissionStatus
   note: string | null
+  missedCount: number
+  totalHomeworks: number
 }
 
 export default function StatusBoard({
@@ -45,11 +47,13 @@ export default function StatusBoard({
   items,
   homeworkTitle,
   dueDate,
+  totalHomeworks,
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
   dueDate: string
+  totalHomeworks: number
 }) {
   const isLocked = calcIsLocked(dueDate)
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
@@ -209,9 +213,22 @@ export default function StatusBoard({
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{item.full_name}</p>
-                  {item.student_number && (
-                    <p className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</p>
-                  )}
+                  <div className="flex items-center gap-2 mt-0.5">
+                    {item.student_number && (
+                      <p className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</p>
+                    )}
+                    {totalHomeworks > 0 && item.missedCount > 0 && (
+                      <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        item.missedCount >= Math.ceil(totalHomeworks * 0.5)
+                          ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+                          : item.missedCount >= 3
+                            ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
+                            : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
+                      }`}>
+                        {item.missedCount}/{totalHomeworks} eksik
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   <button

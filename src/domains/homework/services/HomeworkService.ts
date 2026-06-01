@@ -18,8 +18,9 @@ export const HomeworkService = {
     title:       string
     description: string | null
     subject:     string
-    due_date:    string
+    due_date:    string | null
     source_id?:  string | null
+    is_template?: boolean
   }): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
