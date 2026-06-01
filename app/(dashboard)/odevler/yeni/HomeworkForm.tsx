@@ -16,6 +16,12 @@ export type Defaults = {
   fromTemplate?: boolean
 }
 
+function todayISO() {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 const field =
   'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
@@ -147,7 +153,7 @@ export default function HomeworkForm({
           {!isTemplate && (
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-              <input name="due_date" type="date" required={!isTemplate} className={field} />
+              <input name="due_date" type="date" required={!isTemplate} min={todayISO()} className={field} />
             </div>
           )}
 

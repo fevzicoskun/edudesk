@@ -20,6 +20,12 @@ export async function createHomework(_: unknown, formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!isTemplate && !parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
+  if (!isTemplate && parsed.data.due_date) {
+    const today = new Date().toISOString().split('T')[0]
+    if (parsed.data.due_date < today) {
+      return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
+    }
+  }
 
   const result = await HomeworkService.createHomework({
     ...parsed.data,
