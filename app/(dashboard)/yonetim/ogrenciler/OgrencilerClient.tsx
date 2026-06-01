@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import StudentHomeworkProfileModal from '@/app/(dashboard)/odevler/[id]/StudentHomeworkProfileModal'
 
 interface Student {
   id: string
@@ -18,6 +19,7 @@ interface ClassGroup {
 
 export default function OgrencilerClient({ classes }: { classes: ClassGroup[] }) {
   const [query, setQuery] = useState('')
+  const [selected, setSelected] = useState<{ studentId: string; classId: string } | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -82,10 +84,10 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-slate-800">
               {cls.students.map(s => (
-                <li key={s.id}>
+                <li key={s.id} className="flex items-center">
                   <Link
                     href={`/siniflar/${cls.id}/ogrenciler/${s.id}`}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
+                    className="flex-1 flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
                   >
                     <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-950/50 flex items-center justify-center shrink-0">
                       <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
@@ -102,12 +104,23 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                     </svg>
                   </Link>
+                  <button
+                    onClick={() => setSelected({ studentId: s.id, classId: cls.id })}
+                    className="shrink-0 px-3 py-2.5 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors border-l border-gray-100 dark:border-slate-800"
+                  >
+                    Ödev Sicili
+                  </button>
                 </li>
               ))}
             </ul>
           </div>
         ))
       )}
+      <StudentHomeworkProfileModal
+        studentId={selected?.studentId ?? null}
+        classId={selected?.classId ?? ''}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
