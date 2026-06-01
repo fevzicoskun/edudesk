@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo } from 'react'
+import { useState, useTransition, useMemo, useEffect } from 'react'
 import ExcelJS from 'exceljs'
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -56,13 +56,25 @@ export default function StatusBoard({
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [hasInteracted, setHasInteracted] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const showCounts = initialRecordCount > 0 || hasInteracted
+
+  useEffect(() => {
+    if (!errorMsg) return
+    const t = setTimeout(() => setErrorMsg(null), 3000)
+    return () => clearTimeout(t)
+  }, [errorMsg])
 
   function setStatus(studentId: string, next: SubmissionStatus) {
     setHasInteracted(true)
-    setStatuses((prev) => ({ ...prev, [studentId]: next }))
-    startTransition(() => {
-      updateSubmissionStatus(homeworkId, studentId, next)
+    const prev = statuses[studentId] ?? 'yapilmadi'
+    setStatuses(s => ({ ...s, [studentId]: next }))
+    startTransition(async () => {
+      const result = await updateSubmissionStatus(homeworkId, studentId, next)
+      if (result?.error) {
+        setStatuses(s => ({ ...s, [studentId]: prev }))
+        setErrorMsg(result.error)
+      }
     })
   }
 
@@ -73,10 +85,15 @@ export default function StatusBoard({
 
   function setAllStatuses(next: SubmissionStatus) {
     setHasInteracted(true)
+    const prevAll = { ...statuses }
     const studentIds = items.map((item) => item.student_id)
     setStatuses(Object.fromEntries(studentIds.map((studentId) => [studentId, next])))
-    startTransition(() => {
-      updateAllSubmissionStatuses(homeworkId, studentIds, next)
+    startTransition(async () => {
+      const result = await updateAllSubmissionStatuses(homeworkId, studentIds, next)
+      if (result?.error) {
+        setStatuses(prevAll)
+        setErrorMsg(result.error)
+      }
     })
   }
 
@@ -257,6 +274,15 @@ export default function StatusBoard({
           )
         })}
       </div>
+
+      {errorMsg && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg"
+          onAnimationEnd={() => setErrorMsg(null)}
+        >
+          {errorMsg}
+        </div>
+      )}
     </div>
   )
 }
