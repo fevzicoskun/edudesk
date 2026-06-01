@@ -199,12 +199,13 @@ async function HomeworkSection({
       : Promise.resolve({ data: [] as { class_id: string }[] }),
   ])
 
-  // checked = status != 'yapilmadi'
-  const checkedMap = new Map<string, number>()
+  type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
+  const statusMap = new Map<string, StatusCounts>()
   for (const s of subStatsRes.data ?? []) {
-    if (s.status !== 'yapilmadi') {
-      checkedMap.set(s.homework_id, (checkedMap.get(s.homework_id) ?? 0) + 1)
-    }
+    const cur = statusMap.get(s.homework_id) ?? { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0 }
+    const key = s.status as keyof StatusCounts
+    if (key in cur) cur[key]++
+    statusMap.set(s.homework_id, cur)
   }
 
   const classStudentMap = new Map<string, number>()
@@ -223,7 +224,8 @@ async function HomeworkSection({
     if (!overdue) { active.push(hw); continue }
 
     const locked  = isLocked(hw.due_date, now)
-    const checked = checkedMap.get(hw.id) ?? 0
+    const counts  = statusMap.get(hw.id)
+    const checked = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
     if (!locked && checked === 0) pendingCheck.push(hw)
     else                          pastDone.push(hw)
   }
@@ -368,8 +370,6 @@ async function HomeworkSection({
   function renderCard(hw: (typeof homeworks)[0], overdue: boolean, locked: boolean) {
     const cls = hw.classes as { name: string } | null
     const teacher = (hw as typeof hw & { teacher?: { full_name: string } | null }).teacher
-    const checkedCount = checkedMap.get(hw.id) ?? 0
-    const totalStudents = classStudentMap.get(hw.class_id as string) ?? 0
     return (
       <SwipeableHomeworkCard
         key={hw.id}
@@ -382,8 +382,8 @@ async function HomeworkSection({
         description={hw.description ?? undefined}
         teacherName={teacher?.full_name ?? undefined}
         canWrite={canWrite}
-        checkedCount={checkedCount}
-        totalStudents={totalStudents}
+        statusCounts={statusMap.get(hw.id)}
+        totalStudents={classStudentMap.get(hw.class_id as string) ?? 0}
         isLocked={locked}
         onDelete={deleteHomework.bind(null, hw.id)}
       />

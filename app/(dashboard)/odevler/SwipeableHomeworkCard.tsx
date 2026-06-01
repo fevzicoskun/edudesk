@@ -4,6 +4,26 @@ import { useState, useTransition } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
 
+type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
+
+const CHIP_STYLES: Record<keyof StatusCounts, string> = {
+  yapildi:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400',
+  yapilmadi: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400',
+  eksik:     'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
+  gec:       'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
+  mazeretli: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400',
+}
+
+const CHIP_LABELS: Record<keyof StatusCounts, string> = {
+  yapildi:   'Yapıldı',
+  yapilmadi: 'Yapılmadı',
+  eksik:     'Eksik',
+  gec:       'Geç',
+  mazeretli: 'Mazeretli',
+}
+
+const CHIP_ORDER: (keyof StatusCounts)[] = ['yapildi', 'yapilmadi', 'eksik', 'gec', 'mazeretli']
+
 interface SwipeableHomeworkCardProps {
   id: string
   title: string
@@ -14,7 +34,7 @@ interface SwipeableHomeworkCardProps {
   description?: string
   teacherName?: string
   canWrite: boolean
-  checkedCount?: number
+  statusCounts?: StatusCounts
   totalStudents?: number
   isLocked?: boolean
   onDelete: () => unknown
@@ -30,7 +50,7 @@ export default function SwipeableHomeworkCard({
   description,
   teacherName,
   canWrite,
-  checkedCount,
+  statusCounts,
   totalStudents,
   isLocked,
   onDelete,
@@ -111,31 +131,31 @@ export default function SwipeableHomeworkCard({
             <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{description}</p>
           )}
 
-          {/* Progress bar */}
-          {typeof checkedCount === 'number' && typeof totalStudents === 'number' && totalStudents > 0 && (
-            <div className="mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs text-gray-400 dark:text-slate-500">Kontrol</span>
-                <span className="text-xs font-semibold text-gray-600 dark:text-slate-300 tabular-nums">
-                  {checkedCount}/{totalStudents}
-                </span>
+          {/* Durum chip satırı */}
+          {typeof totalStudents === 'number' && totalStudents > 0 && (() => {
+            const entered = statusCounts ? Object.values(statusCounts).reduce((a, b) => a + b, 0) : 0
+            const unrecorded = totalStudents - entered
+            const hasAny = entered > 0 || (overdue && unrecorded > 0)
+            if (!hasAny) return null
+            return (
+              <div className="flex items-center gap-1.5 flex-wrap mb-3">
+                {CHIP_ORDER.map(key => {
+                  const count = statusCounts?.[key] ?? 0
+                  if (count === 0) return null
+                  return (
+                    <span key={key} className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CHIP_STYLES[key]}`}>
+                      {count} {CHIP_LABELS[key]}
+                    </span>
+                  )
+                })}
+                {unrecorded > 0 && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500">
+                    {unrecorded} girilmedi
+                  </span>
+                )}
               </div>
-              <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-300 ${
-                    checkedCount === 0
-                      ? 'w-0'
-                      : checkedCount >= totalStudents
-                        ? 'bg-emerald-500'
-                        : checkedCount / totalStudents >= 0.5
-                          ? 'bg-blue-500'
-                          : 'bg-amber-400'
-                  }`}
-                  style={{ width: `${Math.min(100, Math.round((checkedCount / totalStudents) * 100))}%` }}
-                />
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
             <div className="flex items-center gap-3 flex-wrap">
