@@ -138,7 +138,7 @@ export default async function OdevDetayPage({
         </p>
       ) : (
         <>
-          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} dueDate={hw.due_date ?? ''} totalHomeworks={totalHomeworkCount} />
+          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} totalHomeworks={totalHomeworkCount} initialRecordCount={subs.length} />
           <VeliWhatsApp
             items={items}
             homeworkTitle={hw.title}

@@ -6,6 +6,7 @@ import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNo
 import type { SubmissionStatus } from '@/src/shared/types'
 
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
+const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
 
 const LABELS: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı',
@@ -23,15 +24,6 @@ const STYLES: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200',
 }
 
-const LOCK_DAYS = 3
-
-function calcIsLocked(dueDate: string): boolean {
-  const lock = new Date(dueDate)
-  lock.setDate(lock.getDate() + LOCK_DAYS)
-  lock.setHours(23, 59, 59, 999)
-  return new Date() > lock
-}
-
 type StatusItem = {
   student_id: string
   full_name: string
@@ -46,16 +38,15 @@ export default function StatusBoard({
   homeworkId,
   items,
   homeworkTitle,
-  dueDate,
   totalHomeworks,
+  initialRecordCount,
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
-  dueDate: string
   totalHomeworks: number
+  initialRecordCount: number
 }) {
-  const isLocked = calcIsLocked(dueDate)
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map((item) => [item.student_id, item.status]))
   )
@@ -64,8 +55,11 @@ export default function StatusBoard({
   )
   const [expandedNote, setExpandedNote] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [hasInteracted, setHasInteracted] = useState(false)
+  const showCounts = initialRecordCount > 0 || hasInteracted
 
   function setStatus(studentId: string, next: SubmissionStatus) {
+    setHasInteracted(true)
     setStatuses((prev) => ({ ...prev, [studentId]: next }))
     startTransition(() => {
       updateSubmissionStatus(homeworkId, studentId, next)
@@ -78,6 +72,7 @@ export default function StatusBoard({
   }
 
   function setAllStatuses(next: SubmissionStatus) {
+    setHasInteracted(true)
     const studentIds = items.map((item) => item.student_id)
     setStatuses(Object.fromEntries(studentIds.map((studentId) => [studentId, next])))
     startTransition(() => {
@@ -141,19 +136,6 @@ export default function StatusBoard({
 
   return (
     <div>
-      {isLocked && (
-        <div className="flex items-start gap-3 p-4 mb-5 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl">
-          <svg className="w-5 h-5 text-red-500 dark:text-red-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          <div>
-            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Ödev kontrolü kilitlendi</p>
-            <p className="text-xs text-red-600/80 dark:text-red-400/80 mt-0.5">
-              Son tarihten {LOCK_DAYS} gün geçti. Artık durum değişikliği yapılamaz.
-            </p>
-          </div>
-        </div>
-      )}
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 mb-5">
         <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -169,10 +151,10 @@ export default function StatusBoard({
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5">
-          {STATUS_OPTIONS.map((option) => (
+          {BULK_OPTIONS.map((option) => (
             <button
               key={option}
-              disabled={isPending || isLocked}
+              disabled={isPending}
               onClick={() => setAllStatuses(option)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${STYLES[option]}`}
             >
@@ -182,14 +164,20 @@ export default function StatusBoard({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-        {STATUS_OPTIONS.map((status) => (
-          <div key={status} className={`border rounded-xl p-3 text-center ${STYLES[status]}`}>
-            <p className="text-2xl font-bold">{counts[status]}</p>
-            <p className="text-xs mt-0.5">{LABELS[status]}</p>
-          </div>
-        ))}
-      </div>
+      {showCounts ? (
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
+          {STATUS_OPTIONS.map((status) => (
+            <div key={status} className={`border rounded-xl p-3 text-center ${STYLES[status]}`}>
+              <p className="text-2xl font-bold">{counts[status]}</p>
+              <p className="text-xs mt-0.5">{LABELS[status]}</p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-4 mb-5">
+          Henüz giriş yapılmadı — öğrenci durumlarını aşağıdan işaretleyin.
+        </p>
+      )}
 
       <div className="space-y-2">
         {items.map((item) => {
@@ -223,8 +211,8 @@ export default function StatusBoard({
                   </div>
                 </div>
                 <button
-                  onClick={() => !isLocked && setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                  disabled={isLocked}
+                  onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
+                  disabled={false}
                   className={`shrink-0 text-xs px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                     hasNote
                       ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
@@ -240,7 +228,7 @@ export default function StatusBoard({
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option}
-                    disabled={isPending || isLocked}
+                    disabled={isPending}
                     onClick={() => setStatus(item.student_id, option)}
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors disabled:cursor-not-allowed ${
                       status === option

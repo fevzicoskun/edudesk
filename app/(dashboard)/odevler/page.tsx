@@ -12,25 +12,14 @@ import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 
 export const revalidate = 30
 
-const LOCK_DAYS = 3
+const PENDING_DAYS = 30
 
 function dueDateStr(due: string): string {
   try { return format(parseISO(due), 'd MMM yyyy') } catch { return due }
 }
 
-function lockDate(due: string): Date {
-  const d = new Date(due)
-  d.setDate(d.getDate() + LOCK_DAYS)
-  d.setHours(23, 59, 59, 999)
-  return d
-}
-
-function daysUntilLock(due: string, now: Date): number {
-  return Math.max(0, Math.ceil((lockDate(due).getTime() - now.getTime()) / 86_400_000))
-}
-
-function isLocked(due: string, now: Date): boolean {
-  return now > lockDate(due)
+function daysSinceDue(due: string, now: Date): number {
+  return Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000)
 }
 
 type FilterParams = {
@@ -198,11 +187,11 @@ async function HomeworkSection({
     const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
     if (!overdue) { active.push(hw); continue }
 
-    const locked  = isLocked(hw.due_date, now)
     const counts  = statusMap.get(hw.id)
     const checked = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
-    if (!locked && checked === 0) pendingCheck.push(hw)
-    else                          pastDone.push(hw)
+    const age     = daysSinceDue(hw.due_date, now)
+    if (checked === 0 && age <= PENDING_DAYS) pendingCheck.push(hw)
+    else                                      pastDone.push(hw)
   }
 
   const totalCount = homeworks.length
@@ -246,7 +235,7 @@ async function HomeworkSection({
           <div className="divide-y divide-amber-100 dark:divide-amber-900/40">
             {pendingCheck.map(hw => {
               const cls = hw.classes as { name: string } | null
-              const days = daysUntilLock(hw.due_date, now)
+              const days = daysSinceDue(hw.due_date, now)
               return (
                 <Link
                   key={hw.id}
@@ -264,13 +253,12 @@ async function HomeworkSection({
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        daysUntilLock(hw.due_date, now) <= 1
+                        daysSinceDue(hw.due_date, now) > 7
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                           : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                       }`}
-                      title="Son tarihten 3 gün sonra otomatik kilitlenir, giriş yapılamaz"
                     >
-                      {daysUntilLock(hw.due_date, now) === 0 ? 'Bugün kilitlenir' : `${daysUntilLock(hw.due_date, now)}g kaldı`}
+                      {daysSinceDue(hw.due_date, now) === 0 ? 'Bugün bitti' : `${daysSinceDue(hw.due_date, now)}g önce`}
                     </span>
                     <svg className="w-4 h-4 text-amber-400 dark:text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -316,7 +304,7 @@ async function HomeworkSection({
                 </h2>
               </div>
               <div className="space-y-3">
-                {active.map(hw => renderCard(hw, false, false))}
+                {active.map(hw => renderCard(hw, false))}
               </div>
             </section>
           )}
@@ -331,7 +319,7 @@ async function HomeworkSection({
                 </h2>
               </div>
               <div className="space-y-3 opacity-80">
-                {pastDone.map(hw => renderCard(hw, true, isLocked(hw.due_date, now)))}
+                {pastDone.map(hw => renderCard(hw, true))}
               </div>
             </section>
           )}
@@ -340,7 +328,7 @@ async function HomeworkSection({
     </>
   )
 
-  function renderCard(hw: (typeof homeworks)[0], overdue: boolean, locked: boolean) {
+  function renderCard(hw: (typeof homeworks)[0], overdue: boolean) {
     const cls = hw.classes as { name: string } | null
     const teacher = (hw as typeof hw & { teacher?: { full_name: string } | null }).teacher
     return (
@@ -357,7 +345,6 @@ async function HomeworkSection({
         canWrite={canWrite}
         statusCounts={statusMap.get(hw.id)}
         totalStudents={classStudentMap.get(hw.class_id as string) ?? 0}
-        isLocked={locked}
         onDelete={deleteHomework.bind(null, hw.id)}
       />
     )

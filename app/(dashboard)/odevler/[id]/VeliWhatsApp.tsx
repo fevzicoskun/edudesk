@@ -32,7 +32,7 @@ function waMessage(ogrenciAdi: string, odevAdi: string, teslimTarihi: string, ve
 
 export default function VeliWhatsApp({ items, homeworkTitle, dueDate, className }: Props) {
   const teslimEtmeyenler = items.filter(
-    (i) => i.status !== 'yapildi' && i.veli_telefon
+    (i) => i.status !== 'yapildi' && i.status !== 'mazeretli' && i.veli_telefon
   )
 
   if (teslimEtmeyenler.length === 0) {
