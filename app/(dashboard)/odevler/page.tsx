@@ -194,6 +194,9 @@ async function HomeworkSection({
     else                                      pastDone.push(hw)
   }
 
+  // Sort active homeworks by closest due date first
+  active.sort((a, b) => a.due_date.localeCompare(b.due_date))
+
   const totalCount = homeworks.length
 
   return (
@@ -228,7 +231,7 @@ async function HomeworkSection({
                 {pendingCheck.length} ödev kontrol bekliyor
               </p>
               <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-                Son tarihi geçti, henüz hiç giriş yapılmadı — kilitlenmeden önce kontrol edin.
+                Son tarihi geçti ve henüz hiç giriş yapılmadı.
               </p>
             </div>
           </div>
