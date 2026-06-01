@@ -66,6 +66,26 @@ export const HomeworkRepository = {
       .upsert(data, { onConflict: 'homework_id,student_id' })
   },
 
+  async updateHomework(
+    homeworkId: string,
+    teacherId: string,
+    schoolId: string,
+    data: {
+      title: string
+      subject: string
+      description: string | null
+      due_date: string | null
+    }
+  ) {
+    const supabase = await createClient()
+    return supabase.from('homeworks')
+      .update(data)
+      .eq('id', homeworkId)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+  },
+
   async softDeleteHomework(homeworkId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('homeworks')

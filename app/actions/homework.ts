@@ -74,6 +74,32 @@ export async function updateSubmissionNote(
   return result
 }
 
+export async function updateHomework(_: unknown, formData: FormData) {
+  const id = formData.get('id') as string
+  UUID.parse(id)
+
+  const parsed = createHomeworkSchema.omit({ class_id: true, is_template: true }).safeParse({
+    title:       formData.get('title'),
+    description: formData.get('description') || null,
+    subject:     formData.get('subject'),
+    due_date:    formData.get('due_date') || null,
+    source_id:   formData.get('source_id') || null,
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+
+  const result = await HomeworkService.updateHomework(id, {
+    title:       parsed.data.title,
+    subject:     parsed.data.subject,
+    description: parsed.data.description ?? null,
+    due_date:    parsed.data.due_date ?? null,
+  })
+  if (result.error) return result
+
+  revalidatePath('/odevler')
+  revalidatePath(`/odevler/${id}`)
+  redirect(`/odevler/${id}`)
+}
+
 export async function deleteHomework(id: string) {
   UUID.parse(id)
   const result = await HomeworkService.deleteHomework(id)
