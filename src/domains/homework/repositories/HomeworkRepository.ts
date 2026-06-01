@@ -142,7 +142,16 @@ export const HomeworkRepository = {
           .in('homework_id', homeworkIds)
           .eq('student_id', studentId)
           .eq('school_id', schoolId)
-      : { data: [] as { homework_id: string; status: string; note: string | null }[] }
+      : { data: [] as { homework_id: string; status: string; note: string | null }[], error: null }
+
+    if (subsRes.error) {
+      return {
+        error: subsRes.error.message,
+        student: null,
+        homeworks: [],
+        submissions: [],
+      }
+    }
 
     return {
       student: studentRes.data as { full_name: string; student_number: string | null; veli_ad: string | null; veli_telefon: string | null } | null,
