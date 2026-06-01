@@ -125,3 +125,9 @@ export async function restoreHomework(id: string) {
   if (result.error) throw new Error(result.error)
   revalidatePath('/odevler')
 }
+
+export async function getStudentHomeworkProfile(studentId: string, classId: string) {
+  UUID.parse(studentId)
+  UUID.parse(classId)
+  return HomeworkService.getStudentHomeworkProfile(studentId, classId)
+}
