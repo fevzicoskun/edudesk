@@ -4,7 +4,7 @@ export type HomeworkRecord = {
   id: string
   title: string
   subject: string
-  due_date: string
+  due_date: string | null
   status: SubmissionStatus
   note: string | null
 }

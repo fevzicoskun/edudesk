@@ -156,7 +156,7 @@ async function HomeworkSection({
 
   const [subStatsRes, classCountsRes] = await Promise.all([
     homeworkIds.length > 0
-      ? supabase.from('homework_submissions').select('homework_id, status').in('homework_id', homeworkIds)
+      ? supabase.from('homework_submissions').select('homework_id, status').in('homework_id', homeworkIds).eq('school_id', schoolId)
       : Promise.resolve({ data: [] as { homework_id: string; status: string }[] }),
     classIds.length > 0
       ? supabase.from('students').select('class_id').in('class_id', classIds).eq('school_id', schoolId).is('deleted_at', null)

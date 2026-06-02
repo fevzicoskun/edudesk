@@ -55,7 +55,7 @@ export default async function OdevDetayPage({
       .eq('class_id', hw.class_id)
       .eq('school_id', profile.school_id)
       .is('deleted_at', null),
-    supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id),
+    supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id).eq('school_id', profile.school_id),
     otherHomeworkIds.length > 0
       ? supabase
           .from('homework_submissions')

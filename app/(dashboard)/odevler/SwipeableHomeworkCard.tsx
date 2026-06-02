@@ -57,6 +57,7 @@ export default function SwipeableHomeworkCard({
   const [offset, setOffset] = useState(0)
   const [swiping, setSwiping] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [isDeleted, setIsDeleted] = useState(false)
 
   const handlers = useSwipeable({
     onSwiping: (e) => {
@@ -80,6 +81,8 @@ export default function SwipeableHomeworkCard({
     trackMouse: false,
     delta: 30,
   })
+
+  if (isDeleted) return null
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -201,6 +204,7 @@ export default function SwipeableHomeworkCard({
               <button
                 onClick={() => {
                   setShowConfirm(false)
+                  setIsDeleted(true)
                   startTransition(async () => { await onDelete() })
                 }}
                 disabled={isPending}
