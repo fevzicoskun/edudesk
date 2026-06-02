@@ -92,6 +92,7 @@ export default async function OdevDetayPage({
         veli_ad: student.veli_ad ?? null,
         status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note: sub?.note ?? null,
+        hasRecord: !!sub,
         missedCount: missedByStudent.get(student.id) ?? 0,
         totalHomeworks: totalHomeworkCount,
       }
@@ -117,6 +118,15 @@ export default async function OdevDetayPage({
           ← Ödevler
         </Link>
         <div className="flex items-center gap-2">
+          <Link
+            href={`/odevler/sinif/${hw.class_id}`}
+            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+            </svg>
+            Sınıf Matrisi
+          </Link>
           {canWrite && (
             <>
               <Link
@@ -162,7 +172,7 @@ export default async function OdevDetayPage({
         </p>
       ) : (
         <>
-          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} totalHomeworks={totalHomeworkCount} initialRecordCount={subs.length} classId={hw.class_id} />
+          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} totalHomeworks={totalHomeworkCount} classId={hw.class_id} />
           <VeliWhatsApp
             items={items}
             homeworkTitle={hw.title}

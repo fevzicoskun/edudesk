@@ -1,52 +1,49 @@
 # EduDesk Roadmap
 
-**Vizyon:** Ödev odaklı çekirdek. Yan özellikler küçültülür; ödev takibi, öğrenci sicili ve veli iletişimi derinleştirilir.
+**Vizyon:** Ödev odaklı çekirdek. Ödev takibi, sınıf analitikleri ve veli iletişimi derinleştirilir.
 
 ---
 
-## Faz 1 — Çekirdek Güçlendirme (aktif)
+## Faz 1 — Çekirdek (tamamlandı)
 
-### Tamamlanan
-- [x] Ödev durum girişi (5 durum, toplu güncelleme, not)
-- [x] Kümülatif ödev sicil badge (ödev detay sayfasında)
+- [x] Ödev durum girişi (5 durum, per-öğrenci anlık güncelleme, toplu güncelleme)
+- [x] Tamamlanma özet barı + segmentli görsel (yapıldı/eksik/geç/yapılmadı/girilmedi)
+- [x] Per-öğrenci pending state — diğer öğrenciler bloklanmaz
+- [x] Not kayıt feedback ("✓ Kaydedildi" 2 sn)
+- [x] Öğrenci arama (StatusBoard içi, anlık filtre)
 - [x] Ödev şablonları ve kopyalama
-- [x] Öğrenci ödev sicil modali (StatusBoard + öğrenci yönetimi)
+- [x] Çoklu sınıfa tek seferde ödev atama (toggle chip seçim)
+- [x] Urgency badge: "Bugün!" / "Yarın" / "X gün" / "Aktif"
+- [x] "✓ Tümü girildi" tamamlanma badge
+- [x] **Sınıf Ödev Matrisi** — öğrenci × ödev görünümü, satır/sütun tamamlanma %
+- [x] Kümülatif ödev sicil badge (ödev detay sayfasında)
+- [x] Öğrenci ödev sicil modali
 - [x] Veli WhatsApp bildirimi (manuel + Inngest otomatik)
 - [x] Excel export
 
-### Sıradaki
-- [ ] **Ödev analitikleri** — sınıf bazlı tamamlanma trendi, en çok aksatan öğrenciler listesi
-- [ ] **Ödev puanlama** — yapılan ödevlere not/puan girişi, not defteri ile entegrasyon
-- [ ] **Takvim görünümü** — ödevleri haftalık/aylık takvimde görüntüle
-- [ ] **Toplu WhatsApp** — belirli öğrencilere (eksik/yapılmadı) tek tıkla WA mesajı
+---
+
+## Faz 2 — Derinleştirme (sıradaki)
+
+- [ ] **Yoklama sağlamlaştırma** — mevcut ödev güçlendirmesiyle paralel
+- [ ] **Ödev puanlama** — yapılan ödevlere puan/not girişi
+- [ ] **Takvim görünümü** — ödevleri haftalık takvimde görüntüle
+- [ ] **Sınıf matrisi: öğrenci filtresi** — matris sayfasında arama ve sıralama
+- [ ] **Tekrarlayan ödevler** — haftalık/aylık otomatik oluşturma
+- [ ] **Ödev geçmişi raporu** — dönem sonu PDF/Excel çıktısı
 
 ---
 
-## Faz 2 — Sadeleştirme
+## Faz 3 — Genişleme
 
-Aşağıdaki özellikler kullanım sıklığı düşük — kaldırılabilir veya opsiyonel yapılabilir:
-
-| Özellik | Durum | Karar |
-|---------|-------|-------|
-| Zümre toplantıları | Aktif, az kullanılıyor | Sidebar'dan gizle, sayfayı koru |
-| TYMM (müfredat takibi) | Aktif, çok az kullanılıyor | Kaldır veya arşivle |
-| Öğretmen dosyası (15 madde) | Aktif | Profil sayfasına gizle |
-| Ortak sınavlar | Aktif, not defteri ile örtüşüyor | Not defteri ile birleştir |
-| Duyurular | Zümre başkanına özel | Koru |
+- [ ] **SMS bildirimi** — Netgsm entegrasyonu (`veli_telefon` alanı hazır)
+- [ ] **Veli portalı** — velinin çocuğunun ödev sicilini görmesi
+- [ ] **Toplu WhatsApp** — belirli statüdeki tüm velilere tek tıkla mesaj
+- [ ] **Yoklama SMS** — devamsızlık bildirimi
 
 ---
 
-## Faz 3 — Derinleştirme
+## Teknik
 
-- **Ödev geçmişi raporu** — öğretmen için PDF/Excel çıktısı (tüm dönem)
-- **Veli portalı güçlendirme** — velinin kendi çocuğunun ödev sicilini görmesi
-- **SMS bildirimi** — Netgsm entegrasyonu (veli_telefon alanı hazır)
-- **Tekrarlayan ödevler** — haftalık/aylık otomatik oluşturma
-
----
-
-## Teknik Yol Haritası
-
-- Playwright testlerini interaktif özellikler için genişlet (modal, status update)
+- Playwright E2E kapsamını genişlet (modal, status update, matrix)
 - Integration test kapsamını `homework_submissions` sorgularına yay
-- `src/domains/homework/lib/` altını büyüt — domain logic'i service'ten ayır

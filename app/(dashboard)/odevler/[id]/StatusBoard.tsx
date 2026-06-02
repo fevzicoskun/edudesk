@@ -10,19 +10,23 @@ const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'ge
 const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
 
 const LABELS: Record<SubmissionStatus, string> = {
-  yapildi: 'Yapıldı',
-  eksik: 'Eksik',
-  yapilmadi: 'Yapılmadı',
-  gec: 'Geç',
-  mazeretli: 'Mazeretli',
+  yapildi: 'Yapıldı', eksik: 'Eksik', yapilmadi: 'Yapılmadı', gec: 'Geç', mazeretli: 'Mazeretli',
 }
 
 const STYLES: Record<SubmissionStatus, string> = {
-  yapildi: 'bg-green-100 text-green-700 border-green-200',
-  eksik: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  yapildi:   'bg-green-100 text-green-700 border-green-200',
+  eksik:     'bg-yellow-100 text-yellow-700 border-yellow-200',
   yapilmadi: 'bg-red-100 text-red-700 border-red-200',
-  gec: 'bg-orange-100 text-orange-700 border-orange-200',
+  gec:       'bg-orange-100 text-orange-700 border-orange-200',
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200',
+}
+
+const BAR_COLORS: Record<SubmissionStatus, string> = {
+  yapildi:   'bg-emerald-500',
+  eksik:     'bg-amber-400',
+  yapilmadi: 'bg-red-400',
+  gec:       'bg-orange-400',
+  mazeretli: 'bg-slate-300',
 }
 
 type StatusItem = {
@@ -31,6 +35,7 @@ type StatusItem = {
   student_number: string | null
   status: SubmissionStatus
   note: string | null
+  hasRecord: boolean
   missedCount: number
   totalHomeworks: number
 }
@@ -40,63 +45,100 @@ export default function StatusBoard({
   items,
   homeworkTitle,
   totalHomeworks,
-  initialRecordCount,
   classId,
+  classId: _classId,
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
   totalHomeworks: number
-  initialRecordCount: number
   classId: string
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
-    Object.fromEntries(items.map((item) => [item.student_id, item.status]))
+    Object.fromEntries(items.map(i => [i.student_id, i.status]))
   )
   const [notes, setNotes] = useState<Record<string, string>>(() =>
-    Object.fromEntries(items.map((item) => [item.student_id, item.note ?? '']))
+    Object.fromEntries(items.map(i => [i.student_id, i.note ?? '']))
   )
-  const [expandedNote, setExpandedNote] = useState<string | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [hasInteracted, setHasInteracted] = useState(false)
-  const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [expandedNote, setExpandedNote]     = useState<string | null>(null)
+  const [isPending, startTransition]        = useTransition()
+  const [pendingIds, setPendingIds]         = useState<Set<string>>(new Set())
+  const [noteSavedId, setNoteSavedId]       = useState<string | null>(null)
+  const [errorMsg, setErrorMsg]             = useState<string | null>(null)
+  const [search, setSearch]                 = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
-  const showCounts = initialRecordCount > 0 || hasInteracted
+  const [recordedIds, setRecordedIds]       = useState<Set<string>>(
+    () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
+  )
 
   useEffect(() => {
     if (!errorMsg) return
-    const t = setTimeout(() => setErrorMsg(null), 3000)
+    const t = setTimeout(() => setErrorMsg(null), 3500)
     return () => clearTimeout(t)
   }, [errorMsg])
 
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return items
+    return items.filter(i =>
+      i.full_name.toLowerCase().includes(q) ||
+      (i.student_number ?? '').toLowerCase().includes(q)
+    )
+  }, [items, search])
+
+  const counts = useMemo(() =>
+    STATUS_OPTIONS.reduce(
+      (acc, s) => ({ ...acc, [s]: Object.values(statuses).filter(v => v === s).length }),
+      {} as Record<SubmissionStatus, number>
+    ),
+    [statuses]
+  )
+
+  const recordedCount  = recordedIds.size
+  const totalStudents  = items.length
+  const progressPct    = totalStudents === 0 ? 0 : Math.round(recordedCount / totalStudents * 100)
+
+  // Segmented bar widths
+  const pct = (n: number) => totalStudents === 0 ? 0 : (n / totalStudents) * 100
+  const unrecordedCount = Math.max(0, totalStudents - recordedCount)
+
   function setStatus(studentId: string, next: SubmissionStatus) {
-    setHasInteracted(true)
-    const prev = statuses[studentId] ?? 'yapilmadi'
+    if (pendingIds.has(studentId)) return
+    const oldStatus = statuses[studentId] ?? 'yapilmadi'
     setStatuses(s => ({ ...s, [studentId]: next }))
+    setPendingIds(cur => new Set([...cur, studentId]))
     startTransition(async () => {
       const result = await updateSubmissionStatus(homeworkId, studentId, next)
+      setPendingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
       if (result?.error) {
-        setStatuses(s => ({ ...s, [studentId]: prev }))
+        setStatuses(s => ({ ...s, [studentId]: oldStatus }))
         setErrorMsg(result.error)
+      } else {
+        setRecordedIds(cur => new Set([...cur, studentId]))
       }
     })
   }
 
   function saveNote(studentId: string, note: string) {
     setNotes(prev => ({ ...prev, [studentId]: note }))
-    startTransition(() => { updateSubmissionNote(homeworkId, studentId, note) })
+    startTransition(async () => {
+      await updateSubmissionNote(homeworkId, studentId, note)
+      setNoteSavedId(studentId)
+      setTimeout(() => setNoteSavedId(id => id === studentId ? null : id), 2000)
+    })
   }
 
   function setAllStatuses(next: SubmissionStatus) {
-    setHasInteracted(true)
-    const prevAll = { ...statuses }
-    const studentIds = items.map((item) => item.student_id)
-    setStatuses(Object.fromEntries(studentIds.map((studentId) => [studentId, next])))
+    const prevAll   = { ...statuses }
+    const studentIds = items.map(i => i.student_id)
+    setStatuses(Object.fromEntries(studentIds.map(id => [id, next])))
     startTransition(async () => {
       const result = await updateAllSubmissionStatuses(homeworkId, studentIds, next)
       if (result?.error) {
         setStatuses(prevAll)
         setErrorMsg(result.error)
+      } else {
+        setRecordedIds(new Set(studentIds))
       }
     })
   }
@@ -104,111 +146,138 @@ export default function StatusBoard({
   async function exportToExcel() {
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('Ödevler')
-
-    const headers = ['No', 'Numara', 'Ad Soyad', 'Durum', 'Not']
-    sheet.addRow(headers)
+    sheet.addRow(['No', 'Numara', 'Ad Soyad', 'Durum', 'Not'])
     const headerRow = sheet.getRow(1)
     headerRow.font = { bold: true }
-    headerRow.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FFD9EAD3' },
-    }
-
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9EAD3' } }
     items.forEach((item, i) => {
-      sheet.addRow([
-        i + 1,
-        item.student_number ?? '',
-        item.full_name,
-        LABELS[statuses[item.student_id] ?? 'yapilmadi'],
-        notes[item.student_id] ?? '',
-      ])
+      sheet.addRow([i + 1, item.student_number ?? '', item.full_name, LABELS[statuses[item.student_id] ?? 'yapilmadi'], notes[item.student_id] ?? ''])
     })
-
-    sheet.columns = [
-      { width: 6 },
-      { width: 12 },
-      { width: 26 },
-      { width: 16 },
-      { width: 32 },
-    ]
-
+    sheet.columns = [{ width: 6 }, { width: 12 }, { width: 26 }, { width: 16 }, { width: 32 }]
     const buffer = await workbook.xlsx.writeBuffer()
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    })
-    const url = URL.createObjectURL(blob)
+    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
     const a = document.createElement('a')
     a.href = url
-    a.download = homeworkTitle
-      ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx`
-      : 'odev_durumu.xlsx'
+    a.download = homeworkTitle ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx` : 'odev_durumu.xlsx'
     a.click()
     URL.revokeObjectURL(url)
   }
 
-  const counts = useMemo(() => STATUS_OPTIONS.reduce(
-    (acc, status) => ({
-      ...acc,
-      [status]: Object.values(statuses).filter((value) => value === status).length,
-    }),
-    {} as Record<SubmissionStatus, number>
-  ), [statuses])
-
   return (
     <div>
 
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 mb-5">
-        <div className="flex items-center justify-between gap-3 mb-2.5">
-          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Tümünü güncelle</p>
-          <button
-            onClick={exportToExcel}
-            className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-green-700 dark:hover:text-green-400 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 hover:border-green-300 transition-colors"
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            Excel
-          </button>
+      {/* Tamamlanma özet barı */}
+      <div className="mb-5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+        <div className="flex items-center justify-between text-xs mb-2">
+          <span className="font-semibold text-gray-600 dark:text-slate-400">
+            {recordedCount}/{totalStudents} öğrenci işaretlendi
+          </span>
+          <span className={`font-bold text-base ${progressPct === 100 ? 'text-emerald-600' : progressPct >= 60 ? 'text-amber-600' : 'text-gray-400'}`}>
+            %{progressPct}
+          </span>
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {BULK_OPTIONS.map((option) => (
-            <button
-              key={option}
-              disabled={isPending}
-              onClick={() => setAllStatuses(option)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${STYLES[option]}`}
-            >
-              Tümü {LABELS[option]}
-            </button>
+        {/* Segmented bar */}
+        <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
+          <div className="bg-emerald-500 h-full transition-all duration-500" style={{ width: `${pct(counts.yapildi)}%` }} />
+          <div className="bg-orange-400  h-full transition-all duration-500" style={{ width: `${pct(counts.gec)}%` }} />
+          <div className="bg-amber-400   h-full transition-all duration-500" style={{ width: `${pct(counts.eksik)}%` }} />
+          <div className="bg-red-400     h-full transition-all duration-500" style={{ width: `${pct(Math.max(0, counts.yapilmadi - unrecordedCount))}%` }} />
+          <div className="bg-slate-300   h-full transition-all duration-500" style={{ width: `${pct(counts.mazeretli)}%` }} />
+        </div>
+        {/* Sayım satırı */}
+        <div className="flex flex-wrap gap-3 mt-2.5">
+          {STATUS_OPTIONS.map(s => (
+            <span key={s} className="flex items-center gap-1 text-xs">
+              <span className={`w-2 h-2 rounded-full ${BAR_COLORS[s]}`} />
+              <span className="text-gray-500 dark:text-slate-400">{LABELS[s]}: <strong className="text-gray-800 dark:text-slate-200">{counts[s]}</strong></span>
+            </span>
           ))}
+          {unrecordedCount > 0 && (
+            <span className="flex items-center gap-1 text-xs">
+              <span className="w-2 h-2 rounded-full bg-gray-200 dark:bg-slate-600" />
+              <span className="text-gray-400 dark:text-slate-500">Girilmedi: <strong>{unrecordedCount}</strong></span>
+            </span>
+          )}
         </div>
       </div>
 
-      {showCounts ? (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
-          {STATUS_OPTIONS.map((status) => (
-            <div key={status} className={`border rounded-xl p-3 text-center ${STYLES[status]}`}>
-              <p className="text-2xl font-bold">{counts[status]}</p>
-              <p className="text-xs mt-0.5">{LABELS[status]}</p>
-            </div>
-          ))}
+      {/* Toplu güncelleme + Excel — aramada gizle */}
+      {!search && (
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-3 mb-4">
+          <div className="flex items-center justify-between gap-3 mb-2.5">
+            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Tümünü güncelle</p>
+            <button
+              onClick={exportToExcel}
+              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-green-700 dark:hover:text-green-400 px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 hover:border-green-300 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Excel
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {BULK_OPTIONS.map(option => (
+              <button
+                key={option}
+                disabled={isPending}
+                onClick={() => setAllStatuses(option)}
+                className={`text-xs font-semibold px-3 py-1.5 rounded-full border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${STYLES[option]}`}
+              >
+                Tümü {LABELS[option]}
+              </button>
+            ))}
+          </div>
         </div>
-      ) : (
-        <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-4 mb-5">
-          Henüz giriş yapılmadı — öğrenci durumlarını aşağıdan işaretleyin.
+      )}
+
+      {/* Öğrenci arama */}
+      {items.length > 6 && (
+        <div className="relative mb-4">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Öğrenci ara..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Arama sonucu bilgisi */}
+      {search && (
+        <p className="text-xs text-gray-400 mb-3">
+          {filteredItems.length === 0 ? 'Sonuç bulunamadı.' : `${filteredItems.length} öğrenci gösteriliyor`}
         </p>
       )}
 
+      {/* Öğrenci listesi */}
       <div className="space-y-2">
-        {items.map((item) => {
-          const status = statuses[item.student_id] ?? 'yapilmadi'
-          const hasNote = !!notes[item.student_id]
+        {filteredItems.map(item => {
+          const status      = statuses[item.student_id] ?? 'yapilmadi'
+          const hasNote     = !!notes[item.student_id]
+          const isItemPending = pendingIds.has(item.student_id)
+          const noteSaved   = noteSavedId === item.student_id
 
           return (
             <div
               key={item.student_id}
-              className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3"
+              className={`bg-white dark:bg-slate-800 border rounded-xl px-4 py-3 transition-colors ${
+                isItemPending ? 'border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-slate-700'
+              }`}
             >
               {/* Üst satır: isim + not butonu */}
               <div className="flex items-start justify-between gap-2 mb-2.5">
@@ -234,27 +303,34 @@ export default function StatusBoard({
                         {item.missedCount}/{totalHomeworks} eksik
                       </span>
                     )}
+                    {isItemPending && (
+                      <svg className="w-3.5 h-3.5 text-blue-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    )}
                   </div>
                 </div>
                 <button
                   onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                  disabled={false}
-                  className={`shrink-0 text-xs px-2.5 py-1.5 rounded-lg border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                    hasNote
-                      ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                      : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
+                  className={`shrink-0 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                    noteSaved
+                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      : hasNote
+                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                        : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
                   }`}
                 >
-                  {hasNote ? 'Not ✓' : '+ Not'}
+                  {noteSaved ? '✓ Kaydedildi' : hasNote ? 'Not ✓' : '+ Not'}
                 </button>
               </div>
 
               {/* Durum chip butonları */}
               <div className="flex flex-wrap gap-1.5">
-                {STATUS_OPTIONS.map((option) => (
+                {STATUS_OPTIONS.map(option => (
                   <button
                     key={option}
-                    disabled={isPending}
+                    disabled={isItemPending}
                     onClick={() => setStatus(item.student_id, option)}
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors disabled:cursor-not-allowed ${
                       status === option
@@ -285,10 +361,7 @@ export default function StatusBoard({
       </div>
 
       {errorMsg && (
-        <div
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg"
-          onAnimationEnd={() => setErrorMsg(null)}
-        >
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
           {errorMsg}
         </div>
       )}
