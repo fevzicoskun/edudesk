@@ -49,6 +49,9 @@ export default function OdevDuzenleForm({ hw, sources }: { hw: HwData; sources: 
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
               <input name="due_date" type="date" className={field} defaultValue={hw.due_date ?? ''} />
+              {hw.due_date && hw.due_date < new Date().toISOString().split('T')[0] && (
+                <p className="text-xs text-amber-600">Geçmiş tarih — değiştirmek zorunda değilsiniz.</p>
+              )}
             </div>
           </div>
 

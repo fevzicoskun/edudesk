@@ -110,7 +110,7 @@ export async function updateHomework(_: unknown, formData: FormData) {
 
   revalidatePath('/odevler')
   revalidatePath(`/odevler/${id}`)
-  redirect(`/odevler/${id}`)
+  redirect(`/odevler/${id}?guncellendi=1`)
 }
 
 export async function deleteHomework(id: string) {

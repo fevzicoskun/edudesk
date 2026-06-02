@@ -24,12 +24,24 @@ const CHIP_LABELS: Record<keyof StatusCounts, string> = {
 
 const CHIP_ORDER: (keyof StatusCounts)[] = ['yapildi', 'yapilmadi', 'eksik', 'gec', 'mazeretli']
 
+function getActiveBadge(dueDate?: string | null): { text: string; cls: string; dot: string } {
+  if (!dueDate) return { text: 'Aktif', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' }
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const due   = new Date(dueDate); due.setHours(0, 0, 0, 0)
+  const days  = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  if (days === 0) return { text: 'Bugün!', cls: 'bg-red-50 text-red-600 border-red-200',    dot: 'bg-red-500'     }
+  if (days === 1) return { text: 'Yarın',  cls: 'bg-orange-50 text-orange-600 border-orange-200', dot: 'bg-orange-500' }
+  if (days <= 3)  return { text: `${days} gün`, cls: 'bg-amber-50 text-amber-600 border-amber-200', dot: 'bg-amber-500' }
+  return { text: 'Aktif', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' }
+}
+
 interface SwipeableHomeworkCardProps {
   id: string
   title: string
   subject: string
   className: string
   dueDateStr: string
+  dueDate?: string | null
   overdue: boolean
   description?: string
   teacherName?: string
@@ -45,6 +57,7 @@ export default function SwipeableHomeworkCard({
   subject,
   className,
   dueDateStr,
+  dueDate,
   overdue,
   description,
   teacherName,
@@ -82,6 +95,16 @@ export default function SwipeableHomeworkCard({
     delta: 30,
   })
 
+  const badge = overdue
+    ? { text: 'Geçmiş', cls: 'bg-red-50 text-red-600 border-red-100', dot: 'bg-red-500' }
+    : getActiveBadge(dueDate)
+
+  const entered      = statusCounts ? Object.values(statusCounts).reduce((a, b) => a + b, 0) : 0
+  const totalStu     = typeof totalStudents === 'number' ? totalStudents : 0
+  const unrecorded   = totalStu - entered
+  const allEntered   = totalStu > 0 && entered > 0 && unrecorded === 0
+  const showChips    = totalStu > 0 && (entered > 0 || (overdue && unrecorded > 0))
+
   if (isDeleted) return null
 
   return (
@@ -110,13 +133,9 @@ export default function SwipeableHomeworkCard({
             >
               {title}
             </Link>
-            <span className={`shrink-0 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border ${
-              overdue
-                ? 'bg-red-50 text-red-600 border-red-100'
-                : 'bg-emerald-50 text-emerald-700 border-emerald-100'
-            }`}>
-              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${overdue ? 'bg-red-500' : 'bg-emerald-500'}`} />
-              {overdue ? 'Geçmiş' : 'Aktif'}
+            <span className={`shrink-0 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
+              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${badge.dot}`} />
+              {badge.text}
             </span>
           </div>
 
@@ -133,30 +152,32 @@ export default function SwipeableHomeworkCard({
           )}
 
           {/* Durum chip satırı */}
-          {typeof totalStudents === 'number' && totalStudents > 0 && (() => {
-            const entered = statusCounts ? Object.values(statusCounts).reduce((a, b) => a + b, 0) : 0
-            const unrecorded = totalStudents - entered
-            const hasAny = entered > 0 || (overdue && unrecorded > 0)
-            if (!hasAny) return null
-            return (
-              <div className="flex items-center gap-1.5 flex-wrap mb-3">
-                {CHIP_ORDER.map(key => {
-                  const count = statusCounts?.[key] ?? 0
-                  if (count === 0) return null
-                  return (
-                    <span key={key} className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CHIP_STYLES[key]}`}>
-                      {count} {CHIP_LABELS[key]}
+          {showChips && (
+            <div className="flex items-center gap-1.5 flex-wrap mb-3">
+              {allEntered ? (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                  ✓ Tümü girildi ({totalStu} öğrenci)
+                </span>
+              ) : (
+                <>
+                  {CHIP_ORDER.map(key => {
+                    const count = statusCounts?.[key] ?? 0
+                    if (count === 0) return null
+                    return (
+                      <span key={key} className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${CHIP_STYLES[key]}`}>
+                        {count} {CHIP_LABELS[key]}
+                      </span>
+                    )
+                  })}
+                  {unrecorded > 0 && (
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500">
+                      {unrecorded} girilmedi
                     </span>
-                  )
-                })}
-                {unrecorded > 0 && (
-                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500">
-                    {unrecorded} girilmedi
-                  </span>
-                )}
-              </div>
-            )
-          })()}
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
             <div className="flex items-center gap-3 flex-wrap">

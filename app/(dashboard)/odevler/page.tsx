@@ -348,6 +348,7 @@ async function HomeworkSection({
         subject={hw.subject}
         className={cls?.name ?? '—'}
         dueDateStr={dueDateStr(hw.due_date)}
+        dueDate={hw.due_date}
         overdue={overdue}
         description={hw.description ?? undefined}
         teacherName={teacher?.full_name ?? undefined}

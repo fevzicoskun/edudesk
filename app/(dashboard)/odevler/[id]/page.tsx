@@ -13,10 +13,12 @@ import type { SubmissionStatus } from '@/src/shared/types'
 
 export default async function OdevDetayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ guncellendi?: string }>
 }) {
-  const { id } = await params
+  const [{ id }, sp] = await Promise.all([params, searchParams])
   const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
   if (!profile?.school_id || !user) redirect('/login')
 
@@ -102,6 +104,14 @@ export default async function OdevDetayPage({
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      {sp.guncellendi && (
+        <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm px-4 py-3 rounded-xl print:hidden">
+          <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          Ödev başarıyla güncellendi.
+        </div>
+      )}
       <div className="flex items-center justify-between mb-3 print:hidden">
         <Link href="/odevler" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200">
           ← Ödevler
