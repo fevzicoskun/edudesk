@@ -118,7 +118,7 @@ export const HomeworkService = {
 
   async updateHomework(
     id: string,
-    data: { title: string; subject: string; description: string | null; due_date: string | null }
+    data: { title: string; subject: string; description: string | null; due_date: string | null; source_id: string | null }
   ): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

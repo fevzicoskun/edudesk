@@ -1,5 +1,5 @@
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 
 export const revalidate = 30
@@ -8,7 +8,7 @@ import StatusBoard from './StatusBoard'
 import VeliWhatsApp from './VeliWhatsApp'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
-import { isTeachingRole } from '@/src/shared/types'
+import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 export default async function OdevDetayPage({
@@ -17,8 +17,8 @@ export default async function OdevDetayPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const profile = await getCurrentProfile()
-  if (!profile?.school_id) redirect('/login')
+  const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
+  if (!profile?.school_id || !user) redirect('/login')
 
   const supabase = await createClient()
 
@@ -31,6 +31,9 @@ export default async function OdevDetayPage({
     .single()
 
   if (!hw || hw.is_template) notFound()
+
+  const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
+  if (!isManager && hw.teacher_id !== user.id) notFound()
 
   const canWrite = isTeachingRole(profile.role)
 

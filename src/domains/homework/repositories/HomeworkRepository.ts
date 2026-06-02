@@ -75,6 +75,7 @@ export const HomeworkRepository = {
       subject: string
       description: string | null
       due_date: string | null
+      source_id: string | null
     }
   ) {
     const supabase = await createClient()

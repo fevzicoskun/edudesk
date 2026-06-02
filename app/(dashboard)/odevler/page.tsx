@@ -184,6 +184,7 @@ async function HomeworkSection({
   const pastDone:     typeof homeworks = []
 
   for (const hw of homeworks) {
+    if (!hw.due_date) { active.push(hw); continue }
     const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
     if (!overdue) { active.push(hw); continue }
 
@@ -194,8 +195,13 @@ async function HomeworkSection({
     else                                      pastDone.push(hw)
   }
 
-  // Sort active homeworks by closest due date first
-  active.sort((a, b) => a.due_date.localeCompare(b.due_date))
+  // Sort active homeworks by closest due date first (null due_date goes last)
+  active.sort((a, b) => {
+    if (!a.due_date && !b.due_date) return 0
+    if (!a.due_date) return 1
+    if (!b.due_date) return -1
+    return a.due_date.localeCompare(b.due_date)
+  })
 
   const totalCount = homeworks.length
 

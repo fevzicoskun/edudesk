@@ -99,11 +99,17 @@ export async function updateHomework(_: unknown, formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
+  if (parsed.data.due_date) {
+    const today = new Date().toISOString().split('T')[0]
+    if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
+  }
+
   const result = await HomeworkService.updateHomework(id, {
     title:       parsed.data.title,
     subject:     parsed.data.subject,
     description: parsed.data.description ?? null,
     due_date:    parsed.data.due_date ?? null,
+    source_id:   parsed.data.source_id ?? null,
   })
   if (result.error) return result
 
