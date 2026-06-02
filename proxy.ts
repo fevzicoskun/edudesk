@@ -25,7 +25,7 @@ function buildCsp(nonce: string): string {
   // Risk düşük: img-src ve connect-src kısıtlamaları CSS exfiltration vektörlerini kapatır.
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
+    `script-src 'self' 'nonce-${nonce}'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self'",
