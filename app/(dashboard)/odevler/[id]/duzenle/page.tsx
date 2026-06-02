@@ -1,5 +1,3 @@
-'use server'
-
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
