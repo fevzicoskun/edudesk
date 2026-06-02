@@ -85,14 +85,8 @@ describe('Sınıf (classes)', () => {
 
 // ─── Genişletilmiş kapsam ─────────────────────────────────────────────────────
 describe('Genişletilmiş kapsamlar', () => {
-  it('tüm öğretmenlerin müfredatını güncelleyebilir (school scope)', () => {
-    expectPermission(MUDUR_YARDIMCISI_PERMISSIONS, 'curriculum', 'update', 'school')
-  })
   it('tüm yoklamaları görebilir (school scope)', () => {
     expectPermission(MUDUR_YARDIMCISI_PERMISSIONS, 'attendance', 'read', 'school')
-  })
-  it('curriculum:update scope → school', async () => {
-    expect(await PermissionService.getScope(U, S, 'curriculum', 'update')).toBe('school')
   })
 })
 

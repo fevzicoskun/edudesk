@@ -6,7 +6,7 @@
 
 import type { GrantedPermission } from '@/src/domains/rbac/types'
 
-// ─── Öğretmen: 17 izin ────────────────────────────────────────────────────────
+// ─── Öğretmen: 16 izin ────────────────────────────────────────────────────────
 // Temel öğretim izinleri — kendi kaynakları üzerinde write, okul genelinde read
 export const OGRETMEN_PERMISSIONS: GrantedPermission[] = [
   // Ödev: kendi ödevlerini yazar, okul genelindeki ödevleri okur
@@ -19,11 +19,6 @@ export const OGRETMEN_PERMISSIONS: GrantedPermission[] = [
   { resource: 'attendance', action: 'create', scope: 'own',    source: 'role' },
   { resource: 'attendance', action: 'read',   scope: 'own',    source: 'role' },
   { resource: 'attendance', action: 'update', scope: 'own',    source: 'role' },
-
-  // Müfredat: kendi ilerlemesini kaydeder, tüm sınıfların müfredatını okur
-  { resource: 'curriculum', action: 'create', scope: 'own',    source: 'role' },
-  { resource: 'curriculum', action: 'read',   scope: 'school', source: 'role' },
-  { resource: 'curriculum', action: 'update', scope: 'own',    source: 'role' },
 
   // Öğrenci / Sınıf: okuma + ekleme/silme (sınıf listesi yönetimi)
   { resource: 'students',   action: 'read',   scope: 'school', source: 'role' },
@@ -65,8 +60,8 @@ export const ZUMRE_BASKANI_PERMISSIONS: GrantedPermission[] = [
   { resource: 'homework',   action: 'delete', scope: 'school', source: 'role' },
 ]
 
-// ─── Müdür Yardımcısı: ~44 izin ──────────────────────────────────────────────
-// Zümre Başkanı izinleri + sınıf yönetimi + kullanıcı yönetimi + okul okuma + tüm müfredat
+// ─── Müdür Yardımcısı: ~40 izin ──────────────────────────────────────────────
+// Zümre Başkanı izinleri + sınıf yönetimi + kullanıcı yönetimi + okul okuma
 export const MUDUR_YARDIMCISI_PERMISSIONS: GrantedPermission[] = [
   ...ZUMRE_BASKANI_PERMISSIONS,
 
@@ -82,9 +77,6 @@ export const MUDUR_YARDIMCISI_PERMISSIONS: GrantedPermission[] = [
 
   // Okul: okul bilgilerini okur
   { resource: 'school',     action: 'read',   scope: 'school', source: 'role' },
-
-  // Müfredat: tüm öğretmenlerin müfredatını görebilir
-  { resource: 'curriculum', action: 'update', scope: 'school', source: 'role' },
 
   // Devamsızlık: tüm yoklamaları görür
   { resource: 'attendance', action: 'read',   scope: 'school', source: 'role' },

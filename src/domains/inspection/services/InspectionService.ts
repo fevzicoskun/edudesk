@@ -29,16 +29,15 @@ export const InspectionService = {
 
     const { term, academicYear, termStart } = getCurrentTerm()
 
-    const [dailyRes, annualRes, sokRes, notebookRes] = await Promise.all([
+    const [dailyRes, sokRes, notebookRes] = await Promise.all([
       InspectionRepository.countDailyPlansThisTerm(profile.id, profile.school_id, termStart),
-      InspectionRepository.findAnnualPlan(profile.id, academicYear, profile.subject ?? 'Matematik'),
       InspectionRepository.countSokReportsThisTerm(profile.id, profile.school_id, term, academicYear),
       InspectionRepository.countNotebookChecksThisTerm(profile.id, profile.school_id, termStart),
     ])
 
     const flags = {
       dailyPlans:     (dailyRes.count ?? 0) > 0,
-      annualPlan:     annualRes.data !== null,
+      annualPlan:     false,
       zumreMeetings:  existing.zumreCount > 0,
       commonExams:    existing.examCount  > 0,
       sokReports:     (sokRes.count ?? 0) > 0,
@@ -46,7 +45,7 @@ export const InspectionService = {
     }
 
     const presentCount = Object.values(flags).filter(Boolean).length
-    const score = Math.round((presentCount / 6) * 100)
+    const score = Math.round((presentCount / 5) * 100)
 
     return { ...flags, score }
   },

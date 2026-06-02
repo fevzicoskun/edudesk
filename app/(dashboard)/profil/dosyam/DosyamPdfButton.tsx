@@ -1,14 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import type { WeeklyEntry } from '@/src/domains/inspection/types'
-
 export interface DosyamPdfData {
   teacherName:   string
   schoolName:    string
   subject:       string
   academicYear:  string
-  annualPlan:    { weekly_plan: WeeklyEntry[]; approved_at: string | null } | null
   dailyPlans:    { plan_date: string; topic: string; className: string }[]
   zumreMeetings: { title: string; meeting_date: string }[]
   commonExams:   { title: string; exam_date: string; subject: string }[]
@@ -63,48 +60,18 @@ export default function DosyamPdfButton({ data }: { data: DosyamPdfData }) {
       doc.text('İÇİNDEKİLER', margin, 140)
       doc.setFont('Roboto', 'normal')
       const sections = [
-        ['1.', 'Yıllık Plan'],
-        ['2.', 'Günlük Ders Planları'],
-        ['3.', 'Zümre Toplantı Raporları'],
-        ['4.', 'Yazılı Sınavlar'],
-        ['5.', 'ŞÖK Tutanakları'],
-        ['6.', 'Defter Kontrolleri'],
+        ['1.', 'Günlük Ders Planları'],
+        ['2.', 'Zümre Toplantı Raporları'],
+        ['3.', 'Yazılı Sınavlar'],
+        ['4.', 'ŞÖK Tutanakları'],
+        ['5.', 'Defter Kontrolleri'],
       ]
       sections.forEach(([num, title], i) => {
         doc.text(`${num} ${title}`, margin + 4, 152 + i * 8)
       })
 
-      // ── 1. Yıllık Plan ───────────────────────────────────────────────────────
-      addSectionHeader('1. Yıllık Plan')
-      if (data.annualPlan) {
-        autoTable(doc, {
-          startY: 25,
-          head: [['Hafta', 'Tarihler', 'Konular']],
-          body: data.annualPlan.weekly_plan.map(w => [
-            String(w.week),
-            w.dates,
-            w.topics.join(', '),
-          ]),
-          styles:       { font: 'Roboto', fontSize: 7, cellPadding: 2 },
-          headStyles:   { fillColor: [30, 64, 175], textColor: 255, fontStyle: 'bold' },
-          columnStyles: { 0: { cellWidth: 12 }, 1: { cellWidth: 28 } },
-          margin: { left: margin, right: margin },
-        })
-        if (data.annualPlan.approved_at) {
-          const y = getY() + 6
-          doc.setFontSize(8)
-          doc.text(
-            `Onay tarihi: ${new Date(data.annualPlan.approved_at).toLocaleDateString('tr-TR')}`,
-            margin, y
-          )
-        }
-      } else {
-        doc.setFontSize(9)
-        doc.text('Yıllık plan henüz oluşturulmamış.', margin, 30)
-      }
-
-      // ── 2. Günlük Planlar ────────────────────────────────────────────────────
-      addSectionHeader('2. Günlük Ders Planları')
+      // ── 1. Günlük Planlar ────────────────────────────────────────────────────
+      addSectionHeader('1. Günlük Ders Planları')
       if (data.dailyPlans.length > 0) {
         autoTable(doc, {
           startY: 25,
@@ -123,8 +90,8 @@ export default function DosyamPdfButton({ data }: { data: DosyamPdfData }) {
         doc.text('Bu dönem günlük plan kaydı bulunmuyor.', margin, 30)
       }
 
-      // ── 3. Zümre Toplantıları ────────────────────────────────────────────────
-      addSectionHeader('3. Zümre Toplantı Raporları')
+      // ── 2. Zümre Toplantıları ────────────────────────────────────────────────
+      addSectionHeader('2. Zümre Toplantı Raporları')
       if (data.zumreMeetings.length > 0) {
         autoTable(doc, {
           startY: 25,
@@ -142,8 +109,8 @@ export default function DosyamPdfButton({ data }: { data: DosyamPdfData }) {
         doc.text('Bu dönem zümre toplantı kaydı bulunmuyor.', margin, 30)
       }
 
-      // ── 4. Yazılı Sınavlar ───────────────────────────────────────────────────
-      addSectionHeader('4. Yazılı Sınavlar')
+      // ── 3. Yazılı Sınavlar ───────────────────────────────────────────────────
+      addSectionHeader('3. Yazılı Sınavlar')
       if (data.commonExams.length > 0) {
         autoTable(doc, {
           startY: 25,
@@ -162,8 +129,8 @@ export default function DosyamPdfButton({ data }: { data: DosyamPdfData }) {
         doc.text('Bu dönem yazılı sınav kaydı bulunmuyor.', margin, 30)
       }
 
-      // ── 5. ŞÖK Tutanakları ───────────────────────────────────────────────────
-      addSectionHeader('5. ŞÖK Tutanakları')
+      // ── 4. ŞÖK Tutanakları ───────────────────────────────────────────────────
+      addSectionHeader('4. ŞÖK Tutanakları')
       if (data.sokReports.length > 0) {
         autoTable(doc, {
           startY: 25,
@@ -183,8 +150,8 @@ export default function DosyamPdfButton({ data }: { data: DosyamPdfData }) {
         doc.text('Bu dönem ŞÖK tutanağı bulunmuyor.', margin, 30)
       }
 
-      // ── 6. Defter Kontrolleri ────────────────────────────────────────────────
-      addSectionHeader('6. Defter Kontrolleri')
+      // ── 5. Defter Kontrolleri ────────────────────────────────────────────────
+      addSectionHeader('5. Defter Kontrolleri')
       if (data.notebookChecks.length > 0) {
         autoTable(doc, {
           startY: 25,

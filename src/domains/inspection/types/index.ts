@@ -19,24 +19,6 @@ export interface DailyPlan {
   deleted_at:       string | null
 }
 
-export interface AnnualPlan {
-  id:            string
-  teacher_id:    string
-  school_id:     string
-  academic_year: string
-  subject:       string
-  weekly_plan:   WeeklyEntry[]
-  approved_at:   string | null
-  created_at:    string
-}
-
-export interface WeeklyEntry {
-  week:       number
-  dates:      string
-  topics:     string[]
-  objectives: string[]
-}
-
 export interface SokReport {
   id:            string
   teacher_id:    string
@@ -133,5 +115,5 @@ export interface CompletionStatus {
   commonExams:    boolean
   sokReports:     boolean
   notebookChecks: boolean
-  score:          number  // 0–100, 6 belgeden kaç tanesi mevcut
+  score:          number  // 0–100, 5 belgeden kaç tanesi mevcut (Yıllık Plan kaldırıldı)
 }

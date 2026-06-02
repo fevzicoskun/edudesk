@@ -1,6 +1,6 @@
 // src/domains/inspection/repositories/InspectionRepository.ts
 import { createClient } from '@/src/infrastructure/supabase/server'
-import type { DailyPlan, AnnualPlan, SokReport, NotebookCheck } from '../types'
+import type { DailyPlan, SokReport, NotebookCheck } from '../types'
 
 export const InspectionRepository = {
   // ── DailyPlan ──────────────────────────────────────────────────────────────
@@ -63,27 +63,6 @@ export const InspectionRepository = {
       .eq('school_id', schoolId)
       .gte('plan_date', termStart)
       .is('deleted_at', null)
-  },
-
-  // ── AnnualPlan ─────────────────────────────────────────────────────────────
-  async findAnnualPlan(teacherId: string, academicYear: string, subject: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('annual_plans')
-      .select('*')
-      .eq('teacher_id', teacherId)
-      .eq('academic_year', academicYear)
-      .eq('subject', subject)
-      .maybeSingle<AnnualPlan>()
-  },
-
-  async upsertAnnualPlan(data: Omit<AnnualPlan, 'id' | 'created_at'>) {
-    const supabase = await createClient()
-    return supabase
-      .from('annual_plans')
-      .upsert(data, { onConflict: 'teacher_id,school_id,academic_year,subject' })
-      .select()
-      .single<AnnualPlan>()
   },
 
   // ── SokReport ──────────────────────────────────────────────────────────────

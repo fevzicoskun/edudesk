@@ -3,7 +3,6 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod/v4'
 import { InspectionRepository } from '@/src/domains/inspection/repositories/InspectionRepository'
-import { AnnualPlanService }    from '@/src/domains/inspection/services/AnnualPlanService'
 import { getAbility }           from '@/src/shared/authorization/server'
 import {
   DEFAULT_AGENDA_ITEMS,
@@ -68,29 +67,6 @@ export async function deleteDailyPlanAction(id: string) {
 
   revalidatePath('/profil/dosyam')
   revalidatePath('/profil/dosyam/gunluk-plan')
-  return {}
-}
-
-// ── Yıllık Plan ───────────────────────────────────────────────────────────────
-
-export async function getOrCreateAnnualPlanAction(grade: number) {
-  return AnnualPlanService.getOrCreate(grade, 'Matematik', getCurrentAcademicYear())
-}
-
-export async function approveAnnualPlanAction(planId: string) {
-  const ability = await getAbility()
-  if (!ability) return { error: 'Giriş gerekli' }
-
-  const supabase = await (await import('@/src/infrastructure/supabase/server')).createClient()
-  const { error } = await supabase
-    .from('annual_plans')
-    .update({ approved_at: new Date().toISOString() })
-    .eq('id', planId)
-    .eq('teacher_id', ability.userId)
-  if (error) return { error: error.message }
-
-  revalidatePath('/profil/dosyam')
-  revalidatePath('/profil/dosyam/yillik-plan')
   return {}
 }
 
@@ -256,11 +232,3 @@ export async function deleteNotebookCheckAction(id: string) {
   return {}
 }
 
-// ── Yardımcı ─────────────────────────────────────────────────────────────────
-function getCurrentAcademicYear(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth() + 1
-  const start = month >= 9 ? year : year - 1
-  return `${start}-${start + 1}`
-}

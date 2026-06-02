@@ -1,7 +1,6 @@
 export type Resource =
   | 'homework'
   | 'attendance'
-  | 'curriculum'
   | 'students'
   | 'classes'
   | 'zumre'

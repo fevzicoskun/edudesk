@@ -36,7 +36,6 @@ export default async function DosyamPage() {
     { count: zumreCount },
     { count: examCount },
     { data: dailyPlansRaw },
-    { data: annualPlanRaw },
     { data: zumreMeetingsRaw },
     { data: commonExamsRaw },
     { data: sokReportsRaw },
@@ -50,11 +49,6 @@ export default async function DosyamPage() {
       .gte('plan_date', termStart)
       .is('deleted_at', null)
       .order('plan_date', { ascending: false }),
-    supabase.from('annual_plans')
-      .select('weekly_plan, approved_at')
-      .eq('teacher_id', profile.id)
-      .eq('academic_year', academicYear)
-      .maybeSingle(),
     supabase.from('zumre_meetings')
       .select('title, meeting_date')
       .eq('school_id', profile.school_id)
@@ -81,7 +75,6 @@ export default async function DosyamPage() {
 
   const missingDocs = [
     !status.dailyPlans     && 'Günlük Planlar',
-    !status.annualPlan     && 'Yıllık Plan',
     !status.zumreMeetings  && 'Zümre Toplantıları',
     !status.commonExams    && 'Yazılı Sınavlar',
     !status.sokReports     && 'ŞÖK Tutanakları',
@@ -93,7 +86,6 @@ export default async function DosyamPage() {
     schoolName:    profile.schools?.name ?? '',
     subject:       profile.subject ?? '',
     academicYear,
-    annualPlan:    annualPlanRaw ?? null,
     dailyPlans:    (dailyPlansRaw ?? []).map((p: any) => ({
       plan_date: p.plan_date,
       topic:     p.topic,
@@ -153,7 +145,6 @@ export default async function DosyamPage() {
 
       <div className="flex flex-col gap-2">
         <DocRow ok={status.dailyPlans}     icon="📋" title="Günlük Ders Planları"      href="/profil/dosyam/gunluk-plan"                newHref="/profil/dosyam/gunluk-plan/yeni" />
-        <DocRow ok={status.annualPlan}     icon="📅" title="Yıllık Plan"               href="/profil/dosyam/yillik-plan" />
         <DocRow ok={status.zumreMeetings}  icon="👥" title="Zümre Toplantı Raporları"  href="/profil/dosyam/zumre-toplantilari" />
         <DocRow ok={status.commonExams}    icon="📝" title="Yazılı Sınavlar"           href="/profil/dosyam/yazili-sinavlar" />
         <DocRow ok={status.sokReports}     icon="📑" title="ŞÖK Tutanakları"           href="/profil/dosyam/sok"           newHref="/profil/dosyam/sok/yeni" />

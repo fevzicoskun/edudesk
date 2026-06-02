@@ -20,8 +20,8 @@ beforeEach(() => { vi.clearAllMocks(); mock() })
 
 // ─── Fixture integrity ────────────────────────────────────────────────────────
 describe('OGRETMEN_PERMISSIONS fixture', () => {
-  it('19 izin içerir', () => {
-    expect(uniquePerms(OGRETMEN_PERMISSIONS)).toHaveLength(19)
+  it('16 izin içerir', () => {
+    expect(uniquePerms(OGRETMEN_PERMISSIONS)).toHaveLength(16)
   })
 
   it('snapshot — rol değişikliklerini yakalar', () => {
@@ -58,19 +58,6 @@ describe('Yoklama (attendance)', () => {
   })
   it('tüm okul yoklamalarını GÖREMEZ', () => {
     expectNoPermission(OGRETMEN_PERMISSIONS, 'attendance', 'delete')
-  })
-})
-
-// ─── Müfredat izinleri ────────────────────────────────────────────────────────
-describe('Müfredat (curriculum)', () => {
-  it('kendi ilerlemesini oluşturabilir', () => {
-    expectPermission(OGRETMEN_PERMISSIONS, 'curriculum', 'create', 'own')
-  })
-  it('okul geneli müfredatı okuyabilir', () => {
-    expectPermission(OGRETMEN_PERMISSIONS, 'curriculum', 'read', 'school')
-  })
-  it('kendi ilerlemesini güncelleyebilir', () => {
-    expectPermission(OGRETMEN_PERMISSIONS, 'curriculum', 'update', 'own')
   })
 })
 

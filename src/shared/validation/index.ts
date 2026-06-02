@@ -65,15 +65,6 @@ export const createExamSchema = z.object({
 
 export const submissionStatusSchema = z.enum(['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli'])
 
-export const curriculumStatusSchema = z.enum(['tamamlandi', 'tekrar_gerekli', 'eksik_kaldi'])
-
-export const createCurriculumProgressSchema = z.object({
-  class_id: UUID,
-  topic: z.string().min(1, 'Konu gerekli').max(500),
-  week_number: z.coerce.number().int().min(1).max(52).optional().nullable(),
-  status: curriculumStatusSchema.default('tamamlandi'),
-})
-
 export const attendanceStatusSchema = z.enum(['present', 'absent', 'late', 'excused'])
 
 export const saveAttendanceSchema = z.object({

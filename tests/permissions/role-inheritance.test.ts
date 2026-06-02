@@ -142,8 +142,8 @@ describe('ROLE_PERMISSIONS lookup', () => {
 
   it('kaynak tipleri beklenen listeyle sınırlı', () => {
     const VALID_RESOURCES = new Set([
-      'homework', 'attendance', 'curriculum', 'students', 'classes',
-      'zumre', 'exam', 'users', 'school', 'export', 'notes',
+      'homework', 'attendance', 'students', 'classes',
+      'zumre', 'exam', 'users', 'school', 'export', 'notes', 'grades', 'kanaat',
     ])
     for (const perms of Object.values(ROLE_PERMISSIONS)) {
       for (const p of perms) {

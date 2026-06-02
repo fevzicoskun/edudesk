@@ -38,11 +38,6 @@ export const P = {
     READ:   p('attendance', 'read'),
     UPDATE: p('attendance', 'update'),
   },
-  CURRICULUM: {
-    CREATE: p('curriculum', 'create'),
-    READ:   p('curriculum', 'read'),
-    UPDATE: p('curriculum', 'update'),
-  },
   STUDENTS: {
     READ:   p('students', 'read'),
     CREATE: p('students', 'create'),
