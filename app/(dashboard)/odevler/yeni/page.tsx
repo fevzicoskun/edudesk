@@ -8,13 +8,13 @@ import Link from 'next/link'
 export default async function YeniOdevPage({
   searchParams,
 }: {
-  searchParams: Promise<{ copy?: string; template?: string; templateSaved?: string }>
+  searchParams: Promise<{ copy?: string; template?: string; templateSaved?: string; tarih?: string }>
 }) {
   const profile = await getCurrentProfile()
   if (!profile?.school_id) redirect('/anasayfa')
   if (isMudurOrAbove(profile.role)) redirect('/odevler')
 
-  const { copy, template, templateSaved } = await searchParams
+  const { copy, template, templateSaved, tarih } = await searchParams
 
   const supabase = await createClient()
   const [classesRes, sourcesRes, templatesRes] = await Promise.all([
@@ -42,6 +42,7 @@ export default async function YeniOdevPage({
       .order('title'),
   ])
 
+  const tarihDefault = tarih && /^\d{4}-\d{2}-\d{2}$/.test(tarih) ? tarih : undefined
   let defaults: Defaults | undefined
 
   if (template) {
@@ -160,7 +161,7 @@ export default async function YeniOdevPage({
         <HomeworkForm
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
-          defaults={defaults}
+          defaults={defaults ?? (tarihDefault ? { due_date: tarihDefault } : undefined)}
         />
       </div>
     </div>

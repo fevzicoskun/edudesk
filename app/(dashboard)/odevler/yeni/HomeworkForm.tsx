@@ -13,6 +13,7 @@ export type Defaults = {
   description?: string | null
   class_id?: string
   source_id?: string | null
+  due_date?: string
   fromTemplate?: boolean
 }
 
@@ -219,7 +220,7 @@ export default function HomeworkForm({
           {!isTemplate && (
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-              <input name="due_date" type="date" required={!isTemplate} min={todayISO()} className={field} />
+              <input name="due_date" type="date" required={!isTemplate} min={todayISO()} className={field} defaultValue={defaults?.due_date ?? ''} />
             </div>
           )}
 

@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import { getGreeting } from '@/src/shared/utils'
-import CalendarWidget from './CalendarWidget'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
 import YoklamaTrendWidget from './YoklamaTrendWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
@@ -96,49 +95,47 @@ export default async function OgretmenDashboard() {
         <OdevTamamlanmaWidget data={metrics.tamamlanmaData} />
       </div>
 
-      {/* Alt Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <section className="lg:col-span-2 space-y-4">
-          {/* Yaklaşan Ödevler */}
-          {upcomingHws.length > 0 && (
-            <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-              <header className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yaklaşan Ödevler</h2>
+      {/* Alt Bölüm */}
+      <div className="space-y-4">
+        {/* Yaklaşan Ödevler */}
+        {upcomingHws.length > 0 && (
+          <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+            <header className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yaklaşan Ödevler</h2>
+              <div className="flex items-center gap-3">
+                <Link href="/odevler/takvim" className="text-xs text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                  Takvim →
+                </Link>
                 <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>
-              </header>
-              <ul className="space-y-2">
-                {upcomingHws.map(hw => (
-                  <li key={hw.id}>
-                    <Link
-                      href={`/odevler/${hw.id}`}
-                      className="block rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{hw.title}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                        {hw.classes?.name ?? '—'} · {hw.subject} ·{' '}
-                        {(() => {
-                          try { return format(parseISO(hw.due_date), 'd MMM') }
-                          catch { return hw.due_date }
-                        })()}
-                      </p>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
+              </div>
+            </header>
+            <ul className="space-y-2">
+              {upcomingHws.map(hw => (
+                <li key={hw.id}>
+                  <Link
+                    href={`/odevler/${hw.id}`}
+                    className="block rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{hw.title}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                      {hw.classes?.name ?? '—'} · {hw.subject} ·{' '}
+                      {(() => {
+                        try { return format(parseISO(hw.due_date), 'd MMM') }
+                        catch { return hw.due_date }
+                      })()}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
-          {/* Risk Uyarıları */}
-          <div id="risk-uyarilari">
-            <RiskUyarilariWidget alerts={metrics.riskAlerts} />
-          </div>
-        </section>
-
-        {/* Takvim */}
-        <div className="space-y-4">
-          <CalendarWidget homeworks={metrics.homeworks} />
+        {/* Risk Uyarıları */}
+        <div id="risk-uyarilari">
+          <RiskUyarilariWidget alerts={metrics.riskAlerts} />
         </div>
       </div>
     </div>
