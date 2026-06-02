@@ -3,12 +3,9 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import { format } from '@/src/shared/date'
 import OgretmenDashboard     from './OgretmenDashboard'
-import GundemWidget           from './GundemWidget'
 import MudurOgretmenAktivite from './MudurOgretmenAktivite'
-import MudurSonDuyurular     from './MudurSonDuyurular'
 import MYStatsWidget          from './MYStatsWidget'
 import MYSolSutunWidget       from './MYSolSutunWidget'
-import AjandaSection          from './AjandaSection'
 import { getGreeting }        from '@/src/shared/utils'
 
 export const revalidate = 60
@@ -54,23 +51,12 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
         <MYStatsWidget />
       </Suspense>
 
-      {/* Ana grid: Sol (risk + öğretmenler) | Sağ (gündem) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<WidgetSkeleton tall />}>
           <MYSolSutunWidget />
         </Suspense>
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <GundemWidget />
-        </Suspense>
-      </div>
-
-      {/* Alt grid: öğretmen aktivitesi | son duyurular */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<WidgetSkeleton tall />}>
           <MudurOgretmenAktivite />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton />}>
-          <MudurSonDuyurular />
         </Suspense>
       </div>
 
@@ -92,14 +78,9 @@ async function MYWidgets({ fullName }: { fullName: string }) {
         <MYStatsWidget />
       </Suspense>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MYSolSutunWidget />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <AjandaSection />
-        </Suspense>
-      </div>
+      <Suspense fallback={<WidgetSkeleton tall />}>
+        <MYSolSutunWidget />
+      </Suspense>
 
     </div>
   )
