@@ -9,40 +9,68 @@ import type { SubmissionStatus } from '@/src/domains/homework/types'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
-  const parsed = createHomeworkSchema.safeParse({
-    class_id:    formData.get('class_id'),
+
+  // --- Template yolu: tek sınıf, tarih yok ---
+  if (isTemplate) {
+    const parsed = createHomeworkSchema.safeParse({
+      class_id:    formData.get('class_id'),
+      title:       formData.get('title'),
+      description: formData.get('description') || null,
+      subject:     formData.get('subject'),
+      due_date:    null,
+      source_id:   formData.get('source_id') || null,
+      is_template: true,
+    })
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+    const result = await HomeworkService.createHomework({
+      ...parsed.data,
+      description: parsed.data.description ?? null,
+      source_id:   parsed.data.source_id ?? null,
+      due_date:    null,
+    })
+    if (result.error) return result
+    revalidatePath('/odevler')
+    redirect('/odevler/yeni?templateSaved=1')
+  }
+
+  // --- Normal ödev yolu: çoklu sınıf ---
+  const classIds = (formData.getAll('class_id') as string[]).filter(Boolean)
+  if (classIds.length === 0) return { error: 'En az bir sınıf seçin' }
+  for (const id of classIds) {
+    if (!UUID.safeParse(id).success) return { error: 'Geçersiz sınıf seçimi' }
+  }
+
+  const parsed = createHomeworkSchema.omit({ class_id: true }).safeParse({
     title:       formData.get('title'),
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
     due_date:    formData.get('due_date') || null,
     source_id:   formData.get('source_id') || null,
-    is_template: isTemplate,
+    is_template: false,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
-  if (!isTemplate && !parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
-  if (!isTemplate && parsed.data.due_date) {
-    const today = new Date().toISOString().split('T')[0]
-    if (parsed.data.due_date < today) {
-      return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
-    }
-  }
+  if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
+  const today = new Date().toISOString().split('T')[0]
+  if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
-  const result = await HomeworkService.createHomework({
-    ...parsed.data,
-    description: parsed.data.description ?? null,
-    source_id:   parsed.data.source_id ?? null,
-    due_date:    parsed.data.due_date ?? null,
-  })
-  if (result.error) return result
+  let firstId: string | undefined
+  for (const classId of classIds) {
+    const result = await HomeworkService.createHomework({
+      class_id:    classId,
+      title:       parsed.data.title,
+      description: parsed.data.description ?? null,
+      subject:     parsed.data.subject,
+      due_date:    parsed.data.due_date,
+      source_id:   parsed.data.source_id ?? null,
+      is_template: false,
+    })
+    if (result.error) return result
+    if (!firstId) firstId = result.id
+  }
 
   revalidatePath('/odevler')
-  if (result.id && !isTemplate) {
-    redirect(`/odevler/${result.id}`)
-  }
-  if (isTemplate) {
-    redirect('/odevler/yeni?templateSaved=1')
-  }
-  redirect('/odevler')
+  if (classIds.length === 1 && firstId) redirect(`/odevler/${firstId}`)
+  redirect(`/odevler?olusturuldu=${classIds.length}`)
 }
 
 export async function updateSubmissionStatus(

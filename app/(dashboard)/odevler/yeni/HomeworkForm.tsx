@@ -36,6 +36,25 @@ export default function HomeworkForm({
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
   const [isTemplate, setIsTemplate] = useState(false)
+  const [selectedClasses, setSelectedClasses] = useState<string[]>(
+    defaults?.class_id ? [defaults.class_id] : []
+  )
+
+  function toggleClass(id: string) {
+    setSelectedClasses(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    )
+  }
+
+  const submitLabel = isTemplate
+    ? 'Şablon Kaydet'
+    : selectedClasses.length === 0
+      ? 'Sınıf Seçin'
+      : selectedClasses.length === 1
+        ? (defaults?.fromTemplate ? 'Ödev Oluştur' : 'Ödev Oluştur')
+        : `${selectedClasses.length} Sınıfa Ödev Oluştur`
+
+  const submitDisabled = isPending || (!isTemplate && selectedClasses.length === 0)
 
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-xl shadow-gray-200/70 border border-gray-100/80">
@@ -59,7 +78,7 @@ export default function HomeworkForm({
                 ? 'Tarihi belirleyin ve kaydedin'
                 : defaults
                   ? 'Kopyadan yeni ödev oluşturun'
-                  : 'Öğrencilerinize yeni bir görev tanımlayın'}
+                  : 'Bir veya birden fazla sınıfa ödev tanımlayın'}
             </p>
           </div>
         </div>
@@ -77,21 +96,68 @@ export default function HomeworkForm({
             </div>
           )}
 
-          {/* Sınıf + Ders – 2 col grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Sınıf</label>
+          {/* Sınıf seçimi */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Sınıf
+                {!isTemplate && selectedClasses.length > 1 && (
+                  <span className="ml-2 normal-case font-medium text-blue-600 tracking-normal">
+                    {selectedClasses.length} sınıf seçildi
+                  </span>
+                )}
+              </label>
+            </div>
+
+            {isTemplate ? (
+              /* Template: tek sınıf seçimi */
               <select name="class_id" required className={field} defaultValue={defaults?.class_id ?? ''}>
                 <option value="">Sınıf seçin</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-            </div>
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-              <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? ''} />
-            </div>
+            ) : (
+              /* Normal ödev: çoklu sınıf toggle */
+              <>
+                {classes.length === 0 ? (
+                  <p className="text-sm text-gray-400 px-1">Henüz sınıf eklenmemiş.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                    {classes.map((c) => {
+                      const selected = selectedClasses.includes(c.id)
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleClass(c.id)}
+                          className={`px-3 py-1.5 rounded-lg text-sm font-medium border-2 transition-all duration-150 ${
+                            selected
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400 hover:text-blue-700'
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+                {/* Hidden inputs — form submit için */}
+                {selectedClasses.map(id => (
+                  <input key={id} type="hidden" name="class_id" value={id} />
+                ))}
+                {selectedClasses.length === 0 && (
+                  <p className="text-xs text-gray-400 pt-0.5">Tıklayarak bir veya birden fazla sınıf seçin.</p>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Ders */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
+            <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? ''} />
           </div>
 
           {/* Kaynak */}
@@ -191,7 +257,7 @@ export default function HomeworkForm({
           </Link>
           <button
             type="submit"
-            disabled={isPending}
+            disabled={submitDisabled}
             className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-5 py-3 rounded-xl text-sm font-semibold shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200"
           >
             {isPending ? (
@@ -207,7 +273,7 @@ export default function HomeworkForm({
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
                 </svg>
-                Ödev Oluştur
+                {submitLabel}
               </>
             )}
           </button>
