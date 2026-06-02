@@ -9,7 +9,6 @@ import MudurSonDuyurular     from './MudurSonDuyurular'
 import MYStatsWidget          from './MYStatsWidget'
 import MYSolSutunWidget       from './MYSolSutunWidget'
 import AjandaSection          from './AjandaSection'
-import SinavOrtalamaWidget    from './SinavOrtalamaWidget'
 import { getGreeting }        from '@/src/shared/utils'
 
 export const revalidate = 60
@@ -74,11 +73,6 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
           <MudurSonDuyurular />
         </Suspense>
       </div>
-
-      {/* Sınav ortalamaları */}
-      <Suspense fallback={<WidgetSkeleton tall />}>
-        <SinavOrtalamaWidget />
-      </Suspense>
 
     </div>
   )

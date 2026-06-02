@@ -4,7 +4,6 @@ export type Resource =
   | 'students'
   | 'classes'
   | 'zumre'
-  | 'exam'
   | 'users'
   | 'school'
   | 'export'

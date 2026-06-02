@@ -22,7 +22,7 @@ function getCurrentTerm(): { term: 1 | 2; academicYear: string; termStart: strin
 
 export const InspectionService = {
   async getCompletionStatus(
-    existing: { zumreCount: number; examCount: number },
+    existing: { zumreCount: number },
   ): Promise<CompletionStatus> {
     const profile = await getCurrentProfile()
     if (!profile) throw new Error('Profil bulunamadı')
@@ -39,13 +39,13 @@ export const InspectionService = {
       dailyPlans:     (dailyRes.count ?? 0) > 0,
       annualPlan:     false,
       zumreMeetings:  existing.zumreCount > 0,
-      commonExams:    existing.examCount  > 0,
+      commonExams:    false,
       sokReports:     (sokRes.count ?? 0) > 0,
       notebookChecks: (notebookRes.count ?? 0) > 0,
     }
 
     const presentCount = Object.values(flags).filter(Boolean).length
-    const score = Math.round((presentCount / 5) * 100)
+    const score = Math.round((presentCount / 4) * 100)
 
     return { ...flags, score }
   },

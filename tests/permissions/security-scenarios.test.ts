@@ -101,15 +101,6 @@ describe('Senaryo: mentor raporu yetki sınırları', () => {
     expect(await PermissionService.check('my-user', SCHOOL_A, 'zumre', 'create')).toBe(true)
   })
 
-  it('zümre başkanı okul genelinde sınav oluşturabilir', async () => {
-    mockAs(ZUMRE_BASKANI_PERMISSIONS)
-    expect(await PermissionService.check('zb-user', SCHOOL_A, 'exam', 'create')).toBe(true)
-  })
-
-  it('sıradan öğretmen sınav oluşturamaz', async () => {
-    mockAs(OGRETMEN_PERMISSIONS)
-    expect(await PermissionService.check('teacher-x', SCHOOL_A, 'exam', 'create')).toBe(false)
-  })
 })
 
 // ─── Senaryo 4: Kullanıcı yönetimi privilege escalation koruması ──────────────

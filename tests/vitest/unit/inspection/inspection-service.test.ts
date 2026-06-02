@@ -27,22 +27,23 @@ beforeEach(() => {
 })
 
 describe('getCompletionStatus', () => {
-  it('5 belgeden 5i mevcut → skor 100', async () => {
+  it('4 belgeden 4ü mevcut → skor 100', async () => {
     ;(InspectionRepository.countDailyPlansThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 5 })
     ;(InspectionRepository.countSokReportsThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 })
     ;(InspectionRepository.countNotebookChecksThisTerm as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 2 })
-    const result = await InspectionService.getCompletionStatus({ zumreCount: 1, examCount: 1 })
+    const result = await InspectionService.getCompletionStatus({ zumreCount: 1 })
     expect(result.score).toBe(100)
     expect(result.dailyPlans).toBe(true)
     expect(result.annualPlan).toBe(false)
+    expect(result.commonExams).toBe(false)
   })
 
-  it('yalnızca günlük plan mevcut → skor 20 (1/5)', async () => {
+  it('yalnızca günlük plan mevcut → skor 25 (1/4)', async () => {
     ;(InspectionRepository.countDailyPlansThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 1 })
     ;(InspectionRepository.countSokReportsThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
     ;(InspectionRepository.countNotebookChecksThisTerm as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
-    const result = await InspectionService.getCompletionStatus({ zumreCount: 0, examCount: 0 })
-    expect(result.score).toBe(20)
+    const result = await InspectionService.getCompletionStatus({ zumreCount: 0 })
+    expect(result.score).toBe(25)
     expect(result.dailyPlans).toBe(true)
     expect(result.annualPlan).toBe(false)
     expect(result.zumreMeetings).toBe(false)
@@ -52,7 +53,7 @@ describe('getCompletionStatus', () => {
     ;(InspectionRepository.countDailyPlansThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
     ;(InspectionRepository.countSokReportsThisTerm     as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
     ;(InspectionRepository.countNotebookChecksThisTerm as ReturnType<typeof vi.fn>).mockResolvedValue({ count: 0 })
-    const result = await InspectionService.getCompletionStatus({ zumreCount: 0, examCount: 0 })
+    const result = await InspectionService.getCompletionStatus({ zumreCount: 0 })
     expect(result.score).toBe(0)
     expect(result.dailyPlans).toBe(false)
     expect(result.annualPlan).toBe(false)

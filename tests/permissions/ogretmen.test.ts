@@ -107,9 +107,6 @@ describe('Yasak işlemler', () => {
   it('zümre OLUŞTURAMAZ', () => {
     expectNoPermission(OGRETMEN_PERMISSIONS, 'zumre', 'create')
   })
-  it('sınav OLUŞTURAMAZ', () => {
-    expectNoPermission(OGRETMEN_PERMISSIONS, 'exam', 'create')
-  })
   it('kullanıcı YÖNETEMEz', () => {
     expectNoPermission(OGRETMEN_PERMISSIONS, 'users', 'manage')
   })

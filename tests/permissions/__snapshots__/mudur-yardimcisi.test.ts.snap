@@ -129,30 +129,6 @@ exports[`MUDUR_YARDIMCISI_PERMISSIONS fixture > snapshot 1`] = `
     "source": "role",
   },
   {
-    "action": "create",
-    "resource": "exam",
-    "scope": "school",
-    "source": "role",
-  },
-  {
-    "action": "read",
-    "resource": "exam",
-    "scope": "school",
-    "source": "role",
-  },
-  {
-    "action": "update",
-    "resource": "exam",
-    "scope": "school",
-    "source": "role",
-  },
-  {
-    "action": "delete",
-    "resource": "exam",
-    "scope": "school",
-    "source": "role",
-  },
-  {
     "action": "update",
     "resource": "homework",
     "scope": "school",

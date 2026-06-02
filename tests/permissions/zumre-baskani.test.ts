@@ -53,22 +53,6 @@ describe('Zümre (zumre)', () => {
   })
 })
 
-// ─── Sınav yönetimi ───────────────────────────────────────────────────────────
-describe('Sınav (exam)', () => {
-  it('ortak sınav oluşturabilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'exam', 'create', 'school')
-  })
-  it('sınavları okuyabilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'exam', 'read', 'school')
-  })
-  it('sınav güncelleyebilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'exam', 'update', 'school')
-  })
-  it('sınav silebilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'exam', 'delete', 'school')
-  })
-})
-
 // ─── Sınıf yönetimi ───────────────────────────────────────────────────────────
 describe('Sınıf (classes)', () => {
   it('sınıfları okuyabilir (inherited)', () => {
@@ -119,9 +103,6 @@ describe('PermissionService ile zümre başkanı kontrolü', () => {
   it('zumre:create → true', async () => {
     expect(await PermissionService.check(U, S, 'zumre', 'create')).toBe(true)
   })
-  it('exam:create → true', async () => {
-    expect(await PermissionService.check(U, S, 'exam', 'create')).toBe(true)
-  })
   it('users:manage → false', async () => {
     expect(await PermissionService.check(U, S, 'users', 'manage')).toBe(false)
   })
@@ -131,14 +112,12 @@ describe('PermissionService ile zümre başkanı kontrolü', () => {
   it('checkMany() doğru çalışır', async () => {
     const result = await PermissionService.checkMany(U, S, [
       { resource: 'zumre',    action: 'create' },
-      { resource: 'exam',     action: 'create' },
       { resource: 'homework', action: 'delete' },
       { resource: 'classes',  action: 'create' },
       { resource: 'users',    action: 'manage' },
       { resource: 'school',   action: 'update' },
     ])
     expect(result['zumre:create']).toBe(true)
-    expect(result['exam:create']).toBe(true)
     expect(result['homework:delete']).toBe(true)
     expect(result['classes:create']).toBe(false)
     expect(result['users:manage']).toBe(false)

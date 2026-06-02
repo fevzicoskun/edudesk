@@ -34,15 +34,12 @@ export default async function DosyamPage() {
 
   const [
     { count: zumreCount },
-    { count: examCount },
     { data: dailyPlansRaw },
     { data: zumreMeetingsRaw },
-    { data: commonExamsRaw },
     { data: sokReportsRaw },
     { data: notebookChecksRaw },
   ] = await Promise.all([
     supabase.from('zumre_meetings').select('id', { count: 'exact', head: true }).eq('school_id', profile.school_id),
-    supabase.from('common_exams').select('id', { count: 'exact', head: true }).eq('school_id', profile.school_id),
     supabase.from('daily_plans')
       .select('plan_date, topic, class_id, classes(name)')
       .eq('teacher_id', profile.id)
@@ -53,10 +50,6 @@ export default async function DosyamPage() {
       .select('title, meeting_date')
       .eq('school_id', profile.school_id)
       .order('meeting_date', { ascending: false }),
-    supabase.from('common_exams')
-      .select('title, exam_date, subject')
-      .eq('school_id', profile.school_id)
-      .order('exam_date', { ascending: false }),
     supabase.from('sok_reports')
       .select('meeting_date, term, academic_year, class_id, classes(name)')
       .eq('teacher_id', profile.id)
@@ -70,13 +63,11 @@ export default async function DosyamPage() {
 
   const status = await InspectionService.getCompletionStatus({
     zumreCount: zumreCount ?? 0,
-    examCount:  examCount  ?? 0,
   })
 
   const missingDocs = [
     !status.dailyPlans     && 'Günlük Planlar',
     !status.zumreMeetings  && 'Zümre Toplantıları',
-    !status.commonExams    && 'Yazılı Sınavlar',
     !status.sokReports     && 'ŞÖK Tutanakları',
     !status.notebookChecks && 'Defter Kontrolü',
   ].filter(Boolean) as string[]
@@ -94,11 +85,6 @@ export default async function DosyamPage() {
     zumreMeetings: (zumreMeetingsRaw ?? []).map((m: any) => ({
       title:        m.title,
       meeting_date: m.meeting_date,
-    })),
-    commonExams: (commonExamsRaw ?? []).map((e: any) => ({
-      title:     e.title,
-      exam_date: e.exam_date,
-      subject:   e.subject,
     })),
     sokReports: (sokReportsRaw ?? []).map((s: any) => ({
       meeting_date:  s.meeting_date,
@@ -146,8 +132,7 @@ export default async function DosyamPage() {
       <div className="flex flex-col gap-2">
         <DocRow ok={status.dailyPlans}     icon="📋" title="Günlük Ders Planları"      href="/profil/dosyam/gunluk-plan"                newHref="/profil/dosyam/gunluk-plan/yeni" />
         <DocRow ok={status.zumreMeetings}  icon="👥" title="Zümre Toplantı Raporları"  href="/profil/dosyam/zumre-toplantilari" />
-        <DocRow ok={status.commonExams}    icon="📝" title="Yazılı Sınavlar"           href="/profil/dosyam/yazili-sinavlar" />
-        <DocRow ok={status.sokReports}     icon="📑" title="ŞÖK Tutanakları"           href="/profil/dosyam/sok"           newHref="/profil/dosyam/sok/yeni" />
+<DocRow ok={status.sokReports}     icon="📑" title="ŞÖK Tutanakları"           href="/profil/dosyam/sok"           newHref="/profil/dosyam/sok/yeni" />
         <DocRow ok={status.notebookChecks} icon="📓" title="Defter Kontrolü"           href="/profil/dosyam/defter-kontrolu" newHref="/profil/dosyam/defter-kontrolu" />
       </div>
     </div>

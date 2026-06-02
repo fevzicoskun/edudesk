@@ -36,7 +36,7 @@ export const OGRETMEN_PERMISSIONS: GrantedPermission[] = [
   { resource: 'notes',      action: 'delete', scope: 'own',    source: 'role' },
 ]
 
-// ─── Zümre Başkanı: ~29 izin ──────────────────────────────────────────────────
+// ─── Zümre Başkanı: ~24 izin ──────────────────────────────────────────────────
 // Öğretmen izinleri + zümre yönetimi + geniş ödev scope
 // NOT: Sınıf ekleme/silme yetkisi Müdür Yardımcısı'na aittir.
 export const ZUMRE_BASKANI_PERMISSIONS: GrantedPermission[] = [
@@ -48,12 +48,6 @@ export const ZUMRE_BASKANI_PERMISSIONS: GrantedPermission[] = [
   { resource: 'zumre',      action: 'update', scope: 'school', source: 'role' },
   { resource: 'zumre',      action: 'delete', scope: 'school', source: 'role' },
   { resource: 'zumre',      action: 'manage', scope: 'school', source: 'role' },
-
-  // Sınav: ortak sınavları yönetir
-  { resource: 'exam',       action: 'create', scope: 'school', source: 'role' },
-  { resource: 'exam',       action: 'read',   scope: 'school', source: 'role' },
-  { resource: 'exam',       action: 'update', scope: 'school', source: 'role' },
-  { resource: 'exam',       action: 'delete', scope: 'school', source: 'role' },
 
   // Ödev: tüm okul ödevlerini güncelleyebilir ve silebilir (zümre kapsamında)
   { resource: 'homework',   action: 'update', scope: 'school', source: 'role' },

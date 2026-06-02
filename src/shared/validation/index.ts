@@ -57,12 +57,6 @@ export const createMeetingSchema = z.object({
   branch: z.string().max(100).optional().nullable(),
 })
 
-export const createExamSchema = z.object({
-  title: z.string().min(1, 'Başlık gerekli').max(200),
-  subject: z.string().min(1, 'Ders gerekli').max(100),
-  exam_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı'),
-})
-
 export const submissionStatusSchema = z.enum(['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli'])
 
 export const attendanceStatusSchema = z.enum(['present', 'absent', 'late', 'excused'])

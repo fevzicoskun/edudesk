@@ -88,24 +88,6 @@ export interface ZumreMeeting {
   created_at: string
 }
 
-export interface ExamEntry {
-  id: string
-  exam_id: string
-  student_id: string | null
-  name: string | null
-  grade: number
-  created_at: string
-}
-
-export interface CommonExam {
-  id: string
-  title: string
-  exam_date: string
-  subject: string
-  created_by: string
-  created_at: string
-}
-
 export interface CurriculumProgress {
   id: string
   teacher_id: string

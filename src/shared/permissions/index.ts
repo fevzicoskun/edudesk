@@ -57,13 +57,6 @@ export const P = {
     DELETE: p('zumre', 'delete'),
     MANAGE: p('zumre', 'manage'),
   },
-  EXAM: {
-    CREATE: p('exam', 'create'),
-    READ:   p('exam', 'read'),
-    UPDATE: p('exam', 'update'),
-    DELETE: p('exam', 'delete'),
-    MANAGE: p('exam', 'manage'),
-  },
   USERS: {
     CREATE: p('users', 'create'),
     READ:   p('users', 'read'),
