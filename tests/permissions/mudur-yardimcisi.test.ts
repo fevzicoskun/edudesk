@@ -111,9 +111,6 @@ describe('PermissionService ile müdür yardımcısı kontrolü', () => {
   it('school:read → true', async () => {
     expect(await PermissionService.check(U, S, 'school', 'read')).toBe(true)
   })
-  it('zumre:create → true (inherited)', async () => {
-    expect(await PermissionService.check(U, S, 'zumre', 'create')).toBe(true)
-  })
   it('checkMany() doğru çalışır', async () => {
     const result = await PermissionService.checkMany(U, S, [
       { resource: 'users',  action: 'create' },

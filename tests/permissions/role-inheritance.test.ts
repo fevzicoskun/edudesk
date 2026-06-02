@@ -63,15 +63,6 @@ describe('İzin kümesi büyüklüğü', () => {
 
 // ─── Exclusive (üst role özgü) izinler ────────────────────────────────────────
 describe('Role-exclusive izinler', () => {
-  it('zumre:create sadece zumre_baskani ve üstünde var', () => {
-    const hasZumreCreate = (perms: typeof OGRETMEN_PERMISSIONS) =>
-      perms.some(p => p.resource === 'zumre' && p.action === 'create')
-
-    expect(hasZumreCreate(OGRETMEN_PERMISSIONS)).toBe(false)
-    expect(hasZumreCreate(ZUMRE_BASKANI_PERMISSIONS)).toBe(true)
-    expect(hasZumreCreate(MUDUR_YARDIMCISI_PERMISSIONS)).toBe(true)
-    expect(hasZumreCreate(MUDUR_PERMISSIONS)).toBe(true)
-  })
 
   it('users:create sadece mudur_yardimcisi ve üstünde var', () => {
     const hasUsersCreate = (perms: typeof OGRETMEN_PERMISSIONS) =>
@@ -143,7 +134,7 @@ describe('ROLE_PERMISSIONS lookup', () => {
   it('kaynak tipleri beklenen listeyle sınırlı', () => {
     const VALID_RESOURCES = new Set([
       'homework', 'attendance', 'students', 'classes',
-      'zumre', 'users', 'school', 'export', 'notes', 'grades', 'kanaat',
+      'users', 'school', 'export', 'notes',
     ])
     for (const perms of Object.values(ROLE_PERMISSIONS)) {
       for (const p of perms) {

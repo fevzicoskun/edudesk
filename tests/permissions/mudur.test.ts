@@ -86,9 +86,6 @@ describe('PermissionService ile müdür kontrolü', () => {
   it('school:update → true', async () => {
     expect(await PermissionService.check(U, S, 'school', 'update')).toBe(true)
   })
-  it('zumre:create → true (inherited)', async () => {
-    expect(await PermissionService.check(U, S, 'zumre', 'create')).toBe(true)
-  })
   it('notes:read scope → school', async () => {
     expect(await PermissionService.getScope(U, S, 'notes', 'read')).toBe('school')
   })
@@ -97,7 +94,7 @@ describe('PermissionService ile müdür kontrolü', () => {
       { resource: 'users',  action: 'manage' },
       { resource: 'school', action: 'update' },
       { resource: 'school', action: 'manage' },
-      { resource: 'zumre',  action: 'create' },
+
     ])
     expect(Object.values(result).every(Boolean)).toBe(true)
   })

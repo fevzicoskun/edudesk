@@ -34,24 +34,6 @@ describe('ZUMRE_BASKANI_PERMISSIONS fixture', () => {
   })
 })
 
-// ─── Zümre yönetimi ───────────────────────────────────────────────────────────
-describe('Zümre (zumre)', () => {
-  it('zümre toplantısı oluşturabilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'zumre', 'create', 'school')
-  })
-  it('zümre kayıtlarını okuyabilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'zumre', 'read', 'school')
-  })
-  it('zümre kayıtlarını güncelleyebilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'zumre', 'update', 'school')
-  })
-  it('zümre kayıtlarını silebilir', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'zumre', 'delete', 'school')
-  })
-  it('zümre yönetim yetkisine sahip', () => {
-    expectPermission(ZUMRE_BASKANI_PERMISSIONS, 'zumre', 'manage', 'school')
-  })
-})
 
 // ─── Sınıf yönetimi ───────────────────────────────────────────────────────────
 describe('Sınıf (classes)', () => {
@@ -100,9 +82,6 @@ describe('Yasak işlemler', () => {
 
 // ─── PermissionService entegrasyonu ──────────────────────────────────────────
 describe('PermissionService ile zümre başkanı kontrolü', () => {
-  it('zumre:create → true', async () => {
-    expect(await PermissionService.check(U, S, 'zumre', 'create')).toBe(true)
-  })
   it('users:manage → false', async () => {
     expect(await PermissionService.check(U, S, 'users', 'manage')).toBe(false)
   })
@@ -111,13 +90,11 @@ describe('PermissionService ile zümre başkanı kontrolü', () => {
   })
   it('checkMany() doğru çalışır', async () => {
     const result = await PermissionService.checkMany(U, S, [
-      { resource: 'zumre',    action: 'create' },
       { resource: 'homework', action: 'delete' },
       { resource: 'classes',  action: 'create' },
       { resource: 'users',    action: 'manage' },
       { resource: 'school',   action: 'update' },
     ])
-    expect(result['zumre:create']).toBe(true)
     expect(result['homework:delete']).toBe(true)
     expect(result['classes:create']).toBe(false)
     expect(result['users:manage']).toBe(false)

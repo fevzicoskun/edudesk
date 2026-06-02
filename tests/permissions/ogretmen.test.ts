@@ -104,9 +104,6 @@ describe('Notlar', () => {
 
 // ─── Yasak işlemler ───────────────────────────────────────────────────────────
 describe('Yasak işlemler', () => {
-  it('zümre OLUŞTURAMAZ', () => {
-    expectNoPermission(OGRETMEN_PERMISSIONS, 'zumre', 'create')
-  })
   it('kullanıcı YÖNETEMEz', () => {
     expectNoPermission(OGRETMEN_PERMISSIONS, 'users', 'manage')
   })

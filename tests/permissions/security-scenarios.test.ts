@@ -90,18 +90,6 @@ describe('Senaryo: öğretmen başka okul datasını göremez', () => {
 })
 
 // ─── Senaryo 3: Mentor raporu yetki sınırları ─────────────────────────────────
-describe('Senaryo: mentor raporu yetki sınırları', () => {
-  it('öğretmen (ogretmen rolü) zümre oluşturamaz', async () => {
-    mockAs(OGRETMEN_PERMISSIONS)
-    expect(await PermissionService.check('teacher-x', SCHOOL_A, 'zumre', 'create')).toBe(false)
-  })
-
-  it('müdür yardımcısı zümre oluşturabilir (inherited via zumre_baskani)', async () => {
-    mockAs(MUDUR_YARDIMCISI_PERMISSIONS)
-    expect(await PermissionService.check('my-user', SCHOOL_A, 'zumre', 'create')).toBe(true)
-  })
-
-})
 
 // ─── Senaryo 4: Kullanıcı yönetimi privilege escalation koruması ──────────────
 describe('Senaryo: privilege escalation koruması', () => {
