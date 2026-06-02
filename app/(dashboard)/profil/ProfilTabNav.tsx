@@ -2,17 +2,11 @@ import Link from 'next/link'
 
 export default function ProfilTabNav({
   active,
-  showTeacherTabs,
 }: {
-  active: 'profil' | 'dosyam' | 'ogretmen-dosyasi'
-  showTeacherTabs: boolean
+  active: 'profil'
 }) {
   const tabs = [
     { href: '/profil', key: 'profil' as const, label: 'Profilim' },
-    ...(showTeacherTabs ? [
-      { href: '/profil/dosyam', key: 'dosyam' as const, label: 'Dosyam' },
-      { href: '/ogretmen-dosyasi', key: 'ogretmen-dosyasi' as const, label: 'Öğretmen Dosyası' },
-    ] : []),
   ]
 
   return (
