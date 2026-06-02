@@ -3,13 +3,11 @@ export type Resource =
   | 'attendance'
   | 'students'
   | 'classes'
-  | 'zumre'
   | 'users'
   | 'school'
   | 'export'
   | 'notes'
-  | 'grades'
-  | 'kanaat'
+
 
 export type Action = 'create' | 'read' | 'update' | 'delete' | 'manage'
 

@@ -50,13 +50,6 @@ export const P = {
     UPDATE: p('classes', 'update'),
     DELETE: p('classes', 'delete'),
   },
-  ZUMRE: {
-    CREATE: p('zumre', 'create'),
-    READ:   p('zumre', 'read'),
-    UPDATE: p('zumre', 'update'),
-    DELETE: p('zumre', 'delete'),
-    MANAGE: p('zumre', 'manage'),
-  },
   USERS: {
     CREATE: p('users', 'create'),
     READ:   p('users', 'read'),
@@ -77,17 +70,6 @@ export const P = {
     READ:   p('notes', 'read'),
     UPDATE: p('notes', 'update'),
     DELETE: p('notes', 'delete'),
-  },
-  GRADES: {
-    CREATE: p('grades', 'create'),
-    READ:   p('grades', 'read'),
-    UPDATE: p('grades', 'update'),
-    DELETE: p('grades', 'delete'),
-  },
-  KANAAT: {
-    CREATE: p('kanaat', 'create'),
-    READ:   p('kanaat', 'read'),
-    UPDATE: p('kanaat', 'update'),
   },
 } as const
 

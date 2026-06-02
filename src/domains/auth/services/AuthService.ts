@@ -1,25 +1,14 @@
 import { AuthRepository } from '../repositories/AuthRepository'
-import { SessionRepository } from '@/src/domains/sessions/repositories/SessionRepository'
 import type { AuthState } from '../types'
 
 export const AuthService = {
   async signIn(email: string, password: string): Promise<AuthState> {
     const { error } = await AuthRepository.signInWithPassword(email, password)
     if (error) return { error: 'E-posta veya şifre hatalı.' }
-
-    const { data: { user } } = await AuthRepository.getUser()
-    if (user) {
-      await SessionRepository.createSession(user.id)
-    }
-
     return null
   },
 
   async signOut(): Promise<void> {
-    const { data: { user } } = await AuthRepository.getUser()
-    if (user) {
-      await SessionRepository.endSession(user.id)
-    }
     await AuthRepository.signOut()
   },
 
@@ -51,7 +40,6 @@ export const AuthService = {
     if (updateError) return { error: 'Profil oluşturulamadı: ' + updateError.message }
 
     if (authData.session) {
-      await SessionRepository.createSession(authData.user.id)
       return null // signals redirect to /anasayfa
     }
 
