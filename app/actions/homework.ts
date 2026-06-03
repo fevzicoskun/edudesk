@@ -141,18 +141,20 @@ export async function updateHomework(_: unknown, formData: FormData) {
   redirect(`/odevler/${id}?guncellendi=1`)
 }
 
-export async function deleteHomework(id: string) {
+export async function deleteHomework(id: string): Promise<{ error?: string }> {
   UUID.parse(id)
   const result = await HomeworkService.deleteHomework(id)
-  if (result.error) throw new Error(result.error)
+  if (result.error) return { error: result.error }
   revalidatePath('/odevler')
+  return {}
 }
 
-export async function restoreHomework(id: string) {
+export async function restoreHomework(id: string): Promise<{ error?: string }> {
   UUID.parse(id)
   const result = await HomeworkService.restoreHomework(id)
-  if (result.error) throw new Error(result.error)
+  if (result.error) return { error: result.error }
   revalidatePath('/odevler')
+  return {}
 }
 
 export async function getStudentHomeworkProfile(studentId: string, classId: string) {

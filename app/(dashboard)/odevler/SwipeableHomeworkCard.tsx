@@ -48,7 +48,7 @@ interface SwipeableHomeworkCardProps {
   canWrite: boolean
   statusCounts?: StatusCounts
   totalStudents?: number
-  onDelete: () => unknown
+  onDelete: () => Promise<{ error?: string } | void>
 }
 
 export default function SwipeableHomeworkCard({
@@ -71,6 +71,7 @@ export default function SwipeableHomeworkCard({
   const [swiping, setSwiping] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isDeleted, setIsDeleted] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   const handlers = useSwipeable({
     onSwiping: (e) => {
@@ -226,7 +227,13 @@ export default function SwipeableHomeworkCard({
                 onClick={() => {
                   setShowConfirm(false)
                   setIsDeleted(true)
-                  startTransition(async () => { await onDelete() })
+                  startTransition(async () => {
+                    const result = await onDelete()
+                    if (result && 'error' in result && result.error) {
+                      setIsDeleted(false)
+                      setDeleteError(result.error)
+                    }
+                  })
                 }}
                 disabled={isPending}
                 className="px-4 py-2 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors min-h-[44px] disabled:opacity-50"
@@ -235,6 +242,11 @@ export default function SwipeableHomeworkCard({
               </button>
             </div>
           </div>
+        </div>
+      )}
+      {deleteError && (
+        <div className="absolute bottom-3 left-3 right-3 z-20 bg-red-600 text-white text-xs font-medium px-3 py-2 rounded-lg text-center">
+          {deleteError}
         </div>
       )}
     </div>
