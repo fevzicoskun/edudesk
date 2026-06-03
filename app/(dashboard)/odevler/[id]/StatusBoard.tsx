@@ -317,7 +317,7 @@ export default function StatusBoard({
                 </div>
                 <button
                   onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                  className={`shrink-0 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+                  className={`shrink-0 text-xs px-2.5 min-h-[44px] min-w-[72px] rounded-lg border transition-colors ${
                     noteSaved
                       ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                       : hasNote
@@ -329,17 +329,33 @@ export default function StatusBoard({
                 </button>
               </div>
 
-              {/* Durum chip butonları */}
-              <div className="flex flex-wrap gap-1.5">
-                {STATUS_OPTIONS.map(option => (
+              {/* Durum butonları — 3+2 grid, min-h-[44px] WCAG dokunma hedefi */}
+              <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                {(['yapildi', 'eksik', 'yapilmadi'] as SubmissionStatus[]).map(option => (
                   <button
                     key={option}
                     disabled={isItemPending}
                     onClick={() => setStatus(item.student_id, option)}
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full border transition-colors disabled:cursor-not-allowed ${
+                    className={`text-xs px-2 rounded-xl border transition-colors min-h-[44px] flex items-center justify-center disabled:cursor-not-allowed ${
                       status === option
-                        ? STYLES[option]
-                        : 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
+                        ? `${STYLES[option]} ring-2 ring-current font-bold`
+                        : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
+                    }`}
+                  >
+                    {LABELS[option]}
+                  </button>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-1.5">
+                {(['gec', 'mazeretli'] as SubmissionStatus[]).map(option => (
+                  <button
+                    key={option}
+                    disabled={isItemPending}
+                    onClick={() => setStatus(item.student_id, option)}
+                    className={`text-xs px-2 rounded-xl border transition-colors min-h-[44px] flex items-center justify-center disabled:cursor-not-allowed ${
+                      status === option
+                        ? `${STYLES[option]} ring-2 ring-current font-bold`
+                        : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
                     }`}
                   >
                     {LABELS[option]}
