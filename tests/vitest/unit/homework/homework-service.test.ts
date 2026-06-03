@@ -82,6 +82,30 @@ describe('HomeworkService.createHomework()', () => {
     const result = await HomeworkService.createHomework(HW_DATA)
     expect(result.error).toBe('DB bağlantı hatası')
   })
+
+  it('due_date null ile ödev oluşturulur (şablon)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.insertHomework).mockResolvedValue({ data: { id: 'hw-tmpl' }, error: null } as never)
+    const result = await HomeworkService.createHomework({
+      ...HW_DATA,
+      due_date: null,
+      is_template: true,
+    })
+    expect(result.error).toBeUndefined()
+    expect(HomeworkRepository.insertHomework).toHaveBeenCalledWith(
+      expect.objectContaining({ due_date: null, is_template: true })
+    )
+  })
+
+  it('source_id null ile ödev oluşturulur', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.insertHomework).mockResolvedValue({ data: { id: 'hw-nosrc' }, error: null } as never)
+    const result = await HomeworkService.createHomework({ ...HW_DATA, source_id: null })
+    expect(result.error).toBeUndefined()
+    expect(HomeworkRepository.insertHomework).toHaveBeenCalledWith(
+      expect.objectContaining({ source_id: null })
+    )
+  })
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -134,6 +158,19 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
     vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
     expect(result.success).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateSubmissionStatus() — cross-school', () => {
+  it('başka okul school_id ile ödev bulunamaz → hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: null, error: null,
+    } as never)
+    const result = await HomeworkService.updateSubmissionStatus('hw-other', 'stu-1', 'yapildi')
+    expect(result.error).toBe('Ödev bulunamadı')
+    expect(HomeworkRepository.upsertSubmissionStatus).not.toHaveBeenCalled()
   })
 })
 
@@ -265,5 +302,20 @@ describe('HomeworkService.getStudentHomeworkProfile()', () => {
     expect(hw2.note).toBe('Yarısı eksik')
     expect(result.stats.yapildi).toBe(1)
     expect(result.stats.completionRate).toBe(50)
+  })
+
+  it('null due_date olan ödev profile\'da düzgün işlenir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: { full_name: 'Test', student_number: null, veli_ad: null, veli_telefon: null },
+      homeworks: [
+        { id: 'hw-1', title: 'Şablon', subject: 'Mat', due_date: null },
+      ],
+      submissions: [],
+    } as never)
+    const result = await HomeworkService.getStudentHomeworkProfile('stu-1', 'cls-1')
+    if ('error' in result) throw new Error(result.error)
+    expect(result.homeworks[0].due_date).toBeNull()
+    expect(result.homeworks[0].status).toBe('yapilmadi')
   })
 })
