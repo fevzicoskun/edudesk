@@ -122,9 +122,13 @@ export default function StatusBoard({
   function saveNote(studentId: string, note: string) {
     setNotes(prev => ({ ...prev, [studentId]: note }))
     startTransition(async () => {
-      await updateSubmissionNote(homeworkId, studentId, note)
-      setNoteSavedId(studentId)
-      setTimeout(() => setNoteSavedId(id => id === studentId ? null : id), 2000)
+      const result = await updateSubmissionNote(homeworkId, studentId, note)
+      if (result?.error) {
+        setErrorMsg(result.error)
+      } else {
+        setNoteSavedId(studentId)
+        setTimeout(() => setNoteSavedId(id => id === studentId ? null : id), 2000)
+      }
     })
   }
 
