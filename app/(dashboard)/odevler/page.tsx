@@ -45,8 +45,8 @@ export default async function OdevlerPage({
   const canWrite = isTeachingRole(profile.role)
 
   const subjectsQuery = isZumreBaskani
-    ? supabase.from('homeworks').select('subject').is('deleted_at', null)
-    : supabase.from('homeworks').select('subject').eq('teacher_id', user.id).is('deleted_at', null)
+    ? supabase.from('homeworks').select('subject').eq('school_id', sid).is('deleted_at', null)
+    : supabase.from('homeworks').select('subject').eq('school_id', sid).eq('teacher_id', user.id).is('deleted_at', null)
 
   const [classesResult, subjectsResult, teachersResult] = await Promise.all([
     supabase.from('classes').select('id, name, grade').eq('school_id', sid).order('grade').order('name'),
