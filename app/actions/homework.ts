@@ -79,7 +79,7 @@ export async function createHomework(_: unknown, formData: FormData) {
   if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
 
   revalidatePath('/odevler')
-  if (succeeded.length === 1 && failedCount === 0) redirect(`/odevler/${succeeded[0]}`)
+  if (classIds.length === 1 && failedCount === 0) redirect(`/odevler/${succeeded[0]}`)
   if (failedCount > 0) redirect(`/odevler?olusturuldu=${succeeded.length}&hatali=${failedCount}`)
   redirect(`/odevler?olusturuldu=${succeeded.length}`)
 }

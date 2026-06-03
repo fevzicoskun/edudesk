@@ -106,7 +106,7 @@ export default async function OdevlerPage({
                 : `${params.olusturuldu} sınıf için ödev oluşturuldu.`}
               </p>
               {params.hatali && (
-                <p className="text-xs mt-0.5 opacity-80">{params.hatali} sınıf için oluşturulamadı.</p>
+                <p className="text-xs mt-0.5 opacity-80">{parseInt(params.hatali)} sınıf için oluşturulamadı.</p>
               )}
             </div>
           </div>
