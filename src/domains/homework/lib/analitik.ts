@@ -67,10 +67,13 @@ export function computeClassStats(
   const eligible   = totalSlots - mazeretli
   const completionPct = eligible === 0 ? 0 : Math.round((yapildi / eligible) * 100)
 
-  const today        = new Date().toISOString().slice(0, 10)
-  const hwsWithSubs  = new Set(classSubs.map(s => s.homework_id))
+  const today = new Date().toISOString().slice(0, 10)
+  const subCountByHw = new Map<string, number>()
+  for (const s of classSubs) {
+    subCountByHw.set(s.homework_id, (subCountByHw.get(s.homework_id) ?? 0) + 1)
+  }
   const pendingReview = classHws.filter(
-    h => h.due_date !== null && h.due_date < today && !hwsWithSubs.has(h.id),
+    h => h.due_date !== null && h.due_date < today && (subCountByHw.get(h.id) ?? 0) < studentCount,
   ).length
 
   return { classId, completionPct, totalHomeworks: classHws.length, studentCount, pendingReview }
@@ -159,12 +162,17 @@ export function computeKpiCards(
   }
   const avgCompletionPct = counted === 0 ? 0 : Math.round(completionSum / counted)
 
-  const riskyStudentCount  = computeRiskyStudents(students, homeworks, submissions).length
-  const today              = new Date().toISOString().slice(0, 10)
-  const hwsWithAnySub      = new Set(submissions.map(s => s.homework_id))
-  const pendingReviewCount = homeworks.filter(
-    h => h.due_date !== null && h.due_date < today && !hwsWithAnySub.has(h.id),
-  ).length
+  const riskyStudentCount = computeRiskyStudents(students, homeworks, submissions).length
+  const today = new Date().toISOString().slice(0, 10)
+  const subCountByHw = new Map<string, number>()
+  for (const s of submissions) {
+    subCountByHw.set(s.homework_id, (subCountByHw.get(s.homework_id) ?? 0) + 1)
+  }
+  const pendingReviewCount = homeworks.filter(h => {
+    if (!h.due_date || h.due_date >= today) return false
+    const classStudentCount = studentsByClass.get(h.class_id) ?? 0
+    return classStudentCount > 0 && (subCountByHw.get(h.id) ?? 0) < classStudentCount
+  }).length
 
   return { totalHomeworks, avgCompletionPct, riskyStudentCount, pendingReviewCount }
 }

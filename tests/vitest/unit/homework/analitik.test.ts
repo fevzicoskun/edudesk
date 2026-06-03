@@ -49,6 +49,18 @@ describe('computeClassStats()', () => {
     expect(computeClassStats('c1', homeworks, [], 2).pendingReview).toBe(1)
   })
 
+  it('pendingReview: kısmi işaretleme (1/2 öğrenci) → hâlâ pending', () => {
+    const homeworks = [hw('h1', 'c1', '2020-01-01')]
+    const submissions = [sub('h1', 's1', 'yapildi')]
+    expect(computeClassStats('c1', homeworks, submissions, 2).pendingReview).toBe(1)
+  })
+
+  it('pendingReview: tüm öğrenciler işaretlendi → pending değil', () => {
+    const homeworks = [hw('h1', 'c1', '2020-01-01')]
+    const submissions = [sub('h1', 's1', 'yapildi'), sub('h1', 's2', 'eksik')]
+    expect(computeClassStats('c1', homeworks, submissions, 2).pendingReview).toBe(0)
+  })
+
   it('başka sınıfın ödevleri sayılmaz', () => {
     const homeworks = [hw('h1', 'c1'), hw('h2', 'c2')]
     expect(computeClassStats('c1', homeworks, [], 5).totalHomeworks).toBe(1)
@@ -147,6 +159,20 @@ describe('computeKpiCards()', () => {
   it('pendingReview: tarihi geçmiş + submission yok', () => {
     const homeworks = [hw('h1','c1','2020-01-01'), hw('h2','c1','2030-12-31')]
     expect(computeKpiCards(homeworks, [], [student('s1','c1')]).pendingReviewCount).toBe(1)
+  })
+
+  it('pendingReview: kısmi işaretleme (1/2 öğrenci) → hâlâ pending', () => {
+    const homeworks = [hw('h1','c1','2020-01-01')]
+    const students  = [student('s1','c1'), student('s2','c1')]
+    const submissions = [sub('h1','s1','yapildi')]
+    expect(computeKpiCards(homeworks, submissions, students).pendingReviewCount).toBe(1)
+  })
+
+  it('pendingReview: tüm öğrenciler işaretlendi → pending değil', () => {
+    const homeworks = [hw('h1','c1','2020-01-01')]
+    const students  = [student('s1','c1'), student('s2','c1')]
+    const submissions = [sub('h1','s1','yapildi'), sub('h1','s2','eksik')]
+    expect(computeKpiCards(homeworks, submissions, students).pendingReviewCount).toBe(0)
   })
 
   it('riskyStudentCount computeRiskyStudents ile tutarlı', () => {

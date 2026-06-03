@@ -46,7 +46,6 @@ export default function StatusBoard({
   homeworkTitle,
   totalHomeworks,
   classId,
-  classId: _classId,
 }: {
   homeworkId: string
   items: StatusItem[]
