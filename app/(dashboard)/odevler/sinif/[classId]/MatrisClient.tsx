@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
-
-type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
+import type { SubmissionStatus } from '@/src/shared/types'
 
 const STATUS_LABEL: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı', eksik: 'Eksik', yapilmadi: 'Yapılmadı', gec: 'Geç', mazeretli: 'Mazeretli',
@@ -68,6 +67,12 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
     return { done, eligible, pct: eligible === 0 ? null : Math.round(done / eligible * 100) }
   }
 
+  const statsMap = useMemo(() => {
+    const map: Record<string, { done: number; eligible: number; pct: number | null }> = {}
+    for (const s of students) map[s.id] = studentStats(s.id)
+    return map
+  }, [students, homeworks, subMap])
+
   const q = search.trim().toLowerCase()
 
   const filteredStudents = q
@@ -81,8 +86,8 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
     if (sortBy === 'number') {
       return (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
     }
-    const ap = studentStats(a.id).pct
-    const bp = studentStats(b.id).pct
+    const ap = statsMap[a.id].pct
+    const bp = statsMap[b.id].pct
     if (ap === null && bp === null) return 0
     if (ap === null) return 1
     if (bp === null) return -1
@@ -168,7 +173,7 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
             </thead>
             <tbody>
               {sortedStudents.map((student, si) => {
-                const { done, eligible, pct } = studentStats(student.id)
+                const { done, eligible, pct } = statsMap[student.id]
                 return (
                   <tr key={student.id} className={si % 2 === 0 ? '' : 'bg-gray-50/40 dark:bg-slate-900/20'}>
                     <td className={`sticky left-0 z-10 border-r border-b border-gray-200 dark:border-slate-700 px-3 py-2 font-medium text-gray-800 dark:text-slate-200 ${si % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50/70 dark:bg-slate-800/80'}`}>
