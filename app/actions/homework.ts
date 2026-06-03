@@ -53,24 +53,35 @@ export async function createHomework(_: unknown, formData: FormData) {
   const today = new Date().toISOString().split('T')[0]
   if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
-  let firstId: string | undefined
-  for (const classId of classIds) {
-    const result = await HomeworkService.createHomework({
-      class_id:    classId,
-      title:       parsed.data.title,
-      description: parsed.data.description ?? null,
-      subject:     parsed.data.subject,
-      due_date:    parsed.data.due_date,
-      source_id:   parsed.data.source_id ?? null,
-      is_template: false,
-    })
-    if (result.error) return result
-    if (!firstId) firstId = result.id
-  }
+  const results = await Promise.allSettled(
+    classIds.map(classId =>
+      HomeworkService.createHomework({
+        class_id:    classId,
+        title:       parsed.data.title,
+        description: parsed.data.description ?? null,
+        subject:     parsed.data.subject,
+        due_date:    parsed.data.due_date,
+        source_id:   parsed.data.source_id ?? null,
+        is_template: false,
+      })
+    )
+  )
+
+  const succeeded = results
+    .filter((r): r is PromiseFulfilledResult<{ id?: string; error?: string }> =>
+      r.status === 'fulfilled' && !r.value.error
+    )
+    .map(r => r.value.id!)
+    .filter(Boolean)
+
+  const failedCount = results.length - succeeded.length
+
+  if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
 
   revalidatePath('/odevler')
-  if (classIds.length === 1 && firstId) redirect(`/odevler/${firstId}`)
-  redirect(`/odevler?olusturuldu=${classIds.length}`)
+  if (succeeded.length === 1 && failedCount === 0) redirect(`/odevler/${succeeded[0]}`)
+  if (failedCount > 0) redirect(`/odevler?olusturuldu=${succeeded.length}&hatali=${failedCount}`)
+  redirect(`/odevler?olusturuldu=${succeeded.length}`)
 }
 
 export async function updateSubmissionStatus(

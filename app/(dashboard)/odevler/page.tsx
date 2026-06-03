@@ -28,6 +28,7 @@ type FilterParams = {
   ogretmen?: string
   q?: string
   olusturuldu?: string
+  hatali?: string
 }
 
 export default async function OdevlerPage({
@@ -91,13 +92,23 @@ export default async function OdevlerPage({
         </div>
 
         {params.olusturuldu && parseInt(params.olusturuldu) > 0 && (
-          <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm px-4 py-3 rounded-xl">
-            <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          <div className={`mb-4 flex items-start gap-2 border text-sm px-4 py-3 rounded-xl ${
+            params.hatali
+              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
+              : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+          }`}>
+            <svg className={`w-4 h-4 shrink-0 mt-0.5 ${params.hatali ? 'text-amber-500' : 'text-green-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d={params.hatali ? 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z' : 'M5 13l4 4L19 7'} />
             </svg>
-            {parseInt(params.olusturuldu) === 1
-              ? 'Ödev başarıyla oluşturuldu.'
-              : `${params.olusturuldu} sınıf için ödev oluşturuldu.`}
+            <div>
+              <p>{parseInt(params.olusturuldu) === 1
+                ? 'Ödev başarıyla oluşturuldu.'
+                : `${params.olusturuldu} sınıf için ödev oluşturuldu.`}
+              </p>
+              {params.hatali && (
+                <p className="text-xs mt-0.5 opacity-80">{params.hatali} sınıf için oluşturulamadı.</p>
+              )}
+            </div>
           </div>
         )}
 
