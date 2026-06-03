@@ -175,6 +175,48 @@ describe('HomeworkService.updateSubmissionStatus() — cross-school', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateSubmissionStatus() — concurrency', () => {
+  it('aynı öğrenci için paralel iki güncelleme — her ikisi de başarılı döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus)
+      .mockResolvedValueOnce({ error: null } as never)
+      .mockResolvedValueOnce({ error: null } as never)
+
+    const [r1, r2] = await Promise.all([
+      HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi'),
+      HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'eksik'),
+    ])
+
+    expect(r1.success).toBe(true)
+    expect(r2.success).toBe(true)
+    expect(HomeworkRepository.upsertSubmissionStatus).toHaveBeenCalledTimes(2)
+  })
+
+  it('bir istek başarısız olursa diğeri etkilenmez', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus)
+      .mockResolvedValueOnce({ error: { message: 'DB bağlantı hatası' } } as never)
+      .mockResolvedValueOnce({ error: null } as never)
+
+    const [r1, r2] = await Promise.all([
+      HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi'),
+      HomeworkService.updateSubmissionStatus('hw-1', 'stu-2', 'eksik'),
+    ])
+
+    expect(r1.error).toBe('DB bağlantı hatası')
+    expect(r2.success).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
 describe('HomeworkService.deleteHomework()', () => {
   it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
     vi.mocked(getAbility).mockResolvedValue(null)
