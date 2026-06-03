@@ -169,3 +169,55 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
     expect(result.error).toBeTruthy()
   })
 })
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.createHomework() — paralel çoklu çağrı', () => {
+  const createdIds: string[] = []
+
+  afterAll(async () => {
+    if (createdIds.length) {
+      await serviceDb.from('homework_submissions').delete().in('homework_id', createdIds)
+      await serviceDb.from('homeworks').delete().in('id', createdIds)
+    }
+  })
+
+  it('birden fazla sınıf için paralel create hepsi başarılı', async () => {
+    const [r1, r2] = await Promise.all([
+      HomeworkService.createHomework({
+        class_id: classId, title: 'Paralel Ödev 1',
+        description: null, subject: 'Matematik', due_date: '2026-12-31',
+      }),
+      HomeworkService.createHomework({
+        class_id: classId, title: 'Paralel Ödev 2',
+        description: null, subject: 'Fizik', due_date: '2026-12-31',
+      }),
+    ])
+
+    expect(r1.error).toBeUndefined()
+    expect(r2.error).toBeUndefined()
+    expect(r1.id).toBeTruthy()
+    expect(r2.id).toBeTruthy()
+    expect(r1.id).not.toBe(r2.id)
+
+    if (r1.id) createdIds.push(r1.id)
+    if (r2.id) createdIds.push(r2.id)
+
+    const { data } = await serviceDb
+      .from('homeworks')
+      .select('id')
+      .in('id', createdIds)
+      .eq('school_id', school.id)
+    expect(data).toHaveLength(2)
+  })
+
+  it('geçersiz sınıf ID ile create hata döner', async () => {
+    const result = await HomeworkService.createHomework({
+      class_id: '00000000-0000-0000-0000-000000000000',
+      title: 'Geçersiz Sınıf Ödevi',
+      description: null,
+      subject: 'Test',
+      due_date: '2026-12-31',
+    })
+    expect(result.error).toBeTruthy()
+  })
+})
