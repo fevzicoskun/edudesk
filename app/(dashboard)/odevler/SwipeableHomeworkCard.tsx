@@ -226,6 +226,7 @@ export default function SwipeableHomeworkCard({
               <button
                 onClick={() => {
                   setShowConfirm(false)
+                  setDeleteError(null)
                   setIsDeleted(true)
                   startTransition(async () => {
                     const result = await onDelete()
