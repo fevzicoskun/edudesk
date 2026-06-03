@@ -103,7 +103,7 @@ export default async function OdevlerPage({
             <div>
               <p>{parseInt(params.olusturuldu) === 1
                 ? 'Ödev başarıyla oluşturuldu.'
-                : `${params.olusturuldu} sınıf için ödev oluşturuldu.`}
+                : `${parseInt(params.olusturuldu)} sınıf için ödev oluşturuldu.`}
               </p>
               {params.hatali && (
                 <p className="text-xs mt-0.5 opacity-80">{parseInt(params.hatali)} sınıf için oluşturulamadı.</p>

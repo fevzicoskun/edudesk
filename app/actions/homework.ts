@@ -60,7 +60,7 @@ export async function createHomework(_: unknown, formData: FormData) {
         title:       parsed.data.title,
         description: parsed.data.description ?? null,
         subject:     parsed.data.subject,
-        due_date:    parsed.data.due_date,
+        due_date:    parsed.data.due_date ?? null,
         source_id:   parsed.data.source_id ?? null,
         is_template: false,
       })

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
 
@@ -72,6 +72,12 @@ export default function SwipeableHomeworkCard({
   const [isPending, startTransition] = useTransition()
   const [isDeleted, setIsDeleted] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!deleteError) return
+    const t = setTimeout(() => setDeleteError(null), 3500)
+    return () => clearTimeout(t)
+  }, [deleteError])
 
   const handlers = useSwipeable({
     onSwiping: (e) => {

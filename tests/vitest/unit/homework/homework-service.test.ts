@@ -163,13 +163,14 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
 
 // ─────────────────────────────────────────────────────────────
 describe('HomeworkService.updateSubmissionStatus() — cross-school', () => {
-  it('başka okul school_id ile ödev bulunamaz → hata döner', async () => {
+  it('başka okulun school_id ile ödev aranır — repo doğru schoolId ile çağrılır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
       data: null, error: null,
     } as never)
-    const result = await HomeworkService.updateSubmissionStatus('hw-other', 'stu-1', 'yapildi')
-    expect(result.error).toBe('Ödev bulunamadı')
+    await HomeworkService.updateSubmissionStatus('hw-other', 'stu-1', 'yapildi')
+    // findHomeworkTeacher kendi schoolId'si ile çağrılmalı
+    expect(HomeworkRepository.findHomeworkTeacher).toHaveBeenCalledWith('hw-other', SCHOOL_ID)
     expect(HomeworkRepository.upsertSubmissionStatus).not.toHaveBeenCalled()
   })
 })
