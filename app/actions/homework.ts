@@ -84,6 +84,57 @@ export async function createHomework(_: unknown, formData: FormData) {
   redirect(`/odevler?olusturuldu=${succeeded.length}`)
 }
 
+export async function quickCreateHomework(
+  formData: FormData
+): Promise<{ error?: string; ids?: string[] }> {
+  const classIds = (formData.getAll('class_id') as string[]).filter(Boolean)
+  if (classIds.length === 0) return { error: 'En az bir sınıf seçin' }
+  for (const id of classIds) {
+    if (!UUID.safeParse(id).success) return { error: 'Geçersiz sınıf seçimi' }
+  }
+
+  const parsed = createHomeworkSchema.omit({ class_id: true }).safeParse({
+    title:       formData.get('title'),
+    description: formData.get('description') || null,
+    subject:     formData.get('subject'),
+    due_date:    formData.get('due_date') || null,
+    source_id:   null,
+    is_template: false,
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+  if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
+
+  const today = new Date().toISOString().split('T')[0]
+  if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
+
+  const results = await Promise.allSettled(
+    classIds.map(classId =>
+      HomeworkService.createHomework({
+        class_id:    classId,
+        title:       parsed.data.title,
+        description: parsed.data.description ?? null,
+        subject:     parsed.data.subject,
+        due_date:    parsed.data.due_date!,
+        source_id:   null,
+        is_template: false,
+      })
+    )
+  )
+
+  const ids = results
+    .filter((r): r is PromiseFulfilledResult<{ id?: string; error?: string }> =>
+      r.status === 'fulfilled' && !r.value.error
+    )
+    .map(r => r.value.id!)
+    .filter(Boolean)
+
+  if (ids.length === 0) return { error: 'Ödev oluşturulamadı' }
+
+  revalidatePath('/odevler')
+  revalidatePath('/anasayfa')
+  return { ids }
+}
+
 export async function updateSubmissionStatus(
   homeworkId: string,
   studentId: string,

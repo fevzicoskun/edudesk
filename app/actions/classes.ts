@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
+import { getAbility } from '@/src/shared/authorization/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export async function createClass(formData: FormData) {
   const parsed = createClassSchema.safeParse({
@@ -93,5 +95,19 @@ export async function updateVeliContact(studentId: string, classId: string, form
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Geçersiz email adresi')
   await ClassService.updateVeliContact(studentId, { email, telefon, ad })
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+}
+
+export async function getMyClasses(): Promise<{ id: string; name: string; grade: number | null }[]> {
+  const ability = await getAbility()
+  if (!ability) return []
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('classes')
+    .select('id, name, grade')
+    .eq('school_id', ability.schoolId)
+    .is('deleted_at', null)
+    .order('grade')
+    .order('name')
+  return data ?? []
 }
 
