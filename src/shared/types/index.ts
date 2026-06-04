@@ -70,6 +70,14 @@ export interface Homework {
   created_at: string
 }
 
+export interface HomeworkTemplate {
+  id: string
+  title: string
+  subject: string
+  description: string | null
+  source_id: string | null
+}
+
 export interface HomeworkSubmission {
   id: string
   homework_id: string

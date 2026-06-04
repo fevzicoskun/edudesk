@@ -1,7 +1,7 @@
 import { HomeworkRepository } from '../repositories/HomeworkRepository'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
-import type { SubmissionStatus } from '../types'
+import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
 import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 export const HomeworkService = {
@@ -124,7 +124,11 @@ export const HomeworkService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const { error } = await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, data)
+    const isManager = ability.scope(P.HOMEWORK.UPDATE) === 'school'
+    const { error } = isManager
+      ? await HomeworkRepository.updateHomeworkAsManager(id, ability.schoolId, data)
+      : await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, data)
+
     if (error) return { error: error.message }
     return {}
   },
@@ -156,6 +160,13 @@ export const HomeworkService = {
     const { error } = await HomeworkRepository.restoreHomework(id, ability.schoolId)
     if (error) return { error: error.message }
     return {}
+  },
+
+  async getTemplatesByClass(classId: string): Promise<HomeworkTemplate[]> {
+    const ability = await getAbility()
+    if (!ability || ability.cannot(P.HOMEWORK.READ)) return []
+    const { data } = await HomeworkRepository.findTemplatesByClass(classId, ability.userId, ability.schoolId)
+    return data ?? []
   },
 
   async getStudentHomeworkProfile(

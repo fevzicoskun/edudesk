@@ -22,10 +22,13 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
     upsertSubmissionStatus:       vi.fn(),
     upsertSubmissionsStatus:      vi.fn(),
     upsertSubmissionNote:         vi.fn(),
+    updateHomework:               vi.fn(),
+    updateHomeworkAsManager:      vi.fn(),
     softDeleteHomework:           vi.fn(),
     softDeleteHomeworkAsManager:  vi.fn(),
     restoreHomework:              vi.fn(),
     findStudentHomeworkProfile:   vi.fn(),
+    findTemplatesByClass:         vi.fn(),
   },
 }))
 
@@ -262,6 +265,217 @@ describe('HomeworkService.restoreHomework()', () => {
     vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ data: null, error: null } as never)
     await HomeworkService.restoreHomework('hw-1')
     expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith('hw-1', SCHOOL_ID)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateHomework()', () => {
+  const HW_UPDATE = {
+    title: 'Güncellendi', subject: 'Fen', description: 'Açıklama',
+    due_date: '2026-12-31', source_id: null,
+  }
+
+  it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBe('Giriş gerekli')
+    expect(HomeworkRepository.updateHomework).not.toHaveBeenCalled()
+  })
+
+  it('homework:update izni yoksa hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBe('Bu işlem için yetkiniz yok.')
+  })
+
+  it('own-scope öğretmen → updateHomework (teacher_id filtreli) çağrılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({ error: null } as never)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBeUndefined()
+    expect(HomeworkRepository.updateHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID, HW_UPDATE)
+    expect(HomeworkRepository.updateHomeworkAsManager).not.toHaveBeenCalled()
+  })
+
+  it('school-scope yönetici → updateHomeworkAsManager çağrılır (teacher_id filtresi yok)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
+    vi.mocked(HomeworkRepository.updateHomeworkAsManager).mockResolvedValue({ error: null } as never)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBeUndefined()
+    expect(HomeworkRepository.updateHomeworkAsManager).toHaveBeenCalledWith('hw-1', SCHOOL_ID, HW_UPDATE)
+    expect(HomeworkRepository.updateHomework).not.toHaveBeenCalled()
+  })
+
+  it('ödev bulunamazsa (repo boş rows) → hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({
+      error: { message: 'Ödev bulunamadı veya yetkiniz yok.' },
+    } as never)
+    const result = await HomeworkService.updateHomework('hw-404', HW_UPDATE)
+    expect(result.error).toBe('Ödev bulunamadı veya yetkiniz yok.')
+  })
+
+  it('DB hatası varsa error.message döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({
+      error: { message: 'constraint violation' },
+    } as never)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBe('constraint violation')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateSubmissionNote()', () => {
+  it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    expect((await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', 'not')).error).toBe('Giriş gerekli')
+  })
+
+  it('kendi ödevi → not kaydedilir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionNote).mockResolvedValue({ error: null } as never)
+    const result = await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', 'açıklama')
+    expect(result.success).toBe(true)
+    expect(HomeworkRepository.upsertSubmissionNote).toHaveBeenCalledWith(
+      expect.objectContaining({ note: 'açıklama' })
+    )
+  })
+
+  it('1000 karakterden uzun not → 1000 karaktere kırpılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionNote).mockResolvedValue({ error: null } as never)
+    const longNote = 'x'.repeat(2000)
+    await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', longNote)
+    const calledNote = vi.mocked(HomeworkRepository.upsertSubmissionNote).mock.calls[0][0].note
+    expect(calledNote?.length).toBe(1000)
+  })
+
+  it('boş string → null olarak kaydedilir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionNote).mockResolvedValue({ error: null } as never)
+    await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', '   ')
+    const calledNote = vi.mocked(HomeworkRepository.upsertSubmissionNote).mock.calls[0][0].note
+    expect(calledNote).toBeNull()
+  })
+
+  it('başkasının ödevi → hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: OTHER_ID }, error: null,
+    } as never)
+    const result = await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', 'not')
+    expect(result.error).toBeTruthy()
+    expect(HomeworkRepository.upsertSubmissionNote).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateAllSubmissionStatuses()', () => {
+  const STUDENT_IDS = ['stu-1', 'stu-2', 'stu-3']
+
+  it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapildi')
+    expect(result.error).toBe('Giriş gerekli')
+  })
+
+  it('200 öğrenci sınırı aşılınca exception fırlatır', async () => {
+    const bigList = Array.from({ length: 201 }, (_, i) => `stu-${i}`)
+    await expect(
+      HomeworkService.updateAllSubmissionStatuses('hw-1', bigList, 'yapildi')
+    ).rejects.toThrow('Çok fazla öğrenci')
+  })
+
+  it('boş liste → success true, upsert çağrılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', [], 'yapildi')
+    expect(result.success).toBe(true)
+    expect(HomeworkRepository.upsertSubmissionsStatus).not.toHaveBeenCalled()
+  })
+
+  it('kendi ödevi → tüm öğrenciler upsert edilir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapildi')
+    expect(result.success).toBe(true)
+    const rows = vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mock.calls[0][0]
+    expect(rows).toHaveLength(3)
+    expect(rows.every(r => r.status === 'yapildi')).toBe(true)
+    expect(rows.every(r => r.homework_id === 'hw-1')).toBe(true)
+    expect(rows.every(r => r.school_id === SCHOOL_ID)).toBe(true)
+  })
+
+  it('başkasının ödevi — own scope → hata döner, upsert çağrılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: OTHER_ID }, error: null,
+    } as never)
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapildi')
+    expect(result.error).toBeTruthy()
+    expect(HomeworkRepository.upsertSubmissionsStatus).not.toHaveBeenCalled()
+  })
+
+  it('school-scope yönetici başkasının ödevini toplu güncelleyebilir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: OTHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapilmadi')
+    expect(result.success).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.getTemplatesByClass()', () => {
+  it('giriş yoksa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await HomeworkService.getTemplatesByClass('cls-1')
+    expect(result).toEqual([])
+    expect(HomeworkRepository.findTemplatesByClass).not.toHaveBeenCalled()
+  })
+
+  it('read izni yoksa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    const result = await HomeworkService.getTemplatesByClass('cls-1')
+    expect(result).toEqual([])
+  })
+
+  it('şablonları döndürür', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findTemplatesByClass).mockResolvedValue({
+      data: [{ id: 't1', title: 'Şablon A', subject: 'Mat', description: null, source_id: null }],
+      error: null,
+    } as never)
+    const result = await HomeworkService.getTemplatesByClass('cls-1')
+    expect(result).toHaveLength(1)
+    expect(result[0].title).toBe('Şablon A')
+    expect(HomeworkRepository.findTemplatesByClass).toHaveBeenCalledWith('cls-1', TEACHER_ID, SCHOOL_ID)
+  })
+
+  it('DB hatası varsa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findTemplatesByClass).mockResolvedValue({
+      data: null, error: { message: 'DB hatası' },
+    } as never)
+    const result = await HomeworkService.getTemplatesByClass('cls-1')
+    expect(result).toEqual([])
   })
 })
 

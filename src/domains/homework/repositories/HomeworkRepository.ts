@@ -91,6 +91,29 @@ export const HomeworkRepository = {
     return { error: null }
   },
 
+  async updateHomeworkAsManager(
+    homeworkId: string,
+    schoolId: string,
+    data: {
+      title: string
+      subject: string
+      description: string | null
+      due_date: string | null
+      source_id: string | null
+    }
+  ) {
+    const supabase = await createClient()
+    const { data: rows, error } = await supabase.from('homeworks')
+      .update(data)
+      .eq('id', homeworkId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı.' } }
+    return { error: null }
+  },
+
   async softDeleteHomework(homeworkId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('homeworks')
@@ -111,6 +134,20 @@ export const HomeworkRepository = {
     return supabase.from('homeworks')
       .update({ deleted_at: null, deleted_by: null })
       .eq('id', homeworkId).eq('school_id', schoolId)
+  },
+
+  async findTemplatesByClass(classId: string, teacherId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('homeworks')
+      .select('id, title, subject, description, source_id')
+      .eq('class_id', classId)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
+      .eq('is_template', true)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(10)
   },
 
   async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string) {

@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
-import type { SubmissionStatus } from '@/src/domains/homework/types'
+import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -172,4 +172,9 @@ export async function getStudentHomeworkProfile(studentId: string, classId: stri
   UUID.parse(studentId)
   UUID.parse(classId)
   return HomeworkService.getStudentHomeworkProfile(studentId, classId)
+}
+
+export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
+  UUID.parse(classId)
+  return HomeworkService.getTemplatesByClass(classId)
 }
