@@ -175,6 +175,6 @@ export async function getStudentHomeworkProfile(studentId: string, classId: stri
 }
 
 export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
-  UUID.parse(classId)
+  if (!UUID.safeParse(classId).success) return []
   return HomeworkService.getTemplatesByClass(classId)
 }
