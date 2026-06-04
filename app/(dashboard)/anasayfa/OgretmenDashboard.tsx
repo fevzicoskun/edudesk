@@ -1,6 +1,7 @@
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import { getGreeting } from '@/src/shared/utils'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
@@ -8,6 +9,7 @@ import YoklamaTrendWidget from './YoklamaTrendWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
+import OdevCockpit from './OdevCockpit'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -55,6 +57,11 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Gecikmiş Ödev Uyarısı */}
+      <Suspense fallback={null}>
+        <OdevCockpit schoolId={profile.school_id ?? ''} />
+      </Suspense>
 
       {/* Bugün Yapılacaklar */}
       <BugunYapilacaklarWidget
