@@ -5,7 +5,6 @@ import { notFound, redirect } from 'next/navigation'
 export const revalidate = 30
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
-import VeliWhatsApp from './VeliWhatsApp'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
@@ -53,7 +52,7 @@ export default async function OdevDetayPage({
   const [studentsResult, subsResult, cumulativeResult] = await Promise.all([
     supabase
       .from('students')
-      .select('id, full_name, student_number, veli_telefon, veli_ad')
+      .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
       .eq('class_id', hw.class_id)
       .eq('school_id', profile.school_id)
       .is('deleted_at', null),
@@ -90,6 +89,7 @@ export default async function OdevDetayPage({
         student_number: student.student_number,
         veli_telefon: student.veli_telefon ?? null,
         veli_ad: student.veli_ad ?? null,
+        veli_email: (student as typeof student & { veli_email?: string | null }).veli_email ?? null,
         status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note: sub?.note ?? null,
         hasRecord: !!sub,
@@ -172,10 +172,12 @@ export default async function OdevDetayPage({
         </p>
       ) : (
         <>
-          <StatusBoard homeworkId={id} items={items} homeworkTitle={hw.title} totalHomeworks={totalHomeworkCount} classId={hw.class_id} />
-          <VeliWhatsApp
+          <StatusBoard
+            homeworkId={id}
             items={items}
             homeworkTitle={hw.title}
+            totalHomeworks={totalHomeworkCount}
+            classId={hw.class_id}
             dueDate={hw.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : ''}
             className={cls?.name ?? ''}
           />

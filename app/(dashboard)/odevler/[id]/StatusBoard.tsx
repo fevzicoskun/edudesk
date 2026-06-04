@@ -5,6 +5,7 @@ import ExcelJS from 'exceljs'
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
 import StudentHomeworkProfileModal from './StudentHomeworkProfileModal'
+import VeliIletisimPaneli from './VeliIletisimPaneli'
 
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
 const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
@@ -38,6 +39,9 @@ type StatusItem = {
   hasRecord: boolean
   missedCount: number
   totalHomeworks: number
+  veli_telefon: string | null
+  veli_ad: string | null
+  veli_email: string | null
 }
 
 export default function StatusBoard({
@@ -46,12 +50,16 @@ export default function StatusBoard({
   homeworkTitle,
   totalHomeworks,
   classId,
+  dueDate = '',
+  className = '',
 }: {
   homeworkId: string
   items: StatusItem[]
   homeworkTitle?: string
   totalHomeworks: number
   classId: string
+  dueDate?: string
+  className?: string
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map(i => [i.student_id, i.status]))
@@ -389,6 +397,21 @@ export default function StatusBoard({
         studentId={selectedStudentId}
         classId={classId}
         onClose={() => setSelectedStudentId(null)}
+      />
+
+      <VeliIletisimPaneli
+        homeworkId={homeworkId}
+        homeworkTitle={homeworkTitle ?? ''}
+        dueDate={dueDate}
+        items={items.map(i => ({
+          student_id:     i.student_id,
+          full_name:      i.full_name,
+          student_number: i.student_number,
+          status:         statuses[i.student_id] ?? i.status,
+          veli_telefon:   i.veli_telefon,
+          veli_ad:        i.veli_ad,
+          veli_email:     i.veli_email,
+        }))}
       />
     </div>
   )
