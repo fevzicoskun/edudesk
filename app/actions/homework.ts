@@ -6,6 +6,8 @@ import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
+import { inngest } from '@/src/infrastructure/inngest'
+import { getCurrentProfile } from '@/src/shared/auth'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -129,6 +131,22 @@ export async function quickCreateHomework(
     .filter(Boolean)
 
   if (ids.length === 0) return { error: 'Ödev oluşturulamadı' }
+
+  // Veli bildirimi — notify_parents flag true ise Inngest event fire et
+  const notifyParents = formData.get('notify_parents') === 'true'
+  if (notifyParents && ids.length > 0) {
+    const profile = await getCurrentProfile()
+    if (profile?.school_id) {
+      await Promise.allSettled(
+        classIds.slice(0, ids.length).map((classId, idx) =>
+          inngest.send({
+            name: 'homework/created',
+            data: { homeworkId: ids[idx], classId, schoolId: profile.school_id! },
+          })
+        )
+      )
+    }
+  }
 
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
