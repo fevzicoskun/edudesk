@@ -1,9 +1,8 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { updateHomework } from '@/app/actions/homework'
+import { updateHomework, getClassWeekLoad } from '@/app/actions/homework'
 import Link from 'next/link'
-import { getClassWeekLoad } from '@/app/actions/homework'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 
 type HwData = {
