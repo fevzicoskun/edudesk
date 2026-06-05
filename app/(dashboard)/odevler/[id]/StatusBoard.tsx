@@ -80,7 +80,7 @@ export default function StatusBoard({
   const [recordedIds, setRecordedIds]       = useState<Set<string>>(
     () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
   )
-  const [openBadge, setOpenBadge] = useState(false)
+  const [openBadge, setOpenBadge] = useState<string | null>(null)
 
   useEffect(() => {
     if (!errorMsg) return
@@ -181,8 +181,8 @@ export default function StatusBoard({
   return (
     <div>
 
-      {openBadge && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(false)} />
+      {openBadge !== null && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(null)} />
       )}
 
       {/* Tamamlanma özet barı */}
@@ -309,7 +309,11 @@ export default function StatusBoard({
                   </button>
                   <div className="flex items-center gap-2 mt-0.5">
                     {weekLoad && weekLoad.count > 0 && (
-                      <WeekLoadBadge load={weekLoad} open={openBadge} onToggle={() => setOpenBadge(p => !p)} />
+                      <WeekLoadBadge
+                        load={weekLoad}
+                        open={openBadge === item.student_id}
+                        onToggle={() => setOpenBadge(prev => prev === item.student_id ? null : item.student_id)}
+                      />
                     )}
                     {item.student_number && (
                       <span className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</span>
@@ -465,7 +469,8 @@ function WeekLoadPopover({ load }: { load: ClassWeekLoad }) {
 
   function dayLabel(dateStr: string) {
     try {
-      const d = new Date(dateStr)
+      const [y, m, day] = dateStr.split('-').map(Number)
+      const d = new Date(y, m - 1, day)
       return `${d.getDate()} ${MONTHS[d.getMonth()]} (${DAYS[d.getDay()]})`
     } catch { return dateStr }
   }
