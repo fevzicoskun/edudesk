@@ -251,7 +251,7 @@ export default function HomeworkForm({
           )}
 
           {!isTemplate && (
-            <WeekLoadBanner loads={weekLoad} loading={loadingLoad} />
+            <WeekLoadBanner loads={weekLoad} loading={loadingLoad} isCreating />
           )}
 
           {/* Şablon toggle — şablon olarak kaydedilince tarih gerekmez */}
@@ -314,7 +314,7 @@ export default function HomeworkForm({
   )
 }
 
-function WeekLoadBanner({ loads, loading }: { loads: ClassWeekLoad[]; loading: boolean }) {
+function WeekLoadBanner({ loads, loading, isCreating = false }: { loads: ClassWeekLoad[]; loading: boolean; isCreating?: boolean }) {
   if (loading) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-400">
@@ -327,13 +327,21 @@ function WeekLoadBanner({ loads, loading }: { loads: ClassWeekLoad[]; loading: b
     )
   }
 
-  const worstLevel = loads.reduce<'ok' | 'warn' | 'danger'>((acc, l) => {
+  const displayLoads = isCreating
+    ? loads.map(l => ({
+        ...l,
+        count: l.count + 1,
+        level: (l.count + 1 >= 5 ? 'danger' : l.count + 1 >= 3 ? 'warn' : 'ok') as 'ok' | 'warn' | 'danger',
+      }))
+    : loads
+
+  if (displayLoads.length === 0 || displayLoads.every(l => l.count === 0)) return null
+
+  const worstLevel = displayLoads.reduce<'ok' | 'warn' | 'danger'>((acc, l) => {
     if (l.level === 'danger') return 'danger'
     if (l.level === 'warn' && acc !== 'danger') return 'warn'
     return acc
   }, 'ok')
-
-  if (loads.length === 0 || loads.every(l => l.count === 0)) return null
 
   const bg =
     worstLevel === 'danger' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
@@ -356,19 +364,23 @@ function WeekLoadBanner({ loads, loading }: { loads: ClassWeekLoad[]; loading: b
       </svg>
     )
 
+  const titleText = isCreating
+    ? `Bu ödev dahil${displayLoads.length > 1 ? ' (seçili sınıflar)' : ''}:`
+    : `Bu hafta${displayLoads.length > 1 ? ' (seçili sınıflar)' : ''}:`
+
   return (
     <div className={`border rounded-xl px-3 py-2.5 space-y-2 ${bg}`}>
       <div className={`flex items-center gap-1.5 text-xs font-semibold ${titleColor}`}>
         {icon}
-        Bu hafta{loads.length > 1 ? ' (seçili sınıflar)' : ''}:
+        {titleText}
         {worstLevel === 'danger' && ' ⚠️ Fazla yük!'}
         {worstLevel === 'warn'   && ' Dikkat: yük artıyor'}
         {worstLevel === 'ok'     && ' Yük uygun'}
       </div>
       <div className="space-y-1">
-        {loads.filter(l => l.count > 0).map(l => (
+        {displayLoads.filter(l => l.count > 0).map(l => (
           <div key={l.classId} className="text-xs">
-            {loads.length > 1 && (
+            {displayLoads.length > 1 && (
               <span className="font-medium text-gray-700 dark:text-slate-300">{l.className}: </span>
             )}
             <span className={
