@@ -256,6 +256,11 @@ export async function getClassWeekLoad(
 ): Promise<ClassWeekLoad[]> {
   if (!classIds.length || !weekOf) return []
 
+  // Geçersiz UUID veya hatalı tarih formatı → erken çık
+  const validIds = classIds.filter(id => UUID.safeParse(id).success)
+  if (!validIds.length) return []
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(weekOf)) return []
+
   const [user, profile, supabase] = await Promise.all([
     getCurrentUser(),
     getCurrentProfile(),
@@ -265,17 +270,17 @@ export async function getClassWeekLoad(
 
   const { start, end } = weekRange(weekOf)
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('homeworks')
     .select('subject, due_date, class_id, teacher_id, teacher:profiles(full_name), classes(id, name)')
     .eq('school_id', profile.school_id)
-    .in('class_id', classIds)
+    .in('class_id', validIds)
     .eq('is_template', false)
     .is('deleted_at', null)
     .gte('due_date', start)
     .lte('due_date', end)
 
-  if (!data) return []
+  if (error || !data) return []
 
   const classNameMap = new Map<string, string>()
   for (const hw of data) {
@@ -283,11 +288,13 @@ export async function getClassWeekLoad(
     if (cls) classNameMap.set(cls.id, cls.name)
   }
 
-  return classIds.map(classId => {
-    const rows = data.filter(hw => (hw.class_id as string) === classId)
+  return validIds.map(classId => {
+    const rows = data.filter(hw =>
+      (hw.class_id as string) === classId && hw.due_date !== null
+    )
     return buildClassWeekLoad(
       rows.map(hw => ({
-        subject: hw.subject as string,
+        subject: (hw.subject as string | null) ?? '',
         due_date: hw.due_date as string,
         teacher_id: hw.teacher_id as string,
         teacher_name:

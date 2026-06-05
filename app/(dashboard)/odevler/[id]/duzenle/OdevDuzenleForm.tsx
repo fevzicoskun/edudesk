@@ -30,12 +30,9 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
     if (!classId || !dueDate) { setWeekLoad([]); return }
     let active = true
     setLoadingLoad(true)
-    getClassWeekLoad([classId], dueDate).then(result => {
-      if (active) {
-        setWeekLoad(result)
-        setLoadingLoad(false)
-      }
-    })
+    getClassWeekLoad([classId], dueDate)
+      .then(result => { if (active) { setWeekLoad(result); setLoadingLoad(false) } })
+      .catch(() => { if (active) { setWeekLoad([]); setLoadingLoad(false) } })
     return () => { active = false }
   }, [classId, dueDate])
 

@@ -53,12 +53,9 @@ export default function HomeworkForm({
     }
     let active = true
     setLoadingLoad(true)
-    getClassWeekLoad(selectedClasses, dueDate).then(result => {
-      if (active) {
-        setWeekLoad(result)
-        setLoadingLoad(false)
-      }
-    })
+    getClassWeekLoad(selectedClasses, dueDate)
+      .then(result => { if (active) { setWeekLoad(result); setLoadingLoad(false) } })
+      .catch(() => { if (active) { setWeekLoad([]); setLoadingLoad(false) } })
     return () => { active = false }
   }, [selectedClasses, dueDate, isTemplate])
 

@@ -14,8 +14,15 @@ export type ClassWeekLoad = {
 }
 
 export function weekRange(dateStr: string): { start: string; end: string } {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    return { start: '', end: '' }
+  }
   const [year, month, day] = dateStr.split('-').map(Number)
   const d = new Date(year, month - 1, day)
+  // Roll-over kontrolü: '2026-13-45' geçerli bir tarih değil
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) {
+    return { start: '', end: '' }
+  }
   const dow = d.getDay()                    // 0=Pazar
   const toMonday = dow === 0 ? -6 : 1 - dow
   const monday = new Date(year, month - 1, day + toMonday)
@@ -33,6 +40,7 @@ export function buildClassWeekLoad(
   ownTeacherId: string,
 ): ClassWeekLoad {
   const items: WeekLoadItem[] = rawItems
+    .filter(r => r.due_date && r.subject)
     .map(r => ({
       subject: r.subject,
       dueDate: r.due_date,

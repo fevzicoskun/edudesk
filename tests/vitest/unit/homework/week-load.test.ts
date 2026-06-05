@@ -17,6 +17,15 @@ describe('weekRange()', () => {
   it('Yıl sonu/başı geçişi', () => {
     expect(weekRange('2026-12-31')).toEqual({ start: '2026-12-28', end: '2027-01-03' })
   })
+  it('boş string → boş döner', () => {
+    expect(weekRange('')).toEqual({ start: '', end: '' })
+  })
+  it('geçersiz format → boş döner', () => {
+    expect(weekRange('invalid')).toEqual({ start: '', end: '' })
+  })
+  it('geçersiz tarih → boş döner', () => {
+    expect(weekRange('2026-13-45')).toEqual({ start: '', end: '' })
+  })
 })
 
 describe('buildClassWeekLoad()', () => {
@@ -74,5 +83,24 @@ describe('buildClassWeekLoad()', () => {
   it('ID dönmez — başka öğretmenin ödevine navigate edilemez', () => {
     const result = buildClassWeekLoad([raw('Mat', '2026-06-01', 'other')], 'c1', '5/A', 'me')
     expect((result.items[0] as Record<string, unknown>).id).toBeUndefined()
+  })
+
+  it('boş due_date olan satırlar filtrelenir', () => {
+    const rows = [
+      raw('Mat', '2026-06-01', 't1'),
+      { subject: 'Fen', due_date: '', teacher_id: 't1', teacher_name: 'Öğretmen t1' },
+    ]
+    const result = buildClassWeekLoad(rows, 'c1', '5/A', 't1')
+    expect(result.count).toBe(1)
+    expect(result.items[0].subject).toBe('Mat')
+  })
+
+  it('boş subject olan satırlar filtrelenir', () => {
+    const rows = [
+      raw('Mat', '2026-06-01', 't1'),
+      { subject: '', due_date: '2026-06-02', teacher_id: 't1', teacher_name: 'Öğretmen t1' },
+    ]
+    const result = buildClassWeekLoad(rows, 'c1', '5/A', 't1')
+    expect(result.count).toBe(1)
   })
 })
