@@ -7,7 +7,9 @@ import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/home
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
 import { inngest } from '@/src/infrastructure/inngest'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -246,4 +248,54 @@ export async function getStudentHomeworkProfile(studentId: string, classId: stri
 export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
   if (!UUID.safeParse(classId).success) return []
   return HomeworkService.getTemplatesByClass(classId)
+}
+
+export async function getClassWeekLoad(
+  classIds: string[],
+  weekOf: string,
+): Promise<ClassWeekLoad[]> {
+  if (!classIds.length || !weekOf) return []
+
+  const [user, profile, supabase] = await Promise.all([
+    getCurrentUser(),
+    getCurrentProfile(),
+    createClient(),
+  ])
+  if (!user || !profile?.school_id) return []
+
+  const { start, end } = weekRange(weekOf)
+
+  const { data } = await supabase
+    .from('homeworks')
+    .select('subject, due_date, class_id, teacher_id, teacher:profiles(full_name), classes(id, name)')
+    .eq('school_id', profile.school_id)
+    .in('class_id', classIds)
+    .eq('is_template', false)
+    .is('deleted_at', null)
+    .gte('due_date', start)
+    .lte('due_date', end)
+
+  if (!data) return []
+
+  const classNameMap = new Map<string, string>()
+  for (const hw of data) {
+    const cls = (hw.classes as unknown) as { id: string; name: string } | null
+    if (cls) classNameMap.set(cls.id, cls.name)
+  }
+
+  return classIds.map(classId => {
+    const rows = data.filter(hw => (hw.class_id as string) === classId)
+    return buildClassWeekLoad(
+      rows.map(hw => ({
+        subject: hw.subject as string,
+        due_date: hw.due_date as string,
+        teacher_id: hw.teacher_id as string,
+        teacher_name:
+          (((hw.teacher as unknown) as { full_name: string } | null)?.full_name) ?? 'Bilinmiyor',
+      })),
+      classId,
+      classNameMap.get(classId) ?? '',
+      user.id,
+    )
+  })
 }
