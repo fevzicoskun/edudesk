@@ -125,7 +125,7 @@ export default async function OdevDetayPage({
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
             </svg>
-            Sınıf Matrisi
+            Başarı Haritası
           </Link>
           {canWrite && (
             <>

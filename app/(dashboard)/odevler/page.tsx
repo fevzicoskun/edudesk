@@ -131,7 +131,7 @@ export default async function OdevlerPage({
         {classes.length > 0 && (
           <div className="mt-4 mb-1">
             <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-              Sınıf Matrisi
+              Başarı Haritası
             </p>
             <div className="flex gap-2 overflow-x-auto pb-1">
               {classes.map(cls => (
