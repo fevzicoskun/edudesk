@@ -51,11 +51,15 @@ export default function HomeworkForm({
       setWeekLoad([])
       return
     }
+    let active = true
     setLoadingLoad(true)
     getClassWeekLoad(selectedClasses, dueDate).then(result => {
-      setWeekLoad(result)
-      setLoadingLoad(false)
+      if (active) {
+        setWeekLoad(result)
+        setLoadingLoad(false)
+      }
     })
+    return () => { active = false }
   }, [selectedClasses, dueDate, isTemplate])
 
   function toggleClass(id: string) {
