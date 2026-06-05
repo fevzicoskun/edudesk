@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react'
 import { getStudentHomeworkProfile } from '@/src/domains/homework/actions'
+import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 
 type ProfileData = Awaited<ReturnType<typeof getStudentHomeworkProfile>>
 
@@ -32,10 +33,12 @@ function formatDate(iso: string | null): string {
 export default function StudentHomeworkProfileModal({
   studentId,
   classId,
+  weekLoad = null,
   onClose,
 }: {
   studentId: string | null
   classId: string
+  weekLoad?: ClassWeekLoad | null
   onClose: () => void
 }) {
   const [data, setData] = useState<ProfileData | null>(null)
@@ -78,6 +81,20 @@ export default function StudentHomeworkProfileModal({
                     </span>
                   )}
                 </p>
+                {weekLoad && weekLoad.count > 0 && (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                      weekLoad.level === 'danger'
+                        ? 'bg-red-100 text-red-600 border-red-200 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800'
+                        : weekLoad.level === 'warn'
+                          ? 'bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800'
+                          : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
+                    }`}>
+                      ● {weekLoad.count}
+                    </span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500">bu hafta ödev</span>
+                  </div>
+                )}
                 {(profile.student.veli_ad || profile.student.veli_telefon) && (
                   <div className="flex items-center gap-2 mt-1">
                     {profile.student.veli_ad && (
