@@ -1,6 +1,8 @@
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
+import { getClassWeekLoad } from '@/app/actions/homework'
+import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 
 export const revalidate = 30
 import Link from 'next/link'
@@ -32,6 +34,11 @@ export default async function OdevDetayPage({
     .single()
 
   if (!hw || hw.is_template) notFound()
+
+  const weekLoadResult = hw.due_date
+    ? await getClassWeekLoad([hw.class_id as string], hw.due_date)
+    : []
+  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
 
   const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
   if (!isManager && hw.teacher_id !== user.id) notFound()
@@ -180,6 +187,7 @@ export default async function OdevDetayPage({
             classId={hw.class_id}
             dueDate={hw.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : ''}
             className={cls?.name ?? ''}
+            weekLoad={weekLoad}
           />
         </>
       )}
