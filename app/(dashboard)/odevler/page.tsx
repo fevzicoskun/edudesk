@@ -128,6 +128,28 @@ export default async function OdevlerPage({
           currentParams={params}
         />
 
+        {classes.length > 0 && (
+          <div className="mt-4 mb-1">
+            <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+              Sınıf Matrisi
+            </p>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {classes.map(cls => (
+                <Link
+                  key={cls.id}
+                  href={`/odevler/sinif/${cls.id}`}
+                  className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+                  </svg>
+                  {cls.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Suspense fallback={<HomeworkListSkeleton />}>
           <HomeworkSection
             params={params}
