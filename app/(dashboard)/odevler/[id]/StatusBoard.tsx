@@ -4,6 +4,7 @@ import { useState, useTransition, useMemo, useEffect } from 'react'
 import ExcelJS from 'exceljs'
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
+import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import StudentHomeworkProfileModal from './StudentHomeworkProfileModal'
 import VeliIletisimPaneli from './VeliIletisimPaneli'
 
@@ -52,6 +53,7 @@ export default function StatusBoard({
   classId,
   dueDate = '',
   className = '',
+  weekLoad = null,
 }: {
   homeworkId: string
   items: StatusItem[]
@@ -60,6 +62,7 @@ export default function StatusBoard({
   classId: string
   dueDate?: string
   className?: string
+  weekLoad?: ClassWeekLoad | null
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map(i => [i.student_id, i.status]))
@@ -77,6 +80,7 @@ export default function StatusBoard({
   const [recordedIds, setRecordedIds]       = useState<Set<string>>(
     () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
   )
+  const [openBadge, setOpenBadge] = useState(false)
 
   useEffect(() => {
     if (!errorMsg) return
@@ -176,6 +180,10 @@ export default function StatusBoard({
 
   return (
     <div>
+
+      {openBadge && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(false)} />
+      )}
 
       {/* Tamamlanma özet barı */}
       <div className="mb-5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
@@ -300,6 +308,9 @@ export default function StatusBoard({
                     {item.full_name}
                   </button>
                   <div className="flex items-center gap-2 mt-0.5">
+                    {weekLoad && weekLoad.count > 0 && (
+                      <WeekLoadBadge load={weekLoad} open={openBadge} onToggle={() => setOpenBadge(p => !p)} />
+                    )}
                     {item.student_number && (
                       <span className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</span>
                     )}
@@ -396,6 +407,7 @@ export default function StatusBoard({
       <StudentHomeworkProfileModal
         studentId={selectedStudentId}
         classId={classId}
+        weekLoad={weekLoad}
         onClose={() => setSelectedStudentId(null)}
       />
 
@@ -413,6 +425,76 @@ export default function StatusBoard({
           veli_email:     i.veli_email,
         }))}
       />
+    </div>
+  )
+}
+
+function WeekLoadBadge({
+  load,
+  open,
+  onToggle,
+}: {
+  load: ClassWeekLoad
+  open: boolean
+  onToggle: () => void
+}) {
+  const badgeCls =
+    load.level === 'danger'
+      ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800'
+      : load.level === 'warn'
+        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+        : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400 border-gray-200 dark:border-slate-600'
+
+  return (
+    <div className="relative z-20">
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); onToggle() }}
+        className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full border transition-colors ${badgeCls}`}
+      >
+        ● {load.count}
+      </button>
+      {open && <WeekLoadPopover load={load} />}
+    </div>
+  )
+}
+
+function WeekLoadPopover({ load }: { load: ClassWeekLoad }) {
+  const MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
+  const DAYS   = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt']
+
+  function dayLabel(dateStr: string) {
+    try {
+      const d = new Date(dateStr)
+      return `${d.getDate()} ${MONTHS[d.getMonth()]} (${DAYS[d.getDay()]})`
+    } catch { return dateStr }
+  }
+
+  return (
+    <div className="absolute left-0 top-7 z-30 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg p-3 space-y-2">
+      <p className={`text-xs font-semibold ${
+        load.level === 'danger' ? 'text-red-600 dark:text-red-400' :
+        load.level === 'warn'   ? 'text-amber-600 dark:text-amber-400' :
+                                   'text-gray-600 dark:text-slate-400'
+      }`}>
+        Bu hafta {load.count} ödev
+      </p>
+      <div className="space-y-1.5">
+        {load.items.map((item, i) => (
+          <div key={i} className="flex items-start gap-2">
+            <span className={`shrink-0 mt-0.5 text-[10px] font-bold ${item.isOwn ? 'text-blue-500' : 'text-gray-400 dark:text-slate-500'}`}>
+              {item.isOwn ? '★' : '·'}
+            </span>
+            <div className="min-w-0">
+              <p className="text-xs text-gray-800 dark:text-slate-200 leading-snug truncate">{item.subject}</p>
+              <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                {dayLabel(item.dueDate)}
+                {!item.isOwn && ` · ${item.teacherName}`}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
