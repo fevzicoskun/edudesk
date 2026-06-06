@@ -143,8 +143,18 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
           <>
             {/* Toplu işlem araç çubuğu */}
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60">
-              <span className="text-xs font-medium text-gray-500 dark:text-slate-400">
+              <span className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-2">
                 {students.length} öğrenci
+                {Object.values(statuses).filter(s => s === 'absent').length > 0 && (
+                  <span className="text-red-600 dark:text-red-400 font-semibold">
+                    · {Object.values(statuses).filter(s => s === 'absent').length} devamsız
+                  </span>
+                )}
+                {Object.values(statuses).filter(s => s === 'late').length > 0 && (
+                  <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
+                    · {Object.values(statuses).filter(s => s === 'late').length} geç
+                  </span>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <button

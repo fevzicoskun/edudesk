@@ -69,6 +69,7 @@ export default function SwipeableHomeworkCard({
   const [showConfirm, setShowConfirm] = useState(false)
   const [offset, setOffset] = useState(0)
   const [swiping, setSwiping] = useState(false)
+  const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null)
   const [isPending, startTransition] = useTransition()
   const [isDeleted, setIsDeleted] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -83,19 +84,24 @@ export default function SwipeableHomeworkCard({
     onSwiping: (e) => {
       if (e.dir === 'Left' && canWrite) {
         setSwiping(true)
+        setSwipeDir('left')
         setOffset(Math.min(0, -e.absX))
+      } else if (e.dir === 'Right') {
+        setSwiping(true)
+        setSwipeDir('right')
+        setOffset(Math.max(0, e.absX * 0.3))
       }
     },
     onSwipedLeft: () => {
-      if (canWrite) {
-        setShowConfirm(true)
-      }
+      if (canWrite) setShowConfirm(true)
       setOffset(0)
       setSwiping(false)
+      setSwipeDir(null)
     },
     onSwipedRight: () => {
       setOffset(0)
       setSwiping(false)
+      setSwipeDir(null)
       setShowConfirm(false)
     },
     trackMouse: false,
@@ -116,9 +122,18 @@ export default function SwipeableHomeworkCard({
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
-      {/* Silme arkaplanı */}
+      {/* Sağa swipe: detay arkaplanı */}
+      <div className={`absolute inset-0 bg-blue-500 flex items-center pl-6 rounded-2xl transition-opacity duration-150 ${swipeDir === 'right' ? 'opacity-100' : 'opacity-0'}`}>
+        <svg className="w-5 h-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
+        <span className="text-white text-sm font-semibold">Detay</span>
+      </div>
+
+      {/* Sola swipe: silme arkaplanı */}
       {canWrite && (
         <div className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-2xl">
+          <span className="text-white text-sm font-semibold mr-2">Sil</span>
           <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
           </svg>

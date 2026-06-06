@@ -11,6 +11,13 @@ import VeliIletisimPaneli from './VeliIletisimPaneli'
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
 const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
 
+// Mobil döngü sırası: default (yapilmadi) → 1 dokunuş = yapildi (en sık istenen)
+const MOBILE_CYCLE: SubmissionStatus[] = ['yapilmadi', 'yapildi', 'eksik', 'gec', 'mazeretli']
+function nextInCycle(s: SubmissionStatus): SubmissionStatus {
+  const idx = MOBILE_CYCLE.indexOf(s)
+  return MOBILE_CYCLE[(idx + 1) % MOBILE_CYCLE.length]
+}
+
 const LABELS: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı', eksik: 'Eksik', yapilmadi: 'Yapılmadı', gec: 'Geç', mazeretli: 'Mazeretli',
 }
@@ -349,8 +356,20 @@ export default function StatusBoard({
                 </button>
               </div>
 
-              {/* Durum butonları — 3+2 grid, min-h-[44px] WCAG dokunma hedefi */}
-              <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+              {/* Mobil: tek-dokunuş döngü butonu */}
+              <button
+                disabled={isItemPending}
+                onClick={() => setStatus(item.student_id, nextInCycle(status))}
+                className={`md:hidden w-full flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
+                  STYLES[status]
+                } font-semibold text-sm`}
+              >
+                <span>{LABELS[status]}</span>
+                <span className="text-[10px] font-normal opacity-50">→ {LABELS[nextInCycle(status)]}</span>
+              </button>
+
+              {/* Desktop: 3+2 buton grid */}
+              <div className="hidden md:grid grid-cols-3 gap-1.5 mb-1.5">
                 {(['yapildi', 'eksik', 'yapilmadi'] as SubmissionStatus[]).map(option => (
                   <button
                     key={option}
@@ -366,7 +385,7 @@ export default function StatusBoard({
                   </button>
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-1.5">
+              <div className="hidden md:grid grid-cols-2 gap-1.5">
                 {(['gec', 'mazeretli'] as SubmissionStatus[]).map(option => (
                   <button
                     key={option}
@@ -452,7 +471,7 @@ function WeekLoadBadge({
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onToggle() }}
-        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border min-h-[36px] transition-colors ${badgeCls}`}
+        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border min-h-[44px] transition-colors ${badgeCls}`}
       >
         ● {load.count} ödev
       </button>
