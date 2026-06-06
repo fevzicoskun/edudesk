@@ -2,14 +2,18 @@ import { DashboardRepository } from '../repositories/DashboardRepository'
 import { computeRiskLevel } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays, todayLocalISO } from '@/src/shared/date'
+import { turkeyDate } from '@/src/lib/email-utils'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
 function mondayOf(dateStr: string): string {
-  const d = new Date(dateStr)
-  const day = d.getDay()
+  // Yerel tarih constructor kullan — toISOString UTC kaymasını önle
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const day = date.getDay()
   const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  return d.toISOString().split('T')[0]
+  date.setDate(date.getDate() + diff)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
 function shortLabel(isoDate: string): string {
@@ -136,7 +140,7 @@ function computeClassRisk(
 }
 
 async function fetchRiskInputs(teacherId: string) {
-  const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
+  const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
   const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
   const homeworks  = (hwData ?? []) as unknown as HwRow[]
@@ -162,7 +166,7 @@ async function fetchRiskInputs(teacherId: string) {
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
     const today         = todayLocalISO()
-    const eightWeeksAgo = subDays(new Date(), 56).toISOString().split('T')[0]
+    const eightWeeksAgo = turkeyDate(subDays(new Date(), 56))
     const weekStart     = getWeekStart()
 
     // Aşama 1: risk verisi (hwIds ve classIds buradan geliyor)
@@ -272,7 +276,7 @@ export const TeacherDashboardService = {
   },
 
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
-    const twoWeeksAgo = subDays(new Date(), 14).toISOString().split('T')[0]
+    const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
     const [subsResult, studentsResult, attResult] = await Promise.all([
       DashboardRepository.getClassSubmissions(classId, teacherId),

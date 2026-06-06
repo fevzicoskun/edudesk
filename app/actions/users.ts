@@ -28,7 +28,7 @@ export async function inviteUser(_: unknown, formData: FormData): Promise<Invite
 }
 
 export async function removeUser(targetId: string): Promise<DeleteResult> {
-  UUID.parse(targetId)
+  if (!UUID.safeParse(targetId).success) return { success: false, error: 'Geçersiz istek' }
   const result = await UserService.deleteUser(targetId)
   if (result.success) revalidatePath('/kullanicilar')
   return result

@@ -164,9 +164,8 @@ export async function updateSubmissionStatus(
   studentId: string,
   status: SubmissionStatus
 ) {
-  UUID.parse(homeworkId)
-  UUID.parse(studentId)
-  submissionStatusSchema.parse(status)
+  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { success: false }
+  if (!submissionStatusSchema.safeParse(status).success) return { success: false }
 
   const result = await HomeworkService.updateSubmissionStatus(homeworkId, studentId, status)
   if (result.success) revalidatePath(`/odevler/${homeworkId}`)
@@ -178,9 +177,9 @@ export async function updateAllSubmissionStatuses(
   studentIds: string[],
   status: SubmissionStatus
 ) {
-  UUID.parse(homeworkId)
-  submissionStatusSchema.parse(status)
-  studentIds.forEach(id => UUID.parse(id))
+  if (!UUID.safeParse(homeworkId).success) return { success: false }
+  if (!submissionStatusSchema.safeParse(status).success) return { success: false }
+  if (studentIds.some(id => !UUID.safeParse(id).success)) return { success: false }
 
   const result = await HomeworkService.updateAllSubmissionStatuses(homeworkId, studentIds, status)
   if (result.success) revalidatePath(`/odevler/${homeworkId}`)
@@ -192,8 +191,7 @@ export async function updateSubmissionNote(
   studentId: string,
   note: string
 ) {
-  UUID.parse(homeworkId)
-  UUID.parse(studentId)
+  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { success: false }
 
   const result = await HomeworkService.updateSubmissionNote(homeworkId, studentId, note)
   if (result.success) revalidatePath(`/odevler/${homeworkId}`)
@@ -202,7 +200,7 @@ export async function updateSubmissionNote(
 
 export async function updateHomework(_: unknown, formData: FormData) {
   const id = formData.get('id') as string
-  UUID.parse(id)
+  if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
 
   const parsed = createHomeworkSchema.omit({ class_id: true, is_template: true }).safeParse({
     title:       formData.get('title'),
@@ -228,7 +226,7 @@ export async function updateHomework(_: unknown, formData: FormData) {
 }
 
 export async function deleteHomework(id: string): Promise<{ error?: string }> {
-  UUID.parse(id)
+  if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
   const result = await HomeworkService.deleteHomework(id)
   if (result.error) return { error: result.error }
   revalidatePath('/odevler')
@@ -236,7 +234,7 @@ export async function deleteHomework(id: string): Promise<{ error?: string }> {
 }
 
 export async function restoreHomework(id: string): Promise<{ error?: string }> {
-  UUID.parse(id)
+  if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
   const result = await HomeworkService.restoreHomework(id)
   if (result.error) return { error: result.error }
   revalidatePath('/odevler')
@@ -244,8 +242,7 @@ export async function restoreHomework(id: string): Promise<{ error?: string }> {
 }
 
 export async function getStudentHomeworkProfile(studentId: string, classId: string) {
-  UUID.parse(studentId)
-  UUID.parse(classId)
+  if (!UUID.safeParse(studentId).success || !UUID.safeParse(classId).success) return { error: 'Geçersiz istek', data: null }
   return HomeworkService.getStudentHomeworkProfile(studentId, classId)
 }
 

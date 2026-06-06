@@ -1,17 +1,23 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
+import { turkeyDate } from '@/src/lib/email-utils'
 
 export const aylikBultenFn = inngest.createFunction(
   { id: 'aylik-bulten', triggers: [{ cron: '0 5 1 * *' }] }, // Her ayın 1'i 08:00 Türkiye
   async ({ step }) => {
-    // Geçen ayın aralığı
-    const now = new Date()
-    const firstOfThisMonth  = new Date(now.getFullYear(), now.getMonth(), 1)
-    const firstOfLastMonth  = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-    const monthStart = firstOfLastMonth.toISOString().split('T')[0]
-    const monthEnd   = new Date(firstOfThisMonth.getTime() - 1).toISOString().split('T')[0]
-    const monthLabel = firstOfLastMonth.toLocaleString('tr-TR', { month: 'long', year: 'numeric' })
+    // Geçen ayın aralığı — Türkiye saatine göre hesapla
+    const todayStr = turkeyDate()
+    const [curYear, curMonth] = todayStr.split('-').map(Number)
+    const lastMo  = curMonth === 1 ? 12 : curMonth - 1
+    const lastYr  = curMonth === 1 ? curYear - 1 : curYear
+    const pad     = (n: number) => String(n).padStart(2, '0')
+    const monthStart = `${lastYr}-${pad(lastMo)}-01`
+    const daysInLastMonth = new Date(lastYr, lastMo, 0).getDate()
+    const monthEnd = `${lastYr}-${pad(lastMo)}-${pad(daysInLastMonth)}`
+    const monthLabel = new Intl.DateTimeFormat('tr-TR', {
+      month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul',
+    }).format(new Date(`${monthStart}T12:00:00`))
 
     // 1. Tüm okulları ve müdürleri çek
     const schools = await step.run('fetch-schools', async () => {

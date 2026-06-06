@@ -1,6 +1,7 @@
 import { HomeworkSourceRepository } from '../repositories/HomeworkSourceRepository'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
+import { turkeyDate } from '@/src/lib/email-utils'
 
 const MS_PER_DAY = 86_400_000
 const USAGE_LOOKBACK_DAYS = 120
@@ -46,7 +47,7 @@ export const HomeworkSourceService = {
 
     const lookbackDate = new Date()
     lookbackDate.setDate(lookbackDate.getDate() - USAGE_LOOKBACK_DAYS)
-    const since = lookbackDate.toISOString().split('T')[0]
+    const since = turkeyDate(lookbackDate)
 
     const [sourcesRes, homeworksRes] = await Promise.all([
       HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId),
@@ -60,8 +61,8 @@ export const HomeworkSourceService = {
     const homeworks = homeworksRes.data ?? []
 
     const today          = new Date()
-    const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-      .toISOString().split('T')[0]
+    const todayTR        = turkeyDate(today)
+    const thisMonthStart = todayTR.slice(0, 8) + '01'
 
     const usageMap = new Map<string, { lastDate: string; thisMonth: number }>()
     for (const h of homeworks) {
