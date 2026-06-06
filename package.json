@@ -29,7 +29,7 @@
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.16.0",
-    "next": "16.2.4",
+    "next": "^16.2.7",
     "nodemailer": "^8.0.7",
     "pino": "^10.3.1",
     "radix-ui": "^1.4.3",
