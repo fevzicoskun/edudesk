@@ -76,6 +76,9 @@ async function getRedisLimiter(): Promise<RateLimiter | null> {
 const redisLimiterPromise = getRedisLimiter().then(l => {
   redisLimiter = l
   redisInitialized = true
+  if (!l && process.env.NODE_ENV === 'production') {
+    console.warn('[rate-limit] UPSTASH_REDIS_REST_URL/TOKEN tanımlı değil. Hassas endpoint\'ler fail-closed modunda çalışır.')
+  }
   return l
 })
 void redisLimiterPromise
