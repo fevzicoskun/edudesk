@@ -1,6 +1,11 @@
 export const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
+// Türkiye saatine göre ISO tarih dizisi (YYYY-MM-DD). İsteğe bağlı Date parametresiyle ileriki/geçmiş günler de hesaplanabilir.
+export function turkeyDate(d = new Date()): string {
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
+}
+
 export function formatDateTR(isoDate: string): string {
   try {
     return new Intl.DateTimeFormat('tr-TR', {

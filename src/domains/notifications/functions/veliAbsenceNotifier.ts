@@ -1,6 +1,7 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
+import { esc, formatDateTR } from '@/src/lib/email-utils'
 
 interface StudentRow {
   full_name:          string
@@ -41,8 +42,7 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
     const student = record.students as unknown as StudentRow
     if (!student?.veli_email || student.veli_email_opt_out) return { skipped: 'email-yok' }
 
-    const [dd, mm, yyyy] = [date.slice(8, 10), date.slice(5, 7), date.slice(0, 4)]
-    const tarih = `${dd}.${mm}.${yyyy}`
+    const tarih = formatDateTR(date)
 
     const durum = record.status === 'absent'
       ? 'devamsız kaydedilmiştir'
@@ -50,14 +50,10 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
 
     await step.run('email-gonder', async () => {
       await mailer.sendMail({
-
         to:      student.veli_email!,
         subject: `Devamsızlık Bildirimi — ${student.full_name}`,
         text:    `Sayın ${student.veli_ad ?? 'Veli'},\n\n${student.full_name} adlı öğrenci ${tarih} tarihinde ${durum}.\n\nEduDesk`,
-        html:    (() => {
-          const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-          return `<p>Sayın <strong>${esc(student.veli_ad ?? 'Veli')}</strong>,</p><p><strong>${esc(student.full_name)}</strong> adlı öğrenci <strong>${esc(tarih)}</strong> tarihinde <strong>${esc(durum)}</strong>.</p><p style="color:#6b7280;font-size:12px">EduDesk okul yönetim sistemi</p>`
-        })(),
+        html:    `<p>Sayın <strong>${esc(student.veli_ad ?? 'Veli')}</strong>,</p><p><strong>${esc(student.full_name)}</strong> adlı öğrenci <strong>${esc(tarih)}</strong> tarihinde <strong>${esc(durum)}</strong>.</p><p style="color:#6b7280;font-size:12px">EduDesk okul yönetim sistemi</p>`,
       })
     })
 
