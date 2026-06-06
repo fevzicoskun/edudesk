@@ -10,6 +10,7 @@ import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import OdevCockpit from './OdevCockpit'
+import HizliAksiyonlar from './HizliAksiyonlar'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -57,6 +58,12 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Hızlı Aksiyonlar */}
+      <HizliAksiyonlar
+        yoklamaDurumu={metrics.yoklamaDurumu}
+        bugunHwSayisi={todayHws.length}
+      />
 
       {/* Gecikmiş Ödev Uyarısı */}
       <Suspense fallback={null}>
