@@ -17,7 +17,7 @@ export default async function OdevDuzenle({
 
   const supabase = await createClient()
 
-  const [hwRes, sourcesRes] = await Promise.all([
+  const [hwRes, sourcesRes, classesRes, subCountRes] = await Promise.all([
     supabase
       .from('homeworks')
       .select('id, title, subject, description, due_date, teacher_id, source_id, class_id')
@@ -33,6 +33,17 @@ export default async function OdevDuzenle({
       .eq('school_id', profile.school_id)
       .eq('active', true)
       .order('name'),
+    supabase
+      .from('classes')
+      .select('id, name, grade')
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
+      .order('grade')
+      .order('name'),
+    supabase
+      .from('homework_submissions')
+      .select('homework_id', { count: 'exact', head: true })
+      .eq('homework_id', id),
   ])
 
   const hw = hwRes.data
@@ -53,7 +64,7 @@ export default async function OdevDuzenle({
           </Link>
           <div>
             <h1 className="text-base font-bold text-gray-900 leading-tight">Ödevi Düzenle</h1>
-            <p className="text-xs text-gray-500">Sınıf değiştirilemez, teslim geçmişi korunur</p>
+            <p className="text-xs text-gray-500">Değişiklikler kaydedilir, teslim geçmişi korunur</p>
           </div>
         </div>
 
@@ -65,9 +76,11 @@ export default async function OdevDuzenle({
             description: hw.description,
             due_date: hw.due_date,
             source_id: hw.source_id,
+            class_id: hw.class_id as string,
           }}
-          classId={hw.class_id as string}
+          classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
+          submissionCount={subCountRes.count ?? 0}
         />
       </div>
     </div>

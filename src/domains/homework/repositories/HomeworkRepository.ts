@@ -77,6 +77,7 @@ export const HomeworkRepository = {
       description: string | null
       due_date: string | null
       source_id: string | null
+      class_id: string
     }
   ) {
     const supabase = await createClient()
@@ -101,6 +102,7 @@ export const HomeworkRepository = {
       description: string | null
       due_date: string | null
       source_id: string | null
+      class_id: string
     }
   ) {
     const supabase = await createClient()

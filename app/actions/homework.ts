@@ -199,8 +199,10 @@ export async function updateSubmissionNote(
 }
 
 export async function updateHomework(_: unknown, formData: FormData) {
-  const id = formData.get('id') as string
-  if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
+  const id       = formData.get('id') as string
+  const class_id = formData.get('class_id') as string
+  if (!UUID.safeParse(id).success)       return { error: 'Geçersiz istek' }
+  if (!UUID.safeParse(class_id).success) return { error: 'Geçersiz sınıf' }
 
   const parsed = createHomeworkSchema.omit({ class_id: true, is_template: true }).safeParse({
     title:       formData.get('title'),
@@ -217,6 +219,7 @@ export async function updateHomework(_: unknown, formData: FormData) {
     description: parsed.data.description ?? null,
     due_date:    parsed.data.due_date ?? null,
     source_id:   parsed.data.source_id ?? null,
+    class_id,
   })
   if (result.error) return result
 

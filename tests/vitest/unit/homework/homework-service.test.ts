@@ -272,7 +272,7 @@ describe('HomeworkService.restoreHomework()', () => {
 describe('HomeworkService.updateHomework()', () => {
   const HW_UPDATE = {
     title: 'Güncellendi', subject: 'Fen', description: 'Açıklama',
-    due_date: '2026-12-31', source_id: null,
+    due_date: '2026-12-31', source_id: null, class_id: 'cls-1',
   }
 
   it('giriş yapılmamış → { error: "Giriş gerekli" }', async () => {
