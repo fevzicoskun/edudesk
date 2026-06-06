@@ -41,23 +41,8 @@ export default async function OdevDetayPage({
 
   const canWrite = isTeachingRole(profile.role)
 
-  const weekLoadResult = hw.due_date
-    ? await getClassWeekLoad([hw.class_id as string], hw.due_date)
-    : []
-  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
-
-  // Kümülatif sorgu için önce diğer ödev ID'lerini al
-  const otherHomeworkIds = (await supabase
-    .from('homeworks')
-    .select('id')
-    .eq('class_id', hw.class_id)
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .eq('is_template', false)
-    .neq('id', id)
-  ).data?.map(h => h.id) ?? []
-
-  const [studentsResult, subsResult, cumulativeResult] = await Promise.all([
+  // hw'ya bağımlı 4 sorgu paralel — otherHwIds ve weekLoad artık ayrı await değil
+  const [studentsResult, subsResult, otherHwRes, weekLoadResult] = await Promise.all([
     supabase
       .from('students')
       .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
@@ -65,13 +50,29 @@ export default async function OdevDetayPage({
       .eq('school_id', profile.school_id)
       .is('deleted_at', null),
     supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id).eq('school_id', profile.school_id),
-    otherHomeworkIds.length > 0
-      ? supabase
-          .from('homework_submissions')
-          .select('student_id, status, homework_id')
-          .in('homework_id', otherHomeworkIds)
-      : Promise.resolve({ data: [] as { student_id: string; status: string; homework_id: string }[] }),
+    supabase
+      .from('homeworks')
+      .select('id')
+      .eq('class_id', hw.class_id)
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
+      .eq('is_template', false)
+      .neq('id', id),
+    hw.due_date
+      ? getClassWeekLoad([hw.class_id as string], hw.due_date)
+      : Promise.resolve([] as ClassWeekLoad[]),
   ])
+
+  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
+  const otherHomeworkIds = otherHwRes.data?.map(h => h.id) ?? []
+
+  // Kümülatif sorguda otherHomeworkIds gerekli — ayrı adım kaçınılmaz ama önceki adım paralel
+  const cumulativeResult = otherHomeworkIds.length > 0
+    ? await supabase
+        .from('homework_submissions')
+        .select('student_id, status, homework_id')
+        .in('homework_id', otherHomeworkIds)
+    : { data: [] as { student_id: string; status: string; homework_id: string }[] }
 
   const students = studentsResult.data ?? []
   const subs = subsResult.data ?? []
