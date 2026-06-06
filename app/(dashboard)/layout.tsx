@@ -4,6 +4,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import { ToastProvider } from '@/components/Toast'
 import QuickAddDrawer from '@/components/homework/QuickAddDrawer'
+import CommandPalette from '@/components/CommandPalette'
 import { isTeachingRole } from '@/src/shared/types'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -34,6 +35,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main">{children}</main>
       </div>
       {isTeachingRole(profile?.role) && <QuickAddDrawer />}
+      <CommandPalette />
     </ToastProvider>
   )
 }
