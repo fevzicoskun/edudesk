@@ -1,5 +1,11 @@
 import type { ClassWeekLoad, WeekLoadItem } from '@/src/domains/homework/lib/week-load'
 
+// Bir sınıfın bir haftasındaki ödev eşikleri.
+// Türkiye MEB müfredat yönetmeliğine göre ödev yoğunluğu okul yönetimi kararı;
+// bu değerler genel ortaöğretim için makul başlangıç noktasıdır.
+const WARN_THRESHOLD   = 3  // haftalık ödev ≥ bu değer → sarı uyarı
+const DANGER_THRESHOLD = 5  // haftalık ödev ≥ bu değer → kırmızı uyarı
+
 const DAYS   = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
 const MONTHS = ['Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz', 'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara']
 
@@ -95,7 +101,7 @@ function ClassSection({
   // Bu ödev dahil efektif yük
   const effectiveCount = load.count + (isCreating ? 1 : 0)
   const effectiveLevel: 'ok' | 'warn' | 'danger' =
-    effectiveCount >= 5 ? 'danger' : effectiveCount >= 3 ? 'warn' : 'ok'
+    effectiveCount >= DANGER_THRESHOLD ? 'danger' : effectiveCount >= WARN_THRESHOLD ? 'warn' : 'ok'
 
   // Seçili günde zaten başka ödev var mı?
   const itemsOnSelected = dueDate ? (byDay.get(dueDate) ?? []) : []

@@ -203,15 +203,28 @@ export default function SwipeableHomeworkCard({
                 </div>
               )}
             </div>
-            <Link
-              href={`/odevler/${id}`}
-              className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
-            >
-              Detay
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className="flex items-center gap-3">
+              {canWrite && (
+                <button
+                  onClick={() => setShowConfirm(true)}
+                  aria-label="Ödevi sil"
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              )}
+              <Link
+                href={`/odevler/${id}`}
+                className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
+              >
+                Detay
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
           </div>
         </div>
       </div>

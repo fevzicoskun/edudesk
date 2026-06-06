@@ -433,19 +433,45 @@ async function HomeworkSection({
           )}
 
           {/* Geçmiş ödevler */}
-          {pastDone.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-1.5 h-4 bg-slate-300 dark:bg-slate-600 rounded-full" />
-                <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Geçmiş · {pastDone.length}
-                </h2>
-              </div>
-              <div className="space-y-3 opacity-80">
-                {pastDone.map(hw => renderCard(hw, true))}
-              </div>
-            </section>
-          )}
+          {pastDone.length > 0 && (() => {
+            // Geçmiş ödevler için ortalama tamamlanma oranı
+            let totalPossible = 0
+            let totalYapildi  = 0
+            for (const hw of pastDone) {
+              const total = classStudentMap.get(hw.class_id as string) ?? 0
+              const counts = statusMap.get(hw.id)
+              totalPossible += total
+              totalYapildi  += counts?.yapildi ?? 0
+            }
+            const avgPct = totalPossible > 0 ? Math.round((totalYapildi / totalPossible) * 100) : null
+
+            return (
+              <section>
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center gap-2">
+                    <span className="w-1.5 h-4 bg-slate-300 dark:bg-slate-600 rounded-full" />
+                    <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+                      Geçmiş · {pastDone.length}
+                    </h2>
+                  </div>
+                  {avgPct !== null && (
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                      avgPct >= 75
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : avgPct >= 50
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      Ort. %{avgPct} tamamlandı
+                    </span>
+                  )}
+                </div>
+                <div className="space-y-3 opacity-80">
+                  {pastDone.map(hw => renderCard(hw, true))}
+                </div>
+              </section>
+            )
+          })()}
         </>
       )}
     </>
