@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 // Her iki widget de bu iki sorguyu çekiyor — cache() ile request içi dedup sağlanır
 
@@ -12,7 +13,7 @@ export const getAbsentYearRows = cache(async (schoolId: string, yearStart: strin
     .in('status', ['absent', 'late'])
     .gte('date', yearStart)
     .limit(15000)
-  if (error) console.error('[getAbsentYearRows]', error.message)
+  if (error) logger.error({ event: 'db_query_failed', query: 'getAbsentYearRows', school_id: schoolId, message: error.message }, 'Devamsızlık sorgusu başarısız')
   return data ?? []
 })
 
@@ -26,6 +27,6 @@ export const getSessionRows = cache(async (schoolId: string) => {
     .gte('last_seen_at', since)
     .order('last_seen_at', { ascending: false })
     .limit(500)
-  if (error) console.error('[getSessionRows]', error.message)
+  if (error) logger.error({ event: 'db_query_failed', query: 'getSessionRows', school_id: schoolId, message: error.message }, 'Oturum sorgusu başarısız')
   return data ?? []
 })

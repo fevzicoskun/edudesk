@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import { loginSchema, changePasswordSchema, registerSchema } from '@/src/domains/auth/validators'
 import { AuthService } from '@/src/domains/auth/services/AuthService'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { env } from '@/src/lib/env'
+import { logger } from '@/src/infrastructure/observability/logger'
 import type { AuthState } from '@/src/domains/auth/types'
 
 export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
@@ -55,25 +57,23 @@ export async function sendPasswordReset(
   }
 
   const supabase = await createClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://myedudesk.com.tr'
-
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${appUrl}/auth/callback?next=/sifremi-unuttum/yeni-sifre`,
+    redirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/sifremi-unuttum/yeni-sifre`,
   })
 
   // Email enumeration'a karşı: hata olsa bile sent:true dön
-  if (error) console.error('[password-reset]', error.message)
+  if (error) logger.error({ event: 'password_reset_failed', message: error.message }, 'Password reset e-posta gönderilemedi')
   return { sent: true }
 }
 
 export async function resetPassword(
   _prevState: { error?: string } | null,
   formData: FormData
-): Promise<{ error?: string } | null> {
-  return changePassword(formData)
+): Promise<{ error?: string }> {
+  return await changePassword(formData)
 }
 
-export async function changePassword(formData: FormData) {
+export async function changePassword(formData: FormData): Promise<{ error?: string }> {
   const parsed = changePasswordSchema.safeParse({
     password: formData.get('password'),
     confirm:  formData.get('confirm'),
@@ -85,5 +85,5 @@ export async function changePassword(formData: FormData) {
   const result = await AuthService.updatePassword(parsed.data.password)
   if (result) return result
 
-  return { error: undefined }
+  return {}
 }

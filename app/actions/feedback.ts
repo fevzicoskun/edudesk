@@ -2,6 +2,7 @@
 
 import { mailer } from '@/src/lib/mailer'
 import { getCurrentUser } from '@/src/shared/auth'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 const CATEGORY_LABELS: Record<string, string> = {
   oneri:   'Öneri',
@@ -35,7 +36,7 @@ export async function sendFeedback(formData: FormData) {
     })
     return { ok: true }
   } catch (err) {
-    console.error('[FB_ERR]', String(err))
+    logger.error({ event: 'feedback_mail_failed', err: String(err) }, 'Feedback maili gönderilemedi')
     return { ok: false, error: 'Mail gönderilemedi. Lütfen tekrar dene.' }
   }
 }

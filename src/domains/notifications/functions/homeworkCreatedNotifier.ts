@@ -2,6 +2,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR } from '@/src/lib/email-utils'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 interface StudentRow {
   id:         string
@@ -48,7 +49,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
 
     if (!targets.length) return { sent: 0, reason: 'veli-email-yok' }
     if (targets.length > 50) {
-      console.warn(`[homeworkCreatedNotifier] ${targets.length} veli var, ilk 50 bildirildi. hw=${homeworkId}`)
+      logger.warn({ event: 'veli_limit_exceeded', homework_id: homeworkId, total: targets.length, sent: 50 }, 'Veli sayısı limiti aşıldı, ilk 50 bildirildi')
     }
 
     const dueDateStr = hw.due_date ? formatDateTR(hw.due_date) : ''
@@ -77,7 +78,7 @@ ${dueDateStr ? `<p>Son teslim tarihi: <strong>${esc(dueDateStr)}</strong></p>` :
         )
       )
       const failed = results.filter(r => r.status === 'rejected').length
-      if (failed) console.error(`[homeworkCreatedNotifier] ${failed}/${targets.length} mail gönderilemedi`)
+      if (failed) logger.error({ event: 'veli_mail_failed', homework_id: homeworkId, failed, total: targets.length }, 'Veli bildirimi e-postaları gönderilemedi')
     })
 
     return { sent: Math.min(targets.length, 50) }

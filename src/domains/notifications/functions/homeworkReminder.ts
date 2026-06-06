@@ -3,6 +3,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR, turkeyDate } from '@/src/lib/email-utils'
 import { unsubscribeUrl } from '@/src/lib/unsubscribeToken'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export const homeworkReminderFn = inngest.createFunction(
   {
@@ -133,7 +134,7 @@ export const homeworkReminderFn = inngest.createFunction(
         )
         const failed = results.filter((r) => r.status === 'rejected')
         if (failed.length) {
-          console.error(`[homeworkReminder] ${failed.length}/${teacherEmailTargets.length} öğretmen e-postası gönderilemedi`, failed.map((r) => (r as PromiseRejectedResult).reason))
+          logger.error({ event: 'teacher_reminder_mail_failed', failed: failed.length, total: teacherEmailTargets.length }, 'Öğretmen hatırlatma e-postaları gönderilemedi')
         }
       })
     }
@@ -205,7 +206,7 @@ export const homeworkReminderFn = inngest.createFunction(
         )
         const failed = results.filter((r) => r.status === 'rejected')
         if (failed.length) {
-          console.error(`[homeworkReminder] ${failed.length}/${veliEmails.length} veli e-postası gönderilemedi`, failed.map((r) => (r as PromiseRejectedResult).reason))
+          logger.error({ event: 'veli_reminder_mail_failed', failed: failed.length, total: veliEmails.length }, 'Veli hatırlatma e-postaları gönderilemedi')
         }
       })
     }

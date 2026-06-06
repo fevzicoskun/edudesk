@@ -1,8 +1,7 @@
 import { Resend } from 'resend'
+import { env } from '@/src/lib/env'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
-const FROM = process.env.RESEND_FROM ?? 'EduDesk <noreply@myedudesk.com.tr>'
+const resend = new Resend(env.RESEND_API_KEY || undefined)
 
 export const mailer = {
   async sendMail(opts: {
@@ -12,8 +11,8 @@ export const mailer = {
     text?:   string
     html?:   string
   }) {
-    const to   = opts.to ?? process.env.FEEDBACK_TO ?? ''
-    const from = opts.from ?? FROM
+    const to   = opts.to ?? env.FEEDBACK_TO
+    const from = opts.from ?? env.RESEND_FROM
 
     if (!to) throw new Error('Alıcı adresi yapılandırılmamış (FEEDBACK_TO eksik).')
 

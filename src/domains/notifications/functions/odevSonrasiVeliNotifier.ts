@@ -2,6 +2,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { formatDateTR, buildMissedEmail } from '@/src/lib/email-utils'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 // "Dün" Türkiye saatine göre hesapla. Server UTC'de çalışsa da Intl ile doğru tarihi üretiriz.
 function yesterdayInTurkey(): string {
@@ -121,7 +122,7 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
       )
       const failed = results.filter(r => r.status === 'rejected')
       if (failed.length) {
-        console.error(`[odevSonrasiVeli] ${failed.length}/${toSend.length} e-posta gönderilemedi`)
+        logger.error({ event: 'veli_sonrasi_mail_failed', failed: failed.length, total: toSend.length }, 'Ödev sonrası veli e-postaları gönderilemedi')
       }
     })
 
