@@ -10,6 +10,7 @@ import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
+import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
 import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
@@ -255,6 +256,14 @@ export async function getStudentHomeworkProfile(studentId: string, classId: stri
 export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
   if (!UUID.safeParse(classId).success) return []
   return HomeworkService.getTemplatesByClass(classId)
+}
+
+export async function getSubmissionLogs(
+  homeworkId: string,
+  studentId:  string,
+): Promise<SubmissionLogEntry[]> {
+  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return []
+  return HomeworkService.getSubmissionLogs(homeworkId, studentId)
 }
 
 export async function getClassWeekLoad(

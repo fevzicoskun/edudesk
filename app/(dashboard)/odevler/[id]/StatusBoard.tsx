@@ -2,13 +2,37 @@
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
 import ExcelJS from 'exceljs'
-import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote } from '@/src/domains/homework/actions'
+import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote, getSubmissionLogs } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
+import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import StudentHomeworkProfileModal from './StudentHomeworkProfileModal'
 import VeliIletisimPaneli from './VeliIletisimPaneli'
+import { WeekLoadBadge } from '@/components/homework/WeekLoadBadge'
 
 const STATUS_OPTIONS: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli']
+
+const STYLE_TEXT: Record<SubmissionStatus, string> = {
+  yapildi:   'text-green-600 dark:text-green-400',
+  eksik:     'text-yellow-600 dark:text-yellow-400',
+  yapilmadi: 'text-red-600 dark:text-red-400',
+  gec:       'text-orange-500 dark:text-orange-400',
+  mazeretli: 'text-slate-500 dark:text-slate-400',
+}
+
+function relativeTime(iso: string): string {
+  const diffMs   = Date.now() - new Date(iso).getTime()
+  const diffMins = Math.floor(diffMs / 60_000)
+  if (diffMins < 1)  return 'Az önce'
+  if (diffMins < 60) return `${diffMins} dk önce`
+  const diffH = Math.floor(diffMins / 60)
+  if (diffH < 24)    return `${diffH} sa önce`
+  const diffD = Math.floor(diffH / 24)
+  if (diffD === 1)   return 'Dün'
+  if (diffD < 7)     return `${diffD} gün önce`
+  const d = new Date(iso)
+  return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`
+}
 const BULK_OPTIONS: SubmissionStatus[]   = ['yapildi', 'yapilmadi', 'eksik']
 
 // Mobil döngü sırası: default (yapilmadi) → 1 dokunuş = yapildi (en sık istenen)
@@ -87,7 +111,10 @@ export default function StatusBoard({
   const [recordedIds, setRecordedIds]       = useState<Set<string>>(
     () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
   )
-  const [openBadge, setOpenBadge] = useState<boolean>(false)
+  const [openBadge, setOpenBadge]           = useState<boolean>(false)
+  const [historyOpenId, setHistoryOpenId]   = useState<string | null>(null)
+  const [historyMap, setHistoryMap]         = useState<Record<string, SubmissionLogEntry[]>>({})
+  const [historyLoadingIds, setHistoryLoadingIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!errorMsg) return
@@ -148,6 +175,16 @@ export default function StatusBoard({
         setTimeout(() => setNoteSavedId(id => id === studentId ? null : id), 2000)
       }
     })
+  }
+
+  async function toggleHistory(studentId: string) {
+    if (historyOpenId === studentId) { setHistoryOpenId(null); return }
+    setHistoryOpenId(studentId)
+    if (historyMap[studentId]) return
+    setHistoryLoadingIds(cur => new Set([...cur, studentId]))
+    const logs = await getSubmissionLogs(homeworkId, studentId)
+    setHistoryMap(prev => ({ ...prev, [studentId]: logs }))
+    setHistoryLoadingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
   }
 
   function setAllStatuses(next: SubmissionStatus) {
@@ -310,7 +347,7 @@ export default function StatusBoard({
                 isItemPending ? 'border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-slate-700'
               }`}
             >
-              {/* Üst satır: isim + not butonu */}
+              {/* Üst satır: isim + geçmiş + not butonu */}
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div className="min-w-0 pt-0.5">
                   <button
@@ -342,31 +379,64 @@ export default function StatusBoard({
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                  className={`shrink-0 text-xs px-2.5 min-h-[44px] min-w-[72px] rounded-lg border transition-colors ${
-                    noteSaved
-                      ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      : hasNote
-                        ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                        : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
-                  }`}
-                >
-                  {noteSaved ? '✓ Kaydedildi' : hasNote ? 'Not ✓' : '+ Not'}
-                </button>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {/* Geçmiş butonu */}
+                  <button
+                    onClick={() => toggleHistory(item.student_id)}
+                    aria-expanded={historyOpenId === item.student_id}
+                    aria-label="Durum geçmişi"
+                    className={`flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border transition-colors ${
+                      historyOpenId === item.student_id
+                        ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-500'
+                    }`}
+                  >
+                    {historyLoadingIds.has(item.student_id) ? (
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    )}
+                  </button>
+                  {/* Not butonu */}
+                  <button
+                    onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
+                    className={`text-xs px-2.5 min-h-[44px] min-w-[64px] rounded-lg border transition-colors ${
+                      noteSaved
+                        ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : hasNote
+                          ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
+                    }`}
+                  >
+                    {noteSaved ? '✓ Kaydedildi' : hasNote ? 'Not ✓' : '+ Not'}
+                  </button>
+                </div>
               </div>
 
               {/* Mobil: tek-dokunuş döngü butonu */}
-              <button
-                disabled={isItemPending}
-                onClick={() => setStatus(item.student_id, nextInCycle(status))}
-                className={`md:hidden w-full flex flex-col items-center justify-center gap-0.5 min-h-[52px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${
-                  STYLES[status]
-                } font-semibold text-sm`}
-              >
-                <span>{LABELS[status]}</span>
-                <span className="text-[10px] font-normal opacity-50">→ {LABELS[nextInCycle(status)]}</span>
-              </button>
+              {(() => {
+                const next = nextInCycle(status)
+                return (
+                  <button
+                    disabled={isItemPending}
+                    onClick={() => setStatus(item.student_id, next)}
+                    className={`md:hidden w-full flex items-center justify-between gap-2 px-4 min-h-[52px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
+                  >
+                    <span className="font-bold text-sm">{LABELS[status]}</span>
+                    <span className="flex items-center gap-1 text-[11px] font-medium opacity-70">
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                      <span className={STYLE_TEXT[next]}>{LABELS[next]}</span>
+                    </span>
+                  </button>
+                )
+              })()}
 
               {/* Desktop: 3+2 buton grid */}
               <div className="hidden md:grid grid-cols-3 gap-1.5 mb-1.5">
@@ -414,6 +484,38 @@ export default function StatusBoard({
                   />
                 </div>
               )}
+
+              {/* Geçmiş paneli */}
+              {historyOpenId === item.student_id && (
+                <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-700">
+                  {historyLoadingIds.has(item.student_id) ? (
+                    <p className="text-xs text-gray-400 dark:text-slate-500">Yükleniyor…</p>
+                  ) : (historyMap[item.student_id] ?? []).length === 0 ? (
+                    <p className="text-xs text-gray-400 dark:text-slate-500">Henüz değişiklik kaydı yok.</p>
+                  ) : (
+                    <div className="space-y-1.5">
+                      {(historyMap[item.student_id] ?? []).map((log, i) => (
+                        <div key={i} className="flex items-baseline gap-2 text-xs">
+                          <span className="text-gray-400 dark:text-slate-500 shrink-0 tabular-nums">
+                            {relativeTime(log.changed_at)}
+                          </span>
+                          <span className="min-w-0 text-gray-600 dark:text-slate-300">
+                            <span className="font-medium">{log.changed_by_name}</span>
+                            {' · '}
+                            <span className={log.old_status ? STYLE_TEXT[log.old_status as SubmissionStatus] : 'text-gray-400'}>
+                              {log.old_status ? LABELS[log.old_status as SubmissionStatus] : '—'}
+                            </span>
+                            {' → '}
+                            <span className={`font-semibold ${STYLE_TEXT[log.new_status as SubmissionStatus]}`}>
+                              {LABELS[log.new_status as SubmissionStatus]}
+                            </span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )
         })}
@@ -450,73 +552,3 @@ export default function StatusBoard({
   )
 }
 
-function WeekLoadBadge({
-  load,
-  open,
-  onToggle,
-}: {
-  load: ClassWeekLoad
-  open: boolean
-  onToggle: () => void
-}) {
-  const badgeCls =
-    load.level === 'danger'
-      ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400 border-red-200 dark:border-red-800'
-      : load.level === 'warn'
-        ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800'
-        : 'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400 border-gray-200 dark:border-slate-600'
-
-  return (
-    <div className="relative z-20">
-      <button
-        type="button"
-        onClick={e => { e.stopPropagation(); onToggle() }}
-        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border min-h-[44px] transition-colors ${badgeCls}`}
-      >
-        ● {load.count} ödev
-      </button>
-      {open && <WeekLoadPopover load={load} />}
-    </div>
-  )
-}
-
-function WeekLoadPopover({ load }: { load: ClassWeekLoad }) {
-  const MONTHS = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
-  const DAYS   = ['Paz','Pzt','Sal','Çar','Per','Cum','Cmt']
-
-  function dayLabel(dateStr: string) {
-    try {
-      const [y, m, day] = dateStr.split('-').map(Number)
-      const d = new Date(y, m - 1, day)
-      return `${d.getDate()} ${MONTHS[d.getMonth()]} (${DAYS[d.getDay()]})`
-    } catch { return dateStr }
-  }
-
-  return (
-    <div className="absolute left-0 top-7 z-30 w-64 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-lg p-3 space-y-2">
-      <p className={`text-xs font-semibold ${
-        load.level === 'danger' ? 'text-red-600 dark:text-red-400' :
-        load.level === 'warn'   ? 'text-amber-600 dark:text-amber-400' :
-                                   'text-gray-600 dark:text-slate-400'
-      }`}>
-        Bu hafta {load.count} ödev
-      </p>
-      <div className="space-y-1.5">
-        {load.items.map((item, i) => (
-          <div key={i} className="flex items-start gap-2">
-            <span className={`shrink-0 mt-0.5 text-[10px] font-bold ${item.isOwn ? 'text-blue-500' : 'text-gray-400 dark:text-slate-500'}`}>
-              {item.isOwn ? '★' : '·'}
-            </span>
-            <div className="min-w-0">
-              <p className="text-xs text-gray-800 dark:text-slate-200 leading-snug truncate">{item.subject}</p>
-              <p className="text-[11px] text-gray-400 dark:text-slate-500">
-                {dayLabel(item.dueDate)}
-                {!item.isOwn && ` · ${item.teacherName}`}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}

@@ -36,12 +36,21 @@ type Student  = { id: string; full_name: string; student_number: string | null }
 type Homework = { id: string; title: string; subject: string; due_date: string | null }
 
 type Props = {
-  students:  Student[]
-  homeworks: Homework[]
-  subMap:    Record<string, SubmissionStatus>
+  students:   Student[]
+  homeworks:  Homework[]
+  subMap:     Record<string, SubmissionStatus>
+  className?: string
 }
 
-export default function MatrisClient({ students, homeworks, subMap }: Props) {
+const STATUS_COLOR: Record<SubmissionStatus, string> = {
+  yapildi:   'FFD9EAD3',
+  eksik:     'FFFFFF99',
+  yapilmadi: 'FFFFE2DD',
+  gec:       'FFFFF0E0',
+  mazeretli: 'FFF3F3F3',
+}
+
+export default function MatrisClient({ students, homeworks, subMap, className }: Props) {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'number' | 'pct_desc' | 'pct_asc'>('number')
 
@@ -77,6 +86,89 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
     return { statsMap: byStudent, hwStatsMap: byHw }
   }, [students, homeworks, subMap])
 
+  async function exportToExcel() {
+    const ExcelJS = (await import('exceljs')).default
+    const wb = new ExcelJS.Workbook()
+    const safeClassName = (className ?? 'Sinif').replace(/[*?:\\/[\]]/g, '-')
+    const ws = wb.addWorksheet(safeClassName)
+
+    // Tüm öğrenciler numara sırasıyla — filtre/sıralama dışında
+    const allByNumber = [...students].sort((a, b) =>
+      (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
+    )
+
+    // Başlık satırı
+    const headerRow = ws.addRow([
+      'No', 'Ad Soyad',
+      ...homeworks.map(h => h.title),
+      'Tamamlanma %',
+    ])
+    headerRow.font = { bold: true }
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD0E4F7' } }
+    headerRow.alignment = { vertical: 'middle', wrapText: true }
+
+    // Alt başlık: ders + tarih
+    const subHeaderRow = ws.addRow([
+      '', '',
+      ...homeworks.map(h => `${h.subject} · ${dueDateFmt(h.due_date)}`),
+      '',
+    ])
+    subHeaderRow.font = { italic: true, color: { argb: 'FF888888' } }
+
+    // Öğrenci satırları
+    for (const student of allByNumber) {
+      const { pct } = statsMap[student.id]
+      const dataRow = ws.addRow([
+        student.student_number ?? '',
+        student.full_name,
+        ...homeworks.map(hw => {
+          const s = subMap[`${student.id}_${hw.id}`]
+          return s ? STATUS_LABEL[s] : '—'
+        }),
+        pct !== null ? `%${pct}` : '—',
+      ])
+
+      // Hücre renkleri
+      homeworks.forEach((hw, i) => {
+        const s = subMap[`${student.id}_${hw.id}`]
+        if (s) {
+          const cell = dataRow.getCell(i + 3)
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: STATUS_COLOR[s] } }
+          cell.alignment = { horizontal: 'center' }
+        }
+      })
+    }
+
+    // Sınıf ortalaması satırı
+    const footerRow = ws.addRow([
+      '', 'Sınıf Ort.',
+      ...homeworks.map(hw => {
+        const { pct } = hwStatsMap[hw.id] ?? { pct: null }
+        return pct !== null ? `%${pct}` : '—'
+      }),
+      '',
+    ])
+    footerRow.font = { bold: true }
+    footerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAEAEA' } }
+
+    // Sütun genişlikleri
+    ws.getColumn(1).width = 8
+    ws.getColumn(2).width = 28
+    for (let i = 3; i <= homeworks.length + 2; i++) ws.getColumn(i).width = 16
+    ws.getColumn(homeworks.length + 3).width = 14
+
+    // İndir
+    const buffer = await wb.xlsx.writeBuffer()
+    const url = URL.createObjectURL(
+      new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    )
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${safeClassName}_donem_raporu.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   const q = search.trim().toLowerCase()
 
   const filteredStudents = q
@@ -102,41 +194,52 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
 
   return (
     <>
-      {showControls && (
-        <div className="flex flex-wrap items-center gap-3 mb-4 print:hidden">
-          <div className="relative flex-1 min-w-[180px]">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Öğrenci ara..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-          </div>
-          <select
-            value={sortBy}
-            onChange={e => setSortBy(e.target.value as typeof sortBy)}
-            className="py-2 px-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 transition-all"
-          >
-            <option value="number">Numara sırası</option>
-            <option value="pct_desc">Tamamlanma ↓ (en başarılı)</option>
-            <option value="pct_asc">Tamamlanma ↑ (en riskli)</option>
-          </select>
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-3 mb-4 print:hidden">
+        {showControls && (
+          <>
+            <div className="relative flex-1 min-w-[180px]">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Öğrenci ara..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value as typeof sortBy)}
+              className="py-2 px-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 transition-all"
+            >
+              <option value="number">Numara sırası</option>
+              <option value="pct_desc">Tamamlanma ↓ (en başarılı)</option>
+              <option value="pct_asc">Tamamlanma ↑ (en riskli)</option>
+            </select>
+          </>
+        )}
+        <button
+          onClick={exportToExcel}
+          className="ml-auto flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-green-700 dark:hover:text-green-400 px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 hover:border-green-300 bg-white dark:bg-slate-800 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          Dönem Raporu
+        </button>
+      </div>
 
       {q && (
         <p className="text-xs text-gray-400 mb-3 print:hidden">

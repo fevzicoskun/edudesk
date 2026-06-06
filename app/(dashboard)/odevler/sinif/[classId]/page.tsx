@@ -102,6 +102,7 @@ export default async function SinifMatrisPage({
             students={students}
             homeworks={homeworks}
             subMap={subMap}
+            className={cls.name}
           />
         )}
       </div>

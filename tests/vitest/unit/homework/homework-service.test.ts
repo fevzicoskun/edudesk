@@ -17,19 +17,24 @@ vi.mock('@/src/shared/authorization/server', () => ({
 
 vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
   HomeworkRepository: {
-    insertHomework:               vi.fn(),
-    findHomeworkTeacher:          vi.fn(),
-    upsertSubmissionStatus:       vi.fn(),
-    upsertSubmissionsStatus:      vi.fn(),
-    upsertSubmissionNote:         vi.fn(),
-    classExistsInSchool:          vi.fn(),
-    updateHomework:               vi.fn(),
-    updateHomeworkAsManager:      vi.fn(),
-    softDeleteHomework:           vi.fn(),
-    softDeleteHomeworkAsManager:  vi.fn(),
-    restoreHomework:              vi.fn(),
-    findStudentHomeworkProfile:   vi.fn(),
-    findTemplatesByClass:         vi.fn(),
+    insertHomework:                  vi.fn(),
+    findHomeworkTeacher:             vi.fn(),
+    upsertSubmissionStatus:          vi.fn(),
+    upsertSubmissionsStatus:         vi.fn(),
+    upsertSubmissionNote:            vi.fn(),
+    classExistsInSchool:             vi.fn(),
+    updateHomework:                  vi.fn(),
+    updateHomeworkAsManager:         vi.fn(),
+    softDeleteHomework:              vi.fn(),
+    softDeleteHomeworkAsManager:     vi.fn(),
+    restoreHomework:                 vi.fn(),
+    findStudentHomeworkProfile:      vi.fn(),
+    findTemplatesByClass:            vi.fn(),
+    findCurrentSubmissionStatus:     vi.fn().mockResolvedValue({ data: null, error: null }),
+    findCurrentSubmissionStatuses:   vi.fn().mockResolvedValue({ data: [],   error: null }),
+    insertSubmissionLog:             vi.fn().mockResolvedValue({ error: null }),
+    insertSubmissionLogs:            vi.fn().mockResolvedValue({ error: null }),
+    findSubmissionLogs:              vi.fn().mockResolvedValue({ data: [],   error: null }),
   },
 }))
 
@@ -161,6 +166,86 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
     } as never)
     vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+    expect(result.success).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateSubmissionStatus() — audit log', () => {
+  it('başarılı güncelleme → insertSubmissionLog çağrılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatus).mockResolvedValue({
+      data: { status: 'yapilmadi' }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+
+    expect(HomeworkRepository.insertSubmissionLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        homework_id: 'hw-1',
+        student_id:  'stu-1',
+        school_id:   SCHOOL_ID,
+        changed_by:  TEACHER_ID,
+        old_status:  'yapilmadi',
+        new_status:  'yapildi',
+      })
+    )
+  })
+
+  it('submission daha önce yoksa old_status null olur', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatus).mockResolvedValue({
+      data: null, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+
+    expect(HomeworkRepository.insertSubmissionLog).toHaveBeenCalledWith(
+      expect.objectContaining({ old_status: null, new_status: 'yapildi' })
+    )
+  })
+
+  it('upsert başarısız olursa log yazılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatus).mockResolvedValue({
+      data: null, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({
+      error: { message: 'DB hatası' },
+    } as never)
+
+    const result = await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+
+    expect(result.error).toBe('DB hatası')
+    expect(HomeworkRepository.insertSubmissionLog).not.toHaveBeenCalled()
+  })
+
+  it('log başarısız olsa bile success döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatus).mockResolvedValue({
+      data: null, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
+    vi.mocked(HomeworkRepository.insertSubmissionLog).mockResolvedValue({
+      error: { message: 'log DB hatası' },
+    } as never)
+
+    const result = await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+
     expect(result.success).toBe(true)
   })
 })
@@ -452,6 +537,106 @@ describe('HomeworkService.updateAllSubmissionStatuses()', () => {
     vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapilmadi')
     expect(result.success).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.updateAllSubmissionStatuses() — audit log', () => {
+  const STUDENT_IDS = ['stu-1', 'stu-2', 'stu-3']
+
+  it('başarılı toplu güncelleme → insertSubmissionLogs her öğrenci için çağrılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatuses).mockResolvedValue({
+      data: [
+        { student_id: 'stu-1', status: 'yapilmadi' },
+        { student_id: 'stu-2', status: 'eksik' },
+      ],
+      error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapildi')
+
+    const logs = vi.mocked(HomeworkRepository.insertSubmissionLogs).mock.calls[0][0]
+    expect(logs).toHaveLength(3)
+    expect(logs.find(l => l.student_id === 'stu-1')?.old_status).toBe('yapilmadi')
+    expect(logs.find(l => l.student_id === 'stu-2')?.old_status).toBe('eksik')
+    expect(logs.find(l => l.student_id === 'stu-3')?.old_status).toBeNull()
+    expect(logs.every(l => l.new_status === 'yapildi')).toBe(true)
+    expect(logs.every(l => l.changed_by === TEACHER_ID)).toBe(true)
+  })
+
+  it('boş liste → ne upsert ne log çağrılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+
+    await HomeworkService.updateAllSubmissionStatuses('hw-1', [], 'yapildi')
+
+    expect(HomeworkRepository.findCurrentSubmissionStatuses).not.toHaveBeenCalled()
+    expect(HomeworkRepository.upsertSubmissionsStatus).not.toHaveBeenCalled()
+    expect(HomeworkRepository.insertSubmissionLogs).not.toHaveBeenCalled()
+  })
+
+  it('upsert başarısız olursa log yazılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.findCurrentSubmissionStatuses).mockResolvedValue({
+      data: [], error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({
+      error: { message: 'toplu DB hatası' },
+    } as never)
+
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', STUDENT_IDS, 'yapildi')
+
+    expect(result.error).toBe('toplu DB hatası')
+    expect(HomeworkRepository.insertSubmissionLogs).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('HomeworkService.getSubmissionLogs()', () => {
+  it('giriş yoksa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await HomeworkService.getSubmissionLogs('hw-1', 'stu-1')
+    expect(result).toEqual([])
+    expect(HomeworkRepository.findSubmissionLogs).not.toHaveBeenCalled()
+  })
+
+  it('homework:read izni yoksa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    const result = await HomeworkService.getSubmissionLogs('hw-1', 'stu-1')
+    expect(result).toEqual([])
+  })
+
+  it('logları döndürür', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const mockLogs = [
+      { old_status: 'yapilmadi', new_status: 'yapildi', changed_at: '2026-06-06T10:00:00Z', changed_by_name: 'Mehmet' },
+      { old_status: null,        new_status: 'yapilmadi', changed_at: '2026-06-05T08:00:00Z', changed_by_name: 'Mehmet' },
+    ]
+    vi.mocked(HomeworkRepository.findSubmissionLogs).mockResolvedValue({ data: mockLogs, error: null } as never)
+    const result = await HomeworkService.getSubmissionLogs('hw-1', 'stu-1')
+    expect(result).toHaveLength(2)
+    expect(result[0].new_status).toBe('yapildi')
+    expect(result[1].old_status).toBeNull()
+    expect(HomeworkRepository.findSubmissionLogs).toHaveBeenCalledWith('hw-1', 'stu-1', SCHOOL_ID)
+  })
+
+  it('DB hatası varsa boş dizi döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findSubmissionLogs).mockResolvedValue({
+      data: [], error: { message: 'DB hatası' },
+    } as never)
+    const result = await HomeworkService.getSubmissionLogs('hw-1', 'stu-1')
+    expect(result).toEqual([])
   })
 })
 

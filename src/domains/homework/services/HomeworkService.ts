@@ -1,4 +1,4 @@
-import { HomeworkRepository } from '../repositories/HomeworkRepository'
+import { HomeworkRepository, type SubmissionLogEntry } from '../repositories/HomeworkRepository'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
@@ -44,6 +44,10 @@ export const HomeworkService = {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
 
+    const { data: existing } = await HomeworkRepository.findCurrentSubmissionStatus(
+      homeworkId, studentId, ability.schoolId
+    )
+
     const { error } = await HomeworkRepository.upsertSubmissionStatus({
       homework_id: homeworkId,
       student_id:  studentId,
@@ -53,6 +57,17 @@ export const HomeworkService = {
     })
 
     if (error) return { error: error.message }
+
+    await HomeworkRepository.insertSubmissionLog({
+      homework_id: homeworkId,
+      student_id:  studentId,
+      school_id:   ability.schoolId,
+      changed_by:  ability.userId,
+      old_status:  existing?.status ?? null,
+      new_status:  status,
+      changed_at:  new Date().toISOString(),
+    })
+
     return { success: true }
   },
 
@@ -83,8 +98,26 @@ export const HomeworkService = {
 
     if (rows.length === 0) return { success: true }
 
+    const { data: existing } = await HomeworkRepository.findCurrentSubmissionStatuses(
+      homeworkId, studentIds, ability.schoolId
+    )
+    const oldStatusMap = new Map((existing ?? []).map(r => [r.student_id, r.status]))
+
     const { error } = await HomeworkRepository.upsertSubmissionsStatus(rows)
     if (error) return { error: error.message }
+
+    const now = new Date().toISOString()
+    const logs = studentIds.map(studentId => ({
+      homework_id: homeworkId,
+      student_id:  studentId,
+      school_id:   ability.schoolId,
+      changed_by:  ability.userId,
+      old_status:  oldStatusMap.get(studentId) ?? null,
+      new_status:  status,
+      changed_at:  now,
+    }))
+    await HomeworkRepository.insertSubmissionLogs(logs)
+
     return { success: true }
   },
 
@@ -163,6 +196,16 @@ export const HomeworkService = {
     const { error } = await HomeworkRepository.restoreHomework(id, ability.schoolId)
     if (error) return { error: error.message }
     return {}
+  },
+
+  async getSubmissionLogs(
+    homeworkId: string,
+    studentId:  string,
+  ): Promise<SubmissionLogEntry[]> {
+    const ability = await getAbility()
+    if (!ability || ability.cannot(P.HOMEWORK.READ)) return []
+    const { data } = await HomeworkRepository.findSubmissionLogs(homeworkId, studentId, ability.schoolId)
+    return data ?? []
   },
 
   async getTemplatesByClass(classId: string): Promise<HomeworkTemplate[]> {
