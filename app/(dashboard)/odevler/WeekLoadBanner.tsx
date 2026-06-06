@@ -37,6 +37,8 @@ export default function WeekLoadBanner({
   const hasAnyLoad = loads.some(l => l.count > 0)
 
   if (!dueDate && !hasAnyLoad) return null
+  // Veri henüz gelmedi ya da hata oldu — hiçbir şey gösterme
+  if (!loading && loads.length === 0) return null
 
   // Seçili tarih var ama bu hafta başka hiç ödev yok
   if (isCreating && dueDate && !hasAnyLoad) {

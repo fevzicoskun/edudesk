@@ -31,7 +31,7 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
 
   const [dueDate, setDueDate]         = useState(hw.due_date ?? '')
   const [weekLoad, setWeekLoad]       = useState<ClassWeekLoad[]>([])
-  const [loadingLoad, setLoadingLoad] = useState(false)
+  const [loadingLoad, setLoadingLoad] = useState(!!hw.due_date)
 
   useEffect(() => {
     if (!classId || !dueDate) { setWeekLoad([]); return }
