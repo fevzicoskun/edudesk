@@ -42,5 +42,7 @@ export async function getActiveVeliTokens(studentId: string) {
 }
 
 export async function listRevokedTokens() {
+  const user = await getCurrentUser()
+  if (!user) redirect('/login')
   return TokenService.listRevokedTokens()
 }

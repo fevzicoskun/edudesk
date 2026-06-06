@@ -1,6 +1,7 @@
 'use server'
 
 import { mailer } from '@/src/lib/mailer'
+import { getCurrentUser } from '@/src/shared/auth'
 
 const CATEGORY_LABELS: Record<string, string> = {
   oneri:   'Öneri',
@@ -9,6 +10,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 }
 
 export async function sendFeedback(formData: FormData) {
+  const user = await getCurrentUser()
+  if (!user) return { ok: false, error: 'Giriş yapılmamış.' }
+
   const category = (formData.get('category') as string) ?? 'oneri'
   const message  = (formData.get('message')  as string) ?? ''
 

@@ -64,6 +64,7 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
         .update({ notified_at: new Date().toISOString() })
         .eq('student_id', studentId)
         .eq('class_id', classId)
+        .eq('school_id', schoolId)
         .eq('date', date)
     })
 

@@ -58,7 +58,8 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
           supabase
             .from('homework_submissions')
             .select('student_id, status')
-            .eq('homework_id', hw.id),
+            .eq('homework_id', hw.id)
+            .eq('school_id', hw.school_id),
         ])
 
         if (!students?.length) continue

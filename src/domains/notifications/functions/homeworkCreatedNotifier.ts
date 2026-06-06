@@ -47,6 +47,9 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
     })
 
     if (!targets.length) return { sent: 0, reason: 'veli-email-yok' }
+    if (targets.length > 50) {
+      console.warn(`[homeworkCreatedNotifier] ${targets.length} veli var, ilk 50 bildirildi. hw=${homeworkId}`)
+    }
 
     const dueDateStr = hw.due_date ? formatDateTR(hw.due_date) : ''
 

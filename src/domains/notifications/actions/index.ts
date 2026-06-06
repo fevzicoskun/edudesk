@@ -5,38 +5,46 @@ import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { revalidatePath } from 'next/cache'
 
 export async function getNotifications() {
-  const supabase = await createClient()
+  const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
+  if (!user) return []
   const { data } = await supabase
     .from('notifications')
     .select('id, title, body, homework_id, read_at, created_at')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(30)
   return data ?? []
 }
 
 export async function getUnreadCount() {
-  const supabase = await createClient()
+  const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
+  if (!user) return 0
   const { count } = await supabase
     .from('notifications')
     .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
     .is('read_at', null)
   return count ?? 0
 }
 
 export async function markAllRead() {
-  const supabase = await createClient()
+  const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
+  if (!user) return
   await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
     .is('read_at', null)
   revalidatePath('/', 'layout')
 }
 
 export async function markRead(id: string) {
-  const supabase = await createClient()
+  const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
+  if (!user) return
   await supabase
     .from('notifications')
     .update({ read_at: new Date().toISOString() })
+    .eq('user_id', user.id)
     .eq('id', id)
     .is('read_at', null)
   revalidatePath('/', 'layout')

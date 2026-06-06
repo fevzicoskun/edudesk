@@ -34,12 +34,14 @@ export async function removeUser(targetId: string): Promise<DeleteResult> {
   return result
 }
 
-export async function assignRole(targetId: string, newRole: string) {
-  UUID.parse(targetId)
-  AssignableRole.parse(newRole)
+export async function assignRole(targetId: string, newRole: string): Promise<{ error?: string }> {
+  if (!UUID.safeParse(targetId).success) return { error: 'Geçersiz istek' }
+  const roleResult = AssignableRole.safeParse(newRole)
+  if (!roleResult.success) return { error: 'Geçersiz rol' }
 
   await UserService.assignRole(targetId, newRole)
   revalidatePath('/kullanicilar')
+  return {}
 }
 
 export async function updateProfile(formData: FormData): Promise<{ error?: string }> {

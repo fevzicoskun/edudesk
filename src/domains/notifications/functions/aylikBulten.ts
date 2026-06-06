@@ -31,19 +31,29 @@ export const aylikBultenFn = inngest.createFunction(
 
     if (!schools.length) return { sent: 0 }
 
-    // 2. Müdür emaillerini al
+    // Kararlı sıra: step ID'leri retry'larda aynı okula denk gelsin
+    const sortedSchools = [...schools].sort((a, b) => (a.school_id ?? '').localeCompare(b.school_id ?? ''))
+
+    // 2. Müdür emaillerini al (pagination ile — 1000+ kullanıcı desteği)
     const emailEntries = await step.run('fetch-emails', async (): Promise<[string, string][]> => {
       const db = createServiceClient()
-      const { data: authData } = await db.auth.admin.listUsers({ perPage: 1000 })
-      const users = (authData as unknown as { users: { id: string; email?: string }[] })?.users ?? []
-      return users.map(u => [u.id, u.email ?? ''] as [string, string])
+      const allUsers: { id: string; email?: string }[] = []
+      let page = 1
+      for (;;) {
+        const { data } = await db.auth.admin.listUsers({ perPage: 1000, page })
+        const batch = (data as unknown as { users: { id: string; email?: string }[] })?.users ?? []
+        allUsers.push(...batch)
+        if (batch.length < 1000) break
+        page++
+      }
+      return allUsers.map(u => [u.id, u.email ?? ''] as [string, string])
     })
     const emailMap = new Map<string, string>(emailEntries)
 
     let totalSent = 0
 
     // 3. Her okul için bülten gönder
-    for (const mudur of schools) {
+    for (const mudur of sortedSchools) {
       const mudurEmail = emailMap.get(mudur.id)
       if (!mudurEmail || !mudur.school_id) continue
 

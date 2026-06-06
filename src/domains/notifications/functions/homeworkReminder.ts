@@ -32,18 +32,26 @@ export const homeworkReminderFn = inngest.createFunction(
 
       const teacherIds = [...new Set(homeworks.map((h) => h.teacher_id))]
 
-      const [{ data: prefs }, { data: authUsers }] = await Promise.all([
+      // Pagination: 1000+ kullanıcı için tüm sayfaları çek
+      const allAuthUsers: { id: string; email?: string }[] = []
+      let page = 1
+      for (;;) {
+        const { data } = await supabase.auth.admin.listUsers({ perPage: 1000, page })
+        const batch = (data as unknown as { users: { id: string; email?: string }[] })?.users ?? []
+        allAuthUsers.push(...batch)
+        if (batch.length < 1000) break
+        page++
+      }
+
+      const [{ data: prefs }] = await Promise.all([
         supabase
           .from('notification_preferences')
           .select('user_id, days_before, email_on')
           .in('user_id', teacherIds),
-        supabase.auth.admin.listUsers({ perPage: 1000 }),
       ])
 
       const prefMap = new Map(prefs?.map((p) => [p.user_id, p]) ?? [])
-      const emailMap = new Map(
-        authUsers?.users?.map((u) => [u.id, u.email ?? '']) ?? []
-      )
+      const emailMap = new Map(allAuthUsers.map((u) => [u.id, u.email ?? '']))
 
       return homeworks.flatMap((hw) => {
         const pref = prefMap.get(hw.teacher_id)
@@ -130,33 +138,42 @@ export const homeworkReminderFn = inngest.createFunction(
       })
     }
 
-    // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri)
+    // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri) — 2 toplu sorgu
     const veliEmails = await step.run('fetch-veli-emails', async () => {
       const supabase = createServiceClient()
+      if (!toSend.length) return []
+
+      const uniqueClassIds = [...new Set(toSend.map((hw) => hw.classId))]
+      const hwIds          = toSend.map((hw) => hw.homeworkId)
+
+      const [{ data: allStudents }, { data: doneSubs }] = await Promise.all([
+        supabase
+          .from('students')
+          .select('id, full_name, veli_email, class_id')
+          .in('class_id', uniqueClassIds)
+          .not('veli_email', 'is', null)
+          .eq('veli_email_opt_out', false)
+          .is('deleted_at', null),
+        supabase
+          .from('homework_submissions')
+          .select('student_id, homework_id')
+          .in('homework_id', hwIds)
+          .eq('status', 'yapildi'),
+      ])
+
+      const doneKey = new Set((doneSubs ?? []).map((s) => `${s.homework_id}:${s.student_id}`))
+      const studentsByClass = new Map<string, { id: string; full_name: string; veli_email: string }[]>()
+      for (const s of allStudents ?? []) {
+        if (!s.veli_email) continue
+        const list = studentsByClass.get(s.class_id) ?? []
+        list.push({ id: s.id, full_name: s.full_name, veli_email: s.veli_email })
+        studentsByClass.set(s.class_id, list)
+      }
+
       const results: { to: string; ogrenciAdi: string; odevBaslik: string; dueDate: string; studentId: string }[] = []
-
       for (const hw of toSend) {
-        const [{ data: students }, { data: subs }] = await Promise.all([
-          supabase
-            .from('students')
-            .select('id, full_name, veli_email')
-            .eq('class_id', hw.classId)
-            .eq('school_id', hw.schoolId)
-            .not('veli_email', 'is', null)
-            .eq('veli_email_opt_out', false),
-          supabase
-            .from('homework_submissions')
-            .select('student_id')
-            .eq('homework_id', hw.homeworkId)
-            .eq('status', 'yapildi'),
-        ])
-
-        if (!students?.length) continue
-
-        const teslimEdenIds = new Set(subs?.map((s) => s.student_id) ?? [])
-
-        for (const s of students) {
-          if (!s.veli_email || teslimEdenIds.has(s.id)) continue
+        for (const s of (studentsByClass.get(hw.classId) ?? [])) {
+          if (doneKey.has(`${hw.homeworkId}:${s.id}`)) continue
           results.push({
             to:         s.veli_email,
             ogrenciAdi: s.full_name,
@@ -166,7 +183,6 @@ export const homeworkReminderFn = inngest.createFunction(
           })
         }
       }
-
       return results
     })
 

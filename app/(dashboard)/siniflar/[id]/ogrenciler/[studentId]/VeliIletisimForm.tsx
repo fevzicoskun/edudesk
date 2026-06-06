@@ -13,9 +13,13 @@ interface Props {
 
 export default function VeliIletisimForm({ studentId, classId, defaultEmail, defaultTelefon, defaultAd }: Props) {
   const [state, action, pending] = useActionState(
-    async (_prev: { ok: boolean } | null, formData: FormData) => {
-      await updateVeliContact(studentId, classId, formData)
-      return { ok: true }
+    async (_prev: { ok: boolean; error?: string } | null, formData: FormData) => {
+      try {
+        await updateVeliContact(studentId, classId, formData)
+        return { ok: true }
+      } catch {
+        return { ok: false, error: 'Bir hata oluştu. Lütfen tekrar dene.' }
+      }
     },
     null
   )
@@ -64,6 +68,9 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
           </button>
           {state?.ok && (
             <span className="text-sm text-green-600 dark:text-green-400">Kaydedildi</span>
+          )}
+          {state?.error && (
+            <span className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
           )}
         </div>
       </form>

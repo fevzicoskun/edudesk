@@ -21,6 +21,7 @@ export default function BulkStudentModal({
 }) {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
+  const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
   const router = useRouter()
 
@@ -47,11 +48,16 @@ export default function BulkStudentModal({
 
     if (!students.length) return
 
+    setError('')
     startTransition(async () => {
-      await addStudentsBulk(classId, students)
-      router.refresh()
-      setOpen(false)
-      setText('')
+      try {
+        await addStudentsBulk(classId, students)
+        router.refresh()
+        setOpen(false)
+        setText('')
+      } catch {
+        setError('Öğrenciler eklenirken hata oluştu. Lütfen tekrar dene.')
+      }
     })
   }
 
@@ -86,6 +92,10 @@ export default function BulkStudentModal({
             placeholder="Öğrencileri buraya yazın..."
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
           />
+
+          {error && (
+            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          )}
 
           <DialogFooter>
             <button

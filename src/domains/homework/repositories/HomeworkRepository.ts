@@ -24,6 +24,7 @@ export const HomeworkRepository = {
       .select('teacher_id, due_date')
       .eq('id', homeworkId)
       .eq('school_id', schoolId)
+      .is('deleted_at', null)
       .single()
   },
 
