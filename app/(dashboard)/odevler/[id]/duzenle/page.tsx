@@ -20,11 +20,10 @@ export default async function OdevDuzenle({
   const [hwRes, sourcesRes, classesRes, subCountRes] = await Promise.all([
     supabase
       .from('homeworks')
-      .select('id, title, subject, description, due_date, teacher_id, source_id, class_id')
+      .select('id, title, subject, description, due_date, teacher_id, source_id, class_id, is_template')
       .eq('id', id)
       .eq('school_id', profile.school_id)
       .is('deleted_at', null)
-      .eq('is_template', false)
       .single(),
     supabase
       .from('homework_sources')
@@ -55,7 +54,7 @@ export default async function OdevDuzenle({
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Link
-            href={`/odevler/${id}`}
+            href={hw.is_template ? '/odevler/yeni' : `/odevler/${id}`}
             className="flex items-center justify-center w-9 h-9 rounded-xl bg-white border border-gray-200 text-gray-500 hover:text-gray-800 hover:border-gray-300 shadow-sm transition-all"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -63,8 +62,12 @@ export default async function OdevDuzenle({
             </svg>
           </Link>
           <div>
-            <h1 className="text-base font-bold text-gray-900 leading-tight">Ödevi Düzenle</h1>
-            <p className="text-xs text-gray-500">Değişiklikler kaydedilir, teslim geçmişi korunur</p>
+            <h1 className="text-base font-bold text-gray-900 leading-tight">
+              {hw.is_template ? 'Şablonu Düzenle' : 'Ödevi Düzenle'}
+            </h1>
+            <p className="text-xs text-gray-500">
+              {hw.is_template ? 'Şablon içeriği güncellenir' : 'Değişiklikler kaydedilir, teslim geçmişi korunur'}
+            </p>
           </div>
         </div>
 
@@ -77,6 +80,7 @@ export default async function OdevDuzenle({
             due_date: hw.due_date,
             source_id: hw.source_id,
             class_id: hw.class_id as string,
+            is_template: hw.is_template ?? false,
           }}
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}

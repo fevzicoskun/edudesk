@@ -199,8 +199,9 @@ export async function updateSubmissionNote(
 }
 
 export async function updateHomework(_: unknown, formData: FormData) {
-  const id       = formData.get('id') as string
-  const class_id = formData.get('class_id') as string
+  const id          = formData.get('id') as string
+  const class_id    = formData.get('class_id') as string
+  const is_template = formData.get('is_template') === 'true'
   if (!UUID.safeParse(id).success)       return { error: 'Geçersiz istek' }
   if (!UUID.safeParse(class_id).success) return { error: 'Geçersiz sınıf' }
 
@@ -224,6 +225,8 @@ export async function updateHomework(_: unknown, formData: FormData) {
   if (result.error) return result
 
   revalidatePath('/odevler')
+  revalidatePath('/odevler/yeni')
+  if (is_template) redirect('/odevler/yeni?guncellendi=1')
   revalidatePath(`/odevler/${id}`)
   redirect(`/odevler/${id}?guncellendi=1`)
 }

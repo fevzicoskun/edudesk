@@ -14,6 +14,7 @@ type HwData = {
   due_date: string | null
   source_id: string | null
   class_id: string
+  is_template: boolean
 }
 
 type ClassItem  = { id: string; name: string; grade: number }
@@ -67,13 +68,16 @@ export default function OdevDuzenleForm({
   return (
     <div className="rounded-2xl overflow-hidden bg-white shadow-xl shadow-gray-200/70 border border-gray-100/80">
       <div className="relative bg-gradient-to-br from-slate-600 via-slate-600 to-slate-700 px-6 py-5">
-        <p className="text-white font-semibold text-lg">Ödevi Düzenle</p>
-        <p className="text-slate-300 text-sm mt-0.5">Başlık, sınıf, ders, açıklama ve tarihi güncelleyin</p>
+        <p className="text-white font-semibold text-lg">{hw.is_template ? 'Şablonu Düzenle' : 'Ödevi Düzenle'}</p>
+        <p className="text-slate-300 text-sm mt-0.5">
+          {hw.is_template ? 'Şablon içeriği güncellenir, tarih opsiyoneldir' : 'Başlık, sınıf, ders, açıklama ve tarihi güncelleyin'}
+        </p>
       </div>
 
       <form action={formAction}>
         <input type="hidden" name="id" value={hw.id} />
         <input type="hidden" name="class_id" value={selectedClass} />
+        <input type="hidden" name="is_template" value={hw.is_template ? 'true' : 'false'} />
 
         <div className="p-6 space-y-5">
 
@@ -122,7 +126,9 @@ export default function OdevDuzenleForm({
               <input name="subject" type="text" required className={field} defaultValue={hw.subject} />
             </div>
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Son Teslim Tarihi{hw.is_template && <span className="text-gray-400 font-normal normal-case tracking-normal"> (opsiyonel)</span>}
+              </label>
               <input
                 name="due_date"
                 type="date"
@@ -174,7 +180,7 @@ export default function OdevDuzenleForm({
 
         <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-3">
           <Link
-            href={`/odevler/${hw.id}`}
+            href={hw.is_template ? '/odevler/yeni' : `/odevler/${hw.id}`}
             className="flex-1 text-center px-5 py-3 border border-gray-200 bg-white rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-all"
           >
             İptal
