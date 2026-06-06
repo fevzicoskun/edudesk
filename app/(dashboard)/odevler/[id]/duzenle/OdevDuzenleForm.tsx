@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { updateHomework, getClassWeekLoad } from '@/app/actions/homework'
 import Link from 'next/link'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
+import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
 
 type HwData = {
   id: string
@@ -83,7 +84,7 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
             </div>
           </div>
 
-          <WeekLoadBanner loads={weekLoad} loading={loadingLoad} />
+          <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} />
 
           {sources.length > 0 && (
             <div className="space-y-2">
@@ -153,76 +154,3 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
   )
 }
 
-function WeekLoadBanner({ loads, loading }: { loads: ClassWeekLoad[]; loading: boolean }) {
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-400">
-        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
-        Haftalık yük hesaplanıyor…
-      </div>
-    )
-  }
-
-  const worstLevel = loads.reduce<'ok' | 'warn' | 'danger'>((acc, l) => {
-    if (l.level === 'danger') return 'danger'
-    if (l.level === 'warn' && acc !== 'danger') return 'warn'
-    return acc
-  }, 'ok')
-
-  if (loads.length === 0 || loads.every(l => l.count === 0)) return null
-
-  const bg =
-    worstLevel === 'danger' ? 'bg-red-50 border-red-200 dark:bg-red-950/20 dark:border-red-800' :
-    worstLevel === 'warn'   ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-800' :
-                              'bg-gray-50 border-gray-200 dark:bg-slate-800 dark:border-slate-700'
-
-  const titleColor =
-    worstLevel === 'danger' ? 'text-red-700 dark:text-red-300' :
-    worstLevel === 'warn'   ? 'text-amber-700 dark:text-amber-300' :
-                              'text-gray-600 dark:text-slate-400'
-
-  const icon =
-    worstLevel === 'ok' ? (
-      <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-    ) : (
-      <svg className={`w-3.5 h-3.5 ${worstLevel === 'danger' ? 'text-red-500' : 'text-amber-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-      </svg>
-    )
-
-  return (
-    <div className={`border rounded-xl px-3 py-2.5 space-y-2 ${bg}`}>
-      <div className={`flex items-center gap-1.5 text-xs font-semibold ${titleColor}`}>
-        {icon}
-        Bu hafta:
-        {worstLevel === 'danger' && ' ⚠️ Fazla yük!'}
-        {worstLevel === 'warn'   && ' Dikkat: yük artıyor'}
-        {worstLevel === 'ok'     && ' Yük uygun'}
-      </div>
-      <div className="space-y-1">
-        {loads.filter(l => l.count > 0).map(l => (
-          <div key={l.classId} className="text-xs">
-            <span className={
-              l.level === 'danger' ? 'text-red-600 dark:text-red-400 font-semibold' :
-              l.level === 'warn'   ? 'text-amber-600 dark:text-amber-400 font-medium' :
-                                     'text-gray-500 dark:text-slate-400'
-            }>
-              {l.count} ödev
-            </span>
-            {' — '}
-            <span className="text-gray-500 dark:text-slate-400">
-              {l.items.map(item =>
-                `${item.subject}${!item.isOwn ? ` (${item.teacherName})` : ''}`
-              ).join(', ')}
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
