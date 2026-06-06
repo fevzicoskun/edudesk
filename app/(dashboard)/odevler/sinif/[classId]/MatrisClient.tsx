@@ -199,7 +199,7 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
     doc.addFileToVFS('Roboto-Regular.ttf', fontB64)
-    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal')
+    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal', 'Identity-H')
     doc.setFont('Roboto', 'normal')
 
     const pageW  = doc.internal.pageSize.getWidth()   // 297
