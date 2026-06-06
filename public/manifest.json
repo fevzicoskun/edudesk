@@ -1,0 +1,21 @@
+{
+  "name": "EduDesk",
+  "short_name": "EduDesk",
+  "description": "Öğretmen yönetim paneli",
+  "start_url": "/anasayfa",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4361ee",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": []
+}

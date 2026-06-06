@@ -5,6 +5,15 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'EduDesk',
   description: 'Öğretmen yönetim paneli',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    title: 'EduDesk',
+    statusBarStyle: 'default',
+  },
+  other: {
+    'mobile-web-app-capable': 'yes',
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -13,6 +22,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang="tr" className="h-full">
       <head>
+        <meta name="theme-color" content="#4361ee" />
+        <link rel="apple-touch-icon" href="/icon.svg" />
         {/* Dark mode init — runs before paint, nonce whitelisted in CSP */}
         <script
           nonce={nonce}
