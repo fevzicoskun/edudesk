@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { getNotifications, getUnreadCount, markAllRead, markRead } from '@/src/domains/notifications/actions'
+import { createClient } from '@/src/infrastructure/supabase/client'
 
 type Notification = {
   id: string
@@ -33,14 +34,50 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
   const [loaded, setLoaded] = useState(false)
   const [, startTransition] = useTransition()
   const ref = useRef<HTMLDivElement>(null)
+  // Ref instead of state so Realtime callback always sees the latest value
+  const loadedRef = useRef(false)
 
+  useEffect(() => { loadedRef.current = loaded }, [loaded])
+
+  // Initial unread count + Realtime subscription (replaces 30s polling)
   useEffect(() => {
-    getUnreadCount().then(setUnread)
-    const interval = setInterval(() => {
-      if (!open) getUnreadCount().then(setUnread)
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [open])
+    let active = true
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
+
+    // Initial count via server action (RLS-safe)
+    getUnreadCount().then(count => { if (active) setUnread(count) })
+
+    // Set up WebSocket subscription for new inserts
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active || !session?.user) return
+
+      channel = supabase
+        .channel('notif-bell')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${session.user.id}`,
+          },
+          (payload) => {
+            setUnread(prev => prev + 1)
+            // Prepend to list only if dropdown was already loaded
+            if (loadedRef.current) {
+              setItems(prev => [payload.new as Notification, ...prev])
+            }
+          }
+        )
+        .subscribe()
+    })
+
+    return () => {
+      active = false
+      if (channel) supabase.removeChannel(channel)
+    }
+  }, [])
 
   useEffect(() => {
     function handleOutside(e: MouseEvent | TouchEvent) {
@@ -151,11 +188,9 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
               </div>
             ) : (
               <div className="divide-y divide-gray-100 dark:divide-slate-800">
-                {/* Unread items first */}
                 {unreadItems.map((n) => (
                   <NotifItem key={n.id} n={n} onMark={handleMarkOne} onClose={() => setOpen(false)} />
                 ))}
-                {/* Read items */}
                 {unreadItems.length > 0 && readItems.length > 0 && (
                   <div className="px-4 py-1.5 text-[10px] font-semibold text-gray-400 dark:text-slate-600 uppercase tracking-wider bg-gray-50/60 dark:bg-slate-800/40">
                     Okunmuş
