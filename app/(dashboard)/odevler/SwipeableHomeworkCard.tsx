@@ -3,6 +3,7 @@
 import { useState, useTransition, useEffect } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
+import { useBulk } from './BulkContext'
 
 type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
 
@@ -118,7 +119,41 @@ export default function SwipeableHomeworkCard({
   const allEntered   = totalStu > 0 && entered > 0 && unrecorded === 0
   const showChips    = totalStu > 0 && (entered > 0 || (overdue && unrecorded > 0))
 
+  const bulk = useBulk()
+  const isSelected = bulk?.bulkMode && bulk.selected.has(id)
+
   if (isDeleted) return null
+
+  // Bulk select mode: simplified card with checkbox
+  if (bulk?.bulkMode) {
+    return (
+      <div
+        onClick={() => bulk.toggle(id)}
+        className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
+          isSelected
+            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-600'
+            : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'
+        }`}
+      >
+        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-slate-600'
+        }`}>
+          {isSelected && (
+            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{title}</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{className} · {subject} · {dueDateStr}</p>
+        </div>
+        <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${badge.cls}`}>
+          {badge.text}
+        </span>
+      </div>
+    )
+  }
 
   return (
     <div className="relative overflow-hidden rounded-2xl">

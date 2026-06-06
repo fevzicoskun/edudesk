@@ -9,6 +9,7 @@ import OdevlerFilterBar from './FilterBar'
 import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
+import { BulkProvider, BulkModeToggle } from './BulkContext'
 
 export const revalidate = 30
 
@@ -61,6 +62,7 @@ export default async function OdevlerPage({
   const teachers = (teachersResult.data ?? []) as { id: string; full_name: string }[]
 
   return (
+    <BulkProvider>
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/10 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="p-4 md:p-6 max-w-4xl mx-auto">
 
@@ -86,6 +88,7 @@ export default async function OdevlerPage({
               </svg>
             </Link>
             <RaporButton classes={classes} />
+            {canWrite && <BulkModeToggle canWrite={canWrite} />}
             {canWrite && (
               <Link
                 href="/odevler/yeni"
@@ -140,6 +143,7 @@ export default async function OdevlerPage({
         </Suspense>
       </div>
     </div>
+    </BulkProvider>
   )
 }
 

@@ -240,6 +240,25 @@ export async function deleteHomework(id: string): Promise<{ error?: string }> {
   return {}
 }
 
+export async function bulkDeleteHomeworks(ids: string[]): Promise<{ deleted: number; error?: string }> {
+  const validIds = ids.filter(id => UUID.safeParse(id).success)
+  if (validIds.length === 0) return { deleted: 0 }
+  const user = await getCurrentUser()
+  const profile = await getCurrentProfile()
+  if (!user || !profile?.school_id) return { deleted: 0, error: 'Yetkisiz istek' }
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('homeworks')
+    .update({ deleted_at: new Date().toISOString() })
+    .in('id', validIds)
+    .eq('teacher_id', user.id)
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+  if (error) return { deleted: 0, error: error.message }
+  revalidatePath('/odevler')
+  return { deleted: count ?? validIds.length }
+}
+
 export async function restoreHomework(id: string): Promise<{ error?: string }> {
   if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
   const result = await HomeworkService.restoreHomework(id)
