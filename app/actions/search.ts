@@ -1,7 +1,8 @@
 'use server'
 
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
+import { isMudurOrAbove } from '@/src/shared/types'
 
 export type SearchResult = {
   type: 'page' | 'student' | 'homework'
@@ -26,10 +27,23 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const q = query.trim()
   if (q.length < 2) return []
 
-  const profile = await getCurrentProfile()
-  if (!profile?.school_id) return []
+  const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
+  if (!profile?.school_id || !user) return []
 
+  const isManager = isMudurOrAbove(profile.role)
   const supabase = await createClient()
+
+  let hwQuery = supabase
+    .from('homeworks')
+    .select('id, title, classes!inner(id, name)')
+    .eq('school_id', profile.school_id)
+    .eq('is_template', false)
+    .ilike('title', `%${q}%`)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(6)
+
+  if (!isManager) hwQuery = hwQuery.eq('teacher_id', user.id)
 
   const [studentsRes, homeworkRes] = await Promise.all([
     supabase
@@ -39,14 +53,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       .ilike('name', `%${q}%`)
       .is('deleted_at', null)
       .limit(6),
-    supabase
-      .from('homework')
-      .select('id, title, classes!inner(id, name)')
-      .eq('school_id', profile.school_id)
-      .ilike('title', `%${q}%`)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: false })
-      .limit(6),
+    hwQuery,
   ])
 
   const lq = q.toLowerCase()

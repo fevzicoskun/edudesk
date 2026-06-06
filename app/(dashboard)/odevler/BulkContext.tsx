@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useTransition, type ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
 import { bulkDeleteHomeworks } from '@/app/actions/homework'
 
 type BulkCtx = {
@@ -20,6 +21,7 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   const [bulkMode, setBulkModeState] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
+  const router = useRouter()
 
   function toggle(id: string) {
     setSelected(prev => {
@@ -40,6 +42,7 @@ export function BulkProvider({ children }: { children: ReactNode }) {
     startTransition(async () => {
       await bulkDeleteHomeworks([...selected])
       setBulkMode(false)
+      router.refresh()
     })
   }
 
