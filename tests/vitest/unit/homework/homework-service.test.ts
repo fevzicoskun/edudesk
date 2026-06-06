@@ -22,6 +22,7 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
     upsertSubmissionStatus:       vi.fn(),
     upsertSubmissionsStatus:      vi.fn(),
     upsertSubmissionNote:         vi.fn(),
+    classExistsInSchool:          vi.fn(),
     updateHomework:               vi.fn(),
     updateHomeworkAsManager:      vi.fn(),
     softDeleteHomework:           vi.fn(),
@@ -290,15 +291,18 @@ describe('HomeworkService.updateHomework()', () => {
 
   it('own-scope öğretmen → updateHomework (teacher_id filtreli) çağrılır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(true)
     vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
     expect(result.error).toBeUndefined()
+    expect(HomeworkRepository.classExistsInSchool).toHaveBeenCalledWith('cls-1', SCHOOL_ID)
     expect(HomeworkRepository.updateHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID, HW_UPDATE)
     expect(HomeworkRepository.updateHomeworkAsManager).not.toHaveBeenCalled()
   })
 
   it('school-scope yönetici → updateHomeworkAsManager çağrılır (teacher_id filtresi yok)', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
+    vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(true)
     vi.mocked(HomeworkRepository.updateHomeworkAsManager).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
     expect(result.error).toBeUndefined()
@@ -306,8 +310,17 @@ describe('HomeworkService.updateHomework()', () => {
     expect(HomeworkRepository.updateHomework).not.toHaveBeenCalled()
   })
 
+  it('class_id başka okula aitse → hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(false)
+    const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
+    expect(result.error).toBe('Geçersiz sınıf')
+    expect(HomeworkRepository.updateHomework).not.toHaveBeenCalled()
+  })
+
   it('ödev bulunamazsa (repo boş rows) → hata döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(true)
     vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({
       error: { message: 'Ödev bulunamadı veya yetkiniz yok.' },
     } as never)
@@ -317,6 +330,7 @@ describe('HomeworkService.updateHomework()', () => {
 
   it('DB hatası varsa error.message döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(true)
     vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({
       error: { message: 'constraint violation' },
     } as never)

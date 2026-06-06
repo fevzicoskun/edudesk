@@ -124,6 +124,9 @@ export const HomeworkService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
+    const classExists = await HomeworkRepository.classExistsInSchool(data.class_id, ability.schoolId)
+    if (!classExists) return { error: 'Geçersiz sınıf' }
+
     const isManager = ability.scope(P.HOMEWORK.UPDATE) === 'school'
     const { error } = isManager
       ? await HomeworkRepository.updateHomeworkAsManager(id, ability.schoolId, data)

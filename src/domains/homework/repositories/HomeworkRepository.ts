@@ -67,6 +67,18 @@ export const HomeworkRepository = {
       .upsert(data, { onConflict: 'homework_id,student_id' })
   },
 
+  async classExistsInSchool(classId: string, schoolId: string): Promise<boolean> {
+    const supabase = await createClient()
+    const { data } = await supabase
+      .from('classes')
+      .select('id')
+      .eq('id', classId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    return data !== null
+  },
+
   async updateHomework(
     homeworkId: string,
     teacherId: string,
