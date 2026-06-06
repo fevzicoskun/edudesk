@@ -128,28 +128,6 @@ export default async function OdevlerPage({
           currentParams={params}
         />
 
-        {classes.length > 0 && (
-          <div className="mt-4 mb-1">
-            <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-              Başarı Haritası
-            </p>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {classes.map(cls => (
-                <Link
-                  key={cls.id}
-                  href={`/odevler/sinif/${cls.id}`}
-                  className="flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
-                  </svg>
-                  {cls.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
         <Suspense fallback={<HomeworkListSkeleton />}>
           <HomeworkSection
             params={params}
@@ -157,6 +135,7 @@ export default async function OdevlerPage({
             schoolId={sid}
             isZumreBaskani={isZumreBaskani}
             canWrite={canWrite}
+            classes={classes}
           />
         </Suspense>
       </div>
@@ -185,12 +164,14 @@ async function HomeworkSection({
   schoolId,
   isZumreBaskani,
   canWrite,
+  classes,
 }: {
   params: FilterParams
   userId: string
   schoolId: string
   isZumreBaskani: boolean
   canWrite: boolean
+  classes: { id: string; name: string; grade: number }[]
 }) {
   const supabase = await createClient()
 
@@ -253,9 +234,12 @@ async function HomeworkSection({
 
     const counts  = statusMap.get(hw.id)
     const checked = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
+    const total   = classStudentMap.get(hw.class_id as string) ?? 0
     const age     = daysSinceDue(hw.due_date, now)
-    if (checked === 0 && age <= PENDING_DAYS) pendingCheck.push(hw)
-    else                                      pastDone.push(hw)
+    // Öğrencilerin yarısından azı girilmişse hâlâ kontrol bekliyor
+    const halfEntered = total > 0 ? checked >= Math.ceil(total / 2) : checked > 0
+    if (!halfEntered && age <= PENDING_DAYS) pendingCheck.push(hw)
+    else                                     pastDone.push(hw)
   }
 
   // Sort active homeworks by closest due date first (null due_date goes last)
@@ -269,8 +253,53 @@ async function HomeworkSection({
   const totalCount = homeworks.length
   const hasFilters = !!(params.sinif || params.ders || params.ogretmen || params.q)
 
+  // Chip'ler için: sınıf başına aktif ödev sayısı ve bekleyen kontrol var mı
+  const activeByClass    = new Map<string, number>()
+  const pendingByClass   = new Map<string, number>()
+  for (const hw of active)        activeByClass.set(hw.class_id as string, (activeByClass.get(hw.class_id as string) ?? 0) + 1)
+  for (const hw of pendingCheck) pendingByClass.set(hw.class_id as string, (pendingByClass.get(hw.class_id as string) ?? 0) + 1)
+
   return (
     <>
+      {/* Başarı Haritası */}
+      {classes.length > 0 && (
+        <div className="mt-4 mb-1">
+          <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+            Başarı Haritası
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {classes.map(cls => {
+              const activeCount   = activeByClass.get(cls.id) ?? 0
+              const pendingCount  = pendingByClass.get(cls.id) ?? 0
+              const hasPending    = pendingCount > 0
+              return (
+                <Link
+                  key={cls.id}
+                  href={`/odevler/sinif/${cls.id}`}
+                  className={`flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 border rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                    hasPending
+                      ? 'border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:border-amber-400'
+                      : 'border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-700 dark:hover:text-indigo-300'
+                  }`}
+                >
+                  {hasPending ? (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                  ) : (
+                    <svg className="w-3.5 h-3.5 opacity-40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
+                    </svg>
+                  )}
+                  {cls.name}
+                  {activeCount > 0 && (
+                    <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">{activeCount}</span>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* İstatistik kartları */}
       <div className="grid grid-cols-2 gap-3 mb-6 mt-4">
         {[
@@ -301,7 +330,7 @@ async function HomeworkSection({
                 {pendingCheck.length} ödev kontrol bekliyor
               </p>
               <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-                Son tarihi geçti ve henüz hiç giriş yapılmadı.
+                Son tarihi geçti ve öğrencilerin yarısından azı girildi.
               </p>
             </div>
           </div>
@@ -309,6 +338,12 @@ async function HomeworkSection({
             {pendingCheck.map(hw => {
               const cls = hw.classes as { name: string } | null
               const days = daysSinceDue(hw.due_date, now)
+              const pendingCounts  = statusMap.get(hw.id)
+              const pendingChecked = pendingCounts ? Object.values(pendingCounts).reduce((a, b) => a + b, 0) : 0
+              const pendingTotal   = classStudentMap.get(hw.class_id as string) ?? 0
+              const progressLabel  = pendingTotal > 0
+                ? `${pendingChecked}/${pendingTotal} girildi`
+                : pendingChecked === 0 ? 'Hiç girilmedi' : `${pendingChecked} girildi`
               return (
                 <Link
                   key={hw.id}
@@ -320,7 +355,7 @@ async function HomeworkSection({
                       {hw.title}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      {cls?.name ?? '—'} · Son: {dueDateStr(hw.due_date)}
+                      {cls?.name ?? '—'} · Son: {dueDateStr(hw.due_date)} · {progressLabel}
                     </p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

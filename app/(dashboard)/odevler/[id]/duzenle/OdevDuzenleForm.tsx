@@ -29,6 +29,12 @@ const field =
 export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; sources: SourceItem[]; classId: string }) {
   const [state, formAction, isPending] = useActionState(updateHomework, null)
 
+  useEffect(() => {
+    if (state?.error) {
+      document.querySelector('[data-hw-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [state?.error])
+
   const [dueDate, setDueDate]         = useState(hw.due_date ?? '')
   const [weekLoad, setWeekLoad]       = useState<ClassWeekLoad[]>([])
   const [loadingLoad, setLoadingLoad] = useState(!!hw.due_date)
@@ -55,7 +61,7 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
         <div className="p-6 space-y-5">
 
           {state?.error && (
-            <div className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3.5">
+            <div data-hw-error className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3.5">
               <svg className="w-4 h-4 mt-0.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>

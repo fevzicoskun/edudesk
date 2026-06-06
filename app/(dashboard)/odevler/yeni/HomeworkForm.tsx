@@ -40,6 +40,12 @@ export default function HomeworkForm({
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
   const [isTemplate, setIsTemplate] = useState(false)
+
+  useEffect(() => {
+    if (state?.error) {
+      document.querySelector('[data-hw-error]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }, [state?.error])
   const [selectedClasses, setSelectedClasses] = useState<string[]>(
     defaults?.class_id ? [defaults.class_id] : []
   )
@@ -108,7 +114,7 @@ export default function HomeworkForm({
         <div className="p-6 space-y-5">
 
           {state?.error && (
-            <div className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3.5">
+            <div data-hw-error className="flex items-start gap-3 bg-red-50 border border-red-100 text-red-700 text-sm rounded-xl px-4 py-3.5">
               <svg className="w-4 h-4 mt-0.5 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
@@ -174,6 +180,25 @@ export default function HomeworkForm({
             )}
           </div>
 
+          {/* Son Teslim Tarihi + Haftalık Yük */}
+          {!isTemplate && (
+            <>
+              <div className="space-y-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
+                <input
+                  name="due_date"
+                  type="date"
+                  required={!isTemplate}
+                  min={todayISO()}
+                  className={field}
+                  value={dueDate}
+                  onChange={e => setDueDate(e.target.value)}
+                />
+              </div>
+              <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} isCreating />
+            </>
+          )}
+
           {/* Ders */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
@@ -234,26 +259,6 @@ export default function HomeworkForm({
               defaultValue={defaults?.description ?? ''}
             />
           </div>
-
-          {/* Son Teslim Tarihi */}
-          {!isTemplate && (
-            <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-              <input
-                name="due_date"
-                type="date"
-                required={!isTemplate}
-                min={todayISO()}
-                className={field}
-                value={dueDate}
-                onChange={e => setDueDate(e.target.value)}
-              />
-            </div>
-          )}
-
-          {!isTemplate && (
-            <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} isCreating />
-          )}
 
           {/* Şablon toggle — şablon olarak kaydedilince tarih gerekmez */}
           {!defaults?.fromTemplate && (
