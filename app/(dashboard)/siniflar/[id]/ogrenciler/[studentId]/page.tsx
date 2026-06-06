@@ -1,5 +1,5 @@
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
 import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
@@ -42,8 +42,9 @@ export default async function OgrenciDetayPage({
   const supabase = await createClient()
 
   const currentProfile = await getCurrentProfile()
+  if (!currentProfile?.school_id) redirect('/login')
 
-  const schoolId = currentProfile?.school_id ?? ''
+  const schoolId = currentProfile.school_id
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),

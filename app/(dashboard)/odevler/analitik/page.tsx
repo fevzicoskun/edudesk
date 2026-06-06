@@ -69,9 +69,9 @@ export default async function AnalitikPage() {
   const students      = (studentsRes.data  ?? []) as AnalitikStudent[]
   const activeClasses = (classesRes.data   ?? []).filter(c => classIds.includes(c.id))
 
-  const kpi           = computeKpiCards(homeworks, submissions, students)
-  const weeklyTrend   = computeWeeklyTrend(homeworks, submissions, students)
   const riskyStudents = computeRiskyStudents(students, homeworks, submissions)
+  const kpi           = computeKpiCards(homeworks, submissions, students, riskyStudents.length)
+  const weeklyTrend   = computeWeeklyTrend(homeworks, submissions, students)
 
   const classStats = activeClasses.map(c => {
     const studentCount = students.filter(s => s.class_id === c.id).length

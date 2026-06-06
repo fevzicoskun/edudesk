@@ -389,11 +389,10 @@ describe('HomeworkService.updateAllSubmissionStatuses()', () => {
     expect(result.error).toBe('Giriş gerekli')
   })
 
-  it('200 öğrenci sınırı aşılınca exception fırlatır', async () => {
+  it('200 öğrenci sınırı aşılınca hata döner', async () => {
     const bigList = Array.from({ length: 201 }, (_, i) => `stu-${i}`)
-    await expect(
-      HomeworkService.updateAllSubmissionStatuses('hw-1', bigList, 'yapildi')
-    ).rejects.toThrow('Çok fazla öğrenci')
+    const result = await HomeworkService.updateAllSubmissionStatuses('hw-1', bigList, 'yapildi')
+    expect(result.error).toContain('Çok fazla öğrenci')
   })
 
   it('boş liste → success true, upsert çağrılmaz', async () => {

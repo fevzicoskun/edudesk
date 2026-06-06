@@ -1,16 +1,16 @@
-﻿import { createClient } from '@/src/infrastructure/supabase/server'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 import { getClassWeekLoad } from '@/app/actions/homework'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
-
-export const revalidate = 30
 import Link from 'next/link'
 import StatusBoard from './StatusBoard'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
 import type { SubmissionStatus } from '@/src/shared/types'
+
+export const revalidate = 30
 
 export default async function OdevDetayPage({
   params,
@@ -35,15 +35,16 @@ export default async function OdevDetayPage({
 
   if (!hw || hw.is_template) notFound()
 
-  const weekLoadResult = hw.due_date
-    ? await getClassWeekLoad([hw.class_id as string], hw.due_date)
-    : []
-  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
-
+  // Yetki kontrolü weekLoad fetch'inden önce — erişim yoksa veri çekilmez
   const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
   if (!isManager && hw.teacher_id !== user.id) notFound()
 
   const canWrite = isTeachingRole(profile.role)
+
+  const weekLoadResult = hw.due_date
+    ? await getClassWeekLoad([hw.class_id as string], hw.due_date)
+    : []
+  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
 
   // Kümülatif sorgu için önce diğer ödev ID'lerini al
   const otherHomeworkIds = (await supabase

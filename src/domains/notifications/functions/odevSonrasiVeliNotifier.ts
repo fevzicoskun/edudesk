@@ -1,6 +1,14 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
+import { formatDateTR, buildMissedEmail } from '@/src/lib/email-utils'
+
+// "Dün" Türkiye saatine göre hesapla. Server UTC'de çalışsa da Intl ile doğru tarihi üretiriz.
+function yesterdayInTurkey(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
+}
 
 export const odevSonrasiVeliNotifierFn = inngest.createFunction(
   {
@@ -8,20 +16,15 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
     triggers: [{ cron: '0 6 * * *' }], // 09:00 Türkiye saati (UTC+3)
   },
   async ({ step }) => {
-    // 1. Dün teslim tarihi geçmiş ödevleri bul
+    // 1. Dün teslim tarihi geçmiş ödevleri bul (Türkiye tarihine göre)
     const homeworks = await step.run('gecmis-odevler', async () => {
       const supabase = createServiceClient()
-
-      const yesterday = new Date()
-      yesterday.setUTCDate(yesterday.getUTCDate() - 1)
-      const yesterdayStr = yesterday.toISOString().split('T')[0]
-
       const { data } = await supabase
         .from('homeworks')
         .select('id, title, due_date, school_id, class_id')
         .is('deleted_at', null)
         .eq('is_template', false)
-        .eq('due_date', yesterdayStr)
+        .eq('due_date', yesterdayInTurkey())
 
       return data ?? []
     })
@@ -69,13 +72,13 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
 
           results.push({
             homeworkId: hw.id,
-            studentId: student.id,
-            schoolId: hw.school_id,
-            to: student.veli_email,
-            veliAd: student.veli_ad ?? 'Sayın Veli',
+            studentId:  student.id,
+            schoolId:   hw.school_id,
+            to:         student.veli_email,
+            veliAd:     student.veli_ad ?? 'Sayın Veli',
             ogrenciAdi: student.full_name,
             odevBaslik: hw.title,
-            dueDate: hw.due_date,
+            dueDate:    hw.due_date,
           })
         }
       }
@@ -88,7 +91,6 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
     // 3. Dedup: daha önce bildirim gönderilenleri çıkar
     const toSend = await step.run('dedup', async () => {
       const supabase = createServiceClient()
-
       const { data: existing } = await supabase
         .from('homework_veli_notifications')
         .select('homework_id, student_id')
@@ -101,30 +103,18 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
     if (!toSend.length) return { sent: 0, reason: 'zaten-bildirildi' }
 
     // 4. E-posta gönder
-    const esc = (s: string) =>
-      s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-
     await step.run('email-gonder', async () => {
       const results = await Promise.allSettled(
         toSend.map(v =>
           mailer.sendMail({
-            to: v.to,
+            to:      v.to,
             subject: `Ödev Teslim Edilmedi — ${v.ogrenciAdi}`,
-            html: `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>body{font-family:sans-serif;color:#1f2937;line-height:1.6}
-.box{max-width:520px;margin:32px auto;padding:32px;border:1px solid #e5e7eb;border-radius:12px}
-.badge{display:inline-block;background:#fef3c7;color:#92400e;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:600}
-.footer{margin-top:24px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af}
-</style></head>
-<body><div class="box">
-<p>${esc(v.veliAd)},</p>
-<p><strong>${esc(v.ogrenciAdi)}</strong> adlı öğrencinizin</p>
-<p class="badge">"${esc(v.odevBaslik)}"</p>
-<p>adlı ödevi <strong>${esc(v.dueDate)}</strong> teslim tarihini geçmiş olup henüz teslim edilmemiştir.</p>
-<p>Lütfen öğrencinizi bilgilendirmenizi rica ederiz.</p>
-<div class="footer">EduDesk — Okul Takip Sistemi</div>
-</div></body></html>`,
+            html:    buildMissedEmail({
+              veliAd:     v.veliAd,
+              ogrenciAdi: v.ogrenciAdi,
+              odevBaslik: v.odevBaslik,
+              dueDateStr: formatDateTR(v.dueDate),
+            }),
           })
         )
       )
@@ -140,7 +130,7 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
       await supabase.from('homework_veli_notifications').insert(
         toSend.map(v => ({
           homework_id: v.homeworkId,
-          student_id: v.studentId,
+          student_id:  v.studentId,
         }))
       )
     })

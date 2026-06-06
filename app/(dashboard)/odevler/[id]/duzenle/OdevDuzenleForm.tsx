@@ -16,6 +16,12 @@ type HwData = {
 
 type SourceItem = { id: string; name: string; subject: string | null }
 
+function todayLocal(): string {
+  const d = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 const field =
   'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
@@ -69,9 +75,9 @@ export default function OdevDuzenleForm({ hw, sources, classId }: { hw: HwData; 
                 className={field}
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                min={hw.due_date && hw.due_date < new Date().toISOString().split('T')[0] ? undefined : new Date().toISOString().split('T')[0]}
+                min={hw.due_date && hw.due_date < todayLocal() ? undefined : todayLocal()}
               />
-              {hw.due_date && hw.due_date < new Date().toISOString().split('T')[0] && (
+              {hw.due_date && hw.due_date < todayLocal() && (
                 <p className="text-xs text-amber-600">Geçmiş tarih — değiştirmek zorunda değilsiniz.</p>
               )}
             </div>

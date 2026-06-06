@@ -326,12 +326,12 @@ async function HomeworkSection({
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        daysSinceDue(hw.due_date, now) > 7
+                        days > 7
                           ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
                           : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                       }`}
                     >
-                      {daysSinceDue(hw.due_date, now) === 0 ? 'Bugün bitti' : `${daysSinceDue(hw.due_date, now)}g önce`}
+                      {days === 0 ? 'Bugün bitti' : `${days}g önce`}
                     </span>
                     <svg className="w-4 h-4 text-amber-400 dark:text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

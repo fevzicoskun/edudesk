@@ -61,7 +61,7 @@ export const HomeworkService = {
     studentIds: string[],
     status:     SubmissionStatus
   ): Promise<{ error?: string; success?: boolean }> {
-    if (studentIds.length > 200) throw new Error('Çok fazla öğrenci')
+    if (studentIds.length > 200) return { error: 'Çok fazla öğrenci (maks. 200)' }
 
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

@@ -45,32 +45,36 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'number' | 'pct_desc' | 'pct_asc'>('number')
 
-  function studentStats(studentId: string) {
-    let done = 0, eligible = 0
-    for (const hw of homeworks) {
-      const s = subMap[`${studentId}_${hw.id}`]
-      if (!s || s === 'mazeretli') continue
-      eligible++
-      if (s === 'yapildi') done++
-    }
-    return { done, eligible, pct: eligible === 0 ? null : Math.round(done / eligible * 100) }
-  }
+  // Her iki Map tek geçişte, aynı bağımlılık dizisiyle hesaplanıyor — render'da sıfır hesap.
+  const { statsMap, hwStatsMap } = useMemo(() => {
+    type Stat = { done: number; eligible: number; pct: number | null }
 
-  function homeworkStats(hwId: string) {
-    let done = 0, eligible = 0
+    const byStudent: Record<string, Stat> = {}
+    const byHw:      Record<string, Stat> = {}
+
+    for (const hw of homeworks) byHw[hw.id] = { done: 0, eligible: 0, pct: null }
+    for (const st of students)  byStudent[st.id] = { done: 0, eligible: 0, pct: null }
+
     for (const st of students) {
-      const s = subMap[`${st.id}_${hwId}`]
-      if (!s || s === 'mazeretli') continue
-      eligible++
-      if (s === 'yapildi') done++
+      for (const hw of homeworks) {
+        const s = subMap[`${st.id}_${hw.id}`]
+        if (!s || s === 'mazeretli') continue
+        byStudent[st.id].eligible++
+        byHw[hw.id].eligible++
+        if (s === 'yapildi') {
+          byStudent[st.id].done++
+          byHw[hw.id].done++
+        }
+      }
     }
-    return { done, eligible, pct: eligible === 0 ? null : Math.round(done / eligible * 100) }
-  }
 
-  const statsMap = useMemo(() => {
-    const map: Record<string, { done: number; eligible: number; pct: number | null }> = {}
-    for (const s of students) map[s.id] = studentStats(s.id)
-    return map
+    const finalize = (r: Stat): Stat => ({
+      ...r, pct: r.eligible === 0 ? null : Math.round(r.done / r.eligible * 100),
+    })
+    for (const id of Object.keys(byStudent)) byStudent[id] = finalize(byStudent[id])
+    for (const id of Object.keys(byHw))      byHw[id]      = finalize(byHw[id])
+
+    return { statsMap: byStudent, hwStatsMap: byHw }
   }, [students, homeworks, subMap])
 
   const q = search.trim().toLowerCase()
@@ -221,7 +225,7 @@ export default function MatrisClient({ students, homeworks, subMap }: Props) {
                   Sınıf ortalaması
                 </td>
                 {homeworks.map(hw => {
-                  const { pct } = homeworkStats(hw.id)
+                  const { pct } = hwStatsMap[hw.id] ?? { pct: null }
                   return (
                     <td key={hw.id} className="border-r border-gray-200 dark:border-slate-700 px-2 py-2 text-center">
                       {pct === null ? (

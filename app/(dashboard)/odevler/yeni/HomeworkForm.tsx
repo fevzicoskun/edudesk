@@ -70,7 +70,7 @@ export default function HomeworkForm({
     : selectedClasses.length === 0
       ? 'Sınıf Seçin'
       : selectedClasses.length === 1
-        ? (defaults?.fromTemplate ? 'Ödev Oluştur' : 'Ödev Oluştur')
+        ? 'Ödev Oluştur'
         : `${selectedClasses.length} Sınıfa Ödev Oluştur`
 
   const submitDisabled = isPending || (!isTemplate && selectedClasses.length === 0)

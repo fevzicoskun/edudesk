@@ -56,6 +56,13 @@ export default function StudentHomeworkProfileModal({
     })
   }, [studentId, classId])
 
+  useEffect(() => {
+    if (!studentId) return
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [studentId, onClose])
+
   if (!studentId) return null
 
   const profile = data && !('error' in data) ? data : null
@@ -83,16 +90,16 @@ export default function StudentHomeworkProfileModal({
                 </p>
                 {weekLoad && weekLoad.count > 0 && (
                   <div className="flex items-center gap-1.5 mt-1">
-                    <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full border ${
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${
                       weekLoad.level === 'danger'
                         ? 'bg-red-100 text-red-600 border-red-200 dark:bg-red-900/40 dark:text-red-400 dark:border-red-800'
                         : weekLoad.level === 'warn'
                           ? 'bg-amber-100 text-amber-600 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800'
                           : 'bg-gray-100 text-gray-500 border-gray-200 dark:bg-slate-700 dark:text-slate-400 dark:border-slate-600'
                     }`}>
-                      ● {weekLoad.count}
+                      ● {weekLoad.count} ödev
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-slate-500">bu hafta ödev</span>
+                    <span className="text-xs text-gray-400 dark:text-slate-500">bu hafta</span>
                   </div>
                 )}
                 {(profile.student.veli_ad || profile.student.veli_telefon) && (

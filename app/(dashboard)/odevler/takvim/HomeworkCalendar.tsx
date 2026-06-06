@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { SCHOOL_YEAR_HOLIDAYS } from '@/src/shared/constants/holidays'
 
 type HwItem = {
   id: string
@@ -10,33 +11,6 @@ type HwItem = {
   due_date: string
   classes: { name: string } | null
 }
-
-const HOLIDAYS: { date: string; label: string }[] = [
-  { date: '2025-04-23', label: 'Ulusal Egemenlik ve Çocuk Bayramı' },
-  { date: '2025-05-01', label: 'Emek ve Dayanışma Bayramı' },
-  { date: '2025-05-19', label: 'Atatürk\'ü Anma, Gençlik Bayramı' },
-  { date: '2025-06-06', label: 'Kurban Bayramı' },
-  { date: '2025-06-07', label: 'Kurban Bayramı' },
-  { date: '2025-06-08', label: 'Kurban Bayramı' },
-  { date: '2025-06-09', label: 'Kurban Bayramı' },
-  { date: '2025-07-15', label: 'Demokrasi ve Millî Birlik Günü' },
-  { date: '2025-08-30', label: 'Zafer Bayramı' },
-  { date: '2025-10-29', label: 'Cumhuriyet Bayramı' },
-  { date: '2026-01-01', label: 'Yılbaşı' },
-  { date: '2026-03-20', label: 'Ramazan Bayramı' },
-  { date: '2026-03-21', label: 'Ramazan Bayramı' },
-  { date: '2026-03-22', label: 'Ramazan Bayramı' },
-  { date: '2026-04-23', label: 'Ulusal Egemenlik ve Çocuk Bayramı' },
-  { date: '2026-05-01', label: 'Emek ve Dayanışma Bayramı' },
-  { date: '2026-05-19', label: 'Atatürk\'ü Anma, Gençlik Bayramı' },
-  { date: '2026-05-27', label: 'Kurban Bayramı' },
-  { date: '2026-05-28', label: 'Kurban Bayramı' },
-  { date: '2026-05-29', label: 'Kurban Bayramı' },
-  { date: '2026-05-30', label: 'Kurban Bayramı' },
-  { date: '2026-07-15', label: 'Demokrasi ve Millî Birlik Günü' },
-  { date: '2026-08-30', label: 'Zafer Bayramı' },
-  { date: '2026-10-29', label: 'Cumhuriyet Bayramı' },
-]
 
 const DAYS   = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık']
@@ -80,7 +54,7 @@ export default function HomeworkCalendar({ homeworks }: { homeworks: HwItem[] })
 
   const holidayMap = useMemo(() => {
     const m = new Map<string, string>()
-    for (const h of HOLIDAYS) m.set(h.date, h.label)
+    for (const h of SCHOOL_YEAR_HOLIDAYS) m.set(h.date, h.label)
     return m
   }, [])
 
@@ -240,9 +214,6 @@ export default function HomeworkCalendar({ homeworks }: { homeworks: HwItem[] })
           >
             Bugüne Git
           </button>
-          <div className="flex flex-wrap gap-2">
-            {CLASS_COLORS.slice(0, 4).map((_, i) => null)}
-          </div>
         </div>
       </div>
 

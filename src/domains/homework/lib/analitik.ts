@@ -1,6 +1,10 @@
 import { startOfWeek, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
 
+function todayTR(): string {
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+}
+
 export type AnalitikHomework = {
   id: string
   class_id: string
@@ -67,7 +71,7 @@ export function computeClassStats(
   const eligible   = totalSlots - mazeretli
   const completionPct = eligible === 0 ? 0 : Math.round((yapildi / eligible) * 100)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayTR()
   const subCountByHw = new Map<string, number>()
   for (const s of classSubs) {
     subCountByHw.set(s.homework_id, (subCountByHw.get(s.homework_id) ?? 0) + 1)
@@ -84,15 +88,39 @@ export function computeRiskyStudents(
   homeworks: AnalitikHomework[],
   submissions: AnalitikSubmission[],
 ): RiskyStudent[] {
+  // O(h): class → hw ID'leri
+  const hwIdsByClass = new Map<string, Set<string>>()
+  for (const hw of homeworks) {
+    const s = hwIdsByClass.get(hw.class_id) ?? new Set<string>()
+    s.add(hw.id)
+    hwIdsByClass.set(hw.class_id, s)
+  }
+
+  // O(s): öğrenci → eksik/yapılmadı ödev ID'leri
+  const missedHwsByStudent = new Map<string, Set<string>>()
+  for (const sub of submissions) {
+    if (sub.status !== 'yapilmadi' && sub.status !== 'eksik') continue
+    const s = missedHwsByStudent.get(sub.student_id) ?? new Set<string>()
+    s.add(sub.homework_id)
+    missedHwsByStudent.set(sub.student_id, s)
+  }
+
   return students
     .map(s => {
-      const classHwIds   = new Set(homeworks.filter(h => h.class_id === s.class_id).map(h => h.id))
-      const totalHomeworks = classHwIds.size
-      const missed        = submissions.filter(
-        sub => sub.student_id === s.id && classHwIds.has(sub.homework_id) &&
-               (sub.status === 'yapilmadi' || sub.status === 'eksik'),
-      ).length
-      return { student_id: s.id, full_name: s.full_name, student_number: s.student_number, class_id: s.class_id, missedCount: missed, totalHomeworks }
+      const classHwIds  = hwIdsByClass.get(s.class_id) ?? new Set<string>()
+      const missedHwIds = missedHwsByStudent.get(s.id) ?? new Set<string>()
+      let missedCount = 0
+      for (const hwId of missedHwIds) {
+        if (classHwIds.has(hwId)) missedCount++
+      }
+      return {
+        student_id:    s.id,
+        full_name:     s.full_name,
+        student_number: s.student_number,
+        class_id:      s.class_id,
+        missedCount,
+        totalHomeworks: classHwIds.size,
+      }
     })
     .filter(s => s.missedCount >= 3)
     .sort((a, b) => b.missedCount - a.missedCount)
@@ -137,10 +165,13 @@ export function computeWeeklyTrend(
     })
 }
 
+// riskyStudentCount dışarıdan geçirilir — analitik/page.tsx zaten computeRiskyStudents çağırıyor,
+// burada ikinci kez hesaplamaya gerek yok.
 export function computeKpiCards(
   homeworks: AnalitikHomework[],
   submissions: AnalitikSubmission[],
   students: AnalitikStudent[],
+  riskyStudentCount: number,
 ): KpiCards {
   const totalHomeworks = homeworks.length
 
@@ -149,29 +180,32 @@ export function computeKpiCards(
     studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
   }
 
+  // O(m) tek geçişte submission istatistikleri
+  const subsByHw = new Map<string, { yapildi: number; mazeretli: number; total: number }>()
+  for (const s of submissions) {
+    const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+    cur.total++
+    if (s.status === 'yapildi') cur.yapildi++
+    else if (s.status === 'mazeretli') cur.mazeretli++
+    subsByHw.set(s.homework_id, cur)
+  }
+
   let completionSum = 0
   let counted       = 0
   for (const hw of homeworks) {
     const count = studentsByClass.get(hw.class_id) ?? 0
     if (count === 0) continue
-    const hwSubs    = submissions.filter(s => s.homework_id === hw.id)
-    const yapildi   = hwSubs.filter(s => s.status === 'yapildi').length
-    const mazeretli = hwSubs.filter(s => s.status === 'mazeretli').length
-    const eligible  = count - mazeretli
+    const { yapildi = 0, mazeretli = 0 } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+    const eligible = count - mazeretli
     if (eligible > 0) { completionSum += Math.round((yapildi / eligible) * 100); counted++ }
   }
   const avgCompletionPct = counted === 0 ? 0 : Math.round(completionSum / counted)
 
-  const riskyStudentCount = computeRiskyStudents(students, homeworks, submissions).length
-  const today = new Date().toISOString().slice(0, 10)
-  const subCountByHw = new Map<string, number>()
-  for (const s of submissions) {
-    subCountByHw.set(s.homework_id, (subCountByHw.get(s.homework_id) ?? 0) + 1)
-  }
+  const today = todayTR()
   const pendingReviewCount = homeworks.filter(h => {
     if (!h.due_date || h.due_date >= today) return false
     const classStudentCount = studentsByClass.get(h.class_id) ?? 0
-    return classStudentCount > 0 && (subCountByHw.get(h.id) ?? 0) < classStudentCount
+    return classStudentCount > 0 && (subsByHw.get(h.id)?.total ?? 0) < classStudentCount
   }).length
 
   return { totalHomeworks, avgCompletionPct, riskyStudentCount, pendingReviewCount }

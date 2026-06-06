@@ -88,7 +88,7 @@ describe('RBAC: okul izolasyonu', () => {
 
 describe('computeKpiCards — sınır durumlar', () => {
   it('boş arrays → sıfır döner, crash yok', () => {
-    const result = computeKpiCards([], [], [])
+    const result = computeKpiCards([], [], [], 0)
     expect(result).toEqual({ totalHomeworks: 0, avgCompletionPct: 0, riskyStudentCount: 0, pendingReviewCount: 0 })
   })
 
@@ -96,7 +96,7 @@ describe('computeKpiCards — sınır durumlar', () => {
     const homeworks: AnalitikHomework[] = [
       { id: 'h-edge', class_id: 'no-students-class', teacher_id: 't1', due_date: '2030-01-01', title: 'Test' },
     ]
-    const result = computeKpiCards(homeworks, [], [])
+    const result = computeKpiCards(homeworks, [], [], 0)
     expect(result.totalHomeworks).toBe(1)
     expect(result.avgCompletionPct).toBe(0)
   })

@@ -1,6 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+
+function todayInTurkey(): string {
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+}
 import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
@@ -54,7 +58,7 @@ export async function createHomework(_: unknown, formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayInTurkey()
   if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
   const results = await Promise.allSettled(
@@ -108,7 +112,7 @@ export async function quickCreateHomework(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayInTurkey()
   if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
   const results = await Promise.allSettled(

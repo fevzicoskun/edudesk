@@ -147,40 +147,41 @@ describe('computeWeeklyTrend()', () => {
 // --- computeKpiCards ---
 describe('computeKpiCards()', () => {
   it('boş veri → sıfır döner, crash yok', () => {
-    expect(computeKpiCards([], [], [])).toEqual({
+    expect(computeKpiCards([], [], [], 0)).toEqual({
       totalHomeworks: 0, avgCompletionPct: 0, riskyStudentCount: 0, pendingReviewCount: 0,
     })
   })
 
   it('toplam ödev sayısı doğru', () => {
-    expect(computeKpiCards([hw('h1','c1'), hw('h2','c1')], [], []).totalHomeworks).toBe(2)
+    expect(computeKpiCards([hw('h1','c1'), hw('h2','c1')], [], [], 0).totalHomeworks).toBe(2)
   })
 
   it('pendingReview: tarihi geçmiş + submission yok', () => {
     const homeworks = [hw('h1','c1','2020-01-01'), hw('h2','c1','2030-12-31')]
-    expect(computeKpiCards(homeworks, [], [student('s1','c1')]).pendingReviewCount).toBe(1)
+    expect(computeKpiCards(homeworks, [], [student('s1','c1')], 0).pendingReviewCount).toBe(1)
   })
 
   it('pendingReview: kısmi işaretleme (1/2 öğrenci) → hâlâ pending', () => {
     const homeworks = [hw('h1','c1','2020-01-01')]
     const students  = [student('s1','c1'), student('s2','c1')]
     const submissions = [sub('h1','s1','yapildi')]
-    expect(computeKpiCards(homeworks, submissions, students).pendingReviewCount).toBe(1)
+    expect(computeKpiCards(homeworks, submissions, students, 0).pendingReviewCount).toBe(1)
   })
 
   it('pendingReview: tüm öğrenciler işaretlendi → pending değil', () => {
     const homeworks = [hw('h1','c1','2020-01-01')]
     const students  = [student('s1','c1'), student('s2','c1')]
     const submissions = [sub('h1','s1','yapildi'), sub('h1','s2','eksik')]
-    expect(computeKpiCards(homeworks, submissions, students).pendingReviewCount).toBe(0)
+    expect(computeKpiCards(homeworks, submissions, students, 0).pendingReviewCount).toBe(0)
   })
 
-  it('riskyStudentCount computeRiskyStudents ile tutarlı', () => {
+  it('riskyStudentCount dışarıdan geçirilir', () => {
     const students = [student('s1','c1')]
     const homeworks = [hw('h1','c1'), hw('h2','c1'), hw('h3','c1')]
     const submissions = [
       sub('h1','s1','yapilmadi'), sub('h2','s1','eksik'), sub('h3','s1','yapilmadi'),
     ]
-    expect(computeKpiCards(homeworks, submissions, students).riskyStudentCount).toBe(1)
+    const risky = computeRiskyStudents(students, homeworks, submissions)
+    expect(computeKpiCards(homeworks, submissions, students, risky.length).riskyStudentCount).toBe(1)
   })
 })

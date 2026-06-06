@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
@@ -42,6 +42,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
   const [saving,    setSaving]    = useState(false)
   const [toast,     setToast]     = useState('')
   const [error,     setError]     = useState('')
+  const isDirty = useRef(false)
 
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
@@ -54,6 +55,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
     try {
       const data = await getYoklama(classId, date)
       setStatuses(data)
+      isDirty.current = false
     } catch {
       setError('Yoklama verileri yüklenemedi')
     } finally {
@@ -63,7 +65,18 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
 
   useEffect(() => { loadYoklama() }, [loadYoklama])
 
+  // Kaydedilmemiş değişiklik varken sekme/tarayıcı kapatılmasını engelle
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!isDirty.current) return
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
   function toggle(studentId: string) {
+    isDirty.current = true
     setStatuses(prev => {
       const cur = prev[studentId] ?? 'present'
       const next: AttendanceStatus = cur === 'present' ? 'absent' : cur === 'absent' ? 'late' : 'present'
@@ -81,6 +94,7 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
         status:    statuses[s.id] ?? 'present',
       }))
       await saveYoklama(classId, date, entries)
+      isDirty.current = false
       const absentCount = entries.filter(e => e.status !== 'present').length
       if (absentCount > 0) {
         const sendAt = new Date(Date.now() + 45 * 60 * 1000)
@@ -137,14 +151,14 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus])))}
+                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus]))) }}
                   className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
                 >
                   Hepsini Mevcut
                 </button>
                 <button
                   type="button"
-                  onClick={() => setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus])))}
+                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus]))) }}
                   className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                 >
                   Hepsini Devamsız

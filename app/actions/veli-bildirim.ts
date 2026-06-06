@@ -5,16 +5,18 @@ import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { mailer } from '@/src/lib/mailer'
+import { formatDateTR, buildReminderEmail } from '@/src/lib/email-utils'
 
-const esc = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+const MAX_RECIPIENTS = 100
 
 export async function sendHomeworkReminderEmails(
   homeworkId: string,
   studentIds: string[]
 ): Promise<{ error?: string; sent?: number; failed?: number }> {
-  UUID.parse(homeworkId)
-  studentIds.forEach(id => UUID.parse(id))
+  const hwParse = UUID.safeParse(homeworkId)
+  if (!hwParse.success) return { error: 'Geçersiz istek' }
+  if (studentIds.some(id => !UUID.safeParse(id).success)) return { error: 'Geçersiz istek' }
+  if (studentIds.length > MAX_RECIPIENTS) return { error: `Toplu e-posta en fazla ${MAX_RECIPIENTS} öğrenci için gönderilebilir` }
 
   const ability = await getAbility()
   if (!ability) return { error: 'Giriş gerekli' }
@@ -50,28 +52,19 @@ export async function sendHomeworkReminderEmails(
   const targets = (students ?? []).filter(s => s.veli_email)
   if (targets.length === 0) return { sent: 0 }
 
-  const dueDateStr = hw.due_date ?? ''
+  const dueDateStr = hw.due_date ? formatDateTR(hw.due_date) : ''
 
   const results = await Promise.allSettled(
     targets.map(s =>
       mailer.sendMail({
         to: s.veli_email!,
         subject: `Ödev Hatırlatması — ${s.full_name}`,
-        html: `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<style>body{font-family:sans-serif;color:#1f2937;line-height:1.6}
-.box{max-width:520px;margin:32px auto;padding:32px;border:1px solid #e5e7eb;border-radius:12px}
-.badge{display:inline-block;background:#eff6ff;color:#1d4ed8;padding:4px 10px;border-radius:6px;font-size:13px;font-weight:600}
-.footer{margin-top:24px;padding-top:16px;border-top:1px solid #f3f4f6;font-size:12px;color:#9ca3af}
-</style></head>
-<body><div class="box">
-<p>${esc(s.veli_ad ?? 'Sayın Veli')},</p>
-<p><strong>${esc(s.full_name)}</strong> adlı öğrencinizin</p>
-<p class="badge">"${esc(hw.title)}"</p>
-<p>adlı ödevi${dueDateStr ? ` <strong>${esc(dueDateStr)}</strong> tarihinde` : ''} teslim edilmesi gerekmektedir.</p>
-<p>Lütfen ödevin tamamlandığından emin olunuz.</p>
-<div class="footer">EduDesk — Okul Takip Sistemi</div>
-</div></body></html>`,
+        html: buildReminderEmail({
+          veliAd:     s.veli_ad ?? 'Sayın Veli',
+          ogrenciAdi: s.full_name,
+          odevBaslik: hw.title,
+          dueDateStr,
+        }),
       })
     )
   )

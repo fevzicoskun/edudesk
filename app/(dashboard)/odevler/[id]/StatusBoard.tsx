@@ -80,7 +80,7 @@ export default function StatusBoard({
   const [recordedIds, setRecordedIds]       = useState<Set<string>>(
     () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
   )
-  const [openBadge, setOpenBadge] = useState<string | null>(null)
+  const [openBadge, setOpenBadge] = useState<boolean>(false)
 
   useEffect(() => {
     if (!errorMsg) return
@@ -181,8 +181,8 @@ export default function StatusBoard({
   return (
     <div>
 
-      {openBadge !== null && (
-        <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(null)} />
+      {openBadge && (
+        <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(false)} />
       )}
 
       {/* Tamamlanma özet barı */}
@@ -191,9 +191,14 @@ export default function StatusBoard({
           <span className="font-semibold text-gray-600 dark:text-slate-400">
             {recordedCount}/{totalStudents} öğrenci işaretlendi
           </span>
-          <span className={`font-bold text-base ${progressPct === 100 ? 'text-emerald-600' : progressPct >= 60 ? 'text-amber-600' : 'text-gray-400'}`}>
-            %{progressPct}
-          </span>
+          <div className="flex items-center gap-2">
+            {weekLoad && weekLoad.count > 0 && (
+              <WeekLoadBadge load={weekLoad} open={openBadge} onToggle={() => setOpenBadge(p => !p)} />
+            )}
+            <span className={`font-bold text-base ${progressPct === 100 ? 'text-emerald-600' : progressPct >= 60 ? 'text-amber-600' : 'text-gray-400'}`}>
+              %{progressPct}
+            </span>
+          </div>
         </div>
         {/* Segmented bar */}
         <div className="h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
@@ -308,13 +313,6 @@ export default function StatusBoard({
                     {item.full_name}
                   </button>
                   <div className="flex items-center gap-2 mt-0.5">
-                    {weekLoad && weekLoad.count > 0 && (
-                      <WeekLoadBadge
-                        load={weekLoad}
-                        open={openBadge === item.student_id}
-                        onToggle={() => setOpenBadge(prev => prev === item.student_id ? null : item.student_id)}
-                      />
-                    )}
                     {item.student_number && (
                       <span className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</span>
                     )}
@@ -454,9 +452,9 @@ function WeekLoadBadge({
       <button
         type="button"
         onClick={e => { e.stopPropagation(); onToggle() }}
-        className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full border transition-colors ${badgeCls}`}
+        className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border min-h-[36px] transition-colors ${badgeCls}`}
       >
-        ● {load.count}
+        ● {load.count} ödev
       </button>
       {open && <WeekLoadPopover load={load} />}
     </div>

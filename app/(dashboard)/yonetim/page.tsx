@@ -8,7 +8,7 @@ import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
 
-export const revalidate = 0
+export const revalidate = 60
 
 function CardSkeleton({ tall }: { tall?: boolean }) {
   return (
