@@ -31,22 +31,12 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
             <p className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">Yoklama</p>
             <ul className="space-y-1.5">
               {yoklamaDurumu.map(c => (
-                <li key={c.classId} className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.alindi ? 'bg-emerald-500' : 'bg-red-400'}`} />
-                    <span className="text-sm text-gray-800 dark:text-slate-200 font-medium">{c.className}</span>
-                    <span className={`text-[10px] font-semibold ${c.alindi ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
-                      {c.alindi ? 'Alındı' : 'Alınmadı'}
-                    </span>
-                  </div>
-                  {!c.alindi && (
-                    <Link
-                      href="/yoklama"
-                      className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline shrink-0"
-                    >
-                      Yoklama Al →
-                    </Link>
-                  )}
+                <li key={c.classId} className="flex items-center gap-2">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${c.alindi ? 'bg-emerald-500' : 'bg-red-400'}`} />
+                  <span className="text-sm text-gray-800 dark:text-slate-200 font-medium">{c.className}</span>
+                  <span className={`text-[10px] font-semibold ${c.alindi ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
+                    {c.alindi ? 'Alındı' : 'Alınmadı'}
+                  </span>
                 </li>
               ))}
             </ul>
