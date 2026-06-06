@@ -184,25 +184,79 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
       import('jspdf-autotable'),
     ])
 
+    // Türkçe karakter desteği için Roboto embed et
+    const fontResp = await fetch('/fonts/Roboto-Regular.ttf')
+    const fontBuf  = await fontResp.arrayBuffer()
+    const bytes    = new Uint8Array(fontBuf)
+    let binary = ''
+    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+    const fontB64 = btoa(binary)
+
     const allByNumber = [...students].sort((a, b) =>
       (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
     )
-
     const safeClassName = (className ?? 'Sinif').replace(/[*?:\\/[\]]/g, '-')
+
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+    doc.addFileToVFS('Roboto-Regular.ttf', fontB64)
+    doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal')
+    doc.setFont('Roboto', 'normal')
 
-    // Başlık
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`${className ?? 'Sınıf'} — Dönem Raporu`, 14, 16)
+    const pageW  = doc.internal.pageSize.getWidth()   // 297
+    const pageH  = doc.internal.pageSize.getHeight()  // 210
+    const margin = 14
+
+    // ── Üst renk bandı ──────────────────────────────────────
+    doc.setFillColor(67, 97, 238)  // indigo-600
+    doc.rect(0, 0, pageW, 12, 'F')
+
+    // Bant içi: sınıf adı (sol) + EduDesk (sağ)
+    doc.setFont('Roboto', 'normal')
+    doc.setFontSize(11)
+    doc.setTextColor(255, 255, 255)
+    doc.text(className ?? 'Sınıf', margin, 8)
     doc.setFontSize(9)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(120)
-    doc.text(new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }), 14, 22)
-    doc.setTextColor(0)
+    doc.text('EduDesk', pageW - margin, 8, { align: 'right' })
 
-    const head = [['No', 'Ad Soyad', ...homeworks.map(h => `${h.subject}\n${dueDateFmt(h.due_date)}`), 'Oran']]
+    // ── Başlık alanı ─────────────────────────────────────────
+    doc.setTextColor(30, 30, 30)
+    doc.setFontSize(16)
+    doc.text('Dönem Raporu', margin, 22)
 
+    const tarih = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+    doc.setFontSize(8.5)
+    doc.setTextColor(110, 110, 110)
+    doc.text(tarih, pageW - margin, 22, { align: 'right' })
+
+    // Özet: öğrenci · ödev · ortalama
+    const totalDone = allByNumber.reduce((s, st) => s + (statsMap[st.id]?.done ?? 0), 0)
+    const totalElig = allByNumber.reduce((s, st) => s + (statsMap[st.id]?.eligible ?? 0), 0)
+    const classAvg  = totalElig > 0 ? Math.round(totalDone / totalElig * 100) : 0
+
+    doc.setFontSize(8)
+    doc.setTextColor(80, 80, 80)
+    doc.text(
+      `${students.length} öğrenci  ·  ${homeworks.length} ödev  ·  Ortalama tamamlanma: %${classAvg}`,
+      margin, 29
+    )
+
+    // Ayırıcı çizgi
+    doc.setDrawColor(220, 220, 220)
+    doc.setLineWidth(0.3)
+    doc.line(margin, 33, pageW - margin, 33)
+
+    // ── Tablo ────────────────────────────────────────────────
+    const usableW = pageW - margin * 2
+    const noW     = 12
+    const nameW   = 48
+    const oranW   = 18
+    const hwW     = Math.max(20, (usableW - noW - nameW - oranW) / Math.max(homeworks.length, 1))
+
+    const head = [[
+      'No', 'Ad Soyad',
+      ...homeworks.map(h => `${h.subject}\n${dueDateFmt(h.due_date)}`),
+      'Oran',
+    ]]
     const body = allByNumber.map(student => {
       const { pct } = statsMap[student.id]
       return [
@@ -215,27 +269,32 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
         pct !== null ? `%${pct}` : '—',
       ]
     })
-
-    // Footer: sınıf ortalaması
     const foot = [['', 'Sınıf Ort.', ...homeworks.map(hw => {
       const { pct } = hwStatsMap[hw.id] ?? { pct: null }
       return pct !== null ? `%${pct}` : '—'
     }), '']]
 
+    const colStyles: Record<number, object> = {
+      0: { halign: 'center', cellWidth: noW },
+      1: { cellWidth: nameW },
+      [homeworks.length + 2]: { halign: 'center', cellWidth: oranW },
+    }
+    for (let i = 0; i < homeworks.length; i++) {
+      colStyles[i + 2] = { halign: 'center', cellWidth: hwW }
+    }
+
     autoTable(doc, {
-      startY: 27,
+      startY: 37,
+      margin: { left: margin, right: margin },
       head,
       body,
       foot,
       theme: 'grid',
-      headStyles: { fillColor: [208, 228, 247], textColor: 30, fontStyle: 'bold', fontSize: 8, halign: 'center' },
-      footStyles: { fillColor: [234, 234, 234], textColor: 30, fontStyle: 'bold', fontSize: 8, halign: 'center' },
-      columnStyles: {
-        0: { halign: 'center', cellWidth: 12 },
-        1: { cellWidth: 42 },
-        [homeworks.length + 2]: { halign: 'center', cellWidth: 16 },
-      },
-      bodyStyles: { fontSize: 8 },
+      styles:           { font: 'Roboto', fontStyle: 'normal', fontSize: 8, cellPadding: 3 },
+      headStyles:       { font: 'Roboto', fontStyle: 'normal', fillColor: [67, 97, 238], textColor: 255, fontSize: 8, halign: 'center', minCellHeight: 10 },
+      footStyles:       { font: 'Roboto', fontStyle: 'normal', fillColor: [235, 237, 255], textColor: 50, fontSize: 8, halign: 'center' },
+      alternateRowStyles: { fillColor: [248, 249, 255] },
+      columnStyles: colStyles,
       didParseCell: (data) => {
         if (data.section !== 'body' || data.column.index < 2 || data.column.index > homeworks.length + 1) return
         const student = allByNumber[data.row.index]
@@ -243,12 +302,20 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
         const hw = homeworks[data.column.index - 2]
         if (!hw) return
         const s = subMap[`${student.id}_${hw.id}`]
-        if (s) {
-          data.cell.styles.fillColor = PDF_COLOR[s]
-          data.cell.styles.halign = 'center'
-        }
+        if (s) data.cell.styles.fillColor = PDF_COLOR[s]
       },
     })
+
+    // ── Alt açıklama satırı ──────────────────────────────────
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const finalY = (doc as any).lastAutoTable?.finalY ?? pageH - 15
+    const legendY = Math.min(finalY + 6, pageH - 8)
+    doc.setFontSize(7)
+    doc.setTextColor(140, 140, 140)
+    doc.text(
+      'Yapıldı ✓   Eksik ~   Yapılmadı ✗   Geç G   Mazeretli M   — Girilmedi',
+      margin, legendY
+    )
 
     doc.save(`${safeClassName}_donem_raporu.pdf`)
   }
