@@ -5,6 +5,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { UUID } from '@/src/shared/validation'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export type AttendanceStatus = 'present' | 'absent' | 'late'
 
@@ -95,8 +96,8 @@ export async function saveYoklama(
           data: { studentId, classId, date, schoolId: ability.schoolId },
         }))
       )
-    } catch {
-      // Bildirim gönderilemedi, yoklama kaydı yine de tamamlandı
+    } catch (e) {
+      logger.error({ classId, date, absentCount: absentIds.length, err: e instanceof Error ? e.message : String(e) }, 'saveYoklama: Inngest event gönderilemedi')
     }
   }
 }

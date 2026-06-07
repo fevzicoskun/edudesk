@@ -4,6 +4,7 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays, todayLocalISO } from '@/src/shared/date'
 import { turkeyDate } from '@/src/lib/email-utils'
 import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
+import { logger } from '@/src/infrastructure/observability/logger'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
 export function mondayOf(dateStr: string): string {
@@ -135,7 +136,8 @@ function computeClassRisk(
 async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
-  const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
+  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
+  if (hwError) logger.error({ teacherId, schoolId, code: (hwError as { code?: string }).code }, 'fetchRiskInputs: ödev sorgusu başarısız')
   const homeworks  = (hwData ?? []) as unknown as HwRow[]
   const hwIds      = homeworks.map(h => h.id)
   const classIds   = [...new Set(homeworks.map(h => h.class_id))]
@@ -145,6 +147,10 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
     DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
     DashboardRepository.getStudentsByClasses(classIds),
   ])
+
+  if ('error' in subsResult    && subsResult.error)    logger.error({ teacherId, hwCount: hwIds.length, code: (subsResult.error as { code?: string }).code }, 'fetchRiskInputs: submission sorgusu başarısız')
+  if ('error' in attResult     && attResult.error)     logger.error({ teacherId, classCount: classIds.length, code: (attResult.error as { code?: string }).code }, 'fetchRiskInputs: yoklama sorgusu başarısız')
+  if ('error' in studentsResult && studentsResult.error) logger.error({ teacherId, classCount: classIds.length, code: (studentsResult.error as { code?: string }).code }, 'fetchRiskInputs: öğrenci sorgusu başarısız')
 
   return {
     homeworks,
@@ -268,7 +274,10 @@ export const TeacherDashboardService = {
 
   async getRiskAlerts(teacherId: string): Promise<RiskAlert[]> {
     const profile  = await getCurrentProfile()
-    if (!profile?.school_id) return []
+    if (!profile?.school_id) {
+      logger.warn({ teacherId }, 'getRiskAlerts: profil veya school_id bulunamadı')
+      return []
+    }
     const schoolId = profile.school_id
     const { homeworks, submissions, attendanceRows, students } =
       await fetchRiskInputs(teacherId, schoolId)
@@ -278,7 +287,10 @@ export const TeacherDashboardService = {
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
     const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
     const profile     = await getCurrentProfile()
-    if (!profile?.school_id) return null
+    if (!profile?.school_id) {
+      logger.warn({ teacherId, classId }, 'getClassSummary: profil veya school_id bulunamadı')
+      return null
+    }
     const schoolId    = profile.school_id
 
     const [subsResult, studentsResult, attResult] = await Promise.all([
@@ -286,6 +298,10 @@ export const TeacherDashboardService = {
       DashboardRepository.getStudentsByClasses([classId]),
       DashboardRepository.getAttendanceRows([classId], teacherId, twoWeeksAgo),
     ])
+
+    if ('error' in subsResult    && subsResult.error)    logger.error({ classId, teacherId, code: (subsResult.error as { code?: string }).code }, 'getClassSummary: submission sorgusu başarısız')
+    if ('error' in studentsResult && studentsResult.error) logger.error({ classId, code: (studentsResult.error as { code?: string }).code }, 'getClassSummary: öğrenci sorgusu başarısız')
+    if ('error' in attResult     && attResult.error)     logger.error({ classId, teacherId, code: (attResult.error as { code?: string }).code }, 'getClassSummary: yoklama sorgusu başarısız')
 
     const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
     const students       = (studentsResult.data ?? []) as unknown as StudentRow[]

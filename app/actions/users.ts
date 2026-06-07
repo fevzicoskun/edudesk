@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { getCurrentUser } from '@/src/shared/auth'
+import { logger } from '@/src/infrastructure/observability/logger'
 import { z } from 'zod'
 import { profileSchema, AssignableRole } from '@/src/domains/users/validators'
 import { UserService } from '@/src/domains/users/services/UserService'
@@ -52,6 +53,7 @@ export async function assignRole(targetId: string, newRole: string): Promise<Act
   try {
     await UserService.assignRole(targetId, newRole)
   } catch (e) {
+    logger.error({ targetId, newRole, err: e instanceof Error ? e.message : String(e) }, 'assignRole: rol ataması başarısız')
     return { error: e instanceof Error ? e.message : 'Rol atanamadı' }
   }
   revalidatePath('/kullanicilar')

@@ -14,6 +14,7 @@ import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { turkeyDate } from '@/src/lib/email-utils'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -83,6 +84,13 @@ export async function createHomework(_: unknown, formData: FormData) {
     .filter(Boolean)
 
   const failedCount = results.length - succeeded.length
+
+  if (failedCount > 0) {
+    const errors = results
+      .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && r.value.error))
+      .map(r => r.status === 'rejected' ? (r as PromiseRejectedResult).reason : (r as PromiseFulfilledResult<{ error?: string }>).value.error)
+    logger.error({ classIds, failedCount, succeeded: succeeded.length, errors }, 'createHomework: bazı sınıflar için ödev oluşturulamadı')
+  }
 
   if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
 

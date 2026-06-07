@@ -210,14 +210,23 @@ export const HomeworkService = {
     studentId:  string,
   ): Promise<SubmissionLogEntry[]> {
     const ability = await getAbility()
-    if (!ability || ability.cannot(P.HOMEWORK.READ)) return []
-    const { data } = await HomeworkRepository.findSubmissionLogs(homeworkId, studentId, ability.schoolId)
+    if (!ability) return []
+    if (ability.cannot(P.HOMEWORK.READ)) {
+      logger.warn({ homeworkId, userId: ability.userId }, 'getSubmissionLogs: yetersiz yetki')
+      return []
+    }
+    const { data, error } = await HomeworkRepository.findSubmissionLogs(homeworkId, studentId, ability.schoolId)
+    if (error) logger.error({ homeworkId, studentId, code: (error as { code?: string }).code }, 'getSubmissionLogs DB hatası')
     return data ?? []
   },
 
   async getTemplatesByClass(classId: string): Promise<HomeworkTemplate[]> {
     const ability = await getAbility()
-    if (!ability || ability.cannot(P.HOMEWORK.READ)) return []
+    if (!ability) return []
+    if (ability.cannot(P.HOMEWORK.READ)) {
+      logger.warn({ classId, userId: ability.userId }, 'getTemplatesByClass: yetersiz yetki')
+      return []
+    }
     const { data } = await HomeworkRepository.findTemplatesByClass(classId, ability.userId, ability.schoolId)
     return data ?? []
   },
