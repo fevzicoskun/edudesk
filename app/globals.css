@@ -179,3 +179,16 @@ body {
   --color-input: var(--input);
   --color-ring: var(--ring);
 }
+
+@media print {
+  /* Sidebar ve mobile header gizle */
+  aside, header { display: none !important; }
+  /* Main içerik tam genişlikte, padding sıfırla */
+  main { padding-top: 0 !important; padding-bottom: 0 !important; overflow: visible !important; }
+  /* Flex layout'u boz ki main tam genişlik kaplasın */
+  .flex.h-full { display: block !important; }
+  /* print:hidden Tailwind sınıfını destekle */
+  .print\:hidden { display: none !important; }
+  /* Renkleri koru */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
