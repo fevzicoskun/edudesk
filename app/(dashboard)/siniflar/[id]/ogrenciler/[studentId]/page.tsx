@@ -59,7 +59,7 @@ export default async function OgrenciDetayPage({
 
   const cls = classResult.data
   const student = studentResult.data
-  const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
+  const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
   const studentNotesTableExists = notesResult.error?.code !== '42P01'
