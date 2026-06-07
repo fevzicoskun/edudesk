@@ -278,7 +278,7 @@ function SectionHeader({ label, count, color }: { label: string; count: number; 
   )
 }
 
-type HW = { id: string; title: string; subject: string; due_date: string; class_id: unknown; description: string | null; classes: unknown; teacher?: unknown }
+type HW = { id: string; title: string; subject: string; due_date: string | null; class_id: unknown; description: string | null; classes: unknown; teacher?: unknown }
 type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
 
 function HomeworkCard({ hw, overdue, canWrite, statusMap, classStudentMap }: {
@@ -291,7 +291,8 @@ function HomeworkCard({ hw, overdue, canWrite, statusMap, classStudentMap }: {
   const cls     = hw.classes as { name: string } | null
   const teacher = (hw as HW & { teacher?: { full_name: string } | null }).teacher
 
-  function dueDateStr(due: string) {
+  function dueDateStr(due: string | null) {
+    if (!due) return '—'
     try {
       return new Date(due + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
     } catch { return due }

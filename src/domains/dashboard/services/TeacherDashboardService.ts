@@ -306,7 +306,7 @@ export const TeacherDashboardService = {
     return { avgCompletionPct, highRiskCount, totalMissingCount, riskyStudents }
   },
 
-  async logActivity(teacherId: string, action: string, meta?: object): Promise<void> {
+  async logActivity(teacherId: string, action: string, meta?: Record<string, unknown>): Promise<void> {
     try {
       const profile = await getCurrentProfile()
       const schoolId = profile?.school_id ?? ''

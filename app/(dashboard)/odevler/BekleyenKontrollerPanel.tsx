@@ -5,7 +5,7 @@ type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: nu
 interface Homework {
   id: string
   title: string
-  due_date: string
+  due_date: string | null
   class_id: unknown
   classes: { name: string } | null
 }
@@ -17,14 +17,16 @@ interface Props {
   now: Date
 }
 
-function dueDateStr(due: string): string {
+function dueDateStr(due: string | null): string {
+  if (!due) return '—'
   try {
     const d = new Date(due + 'T12:00:00')
     return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
   } catch { return due }
 }
 
-function daysSinceDue(due: string, now: Date): number {
+function daysSinceDue(due: string | null, now: Date): number {
+  if (!due) return 0
   return Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000)
 }
 

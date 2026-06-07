@@ -29,7 +29,7 @@ export const RbacRepository = {
       p_user_id:   userId,
       p_resource:  resource,
       p_action:    action,
-      p_school_id: schoolId ?? null,
+      p_school_id: schoolId ?? undefined,
     })
     if (error) return false
     return data === true

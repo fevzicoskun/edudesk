@@ -48,9 +48,9 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const [studentsRes, homeworkRes] = await Promise.all([
     supabase
       .from('students')
-      .select('id, name, classes!inner(id, name)')
+      .select('id, full_name, classes!inner(id, name)')
       .eq('school_id', profile.school_id)
-      .ilike('name', `%${q}%`)
+      .ilike('full_name', `%${q}%`)
       .is('deleted_at', null)
       .limit(6),
     hwQuery,
@@ -59,13 +59,13 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const lq = q.toLowerCase()
   const pages = STATIC_PAGES.filter(p => p.title.toLowerCase().includes(lq))
 
-  type StudentRow = { id: string; name: string; classes: { id: string; name: string } | { id: string; name: string }[] }
+  type StudentRow = { id: string; full_name: string; classes: { id: string; name: string } | { id: string; name: string }[] }
   const students: SearchResult[] = (studentsRes.data ?? []).map((s: StudentRow) => {
     const cls = Array.isArray(s.classes) ? s.classes[0] : s.classes
     return {
       type: 'student',
       id: s.id,
-      title: s.name,
+      title: s.full_name,
       subtitle: cls?.name ?? 'Öğrenci',
       href: `/siniflar/${cls?.id ?? ''}`,
     }

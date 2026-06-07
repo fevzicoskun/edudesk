@@ -48,7 +48,7 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
       <div className="divide-y divide-red-100 dark:divide-red-900/40">
         {unreviewed.slice(0, 5).map(hw => {
           const cls = (Array.isArray(hw.classes) ? hw.classes[0] : hw.classes) as { name: string } | null
-          const daysAgo = Math.floor((new Date().getTime() - new Date(hw.due_date).getTime()) / 86_400_000)
+          const daysAgo = Math.floor((new Date().getTime() - new Date(hw.due_date ?? '').getTime()) / 86_400_000)
           return (
             <Link
               key={hw.id}

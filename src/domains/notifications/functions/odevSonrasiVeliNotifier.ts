@@ -80,7 +80,7 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
             veliAd:     student.veli_ad ?? 'Sayın Veli',
             ogrenciAdi: student.full_name,
             odevBaslik: hw.title,
-            dueDate:    hw.due_date,
+            dueDate:    hw.due_date ?? '',
           })
         }
       }

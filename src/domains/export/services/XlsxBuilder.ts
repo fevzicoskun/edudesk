@@ -156,7 +156,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
       'Sınıf':      (h.classes as unknown as { name: string } | null)?.name ?? '—',
       'Ders':       h.subject,
       'Ödev':       h.title,
-      'Son Tarih':  fmtDate(h.due_date),
+      'Son Tarih':  h.due_date ? fmtDate(h.due_date) : '—',
       'Yapıldı':    s.yapildi,
       'Eksik':      s.eksik,
       'Yapılmadı':  s.yapilmadi,
