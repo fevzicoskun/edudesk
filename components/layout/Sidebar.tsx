@@ -130,7 +130,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       </header>
 
       {/* Desktop sidebar */}
-      <aside className={`hidden md:flex flex-col shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 transition-all duration-200 overflow-hidden ${collapsed ? 'w-16' : 'w-60'}`}>
+      <aside className={`hidden md:flex flex-col shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'}`}>
 
         {/* Header */}
         <div className="px-3 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-2">
@@ -141,7 +141,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             </div>
           )}
           <div className={`flex items-center gap-1 ${collapsed ? 'w-full justify-center flex-col' : 'shrink-0'}`}>
-            <NotificationBell align={collapsed ? 'right' : 'left'} />
+            <NotificationBell align="left" />
             <ThemeToggle />
           </div>
         </div>
