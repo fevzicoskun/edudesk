@@ -273,3 +273,53 @@ describe('ClassService.addStudent()', () => {
     )
   })
 })
+
+// ─── updateVeliContact — RBAC güvenlik fix ──────────────────
+// students:update izni olmadan veli bilgisi güncellenememeli.
+
+const { createClient } = await import('@/src/infrastructure/supabase/server')
+
+describe('ClassService.updateVeliContact()', () => {
+  function makeAbilityWithStudentUpdate() {
+    return createAbility({
+      userId:      'teacher-unit',
+      schoolId:    SCHOOL_ID,
+      permissions: [
+        { resource: 'students', action: 'update', scope: 'school', source: 'role' },
+      ],
+    })
+  }
+
+  it('students:update izni yoksa → throw, DB çağrılmaz', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(createAbility({
+      userId: 'teacher-unit', schoolId: SCHOOL_ID, permissions: [],
+    }) as never)
+
+    await expect(
+      ClassService.updateVeliContact('stu-1', { email: 'a@b.com', telefon: null, ad: 'Veli' })
+    ).rejects.toThrow()
+
+    expect(createClient).not.toHaveBeenCalled()
+  })
+
+  it('yetkili kullanıcı → supabase update çağrılır, school_id filtresi uygulanır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentUpdate() as never)
+
+    const chain: Record<string, unknown> = {}
+    chain.then  = (r: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(r)
+    chain.catch = () => Promise.resolve({ error: null })
+    for (const m of ['update','eq','from']) chain[m] = vi.fn().mockReturnValue(chain)
+    const db = { from: vi.fn().mockReturnValue(chain) }
+    vi.mocked(createClient).mockResolvedValue(db as never)
+
+    const result = await ClassService.updateVeliContact('stu-1', { email: 'a@b.com', telefon: null, ad: 'Veli' })
+
+    expect(result).toEqual({})
+    expect(db.from).toHaveBeenCalledWith('students')
+    expect(chain.update).toHaveBeenCalledWith(
+      expect.objectContaining({ veli_email: 'a@b.com' })
+    )
+    expect(chain.eq).toHaveBeenCalledWith('id', 'stu-1')
+    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
+  })
+})

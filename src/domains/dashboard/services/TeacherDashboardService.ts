@@ -6,7 +6,7 @@ import { turkeyDate } from '@/src/lib/email-utils'
 import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
-function mondayOf(dateStr: string): string {
+export function mondayOf(dateStr: string): string {
   // Yerel tarih constructor kullan — toISOString UTC kaymasını önle
   const [y, m, d] = dateStr.split('-').map(Number)
   const date = new Date(y, m - 1, d)
@@ -42,7 +42,7 @@ const RISK_SORT_ORDER = { high: 0, medium: 1, low: 2 } as const
 
 // Öğrenci bazında ödev eksikliği sayısını hesaplar.
 // limitToHwIds verilirse sadece o ödev kimliklerindeki eksikler sayılır (son N ödev filtresi).
-function buildHwMissMap(
+export function buildHwMissMap(
   submissions: SubmissionRow[],
   limitToHwIds?: Set<string>,
 ): Map<string, number> {
@@ -56,7 +56,7 @@ function buildHwMissMap(
   return map
 }
 
-function buildAbsenceMap(attendanceRows: { student_id: string; status: string }[]): Map<string, number> {
+export function buildAbsenceMap(attendanceRows: { student_id: string; status: string }[]): Map<string, number> {
   const map = new Map<string, number>()
   for (const att of attendanceRows) {
     if (att.status === 'absent') map.set(att.student_id, (map.get(att.student_id) ?? 0) + 1)
@@ -89,7 +89,7 @@ function buildRiskAlerts(
   return alerts.sort((a, b) => RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel])
 }
 
-function computeAlerts(
+export function computeAlerts(
   homeworks:      HwRow[],
   submissions:    SubmissionRow[],
   attendanceRows: { student_id: string; status: string }[],

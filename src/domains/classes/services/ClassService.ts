@@ -104,6 +104,7 @@ export const ClassService = {
 
   async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }): Promise<{ error?: string }> {
     const ability  = await requireAbility()
+    guard(ability, P.STUDENTS.UPDATE)
     const supabase = await createClient()
     const { error } = await supabase
       .from('students')
