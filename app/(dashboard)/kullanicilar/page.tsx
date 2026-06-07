@@ -1,6 +1,6 @@
 ﻿import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { isMudurOrAbove, type Role } from '@/src/shared/types'
 import InviteUserForm from './InviteUserForm'
 import KullaniciFiltreli, { type UserRow, type SessionSummary } from './KullaniciFiltreli'
@@ -11,9 +11,9 @@ export default async function KullanicilarPage() {
   const profile = await getCurrentProfile()
   if (!profile || !isMudurOrAbove(profile.role)) redirect('/anasayfa')
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) redirect('/login')
+  const supabase = await createClient()
 
   const isMY = profile.role === 'mudur_yardimcisi'
 
