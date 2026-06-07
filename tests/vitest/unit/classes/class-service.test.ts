@@ -30,7 +30,7 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
 }))
 
 const { requireAbility }                   = await import('@/src/shared/authorization/server')
-const { insertStudents, findClassInSchool } = await import('@/src/queries/classes')
+const { insertStudents, findClassInSchool, insertClass, softDeleteClass, softDeleteHomeworksByClass, softDeleteStudentsByClass, insertStudent } = await import('@/src/queries/classes')
 const { ClassService }                     = await import('@/src/domains/classes/services/ClassService')
 
 const SCHOOL_ID = 'school-class-unit'
@@ -158,5 +158,114 @@ describe('ClassService.addStudentsBulk()', () => {
       full_name: `Öğrenci ${i + 1}`, student_number: null,
     }))
     await expect(ClassService.addStudentsBulk(CLASS_ID, students)).resolves.not.toThrow()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('ClassService.createClass()', () => {
+  function makeAbilityWithClassCreate() {
+    return createAbility({
+      userId:   'teacher-unit',
+      schoolId: SCHOOL_ID,
+      permissions: [{ resource: 'classes', action: 'create', scope: 'school', source: 'role' }],
+    })
+  }
+
+  it('classes:create izni yoksa → throw', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
+    await expect(ClassService.createClass({ name: '10-A', grade: 10 })).rejects.toThrow()
+    expect(insertClass).not.toHaveBeenCalled()
+  })
+
+  it('yetkili kullanıcı sınıf oluşturur → insertClass çağrılır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassCreate() as never)
+    vi.mocked(insertClass).mockResolvedValue({ error: null } as never)
+
+    await ClassService.createClass({ name: '10-A', grade: 10 })
+
+    expect(insertClass).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name:      '10-A',
+        grade:     10,
+        school_id: SCHOOL_ID,
+      })
+    )
+  })
+
+  it('DB hatası varsa throw eder', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassCreate() as never)
+    vi.mocked(insertClass).mockResolvedValue({ error: { message: 'unique violation' } } as never)
+
+    await expect(ClassService.createClass({ name: '10-A', grade: 10 })).rejects.toThrow('unique violation')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('ClassService.deleteClass()', () => {
+  function makeAbilityWithClassDelete() {
+    return createAbility({
+      userId:   'teacher-unit',
+      schoolId: SCHOOL_ID,
+      permissions: [{ resource: 'classes', action: 'delete', scope: 'school', source: 'role' }],
+    })
+  }
+
+  it('classes:delete izni yoksa → throw, cascade çağrılmaz', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
+    await expect(ClassService.deleteClass(CLASS_ID)).rejects.toThrow()
+    expect(softDeleteClass).not.toHaveBeenCalled()
+    expect(softDeleteHomeworksByClass).not.toHaveBeenCalled()
+    expect(softDeleteStudentsByClass).not.toHaveBeenCalled()
+  })
+
+  it('yetkili kullanıcı cascade soft-delete yapar', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassDelete() as never)
+    vi.mocked(softDeleteHomeworksByClass).mockResolvedValue(undefined as never)
+    vi.mocked(softDeleteStudentsByClass).mockResolvedValue(undefined as never)
+    vi.mocked(softDeleteClass).mockResolvedValue(undefined as never)
+
+    await ClassService.deleteClass(CLASS_ID)
+
+    expect(softDeleteHomeworksByClass).toHaveBeenCalledOnce()
+    expect(softDeleteStudentsByClass).toHaveBeenCalledOnce()
+    expect(softDeleteClass).toHaveBeenCalledOnce()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('ClassService.addStudent()', () => {
+  it('students:create izni yoksa → throw', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(createAbility({
+      userId: 'teacher-unit', schoolId: SCHOOL_ID, permissions: [],
+    }) as never)
+
+    await expect(ClassService.addStudent(CLASS_ID, { full_name: 'Ali', student_number: null })).rejects.toThrow()
+    expect(insertStudent).not.toHaveBeenCalled()
+  })
+
+  it('sınıf okula ait değilse → throw Sınıf bulunamadı', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
+    vi.mocked(findClassInSchool).mockResolvedValue({ data: null, error: null } as never)
+
+    await expect(ClassService.addStudent(CLASS_ID, { full_name: 'Ali', student_number: null }))
+      .rejects.toThrow('Sınıf bulunamadı')
+
+    expect(insertStudent).not.toHaveBeenCalled()
+  })
+
+  it('geçerli sınıf + yetki → insertStudent çağrılır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
+    vi.mocked(findClassInSchool).mockResolvedValue({ data: { id: CLASS_ID }, error: null } as never)
+    vi.mocked(insertStudent).mockResolvedValue(undefined as never)
+
+    await ClassService.addStudent(CLASS_ID, { full_name: 'Ali Veli', student_number: '123' })
+
+    expect(insertStudent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        class_id:  CLASS_ID,
+        school_id: SCHOOL_ID,
+        full_name: 'Ali Veli',
+      })
+    )
   })
 })
