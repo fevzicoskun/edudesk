@@ -136,7 +136,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
   const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
-  const homeworks  = (hwData ?? []) as HwRow[]
+  const homeworks  = (hwData ?? []) as unknown as HwRow[]
   const hwIds      = homeworks.map(h => h.id)
   const classIds   = [...new Set(homeworks.map(h => h.class_id))]
 
@@ -152,7 +152,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
     classIds,
     submissions:    (subsResult.data    ?? []) as SubmissionRow[],
     attendanceRows: (attResult.data      ?? []) as { student_id: string; status: string }[],
-    students:       (studentsResult.data ?? []) as StudentRow[],
+    students:       (studentsResult.data ?? []) as unknown as StudentRow[],
   }
 }
 
@@ -288,7 +288,7 @@ export const TeacherDashboardService = {
     ])
 
     const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
-    const students       = (studentsResult.data ?? []) as StudentRow[]
+    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
     const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
 
     if (students.length === 0) return null
