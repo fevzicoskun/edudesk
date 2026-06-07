@@ -30,7 +30,8 @@ export default async function StatusBoardLoader({
       .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
-      .is('deleted_at', null),
+      .is('deleted_at', null)
+      .limit(200),
     supabase
       .from('homework_submissions')
       .select('student_id, status, note')
@@ -43,7 +44,8 @@ export default async function StatusBoardLoader({
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .eq('is_template', false)
-      .neq('id', homeworkId),
+      .neq('id', homeworkId)
+      .limit(200),
     dueDate
       ? getClassWeekLoad([classId], dueDate)
       : Promise.resolve([] as ClassWeekLoad[]),
@@ -57,6 +59,7 @@ export default async function StatusBoardLoader({
         .from('homework_submissions')
         .select('student_id, status, homework_id')
         .in('homework_id', otherHomeworkIds)
+        .limit(12000)
     : { data: [] as { student_id: string; status: string; homework_id: string }[] }
 
   const students = studentsResult.data ?? []

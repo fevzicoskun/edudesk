@@ -134,9 +134,10 @@ function computeClassRisk(
 }
 
 async function fetchRiskInputs(teacherId: string, schoolId: string) {
-  const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
+  const twoWeeksAgo   = turkeyDate(subDays(new Date(), 14))
+  const ninetyDaysAgo = turkeyDate(subDays(new Date(), 90))
 
-  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
+  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId, ninetyDaysAgo)
   if (hwError) logger.error({ teacherId, schoolId, code: (hwError as { code?: string }).code }, 'fetchRiskInputs: ödev sorgusu başarısız')
   const homeworks  = (hwData ?? []) as unknown as HwRow[]
   const hwIds      = homeworks.map(h => h.id)

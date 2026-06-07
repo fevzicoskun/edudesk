@@ -2,15 +2,17 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 
 export const DashboardRepository = {
-  async getTeacherHomeworks(teacherId: string, schoolId: string) {
+  async getTeacherHomeworks(teacherId: string, schoolId: string, sinceDate?: string) {
     const supabase = await createClient()
-    return supabase
+    let q = supabase
       .from('homeworks')
       .select('id, title, subject, due_date, class_id, classes(name, grade)')
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('due_date', { ascending: false })
+    if (sinceDate) q = q.gte('due_date', sinceDate)
+    return q
   },
 
   async getSubmissions(hwIds: string[]) {
@@ -20,6 +22,7 @@ export const DashboardRepository = {
       .from('homework_submissions')
       .select('homework_id, student_id, status')
       .in('homework_id', hwIds)
+      .limit(5000)
   },
 
   async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string) {
@@ -31,6 +34,7 @@ export const DashboardRepository = {
       .in('class_id', classIds)
       .eq('teacher_id', teacherId)
       .gte('date', sinceDate)
+      .limit(3000)
   },
 
   async getStudentsByClasses(classIds: string[]) {
@@ -41,6 +45,7 @@ export const DashboardRepository = {
       .select('id, full_name, class_id, classes(name)')
       .in('class_id', classIds)
       .is('deleted_at', null)
+      .limit(500)
   },
 
   async getWeeklySubmissionStats(hwIds: string[], weekStart: string) {
@@ -51,6 +56,7 @@ export const DashboardRepository = {
       .select('homework_id, status')
       .in('homework_id', hwIds)
       .gte('updated_at', weekStart)
+      .limit(2000)
   },
 
   async insertActivityLog(row: {
@@ -82,6 +88,7 @@ export const DashboardRepository = {
       .in('class_id', classIds)
       .gte('date', since)
       .order('date')
+      .limit(2000)
   },
 
   async getClassSubmissions(classId: string, teacherId: string, schoolId: string) {
@@ -93,6 +100,7 @@ export const DashboardRepository = {
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
+      .limit(300)
     type HwIdRow = { id: string }
     const hwIds = ((homeworks ?? []) as HwIdRow[]).map(h => h.id)
     if (hwIds.length === 0) return { data: [] }
@@ -100,5 +108,6 @@ export const DashboardRepository = {
       .from('homework_submissions')
       .select('homework_id, student_id, status')
       .in('homework_id', hwIds)
+      .limit(hwIds.length * 60)
   },
 }

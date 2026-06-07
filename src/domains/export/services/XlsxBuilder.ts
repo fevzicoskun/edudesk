@@ -137,6 +137,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
       .from('homework_submissions')
       .select('homework_id, status')
       .in('homework_id', hwIds)
+      .limit(XLSX_EXPORT_LIMIT * 60)
     if (subErr) throw new Error(`Teslim sorgu hatası: ${subErr.message}`)
     for (const s of subData ?? []) {
       const e = subMap.get(s.homework_id)
