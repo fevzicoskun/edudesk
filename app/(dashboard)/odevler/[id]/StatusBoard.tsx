@@ -403,7 +403,7 @@ export default function StatusBoard({
                     onClick={() => toggleHistory(item.student_id)}
                     aria-expanded={historyOpenId === item.student_id}
                     aria-label="Durum geçmişi"
-                    className={`flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg border transition-colors ${
+                    className={`flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-8 md:w-8 rounded-lg border transition-colors ${
                       historyOpenId === item.student_id
                         ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
                         : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-500'
@@ -423,7 +423,7 @@ export default function StatusBoard({
                   {/* Not butonu */}
                   <button
                     onClick={() => setExpandedNote(expandedNote === item.student_id ? null : item.student_id)}
-                    className={`text-xs px-2.5 min-h-[44px] min-w-[64px] rounded-lg border transition-colors ${
+                    className={`text-xs px-2.5 min-h-[44px] min-w-[64px] md:min-h-0 md:min-w-0 md:h-8 rounded-lg border transition-colors ${
                       noteSaved
                         ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                         : hasNote
@@ -463,7 +463,7 @@ export default function StatusBoard({
                     key={option}
                     disabled={isItemPending}
                     onClick={() => setStatus(item.student_id, option)}
-                    className={`text-xs px-2 rounded-xl border transition-colors min-h-[44px] flex items-center justify-center disabled:cursor-not-allowed ${
+                    className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
                       status === option
                         ? `${STYLES[option]} ring-2 ring-current font-bold`
                         : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
@@ -479,7 +479,7 @@ export default function StatusBoard({
                     key={option}
                     disabled={isItemPending}
                     onClick={() => setStatus(item.student_id, option)}
-                    className={`text-xs px-2 rounded-xl border transition-colors min-h-[44px] flex items-center justify-center disabled:cursor-not-allowed ${
+                    className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
                       status === option
                         ? `${STYLES[option]} ring-2 ring-current font-bold`
                         : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
