@@ -62,7 +62,7 @@ const BAR_COLORS: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-300',
 }
 
-type StatusItem = {
+export type StatusItem = {
   student_id: string
   full_name: string
   student_number: string | null

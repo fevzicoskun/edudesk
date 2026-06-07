@@ -1,16 +1,36 @@
+import { Suspense } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
-import { getClassWeekLoad } from '@/app/actions/homework'
-import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import Link from 'next/link'
-import StatusBoard from './StatusBoard'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
-import type { SubmissionStatus } from '@/src/shared/types'
+import StatusBoardLoader from './StatusBoardLoader'
 
 export const revalidate = 30
+
+function StatusBoardSkeleton() {
+  function Sk({ className }: { className?: string }) {
+    return <div className={`bg-gray-200 dark:bg-slate-700 rounded-lg animate-pulse ${className ?? ''}`} />
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2 mb-3">
+        <Sk className="h-8 w-20 rounded-full" />
+        <Sk className="h-8 w-20 rounded-full" />
+        <Sk className="h-8 w-20 rounded-full" />
+      </div>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl">
+          <Sk className="h-4 w-6 shrink-0" />
+          <Sk className="h-4 flex-1" />
+          <Sk className="h-8 w-28 rounded-lg" />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default async function OdevDetayPage({
   params,
@@ -35,81 +55,11 @@ export default async function OdevDetayPage({
 
   if (!hw || hw.is_template) notFound()
 
-  // Yetki kontrolü weekLoad fetch'inden önce — erişim yoksa veri çekilmez
+  // Yetki kontrolü önce — erişim yoksa loader'a gerek yok
   const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
   if (!isManager && hw.teacher_id !== user.id) notFound()
 
   const canWrite = isTeachingRole(profile.role)
-
-  // hw'ya bağımlı 4 sorgu paralel — otherHwIds ve weekLoad artık ayrı await değil
-  const [studentsResult, subsResult, otherHwRes, weekLoadResult] = await Promise.all([
-    supabase
-      .from('students')
-      .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
-      .eq('class_id', hw.class_id)
-      .eq('school_id', profile.school_id)
-      .is('deleted_at', null),
-    supabase.from('homework_submissions').select('student_id, status, note').eq('homework_id', id).eq('school_id', profile.school_id),
-    supabase
-      .from('homeworks')
-      .select('id')
-      .eq('class_id', hw.class_id)
-      .eq('school_id', profile.school_id)
-      .is('deleted_at', null)
-      .eq('is_template', false)
-      .neq('id', id),
-    hw.due_date
-      ? getClassWeekLoad([hw.class_id as string], hw.due_date)
-      : Promise.resolve([] as ClassWeekLoad[]),
-  ])
-
-  const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
-  const otherHomeworkIds = otherHwRes.data?.map(h => h.id) ?? []
-
-  // Kümülatif sorguda otherHomeworkIds gerekli — ayrı adım kaçınılmaz ama önceki adım paralel
-  const cumulativeResult = otherHomeworkIds.length > 0
-    ? await supabase
-        .from('homework_submissions')
-        .select('student_id, status, homework_id')
-        .in('homework_id', otherHomeworkIds)
-    : { data: [] as { student_id: string; status: string; homework_id: string }[] }
-
-  const students = studentsResult.data ?? []
-  const subs = subsResult.data ?? []
-  const subMap = new Map(subs.map((s) => [s.student_id, s]))
-
-  // Kümülatif: öğrenci başına geçmiş ödev sicili
-  const cumulativeSubs = cumulativeResult.data ?? []
-  // homework_id bazında unique ödev sayısı
-  const totalHomeworkCount = new Set(cumulativeSubs.map(s => s.homework_id)).size
-  const missedByStudent = new Map<string, number>()
-  for (const s of cumulativeSubs) {
-    if (s.status === 'yapilmadi' || s.status === 'eksik') {
-      missedByStudent.set(s.student_id, (missedByStudent.get(s.student_id) ?? 0) + 1)
-    }
-  }
-
-  const items = students
-    .map((student) => {
-      const sub = subMap.get(student.id)
-      return {
-        student_id: student.id,
-        full_name: student.full_name,
-        student_number: student.student_number,
-        veli_telefon: student.veli_telefon ?? null,
-        veli_ad: student.veli_ad ?? null,
-        veli_email: (student as typeof student & { veli_email?: string | null }).veli_email ?? null,
-        status: (sub?.status ?? 'yapilmadi') as SubmissionStatus,
-        note: sub?.note ?? null,
-        hasRecord: !!sub,
-        missedCount: missedByStudent.get(student.id) ?? 0,
-        totalHomeworks: totalHomeworkCount,
-      }
-    })
-    .sort((a, b) =>
-      (a.student_number ?? '').localeCompare(b.student_number ?? '', 'tr', { numeric: true })
-    )
-
   const cls = hw.classes as { name: string } | null
 
   return (
@@ -175,24 +125,16 @@ export default async function OdevDetayPage({
         )}
       </div>
 
-      {items.length === 0 ? (
-        <p className="text-center text-gray-400 text-sm py-12">
-          Bu sınıfta henüz öğrenci yok.
-        </p>
-      ) : (
-        <>
-          <StatusBoard
-            homeworkId={id}
-            items={items}
-            homeworkTitle={hw.title}
-            totalHomeworks={totalHomeworkCount}
-            classId={hw.class_id}
-            dueDate={hw.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : ''}
-            className={cls?.name ?? ''}
-            weekLoad={weekLoad}
-          />
-        </>
-      )}
+      <Suspense fallback={<StatusBoardSkeleton />}>
+        <StatusBoardLoader
+          homeworkId={id}
+          classId={hw.class_id}
+          dueDate={hw.due_date ?? null}
+          schoolId={profile.school_id}
+          homeworkTitle={hw.title}
+          className={cls?.name}
+        />
+      </Suspense>
     </div>
   )
 }
