@@ -1,7 +1,7 @@
 import { HomeworkRepository, type SubmissionLogEntry } from '../repositories/HomeworkRepository'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
-import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
+import type { SubmissionStatus, HomeworkTemplate, StatusResult } from '@/src/shared/types'
 import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 export const HomeworkService = {
@@ -33,7 +33,7 @@ export const HomeworkService = {
     homeworkId: string,
     studentId:  string,
     status:     SubmissionStatus
-  ): Promise<{ error?: string; success?: boolean }> {
+  ): Promise<StatusResult> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
@@ -75,7 +75,7 @@ export const HomeworkService = {
     homeworkId: string,
     studentIds: string[],
     status:     SubmissionStatus
-  ): Promise<{ error?: string; success?: boolean }> {
+  ): Promise<StatusResult> {
     if (studentIds.length > 200) return { error: 'Çok fazla öğrenci (maks. 200)' }
 
     const ability = await getAbility()
@@ -125,7 +125,7 @@ export const HomeworkService = {
     homeworkId: string,
     studentId:  string,
     note:       string
-  ): Promise<{ error?: string; success?: boolean }> {
+  ): Promise<StatusResult> {
     const sanitizedNote = String(note).slice(0, 1000).trim() || null
 
     const ability = await getAbility()

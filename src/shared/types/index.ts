@@ -109,6 +109,24 @@ export interface CurriculumProgress {
   created_at: string
 }
 
+/**
+ * Standard server action response shapes.
+ *
+ * ActionResult<T>  — simple mutations: {} or { data } on success, { error } on failure.
+ *                    Caller checks `if (result.error)`.
+ *
+ * StatusResult     — optimistic-UI mutations (e.g. submission status toggle).
+ *                    { success: true } on success, { error: string } on failure.
+ *                    RULE: never return { success: false } — always use { error } for failures.
+ */
+export type ActionResult<T extends object = object> =
+  | ({ error?: undefined } & T)
+  | { error: string }
+
+export type StatusResult =
+  | { success: true; error?: never }
+  | { success?: never; error: string }
+
 export type { Resource, Action, Scope, AccessScope, GrantedPermission, PermissionRequirement } from '@/src/domains/rbac/types'
 
 // Permission sabitleri

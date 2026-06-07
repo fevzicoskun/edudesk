@@ -165,11 +165,11 @@ export async function updateSubmissionStatus(
   studentId: string,
   status: SubmissionStatus
 ) {
-  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { success: false }
-  if (!submissionStatusSchema.safeParse(status).success) return { success: false }
+  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { error: 'Geçersiz istek' }
+  if (!submissionStatusSchema.safeParse(status).success) return { error: 'Geçersiz durum değeri' }
 
   const result = await HomeworkService.updateSubmissionStatus(homeworkId, studentId, status)
-  if (result.success) revalidatePath(`/odevler/${homeworkId}`)
+  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
   return result
 }
 
@@ -178,12 +178,12 @@ export async function updateAllSubmissionStatuses(
   studentIds: string[],
   status: SubmissionStatus
 ) {
-  if (!UUID.safeParse(homeworkId).success) return { success: false }
-  if (!submissionStatusSchema.safeParse(status).success) return { success: false }
-  if (studentIds.some(id => !UUID.safeParse(id).success)) return { success: false }
+  if (!UUID.safeParse(homeworkId).success) return { error: 'Geçersiz istek' }
+  if (!submissionStatusSchema.safeParse(status).success) return { error: 'Geçersiz durum değeri' }
+  if (studentIds.some(id => !UUID.safeParse(id).success)) return { error: 'Geçersiz öğrenci listesi' }
 
   const result = await HomeworkService.updateAllSubmissionStatuses(homeworkId, studentIds, status)
-  if (result.success) revalidatePath(`/odevler/${homeworkId}`)
+  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
   return result
 }
 
@@ -192,10 +192,10 @@ export async function updateSubmissionNote(
   studentId: string,
   note: string
 ) {
-  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { success: false }
+  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { error: 'Geçersiz istek' }
 
   const result = await HomeworkService.updateSubmissionNote(homeworkId, studentId, note)
-  if (result.success) revalidatePath(`/odevler/${homeworkId}`)
+  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
   return result
 }
 
