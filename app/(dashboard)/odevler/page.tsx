@@ -157,7 +157,7 @@ async function HomeworkSection({
 
   let query = supabase
     .from('homeworks')
-    .select('*, classes(id, name, grade), teacher:profiles(full_name)')
+    .select('id, title, subject, due_date, class_id, teacher_id, description, classes(id, name, grade), teacher:profiles(full_name)')
     .is('deleted_at', null)
     .eq('is_template', false)
     .order('due_date', { ascending: false })
@@ -239,7 +239,7 @@ async function HomeworkSection({
       <SinifChipBar classes={classes} activeByClass={activeByClass} pendingByClass={pendingByClass} />
       <HomeworkStatCards activeCount={active.length} pendingCount={pendingCheck.length} />
       <BekleyenKontrollerPanel
-        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
+        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as unknown as { name: string } | null }))}
         statusMap={statusMap}
         classStudentMap={classStudentMap}
         now={now}

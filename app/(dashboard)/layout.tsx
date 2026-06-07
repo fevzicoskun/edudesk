@@ -1,6 +1,5 @@
-﻿import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import Sidebar from '@/components/layout/Sidebar'
 import { ToastProvider } from '@/components/Toast'
 import QuickAddDrawer from '@/components/homework/QuickAddDrawer'
@@ -13,16 +12,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const profile = await getCurrentProfile()
 
-  // Müdür için onboarding kontrolü — okul kurulmamışsa yönlendir
+  // Müdür için onboarding kontrolü — slug artık getCurrentProfile()'dan geliyor, ekstra sorgu yok
   if (profile?.role === 'mudur' && profile.school_id) {
-    const supabase = await createClient()
-    const { data: school } = await supabase
-      .from('schools')
-      .select('slug')
-      .eq('id', profile.school_id)
-      .single()
-
-    const slug = school?.slug ?? ''
+    const slug = profile.schools?.slug ?? ''
     if (!/^[A-Z]{3,4}\d{3,4}$/.test(slug)) {
       redirect('/onboarding')
     }

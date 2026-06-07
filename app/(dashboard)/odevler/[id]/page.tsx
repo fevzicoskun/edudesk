@@ -47,7 +47,7 @@ export default async function OdevDetayPage({
 
   const { data: hw } = await supabase
     .from('homeworks')
-    .select('*, classes(name)')
+    .select('id, title, subject, description, due_date, class_id, teacher_id, is_template, classes(name)')
     .eq('id', id)
     .eq('school_id', profile.school_id)
     .is('deleted_at', null)
@@ -60,7 +60,7 @@ export default async function OdevDetayPage({
   if (!isManager && hw.teacher_id !== user.id) notFound()
 
   const canWrite = isTeachingRole(profile.role)
-  const cls = hw.classes as { name: string } | null
+  const cls = hw.classes as unknown as { name: string } | null
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">

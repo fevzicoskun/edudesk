@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useMemo, useEffect } from 'react'
-import ExcelJS from 'exceljs'
+
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote, getSubmissionLogs } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
 import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
@@ -203,6 +203,7 @@ export default function StatusBoard({
   }
 
   async function exportToExcel() {
+    const { default: ExcelJS } = await import('exceljs')
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('Ödev Durumu')
     sheet.columns = [{ width: 6 }, { width: 12 }, { width: 26 }, { width: 16 }, { width: 40 }]

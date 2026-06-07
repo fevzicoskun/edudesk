@@ -1,6 +1,5 @@
-﻿import { redirect } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import MudurOnboardingForm from './MudurOnboardingForm'
 import JoinSchoolForm from './JoinSchoolForm'
 
@@ -14,20 +13,13 @@ export default async function OnboardingPage() {
   if (profile?.role === 'mudur') {
     if (!profile.school_id) redirect('/login')
 
-    const supabase = await createClient()
-    const { data: school } = await supabase
-      .from('schools')
-      .select('name, slug')
-      .eq('id', profile.school_id)
-      .single()
-
-    const slug = school?.slug ?? ''
+    const slug = profile.schools?.slug ?? ''
     // Kurulum tamamsa dashboard'a geç
     if (/^[A-Z]{3,4}\d{3,4}$/.test(slug)) redirect('/anasayfa')
 
     return (
       <MudurOnboardingForm
-        existingName={school?.name ?? ''}
+        existingName={profile.schools?.name ?? ''}
         fullName={profile.full_name ?? ''}
       />
     )
