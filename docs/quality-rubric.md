@@ -188,6 +188,7 @@ grep -rn "getAbility\|getCurrentProfile\|getCurrentUser" \
 | Sprint | TS | Mimari | Hatalar | Test | Perf | Güvenlik | Ortalama |
 |---|---|---|---|---|---|---|---|
 | Baseline (2026-06-08) | 7.0 | 8.0 | 8.0 | 7.5 | 7.0 | 8.5 | **7.7** |
+| Perf Sprint (2026-06-08) | 7.0 | 8.0 | 8.0 | 7.5 | **9.5** | 8.5 | **8.1** |
 
 ---
 
@@ -223,6 +224,15 @@ grep -rn "getAbility\|getCurrentProfile\|getCurrentUser" \
 - Promise.all: 14 kullanım → ✓
 - cache() kullanımı: ✓
 - **10 - 3.0 = 7.0**
+
+### Performans (9.5/10) — Perf Sprint 2026-06-08
+- N+1 riski: grep 0 → 0 düşüş ✓
+- Pagination: odevler/page.tsx PAGE_SIZE=50, URL tabanlı Önceki/Sonraki → ✓ (0 düşüş)
+- Dashboard lazy charts: ✓
+- cache()/revalidatePath: ✓
+- next/dynamic: 2 kullanım (OdevTamamlanmaWidget, YoklamaTrendWidget) ✓
+- Sınırsız DB sorguları düzeltildi: DashboardRepository (5 sorgu), XlsxBuilder, StatusBoardLoader
+- **10 - 0.5 = 9.5** (küçük kalan: students list sayfasında explicit pagination yok)
 
 ### Güvenlik (8.5/10)
 - school_id eksik mutasyon: ~3 (insert'ler RLS korumalı, sadece insert data üzerinde) → -1.5
