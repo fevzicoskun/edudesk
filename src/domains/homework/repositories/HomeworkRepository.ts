@@ -193,64 +193,6 @@ export const HomeworkRepository = {
       .eq('school_id', schoolId)
   },
 
-  async insertSubmissionLog(log: {
-    homework_id: string
-    student_id:  string
-    school_id:   string
-    changed_by:  string
-    old_status:  string | null
-    new_status:  string
-    changed_at:  string
-  }) {
-    const supabase = await createClient()
-    return supabase.from('homework_submission_logs').insert(log)
-  },
-
-  async findSubmissionLogs(homeworkId: string, studentId: string, schoolId: string) {
-    const supabase = await createClient()
-    const { data: logs, error } = await supabase
-      .from('homework_submission_logs')
-      .select('old_status, new_status, changed_at, changed_by')
-      .eq('homework_id', homeworkId)
-      .eq('student_id', studentId)
-      .eq('school_id', schoolId)
-      .order('changed_at', { ascending: false })
-      .limit(20)
-
-    if (error || !logs || logs.length === 0) return { data: [] as SubmissionLogEntry[], error }
-
-    const changedByIds = [...new Set(logs.map(l => l.changed_by as string))]
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name')
-      .in('id', changedByIds)
-
-    const nameMap = new Map((profiles ?? []).map(p => [p.id as string, p.full_name as string]))
-
-    return {
-      data: logs.map(l => ({
-        old_status:      l.old_status as string | null,
-        new_status:      l.new_status as string,
-        changed_at:      l.changed_at as string,
-        changed_by_name: nameMap.get(l.changed_by as string) ?? 'Bilinmiyor',
-      })),
-      error: null,
-    }
-  },
-
-  async insertSubmissionLogs(logs: {
-    homework_id: string
-    student_id:  string
-    school_id:   string
-    changed_by:  string
-    old_status:  string | null
-    new_status:  string
-    changed_at:  string
-  }[]) {
-    const supabase = await createClient()
-    return supabase.from('homework_submission_logs').insert(logs)
-  },
-
   async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string) {
     const supabase = await createClient()
     const [studentRes, homeworksRes] = await Promise.all([
@@ -301,5 +243,55 @@ export const HomeworkRepository = {
       homeworks: homeworksRes.data ?? [],
       submissions: subsRes.data ?? [],
     }
+  },
+
+  async insertSubmissionLog(log: {
+    homework_id: string
+    student_id:  string
+    school_id:   string
+    changed_by:  string
+    old_status:  string | null
+    new_status:  string
+    changed_at:  string
+  }) {
+    const supabase = await createClient()
+    return supabase.from('homework_submission_logs').insert(log)
+  },
+
+  async insertSubmissionLogs(logs: Array<{
+    homework_id: string
+    student_id:  string
+    school_id:   string
+    changed_by:  string
+    old_status:  string | null
+    new_status:  string
+    changed_at:  string
+  }>) {
+    const supabase = await createClient()
+    return supabase.from('homework_submission_logs').insert(logs)
+  },
+
+  async findSubmissionLogs(homeworkId: string, studentId: string, schoolId: string) {
+    const supabase = await createClient()
+    const { data, error } = await supabase
+      .from('homework_submission_logs')
+      .select('old_status, new_status, changed_at, changed_by')
+      .eq('homework_id', homeworkId)
+      .eq('student_id', studentId)
+      .eq('school_id', schoolId)
+      .order('changed_at', { ascending: false })
+    if (error) return { data: null, error }
+    const profileIds = [...new Set((data ?? []).map(r => r.changed_by))]
+    const { data: profiles } = profileIds.length > 0
+      ? await supabase.from('profiles').select('id, full_name').in('id', profileIds)
+      : { data: [] as { id: string; full_name: string | null }[] }
+    const nameMap = new Map((profiles ?? []).map(p => [p.id, p.full_name ?? '—']))
+    const entries: SubmissionLogEntry[] = (data ?? []).map(r => ({
+      old_status:      r.old_status,
+      new_status:      r.new_status,
+      changed_at:      r.changed_at,
+      changed_by_name: nameMap.get(r.changed_by) ?? '—',
+    }))
+    return { data: entries, error: null }
   },
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import type { Json } from '@/src/infrastructure/supabase/database.types'
 
 export const DashboardRepository = {
   async getTeacherHomeworks(teacherId: string, schoolId: string) {
@@ -56,10 +57,10 @@ export const DashboardRepository = {
     teacher_id: string
     school_id: string
     action: string
-    meta?: object
+    meta?: Record<string, unknown> | null
   }) {
     const supabase = await createClient()
-    await supabase.from('teacher_activity_log').insert(row)
+    await supabase.from('teacher_activity_log').insert({ ...row, meta: row.meta as Json | undefined })
   },
 
   async getTodayClassAttendance(classIds: string[], todayStr: string) {
