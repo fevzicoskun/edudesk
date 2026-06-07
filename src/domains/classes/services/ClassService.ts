@@ -5,6 +5,7 @@ import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getEgitimYili } from '@/src/shared/utils'
 import { MAX_BULK_STUDENTS } from '@/src/shared/constants/limits'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export const ClassService = {
   async createClass(data: { name: string; grade: number }) {
@@ -22,9 +23,14 @@ export const ClassService = {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.DELETE)
 
-    await ClassRepository.softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
-    await ClassRepository.softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
-    await ClassRepository.softDeleteClass(classId, ability.schoolId, ability.userId)
+    try {
+      await ClassRepository.softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
+      await ClassRepository.softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
+      await ClassRepository.softDeleteClass(classId, ability.schoolId, ability.userId)
+    } catch (err) {
+      logger.error({ classId, schoolId: ability.schoolId, err }, 'deleteClass cascade hata — kısmi silme durumu olabilir')
+      throw err
+    }
   },
 
   async restoreClass(classId: string) {

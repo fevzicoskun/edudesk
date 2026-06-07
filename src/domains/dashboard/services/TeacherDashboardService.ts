@@ -38,113 +38,105 @@ function getWeekStart(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
 }
 
-function computeAlerts(
-  homeworks: HwRow[],
+const RISK_SORT_ORDER = { high: 0, medium: 1, low: 2 } as const
+
+// Öğrenci bazında ödev eksikliği sayısını hesaplar.
+// limitToHwIds verilirse sadece o ödev kimliklerindeki eksikler sayılır (son N ödev filtresi).
+function buildHwMissMap(
   submissions: SubmissionRow[],
-  attendanceRows: { student_id: string; status: string }[],
-  students: StudentRow[],
-): RiskAlert[] {
-  const lastHwByClass = new Map<string, string[]>()
-  for (const hw of homeworks) {
-    const arr = lastHwByClass.get(hw.class_id) ?? []
-    if (arr.length < 5) arr.push(hw.id)
-    lastHwByClass.set(hw.class_id, arr)
-  }
-  const hwToClass = new Map(homeworks.map(h => [h.id, h.class_id]))
-
-  const hwMissMap = new Map<string, number>()
+  limitToHwIds?: Set<string>,
+): Map<string, number> {
+  const map = new Map<string, number>()
   for (const sub of submissions) {
-    const cid = hwToClass.get(sub.homework_id)
-    if (!cid) continue
-    if (!lastHwByClass.get(cid)?.includes(sub.homework_id)) continue
+    if (limitToHwIds && !limitToHwIds.has(sub.homework_id)) continue
     if (sub.status === 'eksik' || sub.status === 'yapilmadi' || sub.status === 'gec') {
-      hwMissMap.set(sub.student_id, (hwMissMap.get(sub.student_id) ?? 0) + 1)
+      map.set(sub.student_id, (map.get(sub.student_id) ?? 0) + 1)
     }
   }
-
-  const absenceMap = new Map<string, number>()
-  for (const att of attendanceRows) {
-    if (att.status === 'absent') {
-      absenceMap.set(att.student_id, (absenceMap.get(att.student_id) ?? 0) + 1)
-    }
-  }
-
-  const alerts: RiskAlert[] = []
-  for (const student of students) {
-    const hwMisses = hwMissMap.get(student.id) ?? 0
-    const absences = absenceMap.get(student.id) ?? 0
-    if (hwMisses === 0 && absences === 0) continue
-
-    const reasons: string[] = []
-    if (hwMisses >= 1) reasons.push(`Son ${RISK_HW_LOOKBACK} ödevde ${hwMisses} eksik`)
-    if (absences >= 1) reasons.push(`Son 14 günde ${absences} gün devamsız`)
-
-    alerts.push({
-      studentId: student.id,
-      studentName: student.full_name,
-      classId: student.class_id,
-      className: student.classes?.name ?? '—',
-      riskLevel: computeRiskLevel(hwMisses, absences),
-      reasons,
-      hwMisses,
-      absences,
-    })
-  }
-
-  const order = { high: 0, medium: 1, low: 2 } as const
-  return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
+  return map
 }
 
-function computeClassRisk(
-  submissions:    { student_id: string; homework_id: string; status: string }[],
-  attendanceRows: { student_id: string; status: string }[],
-  students:       StudentRow[],
-): RiskAlert[] {
-  const hwMissMap = new Map<string, number>()
-  for (const sub of submissions) {
-    if (sub.status === 'eksik' || sub.status === 'yapilmadi' || sub.status === 'gec') {
-      hwMissMap.set(sub.student_id, (hwMissMap.get(sub.student_id) ?? 0) + 1)
-    }
-  }
-
-  const absenceMap = new Map<string, number>()
+function buildAbsenceMap(attendanceRows: { student_id: string; status: string }[]): Map<string, number> {
+  const map = new Map<string, number>()
   for (const att of attendanceRows) {
-    if (att.status === 'absent') {
-      absenceMap.set(att.student_id, (absenceMap.get(att.student_id) ?? 0) + 1)
-    }
+    if (att.status === 'absent') map.set(att.student_id, (map.get(att.student_id) ?? 0) + 1)
   }
+  return map
+}
 
+function buildRiskAlerts(
+  hwMissMap:   Map<string, number>,
+  absenceMap:  Map<string, number>,
+  students:    StudentRow[],
+  reasonFmt:   (hwMisses: number, absences: number) => string[],
+): RiskAlert[] {
   const alerts: RiskAlert[] = []
   for (const student of students) {
     const hwMisses = hwMissMap.get(student.id) ?? 0
     const absences = absenceMap.get(student.id) ?? 0
     if (hwMisses === 0 && absences === 0) continue
-
-    const reasons: string[] = []
-    if (hwMisses >= 1) reasons.push(`${hwMisses} eksik odev`)
-    if (absences >= 1) reasons.push(`Son 14 gunde ${absences} gun devamsiz`)
-
     alerts.push({
       studentId:   student.id,
       studentName: student.full_name,
       classId:     student.class_id,
       className:   student.classes?.name ?? '—',
       riskLevel:   computeRiskLevel(hwMisses, absences),
-      reasons,
+      reasons:     reasonFmt(hwMisses, absences),
       hwMisses,
       absences,
     })
   }
+  return alerts.sort((a, b) => RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel])
+}
 
-  const order = { high: 0, medium: 1, low: 2 } as const
-  return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
+function computeAlerts(
+  homeworks:      HwRow[],
+  submissions:    SubmissionRow[],
+  attendanceRows: { student_id: string; status: string }[],
+  students:       StudentRow[],
+): RiskAlert[] {
+  // Son RISK_HW_LOOKBACK ödev/sınıf bazında filtrele
+  const limitHwIds = new Set<string>()
+  const lastHwByClass = new Map<string, number>()
+  for (const hw of homeworks) {
+    const seen = lastHwByClass.get(hw.class_id) ?? 0
+    if (seen < RISK_HW_LOOKBACK) {
+      limitHwIds.add(hw.id)
+      lastHwByClass.set(hw.class_id, seen + 1)
+    }
+  }
+  return buildRiskAlerts(
+    buildHwMissMap(submissions, limitHwIds),
+    buildAbsenceMap(attendanceRows),
+    students,
+    (hw, ab) => [
+      ...(hw >= 1 ? [`Son ${RISK_HW_LOOKBACK} ödevde ${hw} eksik`] : []),
+      ...(ab >= 1 ? [`Son 14 günde ${ab} gün devamsız`]           : []),
+    ],
+  )
+}
+
+function computeClassRisk(
+  submissions:    SubmissionRow[],
+  attendanceRows: { student_id: string; status: string }[],
+  students:       StudentRow[],
+): RiskAlert[] {
+  return buildRiskAlerts(
+    buildHwMissMap(submissions),
+    buildAbsenceMap(attendanceRows),
+    students,
+    (hw, ab) => [
+      ...(hw >= 1 ? [`${hw} eksik ödev`]               : []),
+      ...(ab >= 1 ? [`Son 14 günde ${ab} gün devamsız`] : []),
+    ],
+  )
 }
 
 async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
   const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
-  const homeworks  = (hwData ?? []) as unknown as HwRow[]
+  const homeworks  = (hwData ?? []) as HwRow[]
   const hwIds      = homeworks.map(h => h.id)
   const classIds   = [...new Set(homeworks.map(h => h.class_id))]
 
@@ -160,7 +152,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
     classIds,
     submissions:    (subsResult.data    ?? []) as SubmissionRow[],
     attendanceRows: (attResult.data      ?? []) as { student_id: string; status: string }[],
-    students:       (studentsResult.data ?? []) as unknown as StudentRow[],
+    students:       (studentsResult.data ?? []) as StudentRow[],
   }
 }
 
@@ -296,7 +288,7 @@ export const TeacherDashboardService = {
     ])
 
     const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
-    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
+    const students       = (studentsResult.data ?? []) as StudentRow[]
     const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
 
     if (students.length === 0) return null

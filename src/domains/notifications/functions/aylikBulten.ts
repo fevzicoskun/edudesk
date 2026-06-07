@@ -41,7 +41,7 @@ export const aylikBultenFn = inngest.createFunction(
       let page = 1
       for (;;) {
         const { data } = await db.auth.admin.listUsers({ perPage: 1000, page })
-        const batch = (data as unknown as { users: { id: string; email?: string }[] })?.users ?? []
+        const batch = data?.users ?? []
         allUsers.push(...batch)
         if (batch.length < 1000) break
         page++

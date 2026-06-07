@@ -45,7 +45,7 @@ export const RbacRepository = {
       .eq('school_id', schoolId)
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     if (error) throw new Error(`Rol sorgusu hatası: ${error.message}`)
-    return (data ?? []) as unknown as UserRole[]
+    return (data ?? []) as UserRole[]
   },
 
   /** Kullanıcıya okul kapsamında doğrudan izin ver */

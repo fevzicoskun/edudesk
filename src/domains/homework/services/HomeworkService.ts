@@ -3,6 +3,7 @@ import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus, HomeworkTemplate, StatusResult } from '@/src/shared/types'
 import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export const HomeworkService = {
   async createHomework(data: {
@@ -25,7 +26,10 @@ export const HomeworkService = {
       source_id: data.source_id ?? null,
     })
 
-    if (error) return { error: error.message }
+    if (error) {
+      logger.error({ schoolId: ability.schoolId, code: error.code }, 'createHomework DB hatası')
+      return { error: error.message }
+    }
     return { id: created?.id }
   },
 
@@ -104,7 +108,10 @@ export const HomeworkService = {
     const oldStatusMap = new Map((existing ?? []).map(r => [r.student_id, r.status]))
 
     const { error } = await HomeworkRepository.upsertSubmissionsStatus(rows)
-    if (error) return { error: error.message }
+    if (error) {
+      logger.error({ homeworkId, schoolId: ability.schoolId, code: error.code }, 'updateAllSubmissionStatuses toplu güncelleme başarısız')
+      return { error: error.message }
+    }
 
     const now = new Date().toISOString()
     const logs = studentIds.map(studentId => ({
