@@ -153,7 +153,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   return homeworks.map(h => {
     const s = subMap.get(h.id)!
     return {
-      'Sınıf':      (h.classes as { name: string } | null)?.name ?? '—',
+      'Sınıf':      (h.classes as unknown as { name: string } | null)?.name ?? '—',
       'Ders':       h.subject,
       'Ödev':       h.title,
       'Son Tarih':  fmtDate(h.due_date),
@@ -181,11 +181,11 @@ async function fetchNotlar(schoolId: string) {
 
   const rows = (data ?? [])
     .filter(n => {
-      const s = n.students as StudentRow | null
+      const s = n.students as unknown as StudentRow | null
       return !s?.deleted_at
     })
     .map(n => {
-      const s = n.students as StudentRow | null
+      const s = n.students as unknown as StudentRow | null
       return {
         className:  s?.classes?.name ?? '',
         full_name:  s?.full_name ?? '—',
@@ -226,7 +226,7 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
   if (error) throw new Error(`Öğrenciler sorgu hatası: ${error.message}`)
 
   const rows = (data ?? []).map(s => ({
-    className: (s.classes as { name: string } | null)?.name ?? '',
+    className: (s.classes as unknown as { name: string } | null)?.name ?? '',
     full_name: s.full_name,
     student_number: s.student_number,
   }))
@@ -275,8 +275,8 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
   const STATUS_LABELS: Record<string, string> = { absent: 'Gelmedi', late: 'Geç Geldi' }
 
   return (data ?? []).map(r => {
-    const student = r.students as { full_name: string; student_number: string | null } | null
-    const cls     = r.classes  as { name: string } | null
+    const student = r.students as unknown as { full_name: string; student_number: string | null } | null
+    const cls     = r.classes  as unknown as { name: string } | null
     return {
       'Sınıf':    cls?.name ?? '—',
       'No':       student?.student_number ?? '—',
