@@ -1,6 +1,7 @@
 import { SchoolRepository } from '../repositories/SchoolRepository'
 import { getCurrentUser } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { generateSchoolCode } from '@/src/shared/utils'
 
 export const OnboardingService = {
   async setupSchool(name: string): Promise<{ error?: string }> {
@@ -10,12 +11,7 @@ export const OnboardingService = {
     const { data: existing } = await SchoolRepository.findProfileSchool(user.id)
     if (existing?.school_id) return { redirect: '/anasayfa' } as { error?: string }
 
-    const slug = name
-      .toLowerCase()
-      .replace(/[çÇ]/g, 'c').replace(/[şŞ]/g, 's').replace(/[ğĞ]/g, 'g')
-      .replace(/[üÜ]/g, 'u').replace(/[öÖ]/g, 'o').replace(/[ıİ]/g, 'i')
-      .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
-      .slice(0, 50) + '-' + Date.now().toString(36)
+    const slug = generateSchoolCode()
 
     const { data: school, error: schoolErr } = await SchoolRepository.insertSchool(name, slug)
     if (schoolErr || !school) return { error: schoolErr?.message ?? 'Okul oluşturulamadı' }

@@ -4,6 +4,7 @@ import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { isMudurOrAbove, type Role } from '@/src/shared/types'
 import InviteUserForm from './InviteUserForm'
 import KullaniciFiltreli, { type UserRow, type SessionSummary } from './KullaniciFiltreli'
+import SchoolCodeCard from './SchoolCodeCard'
 
 export const revalidate = 60
 
@@ -16,13 +17,17 @@ export default async function KullanicilarPage() {
   const supabase = await createClient()
 
   const isMY = profile.role === 'mudur_yardimcisi'
+  const isMudur = profile.role === 'mudur'
 
   let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').order('full_name')
   if (isMY) profilesQuery = profilesQuery.neq('role', 'mudur')
 
-  const [{ data }, { data: sessionsRaw }] = await Promise.all([
+  const [{ data }, { data: sessionsRaw }, { data: schoolData }] = await Promise.all([
     profilesQuery,
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes').eq('school_id', profile.school_id),
+    isMudur && profile.school_id
+      ? supabase.from('schools').select('slug').eq('id', profile.school_id).single()
+      : Promise.resolve({ data: null }),
   ])
 
   const users = (data ?? []) as UserRow[]
@@ -40,7 +45,6 @@ export default async function KullanicilarPage() {
     sessions[s.user_id] = prev
   }
 
-  const isMudur = profile.role === 'mudur'
   const canAssign = isMudur || isMY
   const assignableRoles = (isMudur
     ? ['mudur_yardimcisi', 'zumre_baskani', 'ogretmen']
@@ -57,6 +61,10 @@ export default async function KullanicilarPage() {
         </div>
         {canAssign && <InviteUserForm canAssignRoles={assignableRoles} />}
       </div>
+
+      {isMudur && (
+        <SchoolCodeCard initialCode={(schoolData as { slug?: string } | null)?.slug ?? null} />
+      )}
 
       <KullaniciFiltreli
         users={users}
