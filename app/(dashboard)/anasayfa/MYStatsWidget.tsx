@@ -26,8 +26,7 @@ function statColor(ok: boolean, warn: boolean) {
 }
 
 export default async function MYStatsWidget() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
   const today       = new Date()
   const todayStr    = todayLocalISO()

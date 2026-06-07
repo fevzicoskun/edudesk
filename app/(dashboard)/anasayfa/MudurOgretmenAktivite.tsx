@@ -19,8 +19,7 @@ function Dot({ ok }: { ok: boolean }) {
 }
 
 export default async function MudurOgretmenAktivite() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { from: weekAgoStr, label: periodLabel, isWeekend } = getWeekRange()
 
   const [profilesRes, homeworksRes, attendanceRes] = await Promise.all([

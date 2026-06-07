@@ -11,7 +11,7 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
 
   const overdueRes = await supabase
     .from('homeworks')
-    .select('id, title, due_date, class_id, classes(name)')
+    .select('id, title, due_date, class_id, classes(name), homework_submissions(homework_id)')
     .eq('teacher_id', user.id)
     .eq('school_id', schoolId)
     .eq('is_template', false)
@@ -21,18 +21,10 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
     .limit(20)
 
   const allOverdue = overdueRes.data ?? []
-  const overdueIds = allOverdue.map(hw => hw.id)
-
-  const pendingSubsRes = overdueIds.length > 0
-    ? await supabase
-        .from('homework_submissions')
-        .select('homework_id')
-        .in('homework_id', overdueIds)
-        .eq('school_id', schoolId)
-    : { data: [] as { homework_id: string }[] }
-
-  const submittedHwIds = new Set((pendingSubsRes.data ?? []).map(s => s.homework_id))
-  const unreviewed = allOverdue.filter(hw => !submittedHwIds.has(hw.id))
+  const unreviewed = allOverdue.filter(hw => {
+    const subs = (hw.homework_submissions as unknown as { homework_id: string }[] | null) ?? []
+    return subs.length === 0
+  })
 
   if (unreviewed.length === 0) return null
 

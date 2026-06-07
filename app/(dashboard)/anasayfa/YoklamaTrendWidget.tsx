@@ -1,6 +1,8 @@
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import YoklamaTrendChart from './YoklamaTrendChart'
 import type { YoklamaTrendItem } from '@/src/domains/dashboard/types'
+
+const YoklamaTrendChart = dynamic(() => import('./YoklamaTrendChart'), { ssr: false })
 
 export default function YoklamaTrendWidget({ data }: { data: YoklamaTrendItem[] }) {
   return (

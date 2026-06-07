@@ -7,8 +7,7 @@ import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/consta
 import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
 
 export default async function MYSolSutunWidget() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
   const today       = new Date()
   const twoWeeksAgo = subDays(today, 14).toISOString()

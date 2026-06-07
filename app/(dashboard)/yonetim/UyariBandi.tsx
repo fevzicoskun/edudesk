@@ -13,8 +13,7 @@ const STYLES: Record<AlertLevel, { pill: string; dot: string }> = {
 }
 
 export default async function UyariBandi() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const today     = new Date()
   const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
 

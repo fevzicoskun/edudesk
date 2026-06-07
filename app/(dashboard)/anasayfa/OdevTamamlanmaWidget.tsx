@@ -1,6 +1,8 @@
+import dynamic from 'next/dynamic'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import OdevTamamlanmaChart from './OdevTamamlanmaChart'
 import type { OdevTamamlanmaItem } from '@/src/domains/dashboard/types'
+
+const OdevTamamlanmaChart = dynamic(() => import('./OdevTamamlanmaChart'), { ssr: false })
 
 export default function OdevTamamlanmaWidget({ data }: { data: OdevTamamlanmaItem[] }) {
   return (

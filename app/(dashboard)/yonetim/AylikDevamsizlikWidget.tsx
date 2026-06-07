@@ -4,8 +4,7 @@ import { format } from '@/src/shared/date'
 import Link from 'next/link'
 
 export default async function AylikDevamsizlikWidget() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const today     = new Date()
   const todayStr  = today.toISOString().split('T')[0]
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]

@@ -30,8 +30,7 @@ const LEVEL_STYLE = {
 }
 
 export default async function OkulSeviyesiKartlari() {
-  const supabase  = await createClient()
-  const school_id = await requireSchoolId()
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
   const [classesRes, studentsRes] = await Promise.all([
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null),
