@@ -1,12 +1,13 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const DashboardRepository = {
-  async getTeacherHomeworks(teacherId: string) {
+  async getTeacherHomeworks(teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase
       .from('homeworks')
       .select('id, title, subject, due_date, class_id, classes(name, grade)')
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('due_date', { ascending: false })
   },
@@ -82,13 +83,14 @@ export const DashboardRepository = {
       .order('date')
   },
 
-  async getClassSubmissions(classId: string, teacherId: string) {
+  async getClassSubmissions(classId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     const { data: homeworks } = await supabase
       .from('homeworks')
       .select('id')
       .eq('class_id', classId)
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
       .is('deleted_at', null)
     type HwIdRow = { id: string }
     const hwIds = ((homeworks ?? []) as HwIdRow[]).map(h => h.id)

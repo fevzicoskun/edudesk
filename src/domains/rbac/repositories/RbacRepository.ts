@@ -58,7 +58,7 @@ export const RbacRepository = {
     granted?:    boolean
   }): Promise<void> {
     const db = await createClient()
-    const { error: permErr } = await db
+    const { data: perm, error: permErr } = await db
       .from('permissions')
       .select('id')
       .eq('resource', params.resource)
@@ -66,17 +66,7 @@ export const RbacRepository = {
       .limit(1)
       .single()
 
-    if (permErr) throw new Error('İzin bulunamadı')
-
-    const { data: perm } = await db
-      .from('permissions')
-      .select('id')
-      .eq('resource', params.resource)
-      .eq('action', params.action)
-      .limit(1)
-      .single()
-
-    if (!perm) throw new Error('İzin bulunamadı')
+    if (permErr || !perm) throw new Error('İzin bulunamadı')
 
     const { error } = await db.from('user_permissions').upsert({
       user_id:       params.userId,

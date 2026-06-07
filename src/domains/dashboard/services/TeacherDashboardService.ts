@@ -139,10 +139,10 @@ function computeClassRisk(
   return alerts.sort((a, b) => order[a.riskLevel] - order[b.riskLevel])
 }
 
-async function fetchRiskInputs(teacherId: string) {
+async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
 
-  const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId)
+  const { data: hwData } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId)
   const homeworks  = (hwData ?? []) as unknown as HwRow[]
   const hwIds      = homeworks.map(h => h.id)
   const classIds   = [...new Set(homeworks.map(h => h.class_id))]
@@ -169,9 +169,12 @@ export const TeacherDashboardService = {
     const eightWeeksAgo = turkeyDate(subDays(new Date(), 56))
     const weekStart     = getWeekStart()
 
+    const profile  = await getCurrentProfile()
+    const schoolId = profile?.school_id ?? ''
+
     // Aşama 1: risk verisi (hwIds ve classIds buradan geliyor)
     const { homeworks, hwIds, classIds, submissions, attendanceRows, students } =
-      await fetchRiskInputs(teacherId)
+      await fetchRiskInputs(teacherId, schoolId)
 
     // Aşama 2: hwIds/classIds gerektiren diğer 3 sorgu
     const [weeklyResult, trendResult, todayAttResult] = await Promise.all([
@@ -270,16 +273,20 @@ export const TeacherDashboardService = {
   },
 
   async getRiskAlerts(teacherId: string): Promise<RiskAlert[]> {
+    const profile  = await getCurrentProfile()
+    const schoolId = profile?.school_id ?? ''
     const { homeworks, submissions, attendanceRows, students } =
-      await fetchRiskInputs(teacherId)
+      await fetchRiskInputs(teacherId, schoolId)
     return computeAlerts(homeworks, submissions, attendanceRows, students)
   },
 
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
     const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
+    const profile     = await getCurrentProfile()
+    const schoolId    = profile?.school_id ?? ''
 
     const [subsResult, studentsResult, attResult] = await Promise.all([
-      DashboardRepository.getClassSubmissions(classId, teacherId),
+      DashboardRepository.getClassSubmissions(classId, teacherId, schoolId),
       DashboardRepository.getStudentsByClasses([classId]),
       DashboardRepository.getAttendanceRows([classId], teacherId, twoWeeksAgo),
     ])
