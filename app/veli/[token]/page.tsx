@@ -33,6 +33,7 @@ const DOT_COLOR: Record<SubmissionStatus, string> = {
 type HomeworkRel = { title: string; subject: string; due_date: string; description: string | null } | null
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
+type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
 function TokenExpiredPage() {
   return (
@@ -83,7 +84,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
 
   const schoolFilter = tokenSchoolId
-  const [studentResult, submissionsResult, notesResult] = await Promise.all([
+  const since90 = new Date(Date.now() - 90 * 86_400_000).toISOString().split('T')[0]
+  const [studentResult, submissionsResult, notesResult, attendanceResult] = await Promise.all([
     studentQuery.single(),
     (() => {
       let q = supabase
@@ -102,6 +104,17 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q
     })(),
+    (() => {
+      let q = supabase
+        .from('attendance')
+        .select('date, status')
+        .eq('student_id', studentId)
+        .in('status', ['absent', 'late'])
+        .gte('date', since90)
+        .order('date', { ascending: false })
+      if (schoolFilter) q = q.eq('school_id', schoolFilter)
+      return q
+    })(),
   ])
 
   if (!studentResult.data) notFound()
@@ -111,7 +124,10 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
-  const notes = (notesResult.data ?? []) as NoteRow[]
+  const notes      = (notesResult.data ?? []) as NoteRow[]
+  const attendance = (attendanceResult.data ?? []) as AttendanceRow[]
+  const absentCount = attendance.filter(a => a.status === 'absent').length
+  const lateCount   = attendance.filter(a => a.status === 'late').length
 
   const total = submissions.length
   const done = submissions.filter(s => s.status === 'yapildi').length
@@ -223,6 +239,43 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
                 )
               })}
             </div>
+          </section>
+        )}
+
+        {(absentCount > 0 || lateCount > 0) && (
+          <section className="bg-white border border-gray-200 rounded-2xl p-4">
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">Devamsızlık — Son 90 Gün</h2>
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className={`rounded-xl p-3 text-center ${absentCount > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
+                <p className={`text-2xl font-bold ${absentCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{absentCount}</p>
+                <p className={`text-xs mt-0.5 ${absentCount > 0 ? 'text-red-500' : 'text-gray-400'}`}>Gelmedi</p>
+              </div>
+              <div className={`rounded-xl p-3 text-center ${lateCount > 0 ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-200'}`}>
+                <p className={`text-2xl font-bold ${lateCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>{lateCount}</p>
+                <p className={`text-xs mt-0.5 ${lateCount > 0 ? 'text-orange-500' : 'text-gray-400'}`}>Geç Geldi</p>
+              </div>
+            </div>
+            {attendance.length > 0 && (
+              <div className="space-y-1.5">
+                {attendance.slice(0, 10).map(a => (
+                  <div key={a.date} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
+                    <p className="text-sm text-gray-700">{format(parseISO(a.date), 'd MMMM yyyy')}</p>
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
+                      a.status === 'absent'
+                        ? 'bg-red-50 text-red-600 border-red-200'
+                        : 'bg-orange-50 text-orange-600 border-orange-200'
+                    }`}>
+                      {a.status === 'absent' ? 'Gelmedi' : 'Geç Geldi'}
+                    </span>
+                  </div>
+                ))}
+                {attendance.length > 10 && (
+                  <p className="text-xs text-gray-400 text-center pt-1">
+                    +{attendance.length - 10} kayıt daha
+                  </p>
+                )}
+              </div>
+            )}
           </section>
         )}
 
