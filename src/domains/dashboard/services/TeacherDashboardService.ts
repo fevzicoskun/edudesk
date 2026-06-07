@@ -170,7 +170,8 @@ export const TeacherDashboardService = {
     const weekStart     = getWeekStart()
 
     const profile  = await getCurrentProfile()
-    const schoolId = profile?.school_id ?? ''
+    if (!profile?.school_id) throw new Error('Profil bulunamadı')
+    const schoolId = profile.school_id
 
     // Aşama 1: risk verisi (hwIds ve classIds buradan geliyor)
     const { homeworks, hwIds, classIds, submissions, attendanceRows, students } =
@@ -274,7 +275,8 @@ export const TeacherDashboardService = {
 
   async getRiskAlerts(teacherId: string): Promise<RiskAlert[]> {
     const profile  = await getCurrentProfile()
-    const schoolId = profile?.school_id ?? ''
+    if (!profile?.school_id) return []
+    const schoolId = profile.school_id
     const { homeworks, submissions, attendanceRows, students } =
       await fetchRiskInputs(teacherId, schoolId)
     return computeAlerts(homeworks, submissions, attendanceRows, students)
@@ -283,7 +285,8 @@ export const TeacherDashboardService = {
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
     const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
     const profile     = await getCurrentProfile()
-    const schoolId    = profile?.school_id ?? ''
+    if (!profile?.school_id) return null
+    const schoolId    = profile.school_id
 
     const [subsResult, studentsResult, attResult] = await Promise.all([
       DashboardRepository.getClassSubmissions(classId, teacherId, schoolId),

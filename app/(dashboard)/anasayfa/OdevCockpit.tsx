@@ -9,24 +9,28 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
   const supabase = await createClient()
   const today = new Date().toISOString().split('T')[0]
 
-  const [overdueRes, pendingSubsRes] = await Promise.all([
-    supabase
-      .from('homeworks')
-      .select('id, title, due_date, class_id, classes(name)')
-      .eq('teacher_id', user.id)
-      .eq('school_id', schoolId)
-      .eq('is_template', false)
-      .is('deleted_at', null)
-      .lt('due_date', today)
-      .order('due_date', { ascending: false })
-      .limit(20),
-    supabase
-      .from('homework_submissions')
-      .select('homework_id')
-      .eq('school_id', schoolId),
-  ])
+  const overdueRes = await supabase
+    .from('homeworks')
+    .select('id, title, due_date, class_id, classes(name)')
+    .eq('teacher_id', user.id)
+    .eq('school_id', schoolId)
+    .eq('is_template', false)
+    .is('deleted_at', null)
+    .lt('due_date', today)
+    .order('due_date', { ascending: false })
+    .limit(20)
 
   const allOverdue = overdueRes.data ?? []
+  const overdueIds = allOverdue.map(hw => hw.id)
+
+  const pendingSubsRes = overdueIds.length > 0
+    ? await supabase
+        .from('homework_submissions')
+        .select('homework_id')
+        .in('homework_id', overdueIds)
+        .eq('school_id', schoolId)
+    : { data: [] as { homework_id: string }[] }
+
   const submittedHwIds = new Set((pendingSubsRes.data ?? []).map(s => s.homework_id))
   const unreviewed = allOverdue.filter(hw => !submittedHwIds.has(hw.id))
 

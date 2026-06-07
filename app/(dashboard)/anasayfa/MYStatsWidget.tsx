@@ -36,7 +36,7 @@ export default async function MYStatsWidget() {
 
   const [profilesRes, classesRes, studentsRes, todayAttRes, absentYearRows, sessionRows] = await Promise.all([
     supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
-    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id),
+    supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
     getAbsentYearRows(school_id, yearStart),

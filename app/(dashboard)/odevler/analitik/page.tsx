@@ -39,7 +39,7 @@ export default async function AnalitikPage() {
   if (!isManager) hwQuery = hwQuery.eq('teacher_id', user.id)
 
   const [classesRes, homeworksRes] = await Promise.all([
-    supabase.from('classes').select('id, name, grade').eq('school_id', sid).order('grade').order('name'),
+    supabase.from('classes').select('id, name, grade').eq('school_id', sid).is('deleted_at', null).order('grade').order('name'),
     hwQuery,
   ])
 

@@ -106,10 +106,11 @@ export const ClassService = {
   async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }) {
     const ability  = await requireAbility()
     const supabase = await createClient()
-    await supabase
+    const { error } = await supabase
       .from('students')
       .update({ veli_email: data.email, veli_telefon: data.telefon, veli_ad: data.ad })
       .eq('id', studentId)
       .eq('school_id', ability.schoolId)
+    if (error) throw new Error(error.message)
   },
 }

@@ -16,7 +16,7 @@ export default async function MYSolSutunWidget() {
 
   const [studentsRes, classesRes, profilesRes, absentYearRows, sessionRows] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
-    supabase.from('classes').select('id, name, grade').eq('school_id', school_id).order('grade').order('name'),
+    supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null).order('grade').order('name'),
     supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']).order('full_name'),
     getAbsentYearRows(school_id, yearStart),
     getSessionRows(school_id),

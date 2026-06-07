@@ -40,7 +40,11 @@ export async function assignRole(targetId: string, newRole: string): Promise<Act
   const roleResult = AssignableRole.safeParse(newRole)
   if (!roleResult.success) return { error: 'Geçersiz rol' }
 
-  await UserService.assignRole(targetId, newRole)
+  try {
+    await UserService.assignRole(targetId, newRole)
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Rol atanamadı' }
+  }
   revalidatePath('/kullanicilar')
   return {}
 }

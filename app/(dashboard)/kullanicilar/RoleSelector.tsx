@@ -47,8 +47,14 @@ export default function RoleSelector({
     setRole(newRole)
     startTransition(async () => {
       try {
-        await assignRole(userId, newRole)
-        setErrorMsg(null)
+        const result = await assignRole(userId, newRole)
+        if (result?.error) {
+          setRole(prev)
+          setErrorMsg(result.error)
+          setTimeout(() => setErrorMsg(null), 3000)
+        } else {
+          setErrorMsg(null)
+        }
       } catch {
         setRole(prev)
         setErrorMsg('Rol değiştirilemedi. Lütfen tekrar deneyin.')

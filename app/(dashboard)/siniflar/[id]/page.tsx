@@ -29,6 +29,7 @@ export default async function SinifDetayPage({
       .select('name')
       .eq('id', id)
       .eq('school_id', schoolId)
+      .is('deleted_at', null)
       .single(),
     supabase
       .from('students')

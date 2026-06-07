@@ -16,6 +16,7 @@ export default async function SiniflarPage() {
     .from('classes')
     .select('id, name, grade, students(id, deleted_at)')
     .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
     .order('grade')
     .order('name')
 
