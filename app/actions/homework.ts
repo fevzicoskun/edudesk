@@ -236,6 +236,7 @@ export async function deleteHomework(id: string): Promise<ActionResult> {
   const result = await HomeworkService.deleteHomework(id)
   if (result.error) return { error: result.error }
   revalidatePath('/odevler')
+  revalidatePath('/anasayfa')
   return {}
 }
 
@@ -255,6 +256,7 @@ export async function bulkDeleteHomeworks(ids: string[]): Promise<{ deleted: num
     .is('deleted_at', null)
   if (error) return { deleted: 0, error: error.message }
   revalidatePath('/odevler')
+  revalidatePath('/anasayfa')
   return { deleted: count ?? validIds.length }
 }
 
@@ -263,6 +265,7 @@ export async function restoreHomework(id: string): Promise<ActionResult> {
   const result = await HomeworkService.restoreHomework(id)
   if (result.error) return { error: result.error }
   revalidatePath('/odevler')
+  revalidatePath('/anasayfa')
   return {}
 }
 

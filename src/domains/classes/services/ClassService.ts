@@ -18,14 +18,9 @@ export const ClassService = {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.CREATE)
 
-    const school_id = ability.schoolId
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
     const { error } = await insertClass({
       name: data.name, grade: data.grade,
-      academic_year: getEgitimYili(), school_id,
+      academic_year: getEgitimYili(), school_id: ability.schoolId,
     })
     if (error) throw new Error(error.message)
   },
@@ -34,28 +29,18 @@ export const ClassService = {
     const ability   = await requireAbility()
     guard(ability, P.CLASSES.DELETE)
 
-    const school_id = ability.schoolId
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    await softDeleteHomeworksByClass(classId, school_id, user.id)
-    await softDeleteStudentsByClass(classId, school_id, user.id)
-    await softDeleteClass(classId, school_id, user.id)
+    await softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
+    await softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
+    await softDeleteClass(classId, ability.schoolId, ability.userId)
   },
 
   async restoreClass(classId: string) {
     const ability   = await requireAbility()
     guard(ability, P.CLASSES.CREATE)
 
-    const school_id = ability.schoolId
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    await restoreClass(classId, school_id)
-    await restoreStudentsByClass(classId, school_id)
-    await restoreHomeworksByClass(classId, school_id)
+    await restoreClass(classId, ability.schoolId)
+    await restoreStudentsByClass(classId, ability.schoolId)
+    await restoreHomeworksByClass(classId, ability.schoolId)
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {
@@ -91,23 +76,14 @@ export const ClassService = {
     const ability   = await requireAbility()
     guard(ability, P.STUDENTS.DELETE)
 
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    await softDeleteStudent(studentId, ability.schoolId, user.id)
+    await softDeleteStudent(studentId, ability.schoolId, ability.userId)
   },
 
   async restoreStudent(studentId: string) {
     const ability   = await requireAbility()
     guard(ability, P.STUDENTS.CREATE)
 
-    const school_id = ability.schoolId
-    const supabase  = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    await restoreStudent(studentId, school_id)
+    await restoreStudent(studentId, ability.schoolId)
   },
 
   async addStudentNote(studentId: string, data: { body: string }) {
