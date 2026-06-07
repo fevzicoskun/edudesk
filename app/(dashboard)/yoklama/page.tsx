@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
+import { type AttendanceStatus } from '@/app/actions/yoklama'
 import YoklamaClient from './YoklamaClient'
 
 export default async function YoklamaPage() {
@@ -24,26 +25,43 @@ export default async function YoklamaPage() {
       .filter(s => !s.deleted_at),
   }))
 
-  // Yıl içi devamsızlık sayaçları
-  const studentIds = classes.flatMap(c => c.students.map(s => s.id))
+  const studentIds   = classes.flatMap(c => c.students.map(s => s.id))
+  const firstClassId = classes[0]?.id ?? ''
+  const todayISO     = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+
+  // Yıllık devamsızlıklar + bugünün yoklaması paralel
+  const [absencesRes, todayRes] = await Promise.all([
+    studentIds.length > 0
+      ? supabase
+          .from('attendance')
+          .select('student_id, status, date')
+          .eq('school_id', profile.school_id)
+          .in('student_id', studentIds)
+          .gte('date', schoolYearStart())
+          .in('status', ['absent', 'late'])
+      : Promise.resolve({ data: [] as { student_id: string; status: string; date: string }[] }),
+    firstClassId
+      ? supabase
+          .from('attendance')
+          .select('student_id, status')
+          .eq('class_id', firstClassId)
+          .eq('school_id', profile.school_id)
+          .eq('date', todayISO)
+      : Promise.resolve({ data: [] as { student_id: string; status: string }[] }),
+  ])
+
   const absenceCounts: Record<string, number> = {}
+  for (const a of absencesRes.data ?? []) {
+    const [y, m, d] = (a.date as string).split('-').map(Number)
+    const dow = new Date(y, m - 1, d).getDay()
+    if (dow === 0 || dow === 6) continue
+    const increment = a.status === 'absent' ? 1 : 0.5
+    absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + increment
+  }
 
-  if (studentIds.length > 0) {
-    const { data: absences } = await supabase
-      .from('attendance')
-      .select('student_id, status, date')
-      .eq('school_id', profile.school_id)
-      .in('student_id', studentIds)
-      .gte('date', schoolYearStart())
-      .in('status', ['absent', 'late'])
-
-    for (const a of absences ?? []) {
-      const [y, m, d] = (a.date as string).split('-').map(Number)
-      const dow = new Date(y, m - 1, d).getDay()
-      if (dow === 0 || dow === 6) continue  // hafta sonu kayıtları sayılmaz
-      const increment = a.status === 'absent' ? 1 : 0.5
-      absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + increment
-    }
+  const initialStatuses: Record<string, AttendanceStatus> = {}
+  for (const row of todayRes.data ?? []) {
+    initialStatuses[row.student_id] = row.status as AttendanceStatus
   }
 
   return (
@@ -52,7 +70,12 @@ export default async function YoklamaPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Devamsız öğrencilerin velisine otomatik e-posta gider</p>
       </div>
-      <YoklamaClient classes={classes} absenceCounts={absenceCounts} />
+      <YoklamaClient
+        classes={classes}
+        absenceCounts={absenceCounts}
+        initialStatuses={initialStatuses}
+        initialDate={todayISO}
+      />
     </div>
   )
 }

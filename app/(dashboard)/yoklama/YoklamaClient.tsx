@@ -9,6 +9,8 @@ import Tooltip from '@/components/ui/Tooltip'
 interface Props {
   classes: ClassWithStudents[]
   absenceCounts: Record<string, number>
+  initialStatuses?: Record<string, AttendanceStatus>
+  initialDate?: string
 }
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -32,15 +34,17 @@ function isWeekend(iso: string) {
   return day === 0 || day === 6
 }
 
-export default function YoklamaClient({ classes, absenceCounts }: Props) {
+export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate }: Props) {
   const [classId,   setClassId]   = useState(classes[0]?.id ?? '')
-  const [date,      setDate]      = useState(todayISO())
-  const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>({})
+  const [date,      setDate]      = useState(initialDate ?? todayISO())
+  const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>(initialStatuses ?? {})
   const [loading,   setLoading]   = useState(false)
   const [saving,    setSaving]    = useState(false)
   const [toast,     setToast]     = useState('')
   const [error,     setError]     = useState('')
   const isDirty = useRef(false)
+  // initialStatuses geçilmişse ilk mount'ta getYoklama çağrısını skip et
+  const skipInitialLoad = useRef(initialStatuses !== undefined)
 
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
@@ -61,7 +65,13 @@ export default function YoklamaClient({ classes, absenceCounts }: Props) {
     }
   }, [classId, date])
 
-  useEffect(() => { loadYoklama() }, [loadYoklama])
+  useEffect(() => {
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false
+      return
+    }
+    loadYoklama()
+  }, [loadYoklama])
 
   // Kaydedilmemiş değişiklik varken sekme/tarayıcı kapatılmasını engelle
   useEffect(() => {
