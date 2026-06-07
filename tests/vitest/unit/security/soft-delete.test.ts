@@ -25,22 +25,24 @@ vi.mock('@/src/shared/authorization/server', () => ({
   requireAbility: vi.fn(),
 }))
 
-vi.mock('@/src/queries/classes', () => ({
-  softDeleteClass:            vi.fn(),
-  restoreClass:               vi.fn(),
-  softDeleteHomeworksByClass: vi.fn(),
-  restoreHomeworksByClass:    vi.fn(),
-  softDeleteStudentsByClass:  vi.fn(),
-  restoreStudentsByClass:     vi.fn(),
-  findClassInSchool:          vi.fn(),
-  insertStudents:             vi.fn(),
-  insertStudent:              vi.fn(),
-  insertStudentNote:          vi.fn(),
-  softDeleteStudent:          vi.fn(),
-  restoreStudent:             vi.fn(),
-  deleteStudentNote:          vi.fn(),
-  findStudentInSchool:        vi.fn(),
-  insertClass:                vi.fn(),
+vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
+  ClassRepository: {
+    softDeleteClass:            vi.fn(),
+    restoreClass:               vi.fn(),
+    softDeleteHomeworksByClass: vi.fn(),
+    restoreHomeworksByClass:    vi.fn(),
+    softDeleteStudentsByClass:  vi.fn(),
+    restoreStudentsByClass:     vi.fn(),
+    findClassInSchool:          vi.fn(),
+    insertStudents:             vi.fn(),
+    insertStudent:              vi.fn(),
+    insertStudentNote:          vi.fn(),
+    softDeleteStudent:          vi.fn(),
+    restoreStudent:             vi.fn(),
+    deleteStudentNote:          vi.fn(),
+    findStudentInSchool:        vi.fn(),
+    insertClass:                vi.fn(),
+  },
 }))
 
 vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
@@ -69,7 +71,7 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
 const { getAbility, requireAbility } = await import('@/src/shared/authorization/server')
 const { HomeworkRepository }         = await import('@/src/domains/homework/repositories/HomeworkRepository')
 const { HomeworkService }            = await import('@/src/domains/homework/services/HomeworkService')
-import * as classesQueries           from '@/src/queries/classes'
+const { ClassRepository }            = await import('@/src/domains/classes/repositories/ClassRepository')
 const { ClassService }               = await import('@/src/domains/classes/services/ClassService')
 
 const SCHOOL_ID  = 'school-softdel-unit'
@@ -94,9 +96,9 @@ describe('ClassService.deleteClass() — cascade soft delete', () => {
     await ClassService.deleteClass(CLASS_ID)
 
     // Cascade sırası: önce bağımlı kayıtlar, sonra sınıf
-    expect(classesQueries.softDeleteHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-    expect(classesQueries.softDeleteStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-    expect(classesQueries.softDeleteClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
+    expect(ClassRepository.softDeleteHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
+    expect(ClassRepository.softDeleteStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
+    expect(ClassRepository.softDeleteClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
   })
 
   it('deleteClass: hard delete fonksiyonu HİÇ çağrılmaz', async () => {
@@ -108,17 +110,17 @@ describe('ClassService.deleteClass() — cascade soft delete', () => {
     await ClassService.deleteClass(CLASS_ID)
 
     // Sadece soft delete çağrıları yapılmalı
-    expect(classesQueries.softDeleteClass).toHaveBeenCalledOnce()
-    expect(classesQueries.softDeleteHomeworksByClass).toHaveBeenCalledOnce()
-    expect(classesQueries.softDeleteStudentsByClass).toHaveBeenCalledOnce()
+    expect(ClassRepository.softDeleteClass).toHaveBeenCalledOnce()
+    expect(ClassRepository.softDeleteHomeworksByClass).toHaveBeenCalledOnce()
+    expect(ClassRepository.softDeleteStudentsByClass).toHaveBeenCalledOnce()
   })
 
   it('deleteClass: P.CLASSES.DELETE izni yoksa throw eder', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
 
     await expect(ClassService.deleteClass(CLASS_ID)).rejects.toThrow()
-    expect(classesQueries.softDeleteClass).not.toHaveBeenCalled()
-    expect(classesQueries.softDeleteHomeworksByClass).not.toHaveBeenCalled()
+    expect(ClassRepository.softDeleteClass).not.toHaveBeenCalled()
+    expect(ClassRepository.softDeleteHomeworksByClass).not.toHaveBeenCalled()
   })
 })
 
@@ -132,16 +134,16 @@ describe('ClassService.restoreClass() — cascade restore', () => {
 
     await ClassService.restoreClass(CLASS_ID)
 
-    expect(classesQueries.restoreClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
-    expect(classesQueries.restoreStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
-    expect(classesQueries.restoreHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
+    expect(ClassRepository.restoreClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
+    expect(ClassRepository.restoreStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
+    expect(ClassRepository.restoreHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
   })
 
   it('restore: P.CLASSES.CREATE izni yoksa throw eder (öğretmen restore edemez)', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
 
     await expect(ClassService.restoreClass(CLASS_ID)).rejects.toThrow()
-    expect(classesQueries.restoreClass).not.toHaveBeenCalled()
+    expect(ClassRepository.restoreClass).not.toHaveBeenCalled()
   })
 })
 

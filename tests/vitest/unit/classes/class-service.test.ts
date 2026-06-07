@@ -5,22 +5,24 @@ vi.mock('@/src/shared/authorization/server', () => ({
   requireAbility: vi.fn(),
 }))
 
-vi.mock('@/src/queries/classes', () => ({
-  insertClass:                vi.fn(),
-  softDeleteClass:            vi.fn(),
-  restoreClass:               vi.fn(),
-  softDeleteHomeworksByClass: vi.fn(),
-  restoreHomeworksByClass:    vi.fn(),
-  softDeleteStudentsByClass:  vi.fn(),
-  restoreStudentsByClass:     vi.fn(),
-  softDeleteStudent:          vi.fn(),
-  restoreStudent:             vi.fn(),
-  insertStudent:              vi.fn(),
-  insertStudents:             vi.fn(),
-  insertStudentNote:          vi.fn(),
-  deleteStudentNote:          vi.fn(),
-  findClassInSchool:          vi.fn(),
-  findStudentInSchool:        vi.fn(),
+vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
+  ClassRepository: {
+    insertClass:                vi.fn(),
+    softDeleteClass:            vi.fn(),
+    restoreClass:               vi.fn(),
+    softDeleteHomeworksByClass: vi.fn(),
+    restoreHomeworksByClass:    vi.fn(),
+    softDeleteStudentsByClass:  vi.fn(),
+    restoreStudentsByClass:     vi.fn(),
+    softDeleteStudent:          vi.fn(),
+    restoreStudent:             vi.fn(),
+    insertStudent:              vi.fn(),
+    insertStudents:             vi.fn(),
+    insertStudentNote:          vi.fn(),
+    deleteStudentNote:          vi.fn(),
+    findClassInSchool:          vi.fn(),
+    findStudentInSchool:        vi.fn(),
+  },
 }))
 
 vi.mock('@/src/infrastructure/supabase/server', () => ({
@@ -29,9 +31,11 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
   }),
 }))
 
-const { requireAbility }                   = await import('@/src/shared/authorization/server')
-const { insertStudents, findClassInSchool, insertClass, softDeleteClass, softDeleteHomeworksByClass, softDeleteStudentsByClass, insertStudent } = await import('@/src/queries/classes')
-const { ClassService }                     = await import('@/src/domains/classes/services/ClassService')
+const { requireAbility }     = await import('@/src/shared/authorization/server')
+const { ClassRepository }    = await import('@/src/domains/classes/repositories/ClassRepository')
+const { ClassService }       = await import('@/src/domains/classes/services/ClassService')
+
+const { insertStudents, findClassInSchool, insertClass, softDeleteClass, softDeleteHomeworksByClass, softDeleteStudentsByClass, insertStudent } = ClassRepository
 
 const SCHOOL_ID = 'school-class-unit'
 const CLASS_ID  = 'class-unit-test'

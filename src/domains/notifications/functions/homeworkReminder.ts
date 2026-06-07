@@ -38,7 +38,7 @@ export const homeworkReminderFn = inngest.createFunction(
       let page = 1
       for (;;) {
         const { data } = await supabase.auth.admin.listUsers({ perPage: 1000, page })
-        const batch = (data as unknown as { users: { id: string; email?: string }[] })?.users ?? []
+        const batch = data?.users ?? []
         allAuthUsers.push(...batch)
         if (batch.length < 1000) break
         page++

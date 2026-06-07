@@ -4,24 +4,19 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import { deleteHomework } from '@/src/domains/homework/actions'
-import { format, isPast, parseISO } from '@/src/shared/date'
+import { isPast, parseISO } from '@/src/shared/date'
 import OdevlerFilterBar from './FilterBar'
 import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import RaporButton from '@/components/RaporButton'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 import { BulkProvider, BulkModeToggle } from './BulkContext'
+import OlusturulduBanner from './OlusturulduBanner'
+import SinifChipBar from './SinifChipBar'
+import HomeworkStatCards from './HomeworkStatCards'
+import BekleyenKontrollerPanel from './BekleyenKontrollerPanel'
+import { PENDING_REVIEW_DAYS } from '@/src/shared/constants/limits'
 
 export const revalidate = 30
-
-const PENDING_DAYS = 30
-
-function dueDateStr(due: string): string {
-  try { return format(parseISO(due), 'd MMM yyyy') } catch { return due }
-}
-
-function daysSinceDue(due: string, now: Date): number {
-  return Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000)
-}
 
 type FilterParams = {
   sinif?: string
@@ -57,7 +52,7 @@ export default async function OdevlerPage({
       : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
   ])
 
-  const classes = classesResult.data ?? []
+  const classes  = classesResult.data ?? []
   const subjects = [...new Set((subjectsResult.data ?? []).map((h) => h.subject).filter(Boolean))] as string[]
   const teachers = (teachersResult.data ?? []) as { id: string; full_name: string }[]
 
@@ -103,26 +98,7 @@ export default async function OdevlerPage({
           </div>
         </div>
 
-        {params.olusturuldu && parseInt(params.olusturuldu) > 0 && (
-          <div className={`mb-4 flex items-start gap-2 border text-sm px-4 py-3 rounded-xl ${
-            params.hatali
-              ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300'
-              : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
-          }`}>
-            <svg className={`w-4 h-4 shrink-0 mt-0.5 ${params.hatali ? 'text-amber-500' : 'text-green-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d={params.hatali ? 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z' : 'M5 13l4 4L19 7'} />
-            </svg>
-            <div>
-              <p>{parseInt(params.olusturuldu) === 1
-                ? 'Ödev başarıyla oluşturuldu.'
-                : `${parseInt(params.olusturuldu)} sınıf için ödev oluşturuldu.`}
-              </p>
-              {params.hatali && (
-                <p className="text-xs mt-0.5 opacity-80">{parseInt(params.hatali)} sınıf için oluşturulamadı.</p>
-              )}
-            </div>
-          </div>
-        )}
+        <OlusturulduBanner olusturuldu={params.olusturuldu} hatali={params.hatali} />
 
         <OdevlerFilterBar
           classes={classes}
@@ -193,14 +169,13 @@ async function HomeworkSection({
   }
 
   if (params.sinif) query = query.eq('class_id', params.sinif)
-  if (params.ders) query = query.eq('subject', params.ders)
-  if (params.q) query = query.ilike('title', `%${params.q}%`)
+  if (params.ders)  query = query.eq('subject', params.ders)
+  if (params.q)     query = query.ilike('title', `%${params.q}%`)
 
   const homeworks = (await query).data ?? []
 
-  // Parallel: submission stats + class student counts
   const homeworkIds = homeworks.map(h => h.id)
-  const classIds = [...new Set(homeworks.map(h => h.class_id as string))]
+  const classIds    = [...new Set(homeworks.map(h => h.class_id as string))]
 
   const [subStatsRes, classCountsRes] = await Promise.all([
     homeworkIds.length > 0
@@ -225,8 +200,8 @@ async function HomeworkSection({
     classStudentMap.set(s.class_id, (classStudentMap.get(s.class_id) ?? 0) + 1)
   }
 
-  // Categorize
-  const now = new Date()
+  // Kategorize
+  const now          = new Date()
   const pendingCheck: typeof homeworks = []
   const active:       typeof homeworks = []
   const pastDone:     typeof homeworks = []
@@ -236,17 +211,15 @@ async function HomeworkSection({
     const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
     if (!overdue) { active.push(hw); continue }
 
-    const counts  = statusMap.get(hw.id)
-    const checked = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
-    const total   = classStudentMap.get(hw.class_id as string) ?? 0
-    const age     = daysSinceDue(hw.due_date, now)
-    // Öğrencilerin yarısından azı girilmişse hâlâ kontrol bekliyor
+    const counts    = statusMap.get(hw.id)
+    const checked   = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
+    const total     = classStudentMap.get(hw.class_id as string) ?? 0
+    const age       = Math.floor((now.getTime() - new Date(hw.due_date).getTime()) / 86_400_000)
     const halfEntered = total > 0 ? checked >= Math.ceil(total / 2) : checked > 0
-    if (!halfEntered && age <= PENDING_DAYS) pendingCheck.push(hw)
+    if (!halfEntered && age <= PENDING_REVIEW_DAYS) pendingCheck.push(hw)
     else                                     pastDone.push(hw)
   }
 
-  // Sort active homeworks by closest due date first (null due_date goes last)
   active.sort((a, b) => {
     if (!a.due_date && !b.due_date) return 0
     if (!a.due_date) return 1
@@ -254,253 +227,170 @@ async function HomeworkSection({
     return a.due_date.localeCompare(b.due_date)
   })
 
-  const totalCount = homeworks.length
   const hasFilters = !!(params.sinif || params.ders || params.ogretmen || params.q)
 
-  // Chip'ler için: sınıf başına aktif ödev sayısı ve bekleyen kontrol var mı
-  const activeByClass    = new Map<string, number>()
-  const pendingByClass   = new Map<string, number>()
-  for (const hw of active)        activeByClass.set(hw.class_id as string, (activeByClass.get(hw.class_id as string) ?? 0) + 1)
+  const activeByClass  = new Map<string, number>()
+  const pendingByClass = new Map<string, number>()
+  for (const hw of active)       activeByClass.set(hw.class_id as string, (activeByClass.get(hw.class_id as string) ?? 0) + 1)
   for (const hw of pendingCheck) pendingByClass.set(hw.class_id as string, (pendingByClass.get(hw.class_id as string) ?? 0) + 1)
 
   return (
     <>
-      {/* Başarı Haritası */}
-      {classes.length > 0 && (
-        <div className="mt-4 mb-1">
-          <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-            Başarı Haritası
-          </p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {classes.map(cls => {
-              const activeCount   = activeByClass.get(cls.id) ?? 0
-              const pendingCount  = pendingByClass.get(cls.id) ?? 0
-              const hasPending    = pendingCount > 0
-              return (
-                <Link
-                  key={cls.id}
-                  href={`/odevler/sinif/${cls.id}`}
-                  className={`flex items-center gap-1.5 shrink-0 bg-white dark:bg-slate-800 border rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    hasPending
-                      ? 'border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 hover:border-amber-400'
-                      : 'border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-300 hover:border-indigo-300 dark:hover:border-indigo-600 hover:text-indigo-700 dark:hover:text-indigo-300'
-                  }`}
-                >
-                  {hasPending ? (
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
-                  ) : (
-                    <svg className="w-3.5 h-3.5 opacity-40 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M14 3v18" />
-                    </svg>
-                  )}
-                  {cls.name}
-                  {activeCount > 0 && (
-                    <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">{activeCount}</span>
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      <SinifChipBar classes={classes} activeByClass={activeByClass} pendingByClass={pendingByClass} />
+      <HomeworkStatCards activeCount={active.length} pendingCount={pendingCheck.length} />
+      <BekleyenKontrollerPanel
+        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
+        statusMap={statusMap}
+        classStudentMap={classStudentMap}
+        now={now}
+      />
 
-      {/* İstatistik kartları */}
-      <div className="grid grid-cols-2 gap-3 mb-6 mt-4">
-        {[
-          { label: 'Aktif Ödev',        value: active.length,       color: 'text-emerald-600 dark:text-emerald-400', dot: 'bg-emerald-500' },
-          { label: 'Kontrol Bekliyor',  value: pendingCheck.length, color: 'text-amber-600 dark:text-amber-400',     dot: 'bg-amber-500'  },
-        ].map(({ label, value, color, dot }) => (
-          <div key={label} className="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 px-4 py-3.5 shadow-sm flex items-center gap-3">
-            <span className={`w-2 h-2 rounded-full shrink-0 ${dot}`} />
-            <div>
-              <p className={`text-2xl font-bold leading-none ${color}`}>{value}</p>
-              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{label}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bekleyen kontroller uyarısı */}
-      {pendingCheck.length > 0 && (
-        <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl overflow-hidden">
-          <div className="flex items-start gap-3 px-4 py-3.5 border-b border-amber-200 dark:border-amber-800/60">
-            <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-                {pendingCheck.length} ödev kontrol bekliyor
-              </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-                Son tarihi geçti ve öğrencilerin yarısından azı girildi.
-              </p>
-            </div>
-          </div>
-          <div className="divide-y divide-amber-100 dark:divide-amber-900/40">
-            {pendingCheck.map(hw => {
-              const cls = hw.classes as { name: string } | null
-              const days = daysSinceDue(hw.due_date, now)
-              const pendingCounts  = statusMap.get(hw.id)
-              const pendingChecked = pendingCounts ? Object.values(pendingCounts).reduce((a, b) => a + b, 0) : 0
-              const pendingTotal   = classStudentMap.get(hw.class_id as string) ?? 0
-              const progressLabel  = pendingTotal > 0
-                ? `${pendingChecked}/${pendingTotal} girildi`
-                : pendingChecked === 0 ? 'Hiç girilmedi' : `${pendingChecked} girildi`
-              return (
-                <Link
-                  key={hw.id}
-                  href={`/odevler/${hw.id}`}
-                  className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
-                      {hw.title}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      {cls?.name ?? '—'} · Son: {dueDateStr(hw.due_date)} · {progressLabel}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span
-                      className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                        days > 7
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                      }`}
-                    >
-                      {days === 0 ? 'Bugün bitti' : `${days}g önce`}
-                    </span>
-                    <svg className="w-4 h-4 text-amber-400 dark:text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {totalCount === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-          </div>
-          {hasFilters ? (
-            <>
-              <p className="text-gray-900 dark:text-slate-100 font-semibold text-base">Bu kriterlere uygun ödev bulunamadı</p>
-              <p className="text-gray-400 text-sm mt-1 max-w-xs">Farklı filtreler deneyin veya filtreyi temizleyin.</p>
-              <Link
-                href="/odevler"
-                className="mt-5 flex items-center gap-2 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Filtreyi Sıfırla
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="text-gray-900 dark:text-slate-100 font-semibold text-base">Henüz ödev yok</p>
-              <p className="text-gray-400 text-sm mt-1 max-w-xs">Sınıflarınıza ödev tanımlamak için yeni bir ödev oluşturun.</p>
-              {canWrite && (
-                <Link
-                  href="/odevler/yeni"
-                  className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-                  </svg>
-                  İlk Ödevi Oluştur
-                </Link>
-              )}
-            </>
-          )}
-        </div>
+      {homeworks.length === 0 ? (
+        <EmptyState hasFilters={hasFilters} canWrite={canWrite} />
       ) : (
         <>
-          {/* Aktif ödevler */}
           {active.length > 0 && (
             <section className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-                <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                  Aktif · {active.length}
-                </h2>
-              </div>
+              <SectionHeader label="Aktif" count={active.length} color="bg-emerald-500" />
               <div className="space-y-3">
-                {active.map(hw => renderCard(hw, false))}
+                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />)}
               </div>
             </section>
           )}
 
-          {/* Geçmiş ödevler */}
-          {pastDone.length > 0 && (() => {
-            // Geçmiş ödevler için ortalama tamamlanma oranı
-            let totalPossible = 0
-            let totalYapildi  = 0
-            for (const hw of pastDone) {
-              const total = classStudentMap.get(hw.class_id as string) ?? 0
-              const counts = statusMap.get(hw.id)
-              totalPossible += total
-              totalYapildi  += counts?.yapildi ?? 0
-            }
-            const avgPct = totalPossible > 0 ? Math.round((totalYapildi / totalPossible) * 100) : null
-
-            return (
-              <section>
-                <div className="flex items-center justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-4 bg-slate-300 dark:bg-slate-600 rounded-full" />
-                    <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
-                      Geçmiş · {pastDone.length}
-                    </h2>
-                  </div>
-                  {avgPct !== null && (
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                      avgPct >= 75
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                        : avgPct >= 50
-                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
-                      Ort. %{avgPct} tamamlandı
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-3 opacity-80">
-                  {pastDone.map(hw => renderCard(hw, true))}
-                </div>
-              </section>
-            )
-          })()}
+          {pastDone.length > 0 && (
+            <PastDoneSection pastDone={pastDone} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />
+          )}
         </>
       )}
     </>
   )
+}
 
-  function renderCard(hw: (typeof homeworks)[0], overdue: boolean) {
-    const cls = hw.classes as { name: string } | null
-    const teacher = (hw as typeof hw & { teacher?: { full_name: string } | null }).teacher
-    return (
-      <SwipeableHomeworkCard
-        key={hw.id}
-        id={hw.id}
-        title={hw.title}
-        subject={hw.subject}
-        className={cls?.name ?? '—'}
-        dueDateStr={dueDateStr(hw.due_date)}
-        dueDate={hw.due_date}
-        overdue={overdue}
-        description={hw.description ?? undefined}
-        teacherName={teacher?.full_name ?? undefined}
-        canWrite={canWrite}
-        statusCounts={statusMap.get(hw.id)}
-        totalStudents={classStudentMap.get(hw.class_id as string) ?? 0}
-        onDelete={deleteHomework.bind(null, hw.id)}
-      />
-    )
+function SectionHeader({ label, count, color }: { label: string; count: number; color: string }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span className={`w-1.5 h-4 ${color} rounded-full`} />
+      <h2 className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
+        {label} · {count}
+      </h2>
+    </div>
+  )
+}
+
+type HW = { id: string; title: string; subject: string; due_date: string; class_id: unknown; description: string | null; classes: unknown; teacher?: unknown }
+type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
+
+function HomeworkCard({ hw, overdue, canWrite, statusMap, classStudentMap }: {
+  hw: HW
+  overdue: boolean
+  canWrite: boolean
+  statusMap: Map<string, StatusCounts>
+  classStudentMap: Map<string, number>
+}) {
+  const cls     = hw.classes as { name: string } | null
+  const teacher = (hw as HW & { teacher?: { full_name: string } | null }).teacher
+
+  function dueDateStr(due: string) {
+    try {
+      return new Date(due + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
+    } catch { return due }
   }
+
+  return (
+    <SwipeableHomeworkCard
+      id={hw.id}
+      title={hw.title}
+      subject={hw.subject}
+      className={cls?.name ?? '—'}
+      dueDateStr={dueDateStr(hw.due_date)}
+      dueDate={hw.due_date}
+      overdue={overdue}
+      description={hw.description ?? undefined}
+      teacherName={(teacher as { full_name: string } | null | undefined)?.full_name ?? undefined}
+      canWrite={canWrite}
+      statusCounts={statusMap.get(hw.id)}
+      totalStudents={classStudentMap.get(hw.class_id as string) ?? 0}
+      onDelete={deleteHomework.bind(null, hw.id)}
+    />
+  )
+}
+
+function PastDoneSection({ pastDone, canWrite, statusMap, classStudentMap }: {
+  pastDone: HW[]
+  canWrite: boolean
+  statusMap: Map<string, StatusCounts>
+  classStudentMap: Map<string, number>
+}) {
+  let totalPossible = 0
+  let totalYapildi  = 0
+  for (const hw of pastDone) {
+    const total  = classStudentMap.get(hw.class_id as string) ?? 0
+    const counts = statusMap.get(hw.id)
+    totalPossible += total
+    totalYapildi  += counts?.yapildi ?? 0
+  }
+  const avgPct = totalPossible > 0 ? Math.round((totalYapildi / totalPossible) * 100) : null
+
+  return (
+    <section>
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <SectionHeader label="Geçmiş" count={pastDone.length} color="bg-slate-300 dark:bg-slate-600" />
+        {avgPct !== null && (
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+            avgPct >= 75
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+              : avgPct >= 50
+                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+          }`}>
+            Ort. %{avgPct} tamamlandı
+          </span>
+        )}
+      </div>
+      <div className="space-y-3 opacity-80">
+        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />)}
+      </div>
+    </section>
+  )
+}
+
+function EmptyState({ hasFilters, canWrite }: { hasFilters: boolean; canWrite: boolean }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 text-center">
+      <div className="w-16 h-16 bg-gray-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center mb-4">
+        <svg className="w-8 h-8 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      {hasFilters ? (
+        <>
+          <p className="text-gray-900 dark:text-slate-100 font-semibold text-base">Bu kriterlere uygun ödev bulunamadı</p>
+          <p className="text-gray-400 text-sm mt-1 max-w-xs">Farklı filtreler deneyin veya filtreyi temizleyin.</p>
+          <Link
+            href="/odevler"
+            className="mt-5 flex items-center gap-2 border border-gray-200 dark:border-slate-700 text-gray-600 dark:text-slate-300 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 dark:hover:bg-slate-800 transition-colors"
+          >
+            Filtreyi Sıfırla
+          </Link>
+        </>
+      ) : (
+        <>
+          <p className="text-gray-900 dark:text-slate-100 font-semibold text-base">Henüz ödev yok</p>
+          <p className="text-gray-400 text-sm mt-1 max-w-xs">Sınıflarınıza ödev tanımlamak için yeni bir ödev oluşturun.</p>
+          {canWrite && (
+            <Link
+              href="/odevler/yeni"
+              className="mt-5 flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-md shadow-blue-500/25"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              İlk Ödevi Oluştur
+            </Link>
+          )}
+        </>
+      )}
+    </div>
+  )
 }

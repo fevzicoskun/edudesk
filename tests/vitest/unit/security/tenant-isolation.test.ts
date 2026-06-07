@@ -28,16 +28,18 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
   },
 }))
 
-vi.mock('@/src/queries/classes', () => ({
-  findClassInSchool:   vi.fn(),
-  findStudentInSchool: vi.fn(),
-  insertStudent:       vi.fn(),
-  insertStudentNote:   vi.fn(),
-  insertClass:         vi.fn(),
-  softDeleteClass:     vi.fn(),
-  softDeleteHomeworksByClass: vi.fn(),
-  softDeleteStudentsByClass:  vi.fn(),
-  insertStudents: vi.fn(),
+vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
+  ClassRepository: {
+    findClassInSchool:          vi.fn(),
+    findStudentInSchool:        vi.fn(),
+    insertStudent:              vi.fn(),
+    insertStudentNote:          vi.fn(),
+    insertClass:                vi.fn(),
+    softDeleteClass:            vi.fn(),
+    softDeleteHomeworksByClass: vi.fn(),
+    softDeleteStudentsByClass:  vi.fn(),
+    insertStudents:             vi.fn(),
+  },
 }))
 
 vi.mock('@/src/infrastructure/supabase/server', () => ({
@@ -49,8 +51,9 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
 const { getAbility, requireAbility }  = await import('@/src/shared/authorization/server')
 const { HomeworkRepository }          = await import('@/src/domains/homework/repositories/HomeworkRepository')
 const { HomeworkService }             = await import('@/src/domains/homework/services/HomeworkService')
-const { findClassInSchool, findStudentInSchool, insertStudent, insertStudents } = await import('@/src/queries/classes')
+const { ClassRepository }             = await import('@/src/domains/classes/repositories/ClassRepository')
 const { ClassService }                = await import('@/src/domains/classes/services/ClassService')
+const { findClassInSchool, findStudentInSchool, insertStudent, insertStudents } = ClassRepository
 
 // ── Sabitler ─────────────────────────────────────────────────
 const MY_SCHOOL    = 'my-school-id'

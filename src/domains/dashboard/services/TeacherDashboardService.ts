@@ -3,6 +3,7 @@ import { computeRiskLevel } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { subDays, todayLocalISO } from '@/src/shared/date'
 import { turkeyDate } from '@/src/lib/email-utils'
+import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
 
 function mondayOf(dateStr: string): string {
@@ -75,7 +76,7 @@ function computeAlerts(
     if (hwMisses === 0 && absences === 0) continue
 
     const reasons: string[] = []
-    if (hwMisses >= 1) reasons.push(`Son 5 ödevde ${hwMisses} eksik`)
+    if (hwMisses >= 1) reasons.push(`Son ${RISK_HW_LOOKBACK} ödevde ${hwMisses} eksik`)
     if (absences >= 1) reasons.push(`Son 14 günde ${absences} gün devamsız`)
 
     alerts.push({

@@ -2,6 +2,7 @@
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { UUID } from '@/src/shared/validation'
 import type { JobType } from '../types'
+import { XLSX_EXPORT_LIMIT, XLSX_EXPORT_LIMIT_LG } from '@/src/shared/constants/limits'
 
 const JOB_LABELS: Record<JobType, string> = {
   excel_odevler:           'Ödevler',
@@ -110,7 +111,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     .eq('school_id', schoolId)
     .is('deleted_at', null)
     .order('due_date', { ascending: false })
-    .limit(200)
+    .limit(XLSX_EXPORT_LIMIT)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
@@ -217,7 +218,7 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     .eq('school_id', schoolId)
     .is('deleted_at', null)
     .order('full_name')
-    .limit(2000)
+    .limit(XLSX_EXPORT_LIMIT_LG)
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
 

@@ -1,119 +1,36 @@
-import { createClient } from '@/src/infrastructure/supabase/server'
+export {
+  ClassRepository as default,
+  ClassRepository,
+} from '@/src/domains/classes/repositories/ClassRepository'
 
-export async function insertClass(data: {
-  name: string
-  grade: number
-  academic_year: string
-  school_id: string
-}) {
-  const supabase = await createClient()
-  return supabase.from('classes').insert(data)
-}
-
-export async function softDeleteClass(classId: string, schoolId: string, deletedBy: string) {
-  const supabase = await createClient()
-  return supabase.from('classes')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-    .eq('id', classId).eq('school_id', schoolId)
-}
-
-export async function restoreClass(classId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('classes')
-    .update({ deleted_at: null, deleted_by: null })
-    .eq('id', classId).eq('school_id', schoolId)
-}
-
-export async function findHomeworksByClass(classId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('homeworks').select('id').eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
-}
-
-export async function softDeleteHomeworksByClass(classId: string, schoolId: string, deletedBy: string) {
-  const supabase = await createClient()
-  return supabase.from('homeworks')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-    .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
-}
-
-export async function restoreHomeworksByClass(classId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('homeworks')
-    .update({ deleted_at: null, deleted_by: null })
-    .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
-}
-
-export async function softDeleteStudentsByClass(classId: string, schoolId: string, deletedBy: string) {
-  const supabase = await createClient()
-  return supabase.from('students')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-    .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
-}
-
-export async function restoreStudentsByClass(classId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('students')
-    .update({ deleted_at: null, deleted_by: null })
-    .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
-}
-
-export async function softDeleteStudent(studentId: string, schoolId: string, deletedBy: string) {
-  const supabase = await createClient()
-  return supabase.from('students')
-    .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-    .eq('id', studentId).eq('school_id', schoolId)
-}
-
-export async function restoreStudent(studentId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('students')
-    .update({ deleted_at: null, deleted_by: null })
-    .eq('id', studentId).eq('school_id', schoolId)
-}
-
-export async function insertStudent(data: {
-  class_id: string
-  full_name: string
-  student_number: string | null
-  school_id: string
-}) {
-  const supabase = await createClient()
-  return supabase.from('students').insert(data)
-}
-
-export async function insertStudents(rows: { class_id: string; full_name: string; student_number: string | null; school_id: string }[]) {
-  const supabase = await createClient()
-  return supabase.from('students').insert(rows)
-}
-
-export async function deleteStudentNote(noteId: string, teacherId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('student_notes').delete()
-    .eq('id', noteId)
-    .eq('teacher_id', teacherId)
-    .eq('school_id', schoolId)
-}
-
-export async function insertStudentNote(data: {
-  teacher_id: string
-  student_id: string
-  body: string
-  school_id: string
-}) {
-  const supabase = await createClient()
-  return supabase.from('student_notes').insert(data)
-}
-
-export async function findClassInSchool(classId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('classes').select('id')
-    .eq('id', classId).eq('school_id', schoolId)
-    .is('deleted_at', null).single()
-}
-
-export async function findStudentInSchool(studentId: string, schoolId: string) {
-  const supabase = await createClient()
-  return supabase.from('students').select('id')
-    .eq('id', studentId).eq('school_id', schoolId)
-    .is('deleted_at', null).single()
-}
+// Bireysel fonksiyon re-exportları — test mock'ları için
+export const insertClass              = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.insertClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.insertClass(...a))
+export const softDeleteClass          = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.softDeleteClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.softDeleteClass(...a))
+export const restoreClass             = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.restoreClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.restoreClass(...a))
+export const softDeleteHomeworksByClass = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.softDeleteHomeworksByClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.softDeleteHomeworksByClass(...a))
+export const restoreHomeworksByClass  = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.restoreHomeworksByClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.restoreHomeworksByClass(...a))
+export const softDeleteStudentsByClass = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.softDeleteStudentsByClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.softDeleteStudentsByClass(...a))
+export const restoreStudentsByClass   = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.restoreStudentsByClass>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.restoreStudentsByClass(...a))
+export const softDeleteStudent        = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.softDeleteStudent>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.softDeleteStudent(...a))
+export const restoreStudent           = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.restoreStudent>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.restoreStudent(...a))
+export const insertStudent            = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.insertStudent>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.insertStudent(...a))
+export const insertStudents           = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.insertStudents>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.insertStudents(...a))
+export const deleteStudentNote        = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.deleteStudentNote>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.deleteStudentNote(...a))
+export const insertStudentNote        = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.insertStudentNote>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.insertStudentNote(...a))
+export const findClassInSchool        = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.findClassInSchool>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.findClassInSchool(...a))
+export const findStudentInSchool      = (...a: Parameters<typeof import('@/src/domains/classes/repositories/ClassRepository').ClassRepository.findStudentInSchool>) =>
+  import('@/src/domains/classes/repositories/ClassRepository').then(m => m.ClassRepository.findStudentInSchool(...a))
