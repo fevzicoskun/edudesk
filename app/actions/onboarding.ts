@@ -3,8 +3,9 @@
 import { redirect } from 'next/navigation'
 import { createSchoolSchema, joinSchoolSchema } from '@/src/domains/school/validators'
 import { OnboardingService } from '@/src/domains/school/services/OnboardingService'
+import type { ActionResult } from '@/src/shared/types'
 
-export async function setupSchool(formData: FormData): Promise<{ error?: string }> {
+export async function setupSchool(formData: FormData): Promise<ActionResult> {
   const parsed = createSchoolSchema.safeParse({ name: formData.get('name') })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message }
 
@@ -15,7 +16,7 @@ export async function setupSchool(formData: FormData): Promise<{ error?: string 
   redirect('/anasayfa')
 }
 
-export async function joinSchool(formData: FormData): Promise<{ error?: string }> {
+export async function joinSchool(formData: FormData): Promise<ActionResult> {
   const parsed = joinSchoolSchema.safeParse({ code: formData.get('code') })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message }
 

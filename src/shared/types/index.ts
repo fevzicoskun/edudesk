@@ -113,15 +113,13 @@ export interface CurriculumProgress {
  * Standard server action response shapes.
  *
  * ActionResult<T>  — simple mutations: {} or { data } on success, { error } on failure.
- *                    Caller checks `if (result.error)`.
+ *                    Check with `if (result.error)`. Extra data fields accessible without narrowing.
  *
  * StatusResult     — optimistic-UI mutations (e.g. submission status toggle).
  *                    { success: true } on success, { error: string } on failure.
  *                    RULE: never return { success: false } — always use { error } for failures.
  */
-export type ActionResult<T extends object = object> =
-  | ({ error?: undefined } & T)
-  | { error: string }
+export type ActionResult<T extends object = object> = { error?: string } & T
 
 export type StatusResult =
   | { success: true; error?: never }

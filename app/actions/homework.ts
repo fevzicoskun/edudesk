@@ -1,20 +1,17 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-
-function todayInTurkey(): string {
-  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
-}
 import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
-import type { SubmissionStatus, HomeworkTemplate } from '@/src/shared/types'
+import type { SubmissionStatus, HomeworkTemplate, ActionResult } from '@/src/shared/types'
 import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
 import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
+import { turkeyDate } from '@/src/lib/email-utils'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -59,7 +56,7 @@ export async function createHomework(_: unknown, formData: FormData) {
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
-  const today = todayInTurkey()
+  const today = turkeyDate()
   if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
   const results = await Promise.allSettled(
@@ -95,7 +92,7 @@ export async function createHomework(_: unknown, formData: FormData) {
 
 export async function quickCreateHomework(
   formData: FormData
-): Promise<{ error?: string; ids?: string[] }> {
+): Promise<ActionResult<{ ids?: string[] }>> {
   const classIds = (formData.getAll('class_id') as string[]).filter(Boolean)
   if (classIds.length === 0) return { error: 'En az bir sınıf seçin' }
   for (const id of classIds) {
@@ -113,7 +110,7 @@ export async function quickCreateHomework(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
 
-  const today = todayInTurkey()
+  const today = turkeyDate()
   if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
 
   const results = await Promise.allSettled(
@@ -232,7 +229,7 @@ export async function updateHomework(_: unknown, formData: FormData) {
   redirect(`/odevler/${id}?guncellendi=1`)
 }
 
-export async function deleteHomework(id: string): Promise<{ error?: string }> {
+export async function deleteHomework(id: string): Promise<ActionResult> {
   if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
   const result = await HomeworkService.deleteHomework(id)
   if (result.error) return { error: result.error }
@@ -259,7 +256,7 @@ export async function bulkDeleteHomeworks(ids: string[]): Promise<{ deleted: num
   return { deleted: count ?? validIds.length }
 }
 
-export async function restoreHomework(id: string): Promise<{ error?: string }> {
+export async function restoreHomework(id: string): Promise<ActionResult> {
   if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
   const result = await HomeworkService.restoreHomework(id)
   if (result.error) return { error: result.error }

@@ -28,14 +28,14 @@ export const SchoolService = {
     return { redirect: '/anasayfa' }
   },
 
-  async updateSchoolSettings(name: string): Promise<{ error?: string; success?: boolean }> {
+  async updateSchoolSettings(name: string): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability || ability.cannot(P.SCHOOL.UPDATE)) return { error: 'Yetki yok' }
 
     const { error } = await SchoolRepository.updateSchool(ability.schoolId, { name })
     if (error) return { error: error.message }
 
-    return { success: true }
+    return {}
   },
 
   async regenerateSchoolCode(): Promise<{ error?: string; code?: string }> {

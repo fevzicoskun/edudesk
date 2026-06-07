@@ -140,7 +140,6 @@ describe('UserService.deleteUser()', () => {
     const tmp = await createTestUser({ role: 'ogretmen', schoolId: school.id, suffix: '_del' })
     const result = await UserService.deleteUser(tmp.id)
     expect(result.error).toBeUndefined()
-    expect(result.success).toBe(true)
   })
 
   it('users:delete izni olmayan kullanıcı silemez', async () => {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { verifyUnsubscribeToken } from '@/src/lib/unsubscribeToken'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export async function GET(req: NextRequest) {
   const id  = req.nextUrl.searchParams.get('id')
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
     .eq('id', id)
 
   if (error) {
-    console.error('[unsubscribe] DB hatası', error)
+    logger.error({ event: 'unsubscribe_db_failed', err: error.message }, 'Veli email opt-out DB hatası')
     return new NextResponse('Bir hata oluştu. Lütfen tekrar deneyin.', { status: 500 })
   }
 

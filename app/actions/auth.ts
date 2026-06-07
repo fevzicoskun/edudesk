@@ -7,6 +7,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { env } from '@/src/lib/env'
 import { logger } from '@/src/infrastructure/observability/logger'
 import type { AuthState } from '@/src/domains/auth/types'
+import type { ActionResult } from '@/src/shared/types'
 
 export async function login(prevState: AuthState, formData: FormData): Promise<AuthState> {
   const parsed = loginSchema.safeParse({
@@ -50,7 +51,7 @@ export async function register(prevState: AuthState, formData: FormData): Promis
 export async function sendPasswordReset(
   _prevState: unknown,
   formData: FormData
-): Promise<{ error?: string; sent?: boolean }> {
+): Promise<ActionResult<{ sent?: boolean }>> {
   const email = (formData.get('email') as string)?.trim().toLowerCase()
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { error: 'Geçerli bir e-posta adresi girin.' }
@@ -67,13 +68,13 @@ export async function sendPasswordReset(
 }
 
 export async function resetPassword(
-  _prevState: { error?: string } | null,
+  _prevState: ActionResult | null,
   formData: FormData
-): Promise<{ error?: string }> {
+): Promise<ActionResult> {
   return await changePassword(formData)
 }
 
-export async function changePassword(formData: FormData): Promise<{ error?: string }> {
+export async function changePassword(formData: FormData): Promise<ActionResult> {
   const parsed = changePasswordSchema.safeParse({
     password: formData.get('password'),
     confirm:  formData.get('confirm'),

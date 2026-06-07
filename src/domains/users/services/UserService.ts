@@ -1,8 +1,8 @@
 import { UserRepository } from '../repositories/UserRepository'
 import { getAbility, requireAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
-import type { InviteResult, DeleteResult } from '../types'
-import type { Role } from '@/src/shared/types'
+import type { InviteResult } from '../types'
+import type { Role, ActionResult } from '@/src/shared/types'
 
 function randomTempPassword(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -61,7 +61,7 @@ export const UserService = {
     return { success: true, tempPassword }
   },
 
-  async deleteUser(targetId: string): Promise<DeleteResult> {
+  async deleteUser(targetId: string): Promise<ActionResult> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.USERS.DELETE)) return { error: 'Yetki yok' }
@@ -83,7 +83,7 @@ export const UserService = {
     const { error } = await UserRepository.deleteAuthUser(targetId)
     if (error) return { error: error.message }
 
-    return { success: true }
+    return {}
   },
 
   async assignRole(targetId: string, newRole: string): Promise<void> {

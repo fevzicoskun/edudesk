@@ -147,7 +147,6 @@ describe('UserService.deleteUser()', () => {
     vi.mocked(UserRepository.deleteAuthUser).mockResolvedValue({ error: null } as never)
     const result = await UserService.deleteUser(TARGET_ID)
     expect(result.error).toBeUndefined()
-    expect(result.success).toBe(true)
   })
 
   it('müdür mudur_yardimcisi silebilir', async () => {
@@ -155,7 +154,7 @@ describe('UserService.deleteUser()', () => {
     vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('mudur_yardimcisi') as never)
     vi.mocked(UserRepository.deleteAuthUser).mockResolvedValue({ error: null } as never)
     const result = await UserService.deleteUser(TARGET_ID)
-    expect(result.success).toBe(true)
+    expect(result.error).toBeUndefined()
   })
 })
 

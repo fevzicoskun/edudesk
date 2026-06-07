@@ -6,7 +6,8 @@ import { getCurrentUser } from '@/src/shared/auth'
 import { profileSchema, AssignableRole } from '@/src/domains/users/validators'
 import { UserService } from '@/src/domains/users/services/UserService'
 import type { Role } from '@/src/shared/types'
-import type { InviteResult, DeleteResult } from '@/src/domains/users/types'
+import type { InviteResult } from '@/src/domains/users/types'
+import type { ActionResult } from '@/src/shared/types'
 
 export async function inviteUser(_: unknown, formData: FormData): Promise<InviteResult> {
   const email     = String(formData.get('email') ?? '').trim().toLowerCase()
@@ -27,14 +28,14 @@ export async function inviteUser(_: unknown, formData: FormData): Promise<Invite
   return result
 }
 
-export async function removeUser(targetId: string): Promise<DeleteResult> {
-  if (!UUID.safeParse(targetId).success) return { success: false, error: 'Geçersiz istek' }
+export async function removeUser(targetId: string): Promise<ActionResult> {
+  if (!UUID.safeParse(targetId).success) return { error: 'Geçersiz istek' }
   const result = await UserService.deleteUser(targetId)
-  if (result.success) revalidatePath('/kullanicilar')
+  if (!result.error) revalidatePath('/kullanicilar')
   return result
 }
 
-export async function assignRole(targetId: string, newRole: string): Promise<{ error?: string }> {
+export async function assignRole(targetId: string, newRole: string): Promise<ActionResult> {
   if (!UUID.safeParse(targetId).success) return { error: 'Geçersiz istek' }
   const roleResult = AssignableRole.safeParse(newRole)
   if (!roleResult.success) return { error: 'Geçersiz rol' }
@@ -44,7 +45,7 @@ export async function assignRole(targetId: string, newRole: string): Promise<{ e
   return {}
 }
 
-export async function updateProfile(formData: FormData): Promise<{ error?: string }> {
+export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }
 

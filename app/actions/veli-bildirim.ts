@@ -6,13 +6,14 @@ import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { mailer } from '@/src/lib/mailer'
 import { formatDateTR, buildReminderEmail } from '@/src/lib/email-utils'
+import type { ActionResult } from '@/src/shared/types'
 
 const MAX_RECIPIENTS = 100
 
 export async function sendHomeworkReminderEmails(
   homeworkId: string,
   studentIds: string[]
-): Promise<{ error?: string; sent?: number; failed?: number }> {
+): Promise<ActionResult<{ sent?: number; failed?: number }>> {
   const hwParse = UUID.safeParse(homeworkId)
   if (!hwParse.success) return { error: 'Geçersiz istek' }
   if (studentIds.some(id => !UUID.safeParse(id).success)) return { error: 'Geçersiz istek' }

@@ -4,6 +4,8 @@
  * Stateless — payload contains jti for revocation support.
  */
 
+import { logger } from '@/src/infrastructure/observability/logger'
+
 export type TokenType = 'veli' | 'yoklama' | 'tutanak'
 
 interface TokenPayload {
@@ -20,7 +22,7 @@ function getSecret(): string {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('TOKEN_SECRET env var must be ≥32 characters in production')
     }
-    console.warn('[tokens] TOKEN_SECRET eksik veya kısa — dev fallback kullanılıyor.')
+    logger.warn({ event: 'token_secret_missing' }, 'TOKEN_SECRET eksik veya kısa — dev fallback kullanılıyor')
     return 'dev-fallback-secret-must-change-in-prod-min32'
   }
   return secret
