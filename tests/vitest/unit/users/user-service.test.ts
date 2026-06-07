@@ -53,16 +53,6 @@ describe('UserService.invite()', () => {
     expect((await UserService.invite(PARAMS)).error).toBe('Yetki yok')
   })
 
-  it('geçersiz e-posta → hata döner', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
-    expect((await UserService.invite({ ...PARAMS, email: 'gecersiz' })).error).toContain('e-posta')
-  })
-
-  it('kısa isim → hata döner', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
-    expect((await UserService.invite({ ...PARAMS, full_name: 'X' })).error).toContain('Ad soyad')
-  })
-
   it('MY sadece ogretmen/zumre_baskani atayabilir, mudur_yardimcisi atayamaz', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
     expect(

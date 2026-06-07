@@ -1,6 +1,7 @@
 'use client'
 
 import type JsPDF from 'jspdf'
+import type { jsPDF as JsPDFType } from 'jspdf'
 
 export type PdfDoc = InstanceType<typeof JsPDF> & { lastAutoTable?: { finalY?: number } }
 
@@ -17,15 +18,14 @@ async function toBase64(url: string): Promise<string> {
 }
 
 export async function createDoc(
-  options?: { orientation?: string; unit?: string; format?: string | number[] },
+  options?: ConstructorParameters<typeof JsPDFType>[0],
 ): Promise<PdfDoc> {
   const { default: JsPDF } = await import('jspdf')
 
   // Served from /public/fonts — same origin, no CORS, cached by browser
   if (!regularB64) regularB64 = await toBase64('/fonts/Roboto-Regular.ttf')
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = new JsPDF(options as any) as PdfDoc
+  const doc = new JsPDF(options) as PdfDoc
 
   doc.addFileToVFS('Roboto-Regular.ttf', regularB64)
   doc.addFont('Roboto-Regular.ttf', 'Roboto', 'normal')

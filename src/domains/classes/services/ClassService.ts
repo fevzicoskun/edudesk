@@ -103,7 +103,7 @@ export const ClassService = {
     await deleteStudentNote(noteId, ability.userId, ability.schoolId)
   },
 
-  async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }) {
+  async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }): Promise<{ error?: string }> {
     const ability  = await requireAbility()
     const supabase = await createClient()
     const { error } = await supabase
@@ -111,6 +111,7 @@ export const ClassService = {
       .update({ veli_email: data.email, veli_telefon: data.telefon, veli_ad: data.ad })
       .eq('id', studentId)
       .eq('school_id', ability.schoolId)
-    if (error) throw new Error(error.message)
+    if (error) return { error: error.message }
+    return {}
   },
 }

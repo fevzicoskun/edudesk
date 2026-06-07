@@ -3,25 +3,34 @@
 import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
 import { getCurrentUser } from '@/src/shared/auth'
+import { z } from 'zod'
 import { profileSchema, AssignableRole } from '@/src/domains/users/validators'
 import { UserService } from '@/src/domains/users/services/UserService'
 import type { Role } from '@/src/shared/types'
 import type { InviteResult } from '@/src/domains/users/types'
 import type { ActionResult } from '@/src/shared/types'
 
+const inviteSchema = z.object({
+  email:     z.string().email('Geçerli bir e-posta girin'),
+  full_name: z.string().min(2, 'Ad soyad en az 2 karakter olmalı').max(120),
+  subject:   z.string().max(100).optional(),
+  role:      AssignableRole,
+})
+
 export async function inviteUser(_: unknown, formData: FormData): Promise<InviteResult> {
-  const email     = String(formData.get('email') ?? '').trim().toLowerCase()
-  const full_name = String(formData.get('full_name') ?? '').trim()
-  const subject   = String(formData.get('subject') ?? '').trim() || null
-  const roleRaw   = String(formData.get('role') ?? '')
-  const roleResult = AssignableRole.safeParse(roleRaw)
-  if (!roleResult.success) return { error: 'Geçersiz rol' }
+  const parsed = inviteSchema.safeParse({
+    email:     String(formData.get('email') ?? '').trim().toLowerCase(),
+    full_name: String(formData.get('full_name') ?? '').trim(),
+    subject:   String(formData.get('subject') ?? '').trim() || undefined,
+    role:      String(formData.get('role') ?? ''),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
   const result = await UserService.invite({
-    email,
-    full_name,
-    subject,
-    role: roleResult.data as Role,
+    email:     parsed.data.email,
+    full_name: parsed.data.full_name,
+    subject:   parsed.data.subject ?? null,
+    role:      parsed.data.role as Role,
   })
 
   if (result.success) revalidatePath('/kullanicilar')

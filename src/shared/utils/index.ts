@@ -1,3 +1,21 @@
+// Güvenli karakter setlerinden rastgele string üretir (kaba kuvvet saldırısına dayanıklı)
+export function randomString(chars: string, length: number): string {
+  return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+// Okul katılım kodu — I/O/Q/0 gibi karıştırılan karakterler çıkarıldı
+// 23⁴ × 10⁴ ≈ 2.8 milyar kombinasyon
+export function generateSchoolCode(): string {
+  const letters = randomString('ABCDEFGHJKLMNPRSTUVWXYZ', 4)
+  const digits  = randomString('0123456789', 4)
+  return letters + digits
+}
+
+// Geçici şifre — benzer görünümlü karakterler çıkarıldı (I, O, Q, 0, 1)
+export function generateTempPassword(): string {
+  return randomString('ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789', 10)
+}
+
 export function getEgitimYili(): string {
   const now = new Date()
   const ay = now.getMonth() + 1

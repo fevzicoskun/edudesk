@@ -1,11 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { UUID } from '@/src/shared/validation'
+import { UUID, veliContactSchema } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
 import { getAbility } from '@/src/shared/authorization/server'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import type { ActionResult } from '@/src/shared/types'
 
 export async function createClass(formData: FormData) {
   const parsed = createClassSchema.safeParse({
@@ -86,15 +87,22 @@ export async function addStudentNote(studentId: string, classId: string, formDat
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
 }
 
-export async function updateVeliContact(studentId: string, classId: string, formData: FormData) {
-  UUID.parse(studentId)
-  UUID.parse(classId)
-  const email = (formData.get('veli_email') as string | null)?.trim() || null
-  const telefon = (formData.get('veli_telefon') as string | null)?.trim() || null
-  const ad = (formData.get('veli_ad') as string | null)?.trim() || null
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Geçersiz email adresi')
-  await ClassService.updateVeliContact(studentId, { email, telefon, ad })
+export async function updateVeliContact(studentId: string, classId: string, formData: FormData): Promise<ActionResult> {
+  try { UUID.parse(studentId); UUID.parse(classId) }
+  catch { return { error: 'Geçersiz ID' } }
+
+  const parsed = veliContactSchema.safeParse(Object.fromEntries(formData.entries()))
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+
+  const email   = parsed.data.veli_email   || null
+  const telefon = parsed.data.veli_telefon || null
+  const ad      = parsed.data.veli_ad      || null
+
+  const result = await ClassService.updateVeliContact(studentId, { email, telefon, ad })
+  if (result?.error) return { error: result.error }
+
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  return {}
 }
 
 export async function getMyClasses(): Promise<{ id: string; name: string; grade: number | null }[]> {

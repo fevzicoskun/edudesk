@@ -1,10 +1,15 @@
 import { AuthRepository } from '../repositories/AuthRepository'
+import { logger } from '@/src/infrastructure/observability/logger'
 import type { AuthState } from '../types'
 
 export const AuthService = {
   async signIn(email: string, password: string): Promise<AuthState> {
     const { error } = await AuthRepository.signInWithPassword(email, password)
-    if (error) return { error: 'E-posta veya şifre hatalı.' }
+    if (error) {
+      // Gerçek hatayı logla (email içermiyor — sadece hata kodu)
+      logger.warn({ code: error.code, status: error.status }, 'signIn failed')
+      return { error: 'E-posta veya şifre hatalı.' }
+    }
     return null
   },
 
@@ -37,7 +42,10 @@ export const AuthService = {
       p_role: 'ogretmen',
       p_school_id: school.id,
     })
-    if (updateError) return { error: 'Profil oluşturulamadı: ' + updateError.message }
+    if (updateError) {
+      logger.error({ code: updateError.code, userId: authData.user.id }, 'adminSetProfile failed on signup')
+      return { error: 'Profil oluşturulamadı: ' + updateError.message }
+    }
 
     if (authData.session) {
       return null // signals redirect to /anasayfa

@@ -1,13 +1,10 @@
 import { UserRepository } from '../repositories/UserRepository'
 import { getAbility, requireAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
+import { logger } from '@/src/infrastructure/observability/logger'
 import type { InviteResult } from '../types'
 import type { Role, ActionResult } from '@/src/shared/types'
-
-function randomTempPassword(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
-  return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
-}
+import { generateTempPassword } from '@/src/shared/utils'
 
 export const UserService = {
   async invite(params: {
@@ -20,11 +17,6 @@ export const UserService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.USERS.CREATE)) return { error: 'Yetki yok' }
 
-    if (!params.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(params.email))
-      return { error: 'Geçerli bir e-posta girin' }
-    if (!params.full_name || params.full_name.length < 2)
-      return { error: 'Ad soyad en az 2 karakter olmalı' }
-
     // users:manage → müdür → sadece mudur_yardimcisi atayabilir
     // sadece create → müdür yardımcısı → zumre_baskani veya ogretmen atayabilir
     const canManage  = ability.can(P.USERS.MANAGE)
@@ -34,7 +26,7 @@ export const UserService = {
 
     if (!allowedRoles.includes(params.role)) return { error: 'Bu rolü atayamazsınız' }
 
-    const tempPassword = randomTempPassword()
+    const tempPassword = generateTempPassword()
 
     const { data: userData, error: createError } = await UserRepository.createAuthUser(
       params.email,
@@ -54,6 +46,7 @@ export const UserService = {
       p_school_id: ability.schoolId,
     })
     if (profileError) {
+      logger.error({ code: profileError.code, userId: userData.user.id }, 'adminSetProfile failed on invite — rolling back auth user')
       await UserRepository.deleteAuthUser(userData.user.id)
       return { error: 'Profil oluşturulamadı: ' + profileError.message }
     }

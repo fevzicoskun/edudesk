@@ -39,8 +39,9 @@ function OgrenciSatiri({
   const [open, setOpen] = useState(false)
 
   const [state, action, pending] = useActionState(
-    async (_: null | { ok: boolean }, formData: FormData) => {
-      await updateVeliContact(s.id, classId, formData)
+    async (_: null | { ok: boolean; error?: string }, formData: FormData) => {
+      const result = await updateVeliContact(s.id, classId, formData)
+      if (result.error) return { ok: false, error: result.error }
       setOpen(false)
       return { ok: true }
     },
@@ -171,6 +172,9 @@ function OgrenciSatiri({
               </button>
               {state?.ok && (
                 <span className="text-xs text-green-600 dark:text-green-400">Kaydedildi</span>
+              )}
+              {state?.error && (
+                <span className="text-xs text-red-600 dark:text-red-400">{state.error}</span>
               )}
             </div>
           </form>

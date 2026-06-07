@@ -87,6 +87,12 @@ export const updateSchoolSchema = z.object({
   name: z.string().min(2, 'Okul adı gerekli').max(200),
 })
 
+export const veliContactSchema = z.object({
+  veli_email:   z.string().email('Geçersiz e-posta adresi').optional().or(z.literal('')),
+  veli_telefon: z.string().max(20).optional().or(z.literal('')),
+  veli_ad:      z.string().max(120).optional().or(z.literal('')),
+})
+
 export function parseFormData<T>(schema: z.ZodSchema<T>, formData: FormData): T {
   const raw = Object.fromEntries(formData.entries())
   return schema.parse(raw)
