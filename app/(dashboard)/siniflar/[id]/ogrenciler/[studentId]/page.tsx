@@ -93,7 +93,7 @@ export default async function OgrenciDetayPage({
 
   // Not defteri
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
-  const grades = (gradesRes.data ?? []) as GradeRow[]
+  const grades = (gradesRes.data ?? []) as unknown as GradeRow[]
   const GRADE_TYPE_LABELS: Record<string, string> = { yazili: 'Yazılı', quiz: 'Quiz', proje: 'Proje', odev: 'Ödev', performans: 'Performans' }
 
   return (
