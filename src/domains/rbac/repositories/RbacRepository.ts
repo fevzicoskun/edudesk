@@ -14,7 +14,7 @@ export const RbacRepository = {
       p_school_id: schoolId,
     })
     if (error) throw new Error(`İzin sorgusu hatası: ${error.message}`)
-    return (data ?? []) as unknown as GrantedPermission[]
+    return (data ?? []) as GrantedPermission[]
   },
 
   /** Tek bir izin kontrolü — DB fonksiyonu üzerinden (RLS'de de kullanılır) */
@@ -45,7 +45,7 @@ export const RbacRepository = {
       .eq('school_id', schoolId)
       .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
     if (error) throw new Error(`Rol sorgusu hatası: ${error.message}`)
-    return (data ?? []) as unknown as UserRole[]
+    return (data ?? []) as UserRole[]
   },
 
   /** Kullanıcıya okul kapsamında doğrudan izin ver */

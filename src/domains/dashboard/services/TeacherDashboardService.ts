@@ -139,7 +139,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
 
   const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId, ninetyDaysAgo)
   if (hwError) logger.error({ teacherId, schoolId, code: (hwError as { code?: string }).code }, 'fetchRiskInputs: ödev sorgusu başarısız')
-  const homeworks  = (hwData ?? []) as unknown as HwRow[]
+  const homeworks  = (hwData ?? []) as HwRow[]
   const hwIds      = homeworks.map(h => h.id)
   const classIds   = [...new Set(homeworks.map(h => h.class_id))]
 
@@ -159,7 +159,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
     classIds,
     submissions:    (subsResult.data    ?? []) as SubmissionRow[],
     attendanceRows: (attResult.data      ?? []) as { student_id: string; status: string }[],
-    students:       (studentsResult.data ?? []) as unknown as StudentRow[],
+    students:       (studentsResult.data ?? []) as StudentRow[],
   }
 }
 
@@ -305,7 +305,7 @@ export const TeacherDashboardService = {
     if ('error' in attResult     && attResult.error)     logger.error({ classId, teacherId, code: (attResult.error as { code?: string }).code }, 'getClassSummary: yoklama sorgusu başarısız')
 
     const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
-    const students       = (studentsResult.data ?? []) as unknown as StudentRow[]
+    const students       = (studentsResult.data ?? []) as StudentRow[]
     const attendanceRows = (attResult.data      ?? []) as { student_id: string; status: string }[]
 
     if (students.length === 0) return null

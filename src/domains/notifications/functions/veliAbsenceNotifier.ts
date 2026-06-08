@@ -39,7 +39,7 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
     if (record.status === 'present')       return { skipped: 'geldi' }
     if (record.notified_at)               return { skipped: 'zaten-bildirildi' }
 
-    const student = record.students as unknown as StudentRow
+    const student = record.students
     if (!student?.veli_email || student.veli_email_opt_out) return { skipped: 'email-yok' }
 
     const tarih = formatDateTR(date)
