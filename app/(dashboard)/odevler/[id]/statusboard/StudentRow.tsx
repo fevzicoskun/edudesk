@@ -191,8 +191,8 @@ export default function StudentRow({
             <p className="text-xs text-gray-400 dark:text-slate-500">Henüz değişiklik kaydı yok.</p>
           ) : (
             <div className="space-y-1.5">
-              {(historyMap[item.student_id] ?? []).map((log) => (
-                <div key={log.changed_at} className="flex items-baseline gap-2 text-xs">
+              {(historyMap[item.student_id] ?? []).map((log, idx) => (
+                <div key={`${log.changed_at}_${idx}`} className="flex items-baseline gap-2 text-xs">
                   <span className="text-gray-400 dark:text-slate-500 shrink-0 tabular-nums">
                     {relativeTime(log.changed_at)}
                   </span>
@@ -203,8 +203,8 @@ export default function StudentRow({
                       {log.old_status ? LABELS[log.old_status as SubmissionStatus] : '—'}
                     </span>
                     {' → '}
-                    <span className={`font-semibold ${STYLE_TEXT[log.new_status as SubmissionStatus]}`}>
-                      {LABELS[log.new_status as SubmissionStatus]}
+                    <span className={`font-semibold ${STYLE_TEXT[log.new_status as SubmissionStatus] ?? 'text-gray-500'}`}>
+                      {LABELS[log.new_status as SubmissionStatus] ?? log.new_status}
                     </span>
                   </span>
                 </div>

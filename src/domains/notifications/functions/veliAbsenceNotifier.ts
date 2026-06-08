@@ -59,13 +59,14 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
 
     await step.run('isaretele', async () => {
       const supabase = createServiceClient()
-      await supabase
+      const { error } = await supabase
         .from('attendance')
         .update({ notified_at: new Date().toISOString() })
         .eq('student_id', studentId)
         .eq('class_id', classId)
         .eq('school_id', schoolId)
         .eq('date', date)
+      if (error) throw new Error(`notified_at güncellenemedi: ${error.message}`)
     })
 
     return { sent: 1, status: record.status }
