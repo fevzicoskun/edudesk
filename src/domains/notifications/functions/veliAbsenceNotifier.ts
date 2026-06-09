@@ -36,7 +36,8 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
     })
 
     if (!record)                           return { skipped: 'kayit-yok' }
-    if (record.status === 'present')       return { skipped: 'geldi' }
+    if (record.status === 'excused')       return { skipped: 'ozurlu' }
+    if (record.status !== 'absent' && record.status !== 'late') return { skipped: 'geldi' }
     if (record.notified_at)               return { skipped: 'zaten-bildirildi' }
 
     const student = record.students

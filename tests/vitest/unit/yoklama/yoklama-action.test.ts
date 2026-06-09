@@ -124,6 +124,32 @@ describe('saveYoklama()', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
+describe('saveYoklama() — excused', () => {
+  it('yalnız excused/present girişlerde Inngest eventi GÖNDERMEZ', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const { inngest } = await import('@/src/infrastructure/inngest')
+    await saveYoklama(CLASS_ID, '2026-06-08', [
+      { studentId: 's1', status: 'excused' },
+      { studentId: 's2', status: 'present' },
+    ])
+    expect(inngest.send).not.toHaveBeenCalled()
+  })
+
+  it('excused + absent karışık girişte yalnız absent için event gönderir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const { inngest } = await import('@/src/infrastructure/inngest')
+    await saveYoklama(CLASS_ID, '2026-06-08', [
+      { studentId: 's1', status: 'excused' },
+      { studentId: 's2', status: 'absent' },
+    ])
+    expect(inngest.send).toHaveBeenCalledTimes(1)
+    const events = vi.mocked(inngest.send).mock.calls[0][0] as { data: { studentId: string } }[]
+    expect(events).toHaveLength(1)
+    expect(events[0].data.studentId).toBe('s2')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
 describe('getYoklama()', () => {
   it('giriş yapılmamış → throw Giriş gerekli', async () => {
     vi.mocked(getAbility).mockResolvedValue(null)

@@ -6,8 +6,9 @@ import { UUID } from '@/src/shared/validation'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { logger } from '@/src/infrastructure/observability/logger'
+import type { AttendanceStatus } from '@/src/domains/attendance/types'
 
-export type AttendanceStatus = 'present' | 'absent' | 'late'
+export type { AttendanceStatus }
 
 export interface AttendanceEntry {
   studentId: string
