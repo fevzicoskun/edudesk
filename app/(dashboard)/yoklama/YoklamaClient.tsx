@@ -112,14 +112,16 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       }))
       await saveYoklama(classId, date, entries)
       isDirty.current = false
-      const absentCount = entries.filter(e => e.status !== 'present').length
-      if (absentCount > 0) {
+      const notifyCount  = entries.filter(e => e.status === 'absent' || e.status === 'late').length
+      const excusedCount = entries.filter(e => e.status === 'excused').length
+      const parts: string[] = ['Kaydedildi.']
+      if (notifyCount > 0) {
         const sendAt = new Date(Date.now() + 45 * 60 * 1000)
         const saat   = sendAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-        setToast(`Kaydedildi. ${absentCount} öğrencinin velisine bildirim saat ${saat}'da gönderilecek.`)
-      } else {
-        setToast('Kaydedildi.')
+        parts.push(`${notifyCount} öğrencinin velisine bildirim saat ${saat}'da gönderilecek.`)
       }
+      if (excusedCount > 0) parts.push(`${excusedCount} öğrenci özürlü kaydedildi.`)
+      setToast(parts.join(' '))
     } catch (e) {
       console.error('[YoklamaClient] handleSave:', e)
       setError(e instanceof Error ? e.message : 'Kaydedilemedi')

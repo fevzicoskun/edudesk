@@ -63,7 +63,7 @@ export default async function YoklamaPage() {
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Devamsız öğrencilerin velisine otomatik e-posta gider</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Devamsız ve geç öğrencilerin velisine otomatik e-posta gider (özürlüye gitmez)</p>
       </div>
       <YoklamaClient
         classes={classes}
