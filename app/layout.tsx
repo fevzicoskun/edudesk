@@ -23,7 +23,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang="tr" className="h-full">
       <head>
         <meta name="theme-color" content="#4361ee" />
-        <link rel="apple-touch-icon" href="/icon.svg" />
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         {/* Dark mode init — runs before paint, nonce whitelisted in CSP */}
         <script
           nonce={nonce}

@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <!-- Background -->
-  <rect width="512" height="512" rx="96" fill="#ffffff"/>
-  <!-- Book left page (purple) -->
-  <path d="M128 170 L256 96 L256 416 L128 416 Z" fill="#7C3AED"/>
+  <!-- Full-bleed background — iOS/Android kendi köşe maskesini uygular -->
+  <rect width="512" height="512" fill="#4361ee"/>
+  <!-- Book left page -->
+  <path d="M128 170 L256 96 L256 416 L128 416 Z" fill="#ffffff" opacity="0.95"/>
   <!-- Spine -->
-  <rect x="256" y="96" width="56" height="320" fill="#1a1035"/>
-  <!-- Book right page (green) -->
-  <path d="M312 96 L440 170 L440 416 L312 416 Z" fill="#10B981"/>
+  <rect x="256" y="96" width="52" height="320" fill="#1a1a3e" opacity="0.6"/>
+  <!-- Book right page -->
+  <path d="M308 96 L440 170 L440 416 L308 416 Z" fill="#ffffff" opacity="0.75"/>
 </svg>
