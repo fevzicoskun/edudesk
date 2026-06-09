@@ -4,11 +4,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
+import type { AbsenceCount } from '@/src/domains/attendance/types'
+import { formatAbsenceBadge } from '@/src/domains/attendance/lib/attendanceMath'
 import Tooltip from '@/components/ui/Tooltip'
 
 interface Props {
   classes: ClassWithStudents[]
-  absenceCounts: Record<string, number>
+  absenceCounts: Record<string, AbsenceCount>
   initialStatuses?: Record<string, AttendanceStatus>
   initialDate?: string
 }
@@ -90,7 +92,11 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     isDirty.current = true
     setStatuses(prev => {
       const cur = prev[studentId] ?? 'present'
-      const next: AttendanceStatus = cur === 'present' ? 'absent' : cur === 'absent' ? 'late' : 'present'
+      const next: AttendanceStatus =
+        cur === 'present' ? 'absent'
+        : cur === 'absent' ? 'late'
+        : cur === 'late'   ? 'excused'
+        :                    'present'
       return { ...prev, [studentId]: next }
     })
   }
@@ -169,6 +175,11 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
                     · {Object.values(statuses).filter(s => s === 'late').length} geç
                   </span>
                 )}
+                {Object.values(statuses).filter(s => s === 'excused').length > 0 && (
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                    · {Object.values(statuses).filter(s => s === 'excused').length} özürlü
+                  </span>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <button
@@ -199,12 +210,12 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
                           {s.full_name}
                         </span>
                         {(() => {
-                          const absent = absenceCounts[s.id] ?? 0
-                          if (absent === 0) return null
-                          const danger = absent >= ATTENDANCE_LIMIT_DAYS
-                          const warn   = absent >= ATTENDANCE_WARN_DAYS
+                          const c = absenceCounts[s.id]
+                          if (!c) return null
+                          const danger = c.unexcused >= ATTENDANCE_LIMIT_DAYS
+                          const warn   = c.unexcused >= ATTENDANCE_WARN_DAYS
                           return (
-                            <Tooltip content={`Yıl içi devamsızlık: ${absent} gün (MEB sınırı 20 gün)`}>
+                            <Tooltip content={`Özürsüz: ${c.unexcused} gün · Özürlü: ${c.excused} gün (MEB sınırı ${ATTENDANCE_LIMIT_DAYS} gün)`}>
                               <span
                                 className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
                                   danger ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
@@ -212,7 +223,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
                                   :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
                                 }`}
                               >
-                                {absent % 1 === 0 ? `${absent}g` : `${absent.toFixed(1)}g`}
+                                {formatAbsenceBadge(c)}
                               </span>
                             </Tooltip>
                           )
@@ -248,7 +259,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
           {saving ? 'Kaydediliyor…' : 'Kaydet'}
         </button>
         <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-1.5">
-          Butona her tıklayınca: Mevcut → Devamsız → Geç → Mevcut
+          Butona her tıklayınca: Mevcut → Devamsız → Geç → Özürlü → Mevcut
         </p>
       </div>
     </div>

@@ -5,6 +5,8 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
 import { type AttendanceStatus } from '@/app/actions/yoklama'
+import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import type { AbsenceCount } from '@/src/domains/attendance/types'
 import YoklamaClient from './YoklamaClient'
 
 export default async function YoklamaPage() {
@@ -38,7 +40,7 @@ export default async function YoklamaPage() {
           .eq('school_id', profile.school_id)
           .in('student_id', studentIds)
           .gte('date', schoolYearStart())
-          .in('status', ['absent', 'late'])
+          .in('status', ['absent', 'late', 'excused'])
       : Promise.resolve({ data: [] as { student_id: string; status: string; date: string }[] }),
     firstClassId
       ? supabase
@@ -50,14 +52,7 @@ export default async function YoklamaPage() {
       : Promise.resolve({ data: [] as { student_id: string; status: string }[] }),
   ])
 
-  const absenceCounts: Record<string, number> = {}
-  for (const a of absencesRes.data ?? []) {
-    const [y, m, d] = (a.date as string).split('-').map(Number)
-    const dow = new Date(y, m - 1, d).getDay()
-    if (dow === 0 || dow === 6) continue
-    const increment = a.status === 'absent' ? 1 : 0.5
-    absenceCounts[a.student_id] = (absenceCounts[a.student_id] ?? 0) + increment
-  }
+  const absenceCounts: Record<string, AbsenceCount> = countAbsences(absencesRes.data ?? [])
 
   const initialStatuses: Record<string, AttendanceStatus> = {}
   for (const row of todayRes.data ?? []) {
