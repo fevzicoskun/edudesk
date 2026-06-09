@@ -329,8 +329,8 @@ export const TeacherDashboardService = {
       const schoolId = profile?.school_id ?? ''
       if (!schoolId) return
       await DashboardRepository.insertActivityLog({ teacher_id: teacherId, school_id: schoolId, action, meta })
-    } catch {
-      // fire-and-forget — hata dashboard'u bloke etmez
+    } catch (err) {
+      logger.warn({ event: 'activity_log_failed', teacherId, action, err }, 'Aktivite logu kaydedilemedi')
     }
   },
 }

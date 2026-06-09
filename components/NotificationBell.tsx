@@ -27,7 +27,7 @@ function relativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
 }
 
-export default function NotificationBell({ align = 'right' }: { align?: 'left' | 'right' }) {
+export default function NotificationBell({ align = 'right', userId }: { align?: 'left' | 'right'; userId?: string }) {
   const [open, setOpen] = useState(false)
   const [unread, setUnread] = useState(0)
   const [items, setItems] = useState<Notification[]>([])
@@ -41,43 +41,30 @@ export default function NotificationBell({ align = 'right' }: { align?: 'left' |
 
   // Initial unread count + Realtime subscription (replaces 30s polling)
   useEffect(() => {
+    if (!userId) return
     let active = true
     const supabase = createClient()
-    let channel: ReturnType<typeof supabase.channel> | null = null
 
-    // Initial count via server action (RLS-safe)
     getUnreadCount().then(count => { if (active) setUnread(count) })
 
-    // Set up WebSocket subscription for new inserts
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!active || !session?.user) return
-
-      channel = supabase
-        .channel('notif-bell')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${session.user.id}`,
-          },
-          (payload) => {
-            setUnread(prev => prev + 1)
-            // Prepend to list only if dropdown was already loaded
-            if (loadedRef.current) {
-              setItems(prev => [payload.new as Notification, ...prev])
-            }
-          }
-        )
-        .subscribe()
-    })
+    // userId prop ile senkron kurulum — async getSession() race condition'ı ortadan kalkar
+    const channel = supabase
+      .channel(`notif-bell-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setUnread(prev => prev + 1)
+          if (loadedRef.current) setItems(prev => [payload.new as Notification, ...prev])
+        }
+      )
+      .subscribe()
 
     return () => {
       active = false
-      if (channel) supabase.removeChannel(channel)
+      supabase.removeChannel(channel)
     }
-  }, [])
+  }, [userId])
 
   useEffect(() => {
     function handleOutside(e: MouseEvent | TouchEvent) {

@@ -13,7 +13,7 @@ import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
 import EduDeskLogo from '@/components/EduDeskLogo'
 
-type SidebarProfile = Pick<Profile, 'full_name' | 'subject' | 'role'>
+type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'>
 
 function formatName(raw: string): string {
   return raw
@@ -124,7 +124,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           )}
         </div>
         <div className="flex items-center gap-1">
-          <NotificationBell align="right" />
+          <NotificationBell align="right" userId={profile?.id} />
           <ThemeToggle />
         </div>
       </header>
@@ -141,7 +141,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             </div>
           )}
           <div className={`flex items-center gap-1 ${collapsed ? 'w-full justify-center flex-col' : 'shrink-0'}`}>
-            <NotificationBell align="left" />
+            <NotificationBell align="left" userId={profile?.id} />
             <ThemeToggle />
           </div>
         </div>

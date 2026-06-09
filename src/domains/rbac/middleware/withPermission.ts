@@ -132,7 +132,9 @@ export async function checkPermission(
   try {
     const schoolId = await requireSchoolId()
     return PermissionService.check(user.id, schoolId, resource, action)
-  } catch {
+  } catch (err) {
+    // requireSchoolId başarısız — multi-tenant context dışında çağrılmış olabilir
+    void err
     return false
   }
 }

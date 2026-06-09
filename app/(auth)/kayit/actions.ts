@@ -1,6 +1,7 @@
 'use server'
 
 import { mailer } from '@/src/lib/mailer'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export async function applySchool(_prev: unknown, formData: FormData) {
   const schoolName   = (formData.get('school_name') as string)?.trim()
@@ -35,7 +36,8 @@ export async function applySchool(_prev: unknown, formData: FormData) {
       `,
     })
     return { success: true }
-  } catch {
+  } catch (err) {
+    logger.error({ event: 'kayit_mail_failed', schoolName, email, err }, 'Okul başvuru maili gönderilemedi')
     return { error: 'Mail gönderilemedi, lütfen tekrar deneyin.' }
   }
 }
