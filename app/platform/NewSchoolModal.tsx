@@ -40,9 +40,13 @@ export default function NewSchoolModal() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Slug <span className="text-slate-500">(ABC123)</span></label>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                    Slug
+                    <span className="ml-1.5 text-slate-600 font-normal">Okul kısa kodu — şehir+sıra (IST001)</span>
+                  </label>
                   <input name="slug" required placeholder="IST001" pattern="[A-Z]{3,4}[0-9]{3,4}"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 uppercase" />
+                    onInput={(e) => { const t = e.currentTarget; t.value = t.value.toUpperCase() }}
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">Durum</label>
