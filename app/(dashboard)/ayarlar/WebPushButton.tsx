@@ -12,14 +12,16 @@ export default function WebPushButton() {
       setState('unsupported')
       return
     }
-    const perm = Notification.permission
-    if (perm === 'denied') { setState('denied'); return }
+    if (Notification.permission === 'denied') { setState('denied'); return }
 
-    navigator.serviceWorker.ready.then((reg) =>
-      reg.pushManager.getSubscription().then((sub) => {
-        setState(sub ? 'subscribed' : 'unsubscribed')
+    navigator.serviceWorker.getRegistration('/sw.js')
+      .then((reg) => {
+        if (!reg) { setState('unsubscribed'); return }
+        reg.pushManager.getSubscription().then((sub) => {
+          setState(sub ? 'subscribed' : 'unsubscribed')
+        })
       })
-    )
+      .catch(() => setState('unsubscribed'))
   }, [])
 
   async function subscribe() {
