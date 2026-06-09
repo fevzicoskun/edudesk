@@ -36,6 +36,9 @@ export default function NotificationBell({ align = 'right', userId }: { align?: 
   const ref = useRef<HTMLDivElement>(null)
   // Ref instead of state so Realtime callback always sees the latest value
   const loadedRef = useRef(false)
+  // Unique per component instance — prevents channel name collision when two NotificationBell
+  // components mount simultaneously (mobile header + desktop sidebar share the same supabase singleton)
+  const instanceId = useRef(Math.random().toString(36).slice(2, 8)).current
 
   useEffect(() => { loadedRef.current = loaded }, [loaded])
 
@@ -47,9 +50,8 @@ export default function NotificationBell({ align = 'right', userId }: { align?: 
 
     getUnreadCount().then(count => { if (active) setUnread(count) })
 
-    // userId prop ile senkron kurulum — async getSession() race condition'ı ortadan kalkar
     const channel = supabase
-      .channel(`notif-bell-${userId}`)
+      .channel(`notif-bell-${userId}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
