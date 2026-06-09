@@ -39,6 +39,7 @@
     "recharts": "^3.8.1",
     "resend": "^6.12.4",
     "tailwind-merge": "^3.5.0",
+    "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "overrides": {
@@ -51,6 +52,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@vitest/coverage-v8": "^4.1.6",
     "dotenv": "^17.4.2",
     "tailwindcss": "^4",

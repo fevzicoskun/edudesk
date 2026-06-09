@@ -4,6 +4,7 @@ import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR, turkeyDate } from '@/src/lib/email-utils'
 import { unsubscribeUrl } from '@/src/lib/unsubscribeToken'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 
 export const homeworkReminderFn = inngest.createFunction(
   {
@@ -210,6 +211,19 @@ export const homeworkReminderFn = inngest.createFunction(
         }
       })
     }
+
+    // 6. Web push — öğretmenlere anlık bildirim
+    await step.run('send-push', async () => {
+      await Promise.allSettled(
+        toSend.map((c) =>
+          sendPushToUser(c.teacherId, {
+            title: 'Ödev teslimi yaklaşıyor',
+            body: `"${c.title}" ödevi ${c.daysBefore === 1 ? 'yarın' : `${c.daysBefore} gün içinde`} teslim alınacak.`,
+            url: '/odevler',
+          })
+        )
+      )
+    })
 
     return { sent: toSend.length, teacherEmailed: teacherEmailTargets.length, veliEmailed: veliEmails.length }
   }

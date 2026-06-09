@@ -3,6 +3,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 
 interface StudentRow {
   id:         string
@@ -24,7 +25,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
       const supabase = createServiceClient()
       const { data } = await supabase
         .from('homeworks')
-        .select('id, title, due_date, is_template')
+        .select('id, title, due_date, is_template, teacher_id')
         .eq('id', homeworkId)
         .eq('school_id', schoolId)
         .is('deleted_at', null)
@@ -80,6 +81,18 @@ ${dueDateStr ? `<p>Son teslim tarihi: <strong>${esc(dueDateStr)}</strong></p>` :
       const failed = results.filter(r => r.status === 'rejected').length
       if (failed) logger.error({ event: 'veli_mail_failed', homework_id: homeworkId, failed, total: targets.length }, 'Veli bildirimi e-postaları gönderilemedi')
     })
+
+    // Öğretmene push: veliler bildirildi
+    if (hw.teacher_id) {
+      await step.run('send-push', async () => {
+        const veliCount = Math.min(targets.length, 50)
+        await sendPushToUser(hw.teacher_id, {
+          title: 'Veliler bildirildi',
+          body: `"${hw.title}" ödevi için ${veliCount} veliye e-posta gönderildi.`,
+          url: '/odevler',
+        })
+      })
+    }
 
     return { sent: Math.min(targets.length, 50) }
   }
