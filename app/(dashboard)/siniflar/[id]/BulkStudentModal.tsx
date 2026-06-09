@@ -55,7 +55,8 @@ export default function BulkStudentModal({
         router.refresh()
         setOpen(false)
         setText('')
-      } catch {
+      } catch (e) {
+        console.error('[BulkStudentModal]', e)
         setError('Öğrenciler eklenirken hata oluştu. Lütfen tekrar dene.')
       }
     })

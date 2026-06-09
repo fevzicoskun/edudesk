@@ -55,7 +55,8 @@ export default function RoleSelector({
         } else {
           setErrorMsg(null)
         }
-      } catch {
+      } catch (e) {
+        console.error('[RoleSelector]', e)
         setRole(prev)
         setErrorMsg('Rol değiştirilemedi. Lütfen tekrar deneyin.')
         setTimeout(() => setErrorMsg(null), 3000)

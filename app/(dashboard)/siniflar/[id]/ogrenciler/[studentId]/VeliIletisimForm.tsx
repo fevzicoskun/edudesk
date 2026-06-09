@@ -17,7 +17,8 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
       try {
         await updateVeliContact(studentId, classId, formData)
         return { ok: true }
-      } catch {
+      } catch (e) {
+        console.error('[VeliIletisimForm]', e)
         return { ok: false, error: 'Bir hata oluştu. Lütfen tekrar dene.' }
       }
     },

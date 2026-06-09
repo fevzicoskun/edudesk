@@ -41,7 +41,8 @@ export default function SinifExportButton({ classId, className }: SinifExportBut
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-    } catch {
+    } catch (e) {
+      console.error('[SinifExportButton]', e)
       setError('Sunucuya bağlanılamadı')
     } finally {
       setLoading(false)

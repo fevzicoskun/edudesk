@@ -43,7 +43,8 @@ export default function WebPushButton() {
       })
 
       setState(res.ok ? 'subscribed' : 'unsubscribed')
-    } catch {
+    } catch (e) {
+      console.error('[WebPushButton] subscribe:', e)
       setState('unsubscribed')
     }
   }
@@ -62,7 +63,8 @@ export default function WebPushButton() {
         await sub.unsubscribe()
       }
       setState('unsubscribed')
-    } catch {
+    } catch (e) {
+      console.error('[WebPushButton] unsubscribe:', e)
       setState('unsubscribed')
     }
   }

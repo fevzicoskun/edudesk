@@ -28,7 +28,8 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
       updateOptimistic({ type: 'remove', id: source.id })
       try {
         await deleteHomeworkSource(source.id)
-      } catch {
+      } catch (e) {
+        console.error('[KaynakYonetimi] deleteHomeworkSource:', e)
         setDeleteError(`"${source.name}" silinemedi. Lütfen tekrar deneyin.`)
       }
     })

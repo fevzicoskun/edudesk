@@ -42,7 +42,8 @@ export default function CopyVeliLink({ studentId }: { studentId: string }) {
         await navigator.clipboard.writeText(url)
         setCopied(true)
         setTimeout(() => setCopied(false), 3000)
-      } catch {
+      } catch (e) {
+        console.error('[CopyVeliLink]', e)
         alert('Link oluşturulamadı. Lütfen tekrar deneyin.')
       }
     })

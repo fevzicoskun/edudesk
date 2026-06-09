@@ -3,6 +3,7 @@ import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { fetchRows, buildXlsx } from '@/src/domains/export/services/XlsxBuilder'
 import type { JobType } from '@/src/domains/export/types'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',
@@ -44,6 +45,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (e) {
+    logger.error({ event: 'export_failed', err: e instanceof Error ? e.message : String(e) }, 'Excel raporu oluşturulamadı')
     const msg = e instanceof Error ? e.message : 'Rapor oluşturulamadı'
     return NextResponse.json({ error: msg }, { status: 500 })
   }

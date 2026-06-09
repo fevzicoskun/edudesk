@@ -58,7 +58,8 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       const data = await getYoklama(classId, date)
       setStatuses(data)
       isDirty.current = false
-    } catch {
+    } catch (e) {
+      console.error('[YoklamaClient] loadYoklama:', e)
       setError('Yoklama verileri yüklenemedi')
     } finally {
       setLoading(false)
@@ -112,6 +113,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         setToast('Kaydedildi.')
       }
     } catch (e) {
+      console.error('[YoklamaClient] handleSave:', e)
       setError(e instanceof Error ? e.message : 'Kaydedilemedi')
     } finally {
       setSaving(false)
