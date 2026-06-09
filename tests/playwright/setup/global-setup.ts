@@ -1,7 +1,3 @@
-/**
- * Playwright global setup — test kullanıcılarını ve auth state'lerini hazırlar.
- * Her CI/CD çalışmasında bir kez çalışır.
- */
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { chromium } from '@playwright/test'
 import fs from 'fs'
@@ -12,7 +8,6 @@ dotenv.config({ path: '.env.local' })
 
 const STORAGE_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 
-// Auth state dosya yolları — e2e testleri bunları kullanır
 export const AUTH_PATHS = {
   ogretmen:         path.join(STORAGE_DIR, 'ogretmen.json'),
   zumre_baskani:    path.join(STORAGE_DIR, 'zumre_baskani.json'),
@@ -20,8 +15,6 @@ export const AUTH_PATHS = {
   mudur:            path.join(STORAGE_DIR, 'mudur.json'),
 } as const
 
-// Test kullanıcı bilgileri (env veya sabit)
-// Production'da asla gerçek hesap bilgisi kullanmayın
 const TEST_USERS = {
   ogretmen: {
     email:    process.env.TEST_EMAIL_OGRETMEN    ?? 'test_ogretmen@test.example',
@@ -39,8 +32,11 @@ export default async function globalSetup() {
     return
   }
 
-  // Auth dizini oluştur
   fs.mkdirSync(STORAGE_DIR, { recursive: true })
+
+  // Webpack dev mode on-demand derleme yapıyor — ilk sayfa isteğinde 20-30s gecikme olabilir.
+  // Auth setup'tan ÖNCE kritik sayfaları ziyaret ederek derlemeyi tetikliyoruz.
+  await warmupDevServer(process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000')
 
   const serviceClient = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,17 +44,20 @@ export default async function globalSetup() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Test kullanıcıları yoksa oluştur
+  // Test okulu bir kez bul/oluştur; her iki kullanıcı aynı okulu paylaşır
+  const schoolId = await ensureTestSchool(serviceClient)
+
   for (const [role, creds] of Object.entries(TEST_USERS)) {
     try {
-      await ensureTestUser(serviceClient, creds.email, creds.password, role as keyof typeof TEST_USERS)
+      await upsertTestUser(serviceClient, creds.email, creds.password, role as keyof typeof TEST_USERS, schoolId)
+      console.log(`[playwright] ${role} hazır (schoolId: ${schoolId})`)
     } catch (e) {
-      console.warn(`[playwright] ${role} kullanıcısı hazırlanamadı:`, e)
+      console.error(`[playwright] ${role} kullanıcısı hazırlanamadı:`, e)
     }
   }
 
-  // Her kullanıcı için auth state kaydet
   const browser = await chromium.launch()
+  const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
 
   for (const [role, creds] of Object.entries(TEST_USERS)) {
     const statePath = AUTH_PATHS[role as keyof typeof AUTH_PATHS]
@@ -68,71 +67,131 @@ export default async function globalSetup() {
       const context = await browser.newContext()
       const page    = await context.newPage()
 
-      await page.goto(`${process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'}/login`)
-      await page.fill('input[name="email"]',    creds.email)
-      await page.fill('input[name="password"]', creds.password)
+      await page.goto(`${BASE_URL}/login`)
+      await page.fill('#email',    creds.email)
+      await page.fill('#password', creds.password)
       await page.click('button[type="submit"]')
-      await page.waitForURL(/\/(anasayfa|dashboard)/, { timeout: 10_000 })
+
+      // Auth cookie'ler login action'da set edilir; /login'den herhangi bir yere geçmesi yeterli
+      await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 30_000 })
+
+      // Warmup /anasayfa'yı compile etmiş olmalı; direkt goto ile doğrula
+      await page.goto(`${BASE_URL}/anasayfa`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+
+      const finalUrl = page.url()
+      if (finalUrl.includes('onboarding')) {
+        console.error(`[playwright] ${role} onboarding'e düştü — profil eksik! URL: ${finalUrl}`)
+      }
 
       await context.storageState({ path: statePath })
       await context.close()
-      console.log(`[playwright] ${role} auth state kaydedildi`)
+      console.log(`[playwright] ${role} auth state kaydedildi (${finalUrl})`)
     } catch (e) {
-      console.warn(`[playwright] ${role} giriş yapılamadı:`, e)
+      console.error(`[playwright] ${role} giriş yapılamadı:`, e)
     }
   }
 
   await browser.close()
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function ensureTestUser(
-  client: SupabaseClient<any>,
-  email: string,
-  password: string,
-  role: string
-) {
-  // Kullanıcı var mı kontrol et
-  const { data: existing } = await client
-    .from('profiles')
-    .select('id')
-    .eq('id',
-      (await client.from('profiles').select('id').limit(1)).data?.[0]?.id ?? ''
-    )
+async function warmupDevServer(baseUrl: string) {
+  // On-demand derleme tetikleyici: login yap, sonra /anasayfa'ya direkt git.
+  // waitForURL ile middleware redirect zinciri beklenmez — goto() zinciri keser.
+  const warmupBrowser = await chromium.launch()
+  try {
+    const ctx  = await warmupBrowser.newContext()
+    const page = await ctx.newPage()
 
-  // Email'e göre auth user bul
-  const { data: { users } } = await client.auth.admin.listUsers()
-  const existingUser = users?.find(u => u.email === email)
+    const email    = process.env.TEST_EMAIL_OGRETMEN    ?? 'test_ogretmen@test.example'
+    const password = process.env.TEST_PASSWORD_OGRETMEN ?? 'Test1234!'
 
-  if (existingUser) return  // Zaten var
+    console.log('[playwright] warmup — /login yükleniyor...')
+    await page.goto(`${baseUrl}/login`, { timeout: 30_000 })
+    await page.fill('#email',    email)
+    await page.fill('#password', password)
+    await page.click('button[type="submit"]')
 
-  // Yeni kullanıcı oluştur
-  // Test okulu bul veya oluştur (code kolonu yok — sadece name kullan)
-  let schoolId: string
+    // Login action'ın tamamlanmasını bekle — /login'den herhangi bir yere geçmesi yeterli
+    await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 30_000 })
+
+    // Auth cookies set edildi; şimdi /anasayfa'yı doğrudan compile ettir
+    console.log('[playwright] warmup — /anasayfa derleniyor...')
+    await page.goto(`${baseUrl}/anasayfa`, {
+      waitUntil: 'domcontentloaded',
+      timeout:   120_000,
+    })
+    console.log(`[playwright] warmup tamamlandı — URL: ${page.url()}`)
+    await ctx.close()
+  } catch (e) {
+    console.warn('[playwright] warmup başarısız (devam ediliyor):', e)
+  } finally {
+    await warmupBrowser.close()
+  }
+}
+
+async function ensureTestSchool(client: SupabaseClient): Promise<string> {
   const { data: schools } = await client
-    .from('schools').select('id').ilike('name', '__PW_TEST__%').limit(1)
+    .from('schools').select('id, slug').ilike('name', '__PW_TEST__%').limit(1)
 
   if (schools?.length) {
-    schoolId = schools[0].id
-  } else {
-    const { data: newSchool, error: schoolErr } = await client
-      .from('schools')
-      .insert({ name: '__PW_TEST__ Okul' })
-      .select('id').single()
-    if (schoolErr || !newSchool) throw new Error(`Test okulu oluşturulamadı: ${schoolErr?.message}`)
-    schoolId = newSchool.id
+    const school = schools[0]
+    // Slug yoksa layout.tsx slug kontrolünü geçmek için set et
+    if (!school.slug) {
+      await client.from('schools').update({ slug: 'TEST001' }).eq('id', school.id)
+    }
+    return school.id
   }
 
-  const { data: authData, error: userErr } = await client.auth.admin.createUser({
-    email, password, email_confirm: true,
-  })
-  if (userErr || !authData.user) throw new Error(`Test kullanıcısı oluşturulamadı: ${userErr?.message}`)
+  const { data: newSchool, error } = await client
+    .from('schools')
+    .insert({ name: '__PW_TEST__ Okul', slug: 'TEST001' })
+    .select('id').single()
+  if (error || !newSchool) throw new Error(`Test okulu oluşturulamadı: ${error?.message}`)
+  return newSchool.id
+}
 
-  await client.rpc('admin_set_profile', {
-    p_id:        authData.user.id,
+async function upsertTestUser(
+  client: SupabaseClient,
+  email: string,
+  password: string,
+  role: keyof typeof TEST_USERS,
+  schoolId: string
+) {
+  const { data: { users } } = await client.auth.admin.listUsers({ perPage: 1000 })
+  const existing = users?.find(u => u.email === email)
+
+  let userId: string
+  if (existing) {
+    userId = existing.id
+    // Şifre + JWT metadata güncelle — proxy.ts school_id'yi user_metadata'dan okursa DB sorgusu atlar
+    const { error: pwErr } = await client.auth.admin.updateUserById(userId, {
+      password,
+      user_metadata: { school_id: schoolId, role },
+    })
+    if (pwErr) throw new Error(`Kullanıcı güncellenemedi: ${pwErr.message}`)
+  } else {
+    const { data: authData, error } = await client.auth.admin.createUser({
+      email, password, email_confirm: true,
+      user_metadata: { school_id: schoolId, role },
+    })
+    if (error || !authData.user) throw new Error(`Auth user oluşturulamadı: ${error?.message}`)
+    userId = authData.user.id
+  }
+
+  // Profili upsert et (school_id garantili)
+  const { error: profileErr } = await client.rpc('admin_set_profile', {
+    p_id:        userId,
     p_full_name: `PW Test ${role}`,
     p_subject:   'Test',
     p_role:      role,
     p_school_id: schoolId,
   })
+  if (profileErr) throw new Error(`Profil oluşturulamadı: ${profileErr.message}`)
+
+  // Doğrulama — profil DB'de doğru kaydedildi mi?
+  const { data: verif } = await client
+    .from('profiles').select('school_id, role').eq('id', userId).single()
+  if (!verif?.school_id) {
+    throw new Error(`Profil doğrulaması başarısız — school_id yok (${role})`)
+  }
 }

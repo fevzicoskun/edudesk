@@ -7,6 +7,7 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
 
 export default defineConfig({
   testDir: './tests/playwright/e2e',
+  timeout: 120_000,          // test başına max 2 dak — webpack/turbopack soğuk derleme için
   fullyParallel: false,      // rol bazlı testlerde sıra önemli
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -39,9 +40,9 @@ export default defineConfig({
   globalSetup: './tests/playwright/setup/global-setup.ts',
 
   webServer: {
-    command: 'npm run dev',
+    command: 'next dev --turbopack',  // turbopack: soğuk derleme ~5s vs webpack ~30-90s
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,                 // sunucu hazır olana kadar max 2 dak
   },
 })

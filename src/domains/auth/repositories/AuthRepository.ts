@@ -9,7 +9,7 @@ export const AuthRepository = {
 
   async signOut() {
     const supabase = await createClient()
-    return supabase.auth.signOut()
+    return supabase.auth.signOut({ scope: 'local' })
   },
 
   async signUp(email: string, password: string, fullName: string) {

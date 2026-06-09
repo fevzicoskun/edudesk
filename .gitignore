@@ -51,5 +51,9 @@ supabase/.temp/
 # local scripts
 push.bat
 
+# Playwright auth state (JWT tokens — never commit)
+tests/playwright/.auth/
+playwright-report/
+
 .vercel
 test-emails.mjs
