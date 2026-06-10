@@ -49,12 +49,19 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const [toast,     setToast]     = useState('')
   const [error,     setError]     = useState('')
   const isDirty = useRef(false)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(''), 5000)
+    return () => clearTimeout(t)
+  }, [toast])
   // initialStatuses geçilmişse ilk mount'ta getYoklama çağrısını skip et
   const skipInitialLoad = useRef(initialStatuses !== undefined)
 
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
-  const weekend = isWeekend(date)
+  const weekend    = isWeekend(date)
+  const isPastDate = date < todayISO()
 
   const loadYoklama = useCallback(async () => {
     if (!classId) return
@@ -114,15 +121,22 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       }))
       await saveYoklama(classId, date, entries)
       isDirty.current = false
-      const notifyCount  = entries.filter(e => e.status === 'absent' || e.status === 'late').length
+      const presentCount = entries.filter(e => e.status === 'present').length
+      const absentCount  = entries.filter(e => e.status === 'absent').length
+      const lateCount    = entries.filter(e => e.status === 'late').length
       const excusedCount = entries.filter(e => e.status === 'excused').length
-      const parts: string[] = ['Kaydedildi.']
+      const notifyCount  = absentCount + lateCount
+      const summary: string[] = []
+      if (presentCount > 0) summary.push(`${presentCount} mevcut`)
+      if (absentCount  > 0) summary.push(`${absentCount} devamsız`)
+      if (lateCount    > 0) summary.push(`${lateCount} geç`)
+      if (excusedCount > 0) summary.push(`${excusedCount} özürlü`)
+      const parts: string[] = [`Kaydedildi — ${summary.join(', ')}.`]
       if (notifyCount > 0) {
         const sendAt = new Date(Date.now() + 45 * 60 * 1000)
         const saat   = sendAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
-        parts.push(`${notifyCount} öğrencinin velisine bildirim saat ${saat}'da gönderilecek.`)
+        parts.push(`Veli bildirimi saat ${saat}'de gönderilecek.`)
       }
-      if (excusedCount > 0) parts.push(`${excusedCount} öğrenci özürlü kaydedildi.`)
       setToast(parts.join(' '))
     } catch (e) {
       console.error('[YoklamaClient] handleSave:', e)
@@ -174,6 +188,13 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
       )}
 
+      {isPastDate && !weekend && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl text-sm text-sky-800 dark:text-sky-300">
+          <span>📅</span>
+          <span>Geçmiş bir tarih için yoklama giriyorsunuz. Mevcut kayıtların üzerine yazılacak.</span>
+        </div>
+      )}
+
       {/* Öğrenci Listesi */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         {loading ? (
@@ -216,6 +237,13 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
                   className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
                 >
                   Hepsini Devamsız
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'excused' as AttendanceStatus]))) }}
+                  className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                >
+                  Hepsini Özürlü
                 </button>
               </div>
             </div>
