@@ -59,6 +59,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
           .in('student_id', studentIds)
           .gte('date', schoolYearStart())
           .in('status', ['absent', 'late', 'excused'])
+          .limit(100000)
       : Promise.resolve({ data: [] as { student_id: string; status: string; date: string }[] }),
     firstClassId
       ? supabase
