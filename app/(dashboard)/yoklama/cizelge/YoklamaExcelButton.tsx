@@ -32,7 +32,7 @@ export default function YoklamaExcelButton({ classId, className, since, until }:
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (e) {
       console.error('[YoklamaExcelButton]', e)
       setError('Sunucuya bağlanılamadı')

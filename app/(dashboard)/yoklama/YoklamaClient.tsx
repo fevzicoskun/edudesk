@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, type ChangeEvent } from 'react'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
@@ -48,8 +48,9 @@ function isWeekend(iso: string) {
 }
 
 export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId }: Props) {
+  const [today]     = useState(todayISO)   // mount'ta bir kez hesaplanır
   const [classId,   setClassId]   = useState(initialClassId ?? classes[0]?.id ?? '')
-  const [date,      setDate]      = useState(initialDate ?? todayISO())
+  const [date,      setDate]      = useState(initialDate ?? today)
   const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>(initialStatuses ?? {})
   const [loading,   setLoading]   = useState(false)
   const [saving,    setSaving]    = useState(false)
@@ -68,7 +69,22 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
   const weekend    = isWeekend(date)
-  const isPastDate = date < todayISO()
+  const isPastDate = date < today
+
+  function guardDirty(): boolean {
+    if (!isDirty.current) return true
+    return window.confirm('Kaydedilmemiş değişiklikler var. Devam edilirse kaybolacak.')
+  }
+
+  function handleClassChange(e: ChangeEvent<HTMLSelectElement>) {
+    if (!guardDirty()) return
+    setClassId(e.target.value)
+  }
+
+  function handleDateChange(e: ChangeEvent<HTMLInputElement>) {
+    if (!guardDirty()) return
+    setDate(e.target.value)
+  }
 
   const loadYoklama = useCallback(async () => {
     if (!classId) return
@@ -161,7 +177,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
-          <select value={classId} onChange={e => setClassId(e.target.value)} className={inputCls}>
+          <select value={classId} onChange={handleClassChange} className={inputCls}>
             {(() => {
               const mine = new Set(myClassIds ?? [])
               const my     = classes.filter(c => mine.has(c.id))
@@ -184,7 +200,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Tarih</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayISO()} min={schoolYearStartISO()} className={inputCls} />
+          <input type="date" value={date} onChange={handleDateChange} max={today} min={schoolYearStartISO()} className={inputCls} />
         </div>
       </div>
 

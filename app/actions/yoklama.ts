@@ -1,6 +1,7 @@
 'use server'
 
 import { z } from 'zod'
+import { revalidatePath } from 'next/cache'
 import { UUID, attendanceStatusSchema } from '@/src/shared/validation'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
@@ -21,7 +22,8 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   UUID.parse(classId)
   ISODate.parse(date)
   z.array(entrySchema).max(200).parse(entries)
-  return AttendanceService.saveYoklama(classId, date, entries)
+  await AttendanceService.saveYoklama(classId, date, entries)
+  revalidatePath('/yonetim')
 }
 
 export async function getCizelge(classId: string, year: number, month: number) {
