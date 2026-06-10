@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { getCizelge } from '@/app/actions/yoklama'
 import { buildMonthGrid, countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { AttendanceStatus } from '@/src/domains/attendance/types'
 import StudentAttendanceHistory from '@/components/student/StudentAttendanceHistory'
 import YoklamaExcelButton from './YoklamaExcelButton'
@@ -17,10 +18,17 @@ const CELL: Record<string, { ch: string; cls: string }> = {
   excused: { ch: 'Ö', cls: 'text-blue-600 dark:text-blue-400 font-bold' },
 }
 
+const DAY_ABBR = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt']
+
+function todayISTStr() {
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+}
+
 export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
-  const now = new Date()
+  const todayStr = todayISTStr()
+  const [year0, month0] = todayStr.split('-').map(Number)
   const [classId, setClassId] = useState(classes[0]?.id ?? '')
-  const [ym, setYm] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  const [ym, setYm] = useState(`${year0}-${String(month0).padStart(2, '0')}`)
   const [days, setDays] = useState<string[]>([])
   const [grid, setGrid] = useState<Record<string, Record<string, AttendanceStatus>>>({})
   const [counts, setCounts] = useState<ReturnType<typeof countAbsences>>({})
@@ -91,11 +99,24 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
                 <th className="sticky left-0 bg-white dark:bg-slate-800 text-left px-3 py-2 font-medium text-gray-500 dark:text-slate-400 min-w-[160px]">
                   Öğrenci
                 </th>
-                {days.map(d => (
-                  <th key={d} className="px-1 py-2 font-medium text-gray-400 dark:text-slate-500 tabular-nums">
-                    {Number(d.slice(8, 10))}
-                  </th>
-                ))}
+                {days.map(d => {
+                  const [y, m, day] = d.split('-').map(Number)
+                  const dow = new Date(y, m - 1, day).getDay()
+                  const isToday = d === todayStr
+                  return (
+                    <th
+                      key={d}
+                      className={`px-1 py-1.5 font-medium tabular-nums text-center leading-tight ${
+                        isToday
+                          ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-t'
+                          : 'text-gray-400 dark:text-slate-500'
+                      }`}
+                    >
+                      <div className="text-[9px] font-normal opacity-70">{DAY_ABBR[dow]}</div>
+                      <div>{day}</div>
+                    </th>
+                  )
+                })}
                 <th className="px-2 py-2 font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
                   Özürsüz | Özürlü
                 </th>
@@ -104,27 +125,50 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
             <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
               {cls.students.map(s => {
                 const c = counts[s.id] ?? { unexcused: 0, excused: 0 }
+                const isDanger = c.unexcused >= ATTENDANCE_LIMIT_DAYS
+                const isWarn   = !isDanger && c.unexcused >= ATTENDANCE_WARN_DAYS
+                const rowBg    = isDanger
+                  ? 'bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20'
+                  : isWarn
+                  ? 'bg-amber-50 dark:bg-amber-900/10 hover:bg-amber-100 dark:hover:bg-amber-900/20'
+                  : 'hover:bg-gray-50 dark:hover:bg-slate-700/40'
+                const stickyBg = isDanger
+                  ? 'bg-red-50 dark:bg-red-900/10'
+                  : isWarn
+                  ? 'bg-amber-50 dark:bg-amber-900/10'
+                  : 'bg-white dark:bg-slate-800'
                 return (
                   <tr
                     key={s.id}
-                    className="hover:bg-gray-50 dark:hover:bg-slate-700/40 cursor-pointer"
+                    className={`cursor-pointer ${rowBg}`}
                     onClick={() => setOpenStudent(s)}
                   >
-                    <td className="sticky left-0 bg-white dark:bg-slate-800 px-3 py-1.5 text-gray-800 dark:text-slate-200 whitespace-nowrap">
-                      {s.full_name}
-                      {s.student_number ? <span className="text-gray-400 ml-1">#{s.student_number}</span> : null}
+                    <td className={`sticky left-0 px-3 py-1.5 text-gray-800 dark:text-slate-200 whitespace-nowrap ${stickyBg}`}>
+                      <span className="flex items-center gap-1.5">
+                        {(isDanger || isWarn) && (
+                          <span className={`text-[10px] font-bold ${isDanger ? 'text-red-500' : 'text-amber-500'}`}>
+                            {isDanger ? '⚠' : '!'}
+                          </span>
+                        )}
+                        {s.full_name}
+                        {s.student_number ? <span className="text-gray-400 ml-1">#{s.student_number}</span> : null}
+                      </span>
                     </td>
                     {days.map(d => {
                       const st = grid[s.id]?.[d]
                       const cell = st ? CELL[st] : undefined
+                      const isToday = d === todayStr
                       return (
-                        <td key={d} className={`text-center px-1 py-1.5 ${cell?.cls ?? 'text-gray-200 dark:text-slate-700'}`}>
+                        <td
+                          key={d}
+                          className={`text-center px-1 py-1.5 ${cell?.cls ?? 'text-gray-200 dark:text-slate-700'} ${isToday ? 'bg-blue-50/60 dark:bg-blue-900/10' : ''}`}
+                        >
                           {cell?.ch ?? ''}
                         </td>
                       )
                     })}
-                    <td className="text-center px-2 py-1.5 tabular-nums">
-                      <span className={c.unexcused > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}>
+                    <td className="text-center px-2 py-1.5 tabular-nums whitespace-nowrap">
+                      <span className={isDanger ? 'text-red-600 dark:text-red-400 font-bold' : isWarn ? 'text-amber-600 dark:text-amber-400 font-semibold' : c.unexcused > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}>
                         {c.unexcused}
                       </span>
                       <span className="text-gray-300 dark:text-slate-600 mx-1">|</span>
