@@ -4,6 +4,8 @@ import { P } from '@/src/shared/permissions'
 import { fetchRows, buildXlsx } from '@/src/domains/export/services/XlsxBuilder'
 import type { JobType } from '@/src/domains/export/types'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',
@@ -30,9 +32,21 @@ export async function POST(req: NextRequest) {
   }
 
   const schoolId = ability.schoolId
+  const params = body.params ?? {}
+
+  // Yoklama exportu: classId varsa sınıfa erişim yetkisi doğrula
+  if (jobType === 'excel_yoklama' && params.classId) {
+    try {
+      const db = await createClient()
+      await AttendanceService.assertClassAccess(db, ability, params.classId)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Erişim reddedildi'
+      return NextResponse.json({ error: msg }, { status: 403 })
+    }
+  }
 
   try {
-    const rows = await fetchRows(jobType, body.params ?? {}, schoolId)
+    const rows = await fetchRows(jobType, params, schoolId)
     const buffer = await buildXlsx(rows, jobType)
     const date = new Date().toISOString().split('T')[0]
     const filename = `${jobType}-${date}.xlsx`

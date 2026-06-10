@@ -2,6 +2,7 @@
 
 import { mailer } from '@/src/lib/mailer'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { esc } from '@/src/lib/email-utils'
 
 export async function applySchool(_prev: unknown, formData: FormData) {
   const schoolName   = (formData.get('school_name') as string)?.trim()
@@ -27,11 +28,11 @@ export async function applySchool(_prev: unknown, formData: FormData) {
       html: `
         <h2>Yeni EduDesk Okul Başvurusu</h2>
         <table cellpadding="8" style="border-collapse:collapse;font-size:14px">
-          <tr><td><b>Okul Adı</b></td><td>${schoolName}</td></tr>
-          <tr><td><b>Yetkili</b></td><td>${contactName}</td></tr>
-          <tr><td><b>E-posta</b></td><td>${email}</td></tr>
-          <tr><td><b>Telefon</b></td><td>${phone || '—'}</td></tr>
-          <tr><td><b>Not</b></td><td>${note || '—'}</td></tr>
+          <tr><td><b>Okul Adı</b></td><td>${esc(schoolName)}</td></tr>
+          <tr><td><b>Yetkili</b></td><td>${esc(contactName)}</td></tr>
+          <tr><td><b>E-posta</b></td><td>${esc(email)}</td></tr>
+          <tr><td><b>Telefon</b></td><td>${phone ? esc(phone) : '—'}</td></tr>
+          <tr><td><b>Not</b></td><td>${note ? esc(note) : '—'}</td></tr>
         </table>
       `,
     })

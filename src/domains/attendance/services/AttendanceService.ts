@@ -36,6 +36,9 @@ export const AttendanceService = {
   },
 
   async saveYoklama(classId: string, date: string, entries: AttendanceEntry[]) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçersiz tarih formatı')
+    const day = new Date(date).getDay()
+    if (day === 0 || day === 6) throw new Error('Hafta sonu için yoklama girilemez')
     const ability = await requireAbility(P.ATTENDANCE.UPDATE)
     const db = await createClient()
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)
@@ -79,7 +82,7 @@ export const AttendanceService = {
   ) {
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)
     if (!cls) throw new Error('Sınıf bulunamadı')
-    const { data: me } = await db.from('profiles').select('role').eq('id', ability.userId).single()
+    const { data: me } = await db.from('profiles').select('role').eq('id', ability.userId).eq('school_id', ability.schoolId).single()
     if (YONETICI_ROLLER.includes(me?.role ?? '')) return cls
     if (cls.mentor_teacher_id === ability.userId) return cls
     if (await AttendanceRepository.isTeacherOfClass(db, ability.userId, classId)) return cls
@@ -109,7 +112,13 @@ export const AttendanceService = {
       .is('deleted_at', null)
       .single()
     if (!student) throw new Error('Öğrenci bulunamadı')
-    if (student.class_id) await this.assertClassAccess(db, ability, student.class_id)
+    if (student.class_id) {
+      await this.assertClassAccess(db, ability, student.class_id)
+    } else {
+      // Sınıfsız öğrenciler için yalnızca yöneticiler erişebilir
+      const { data: me } = await db.from('profiles').select('role').eq('id', ability.userId).eq('school_id', ability.schoolId).single()
+      if (!YONETICI_ROLLER.includes(me?.role ?? '')) throw new Error('Bu öğrencinin devamsızlık geçmişine erişim yetkiniz yok')
+    }
     return AttendanceRepository.findStudentHistory(db, studentId, ability.schoolId, schoolYearStart())
   },
 }

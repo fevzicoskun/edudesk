@@ -62,24 +62,24 @@ beforeEach(() => {
 describe('saveYoklama()', () => {
   it('giriş yapılmamış → throw Giriş gerekli', async () => {
     vi.mocked(getAbility).mockResolvedValue(null)
-    await expect(saveYoklama(CLASS_ID, '2026-06-07', [])).rejects.toThrow('Giriş gerekli')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Giriş gerekli')
   })
 
   it('attendance:update izni yok → throw yetkiniz yok', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(NO_ATTENDANCE_PERMS) as never)
-    await expect(saveYoklama(CLASS_ID, '2026-06-07', [])).rejects.toThrow('yetkiniz yok')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('yetkiniz yok')
   })
 
   it('sınıf başka okula ait → throw Sınıf bulunamadı', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     mockSingle.mockResolvedValue({ data: null, error: null })
-    await expect(saveYoklama(CLASS_ID, '2026-06-07', [])).rejects.toThrow('Sınıf bulunamadı')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Sınıf bulunamadı')
   })
 
   it('başarılı kayıt → service client kullanılmaz (normal client ile upsert)', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const { createClient } = await import('@/src/infrastructure/supabase/server')
-    await saveYoklama(CLASS_ID, '2026-06-07', [
+    await saveYoklama(CLASS_ID, '2026-06-09', [
       { studentId: 'student-1', status: 'present' },
       { studentId: 'student-2', status: 'absent' },
     ])
@@ -97,13 +97,13 @@ describe('saveYoklama()', () => {
   it('upsert başarısız → throw hata mesajı', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     mockUpsert.mockResolvedValue({ error: { message: 'DB hatası' } })
-    await expect(saveYoklama(CLASS_ID, '2026-06-07', [])).rejects.toThrow('DB hatası')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('DB hatası')
   })
 
   it('devamsız öğrenciler → inngest event gönderilir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const { inngest } = await import('@/src/infrastructure/inngest')
-    await saveYoklama(CLASS_ID, '2026-06-07', [
+    await saveYoklama(CLASS_ID, '2026-06-09', [
       { studentId: 'absent-student', status: 'absent' },
     ])
     expect(inngest.send).toHaveBeenCalledWith(
@@ -116,7 +116,7 @@ describe('saveYoklama()', () => {
   it('sadece present öğrenciler → inngest event gönderilmez', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const { inngest } = await import('@/src/infrastructure/inngest')
-    await saveYoklama(CLASS_ID, '2026-06-07', [
+    await saveYoklama(CLASS_ID, '2026-06-09', [
       { studentId: 'present-student', status: 'present' },
     ])
     expect(inngest.send).not.toHaveBeenCalled()
@@ -153,17 +153,17 @@ describe('saveYoklama() — excused', () => {
 describe('getYoklama()', () => {
   it('giriş yapılmamış → throw Giriş gerekli', async () => {
     vi.mocked(getAbility).mockResolvedValue(null)
-    await expect(getYoklama(CLASS_ID, '2026-06-07')).rejects.toThrow('Giriş gerekli')
+    await expect(getYoklama(CLASS_ID, '2026-06-09')).rejects.toThrow('Giriş gerekli')
   })
 
   it('attendance:read izni yok → throw yetkiniz yok', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(NO_ATTENDANCE_PERMS) as never)
-    await expect(getYoklama(CLASS_ID, '2026-06-07')).rejects.toThrow('yetkiniz yok')
+    await expect(getYoklama(CLASS_ID, '2026-06-09')).rejects.toThrow('yetkiniz yok')
   })
 
   it('sınıf başka okula ait → throw Sınıf bulunamadı', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     mockSingle.mockResolvedValue({ data: null, error: null })
-    await expect(getYoklama(CLASS_ID, '2026-06-07')).rejects.toThrow('Sınıf bulunamadı')
+    await expect(getYoklama(CLASS_ID, '2026-06-09')).rejects.toThrow('Sınıf bulunamadı')
   })
 })
