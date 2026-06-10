@@ -27,43 +27,50 @@ export async function fetchRows(
   }
 }
 
-export async function buildXlsx(rows: Record<string, unknown>[], jobType: JobType): Promise<Buffer> {
-  const workbook = new ExcelJS.Workbook()
-  const sheetTitle = JOB_LABELS[jobType]
-  const sheet = workbook.addWorksheet(sheetTitle)
-
+function addSheet(workbook: ExcelJS.Workbook, title: string, rows: Record<string, unknown>[]) {
+  const sheet = workbook.addWorksheet(title)
   if (rows.length === 0) {
     sheet.addRow(['Bilgi'])
     sheet.addRow(['Veri bulunamadı'])
-    const buffer = await workbook.xlsx.writeBuffer()
-    return Buffer.from(buffer)
+    return
   }
-
-  // Başlık satırı
   const headers = Object.keys(rows[0])
   sheet.addRow(headers)
   const headerRow = sheet.getRow(1)
   headerRow.font = { bold: true }
-  headerRow.fill = {
-    type: 'pattern',
-    pattern: 'solid',
-    fgColor: { argb: 'FFD9EAD3' },
-  }
-
-  // Veri satırları
-  for (const row of rows) {
-    sheet.addRow(headers.map(h => row[h]))
-  }
-
-  // Kolon genişlikleri — ilk 50 satıra göre otomatik
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9EAD3' } }
+  for (const row of rows) sheet.addRow(headers.map(h => row[h]))
   sheet.columns.forEach((col, i) => {
     const header = headers[i] ?? ''
-    const maxDataLen = rows.slice(0, 50).reduce((max, row) => {
-      return Math.max(max, String(row[header] ?? '').length)
-    }, 0)
+    const maxDataLen = rows.slice(0, 50).reduce((max, row) => Math.max(max, String(row[header] ?? '').length), 0)
     col.width = Math.min(50, Math.max(12, header.length, maxDataLen) + 2)
   })
+}
 
+/** excel_yoklama detay satırlarından öğrenci başına özet üretir (pure). */
+export function yoklamaOzetRows(detail: Record<string, unknown>[]): Record<string, unknown>[] {
+  const map = new Map<string, { sinif: unknown; no: unknown; ad: unknown; gelmedi: number; gec: number; ozurlu: number }>()
+  for (const r of detail) {
+    const key = `${r['Sınıf']}|${r['No']}|${r['Ad Soyad']}`
+    const e = map.get(key) ?? { sinif: r['Sınıf'], no: r['No'], ad: r['Ad Soyad'], gelmedi: 0, gec: 0, ozurlu: 0 }
+    if      (r['Durum'] === 'Gelmedi')   e.gelmedi++
+    else if (r['Durum'] === 'Geç Geldi') e.gec++
+    else if (r['Durum'] === 'Özürlü')    e.ozurlu++
+    map.set(key, e)
+  }
+  return [...map.values()].map(e => ({
+    'Sınıf': e.sinif, 'No': e.no, 'Ad Soyad': e.ad,
+    'Gelmedi': e.gelmedi, 'Geç': e.gec, 'Özürlü': e.ozurlu,
+    'Özürsüz Gün': e.gelmedi + e.gec * 0.5,
+  }))
+}
+
+export async function buildXlsx(rows: Record<string, unknown>[], jobType: JobType): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook()
+  addSheet(workbook, JOB_LABELS[jobType], rows)
+  if (jobType === 'excel_yoklama' && rows.length > 0) {
+    addSheet(workbook, 'Özet', yoklamaOzetRows(rows))
+  }
   const buffer = await workbook.xlsx.writeBuffer()
   return Buffer.from(buffer)
 }
@@ -255,7 +262,7 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     .from('attendance')
     .select('date, status, students(full_name, student_number), classes(name)')
     .eq('school_id', schoolId)
-    .in('status', ['absent', 'late'])   // present kayıtları rapora dahil edilmez
+    .in('status', ['absent', 'late', 'excused'])   // present kayıtları rapora dahil edilmez
     .order('full_name', { referencedTable: 'students' })
     .order('date', { ascending: true })
     .limit(10000)
@@ -273,7 +280,7 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
   const { data, error } = await q
   if (error) throw new Error(`Yoklama sorgu hatası: ${error.message}`)
 
-  const STATUS_LABELS: Record<string, string> = { absent: 'Gelmedi', late: 'Geç Geldi' }
+  const STATUS_LABELS: Record<string, string> = { absent: 'Gelmedi', late: 'Geç Geldi', excused: 'Özürlü' }
 
   return (data ?? []).map(r => {
     const student = r.students
