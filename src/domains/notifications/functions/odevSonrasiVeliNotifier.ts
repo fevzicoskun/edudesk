@@ -14,7 +14,7 @@ function yesterdayInTurkey(): string {
 export const odevSonrasiVeliNotifierFn = inngest.createFunction(
   {
     id: 'odev-sonrasi-veli-notifier',
-    triggers: [{ cron: '0 6 * * *' }], // 09:00 Türkiye saati (UTC+3)
+    triggers: [{ cron: 'TZ=Europe/Istanbul 0 9 * * *' }],
   },
   async ({ step }) => {
     // 1. Dün teslim tarihi geçmiş ödevleri bul (Türkiye tarihine göre)

@@ -1,7 +1,7 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
-import { turkeyDate } from '@/src/lib/email-utils'
+import { esc, turkeyDate } from '@/src/lib/email-utils'
 
 export const aylikBultenFn = inngest.createFunction(
   { id: 'aylik-bulten', triggers: [{ cron: '0 5 1 * *' }] }, // Her ayın 1'i 08:00 Türkiye
@@ -72,7 +72,7 @@ export const aylikBultenFn = inngest.createFunction(
           db.from('students').select('id', { count: 'exact', head: true }).eq('school_id', sid).is('deleted_at', null),
           db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
-          db.from('attendance').select('class_id, status').eq('school_id', sid).gte('date', monthStart).lte('date', monthEnd),
+          db.from('attendance').select('class_id, status').eq('school_id', sid).gte('date', monthStart).lte('date', monthEnd).limit(50000),
           db.from('homework_submissions').select('status').eq('school_id', sid).gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
           db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
         ])
@@ -121,7 +121,7 @@ export const aylikBultenFn = inngest.createFunction(
       <span style="font-size:18px;font-weight:700;color:#1e293b">EduDesk</span>
     </div>
     <h2 style="font-size:22px;font-weight:700;color:#111827;margin:0 0 4px">${monthLabel} Bülteni</h2>
-    <p style="color:#6b7280;font-size:14px;margin:0 0 28px">Merhaba ${mudur.full_name ?? 'Müdür Bey/Hanım'}, geçen aya ait özet aşağıda.</p>
+    <p style="color:#6b7280;font-size:14px;margin:0 0 28px">Merhaba ${esc(mudur.full_name ?? 'Müdür Bey/Hanım')}, geçen aya ait özet aşağıda.</p>
 
     <!-- İstatistik kartları -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px">
@@ -147,7 +147,7 @@ export const aylikBultenFn = inngest.createFunction(
     <!-- En iyi yoklama sınıfı -->
     <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:24px;border-left:4px solid #4f46e5">
       <p style="font-size:12px;font-weight:600;color:#4f46e5;margin:0 0 4px;text-transform:uppercase;letter-spacing:0.05em">🏆 En İyi Yoklama</p>
-      <p style="font-size:18px;font-weight:700;color:#1e293b;margin:0">${bestClass}</p>
+      <p style="font-size:18px;font-weight:700;color:#1e293b;margin:0">${esc(bestClass)}</p>
       <p style="font-size:13px;color:#64748b;margin:4px 0 0">%${bestRate} devam oranı</p>
     </div>` : ''}
 

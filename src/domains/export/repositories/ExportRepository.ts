@@ -76,12 +76,13 @@ export const ExportRepository = {
       .maybeSingle()
   },
 
-  async listByUser(userId: string, limit = 20) {
+  async listByUser(userId: string, schoolId: string, limit = 20) {
     const db = createServiceClient()
     return db
       .from('export_jobs')
       .select('*')
       .eq('user_id', userId)
+      .eq('school_id', schoolId)
       .order('created_at', { ascending: false })
       .limit(limit)
   },

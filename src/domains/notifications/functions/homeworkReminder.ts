@@ -9,7 +9,7 @@ import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 export const homeworkReminderFn = inngest.createFunction(
   {
     id: 'homework-reminder',
-    triggers: [{ cron: '0 5 * * *' }], // 08:00 Türkiye saati (UTC+3)
+    triggers: [{ cron: 'TZ=Europe/Istanbul 0 8 * * *' }],
   },
   async ({ step }) => {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://myedudesk.com.tr'
@@ -145,14 +145,16 @@ export const homeworkReminderFn = inngest.createFunction(
       const supabase = createServiceClient()
       if (!toSend.length) return []
 
-      const uniqueClassIds = [...new Set(toSend.map((hw) => hw.classId))]
-      const hwIds          = toSend.map((hw) => hw.homeworkId)
+      const uniqueClassIds  = [...new Set(toSend.map((hw) => hw.classId))]
+      const uniqueSchoolIds = [...new Set(toSend.map((hw) => hw.schoolId))]
+      const hwIds           = toSend.map((hw) => hw.homeworkId)
 
       const [{ data: allStudents }, { data: doneSubs }] = await Promise.all([
         supabase
           .from('students')
           .select('id, full_name, veli_email, class_id')
           .in('class_id', uniqueClassIds)
+          .in('school_id', uniqueSchoolIds)
           .not('veli_email', 'is', null)
           .eq('veli_email_opt_out', false)
           .is('deleted_at', null),
@@ -160,6 +162,7 @@ export const homeworkReminderFn = inngest.createFunction(
           .from('homework_submissions')
           .select('student_id, homework_id')
           .in('homework_id', hwIds)
+          .in('school_id', uniqueSchoolIds)
           .eq('status', 'yapildi'),
       ])
 

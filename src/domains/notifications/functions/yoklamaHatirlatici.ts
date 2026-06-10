@@ -12,17 +12,18 @@ export const yoklamaHatirlaticiFn = inngest.createFunction(
 
     const missing = await step.run('eksik-siniflar', async () => {
       const db = createServiceClient()
-      const [clsRes, attRes] = await Promise.all([
-        db.from('classes')
-          .select('id, name, school_id, mentor_teacher_id')
-          .is('deleted_at', null)
-          .not('school_id', 'is', null),
-        db.from('attendance')
-          .select('class_id')
-          .eq('date', todayISO),
-      ])
-      const taken = new Set((attRes.data ?? []).map(a => a.class_id))
-      return (clsRes.data ?? []).filter(c => !taken.has(c.id))
+      const { data: classes } = await db.from('classes')
+        .select('id, name, school_id, mentor_teacher_id')
+        .is('deleted_at', null)
+        .not('school_id', 'is', null)
+      if (!classes?.length) return []
+      const schoolIds = [...new Set(classes.map(c => c.school_id as string))]
+      const { data: attData } = await db.from('attendance')
+        .select('class_id')
+        .eq('date', todayISO)
+        .in('school_id', schoolIds)
+      const taken = new Set((attData ?? []).map(a => a.class_id))
+      return classes.filter(c => !taken.has(c.id))
     })
 
     if (missing.length === 0) return { sent: 0 }

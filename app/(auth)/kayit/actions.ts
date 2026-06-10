@@ -3,6 +3,7 @@
 import { mailer } from '@/src/lib/mailer'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { esc } from '@/src/lib/email-utils'
+import { env } from '@/src/lib/env'
 
 export async function applySchool(_prev: unknown, formData: FormData) {
   const schoolName   = (formData.get('school_name') as string)?.trim()
@@ -23,7 +24,7 @@ export async function applySchool(_prev: unknown, formData: FormData) {
   try {
     await mailer.sendMail({
 
-      to: process.env.FEEDBACK_TO,
+      to: env.FEEDBACK_TO,
       subject: `Yeni Okul Başvurusu: ${schoolName}`,
       html: `
         <h2>Yeni EduDesk Okul Başvurusu</h2>
