@@ -1,11 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 
-type DataPoint = { title: string; yapildi: number; eksik: number; diger: number }
+type DataPoint = {
+  id: string
+  title: string
+  yapildi: number
+  eksik: number
+  diger: number
+  yapildiCount: number
+  total: number
+}
 
 function useIsDark() {
   const [dark, setDark] = useState(false)
@@ -23,6 +32,7 @@ const LABEL: Record<string, string> = { yapildi: 'Yapıldı', eksik: 'Eksik', di
 
 export default function OdevTamamlanmaChart({ data }: { data: DataPoint[] }) {
   const isDark = useIsDark()
+  const router = useRouter()
 
   const gridColor  = isDark ? '#334155' : '#e5e7eb'
   const textColor  = isDark ? '#94a3b8' : '#9ca3af'
@@ -32,7 +42,16 @@ export default function OdevTamamlanmaChart({ data }: { data: DataPoint[] }) {
 
   return (
     <ResponsiveContainer width="100%" height={160}>
-      <BarChart data={data} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
+      <BarChart
+          data={data}
+          margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
+          onClick={(payload) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const id = (payload as any)?.activePayload?.[0]?.payload?.id as string | undefined
+            if (id) router.push(`/odevler/${id}`)
+          }}
+          style={{ cursor: 'pointer' }}
+        >
         <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
         <XAxis
           dataKey="title"
@@ -56,7 +75,14 @@ export default function OdevTamamlanmaChart({ data }: { data: DataPoint[] }) {
             fontSize: '12px',
             color: tooltipTxt,
           }}
-          formatter={(value, name) => [`%${value}`, LABEL[String(name)] ?? String(name)] as [string, string]}
+          formatter={(value, name, props) => {
+            const p = props.payload as DataPoint
+            const label = LABEL[String(name)] ?? String(name)
+            if (String(name) === 'yapildi' && p.total > 0) {
+              return [`%${value} (${p.yapildiCount}/${p.total})`, label] as [string, string]
+            }
+            return [`%${value}`, label] as [string, string]
+          }}
           labelStyle={{ fontWeight: 600, marginBottom: 2 }}
         />
         <Bar dataKey="yapildi" name="Yapıldı"    stackId="a" fill="#22c55e" />
