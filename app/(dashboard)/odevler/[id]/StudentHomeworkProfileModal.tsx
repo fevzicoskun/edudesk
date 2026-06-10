@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { getStudentHomeworkProfile } from '@/src/domains/homework/actions'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
+import StudentAttendanceHistory from '@/components/student/StudentAttendanceHistory'
 
 type ProfileData = Awaited<ReturnType<typeof getStudentHomeworkProfile>>
 
@@ -44,9 +45,10 @@ export default function StudentHomeworkProfileModal({
   const [data, setData] = useState<ProfileData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [tab, setTab] = useState<'odev' | 'devamsizlik'>('odev')
 
   useEffect(() => {
-    if (!studentId) { setData(null); setError(null); return }
+    if (!studentId) { setData(null); setError(null); setTab('odev'); return }
     setData(null)
     setError(null)
     startTransition(async () => {
@@ -139,8 +141,29 @@ export default function StudentHomeworkProfileModal({
           </button>
         </div>
 
+        {/* Sekmeler */}
+        <div className="flex gap-1 px-5 pt-2 border-b border-gray-100 dark:border-slate-700">
+          {([['odev', 'Ödev Profili'], ['devamsizlik', 'Devamsızlık']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`text-xs font-medium px-3 py-2 rounded-t-lg transition-colors ${
+                tab === key
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         {/* İçerik */}
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {tab === 'devamsizlik' && studentId && (
+            <StudentAttendanceHistory studentId={studentId} />
+          )}
+          {tab === 'odev' && (<>
 
           {isPending && !profile && (
             <div className="space-y-3">
@@ -221,6 +244,7 @@ export default function StudentHomeworkProfileModal({
               )}
             </>
           )}
+          </>)}
         </div>
       </div>
     </div>
