@@ -38,6 +38,8 @@ export const AttendanceService = {
   async saveYoklama(classId: string, date: string, entries: AttendanceEntry[]) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçersiz tarih formatı')
     if (isWeekendISO(date)) throw new Error('Hafta sonu için yoklama girilemez')
+    const todayISO = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+    if (date > todayISO) throw new Error('Gelecek tarih için yoklama girilemez')
     const ability = await requireAbility(P.ATTENDANCE.UPDATE)
     const db = await createClient()
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)

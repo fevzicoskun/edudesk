@@ -34,6 +34,13 @@ function todayISO() {
   return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
 
+function schoolYearStartISO() {
+  const today = todayISO()
+  const year  = parseInt(today.slice(0, 4))
+  const month = parseInt(today.slice(5, 7))
+  return `${month >= 9 ? year : year - 1}-09-01`
+}
+
 function isWeekend(iso: string) {
   const [y, m, d] = iso.split('-').map(Number)
   const day = new Date(y, m - 1, d).getDay()
@@ -177,7 +184,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Tarih</label>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputCls} />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} max={todayISO()} min={schoolYearStartISO()} className={inputCls} />
         </div>
       </div>
 
