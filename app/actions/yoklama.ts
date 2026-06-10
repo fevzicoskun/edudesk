@@ -1,104 +1,30 @@
 'use server'
 
-import { createClient } from '@/src/infrastructure/supabase/server'
-import { inngest } from '@/src/infrastructure/inngest'
 import { UUID } from '@/src/shared/validation'
-import { getAbility } from '@/src/shared/authorization/server'
-import { P } from '@/src/shared/permissions'
-import { logger } from '@/src/infrastructure/observability/logger'
-import type { AttendanceStatus } from '@/src/domains/attendance/types'
+import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
+import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
 
-export type { AttendanceStatus }
+export type { AttendanceStatus } from '@/src/domains/attendance/types'
+export type { AttendanceEntry }
 
-export interface AttendanceEntry {
-  studentId: string
-  status:    AttendanceStatus
+export async function getYoklama(classId: string, date: string) {
+  UUID.parse(classId)
+  return AttendanceService.getYoklama(classId, date)
 }
 
-export async function getYoklama(
-  classId: string,
-  date: string
-): Promise<Record<string, AttendanceStatus>> {
+export async function saveYoklama(classId: string, date: string, entries: AttendanceEntry[]) {
   UUID.parse(classId)
-  const ability = await getAbility()
-  if (!ability) throw new Error('Giriş gerekli')
-  if (ability.cannot(P.ATTENDANCE.READ)) throw new Error('Bu işlem için yetkiniz yok')
-
-  const supabase = await createClient()
-
-  const { data: cls } = await supabase
-    .from('classes')
-    .select('id')
-    .eq('id', classId)
-    .eq('school_id', ability.schoolId)
-    .is('deleted_at', null)
-    .single()
-  if (!cls) throw new Error('Sınıf bulunamadı')
-
-  const { data } = await supabase
-    .from('attendance')
-    .select('student_id, status')
-    .eq('class_id', classId)
-    .eq('school_id', ability.schoolId)
-    .eq('date', date)
-
-  const map: Record<string, AttendanceStatus> = {}
-  for (const row of data ?? []) {
-    map[row.student_id] = row.status as AttendanceStatus
-  }
-  return map
+  return AttendanceService.saveYoklama(classId, date, entries)
 }
 
-export async function saveYoklama(
-  classId: string,
-  date:    string,
-  entries: AttendanceEntry[]
-): Promise<void> {
+export async function getCizelge(classId: string, year: number, month: number) {
   UUID.parse(classId)
-  const ability = await getAbility()
-  if (!ability) throw new Error('Giriş gerekli')
-  if (ability.cannot(P.ATTENDANCE.UPDATE)) throw new Error('Bu işlem için yetkiniz yok')
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) throw new Error('Geçersiz yıl')
+  if (!Number.isInteger(month) || month < 1 || month > 12) throw new Error('Geçersiz ay')
+  return AttendanceService.getClassMonth(classId, year, month)
+}
 
-  const supabase = await createClient()
-
-  // Sınıfın bu okula ait olduğunu RLS-korumalı client ile doğrula
-  const { data: cls } = await supabase
-    .from('classes')
-    .select('id')
-    .eq('id', classId)
-    .eq('school_id', ability.schoolId)
-    .is('deleted_at', null)
-    .single()
-  if (!cls) throw new Error('Sınıf bulunamadı')
-
-  const rows = entries.map(e => ({
-    class_id:   classId,
-    student_id: e.studentId,
-    teacher_id: ability.userId,
-    school_id:  ability.schoolId,
-    date,
-    status:     e.status,
-  }))
-
-  const { error } = await supabase
-    .from('attendance')
-    .upsert(rows, { onConflict: 'class_id,student_id,date' })
-  if (error) throw new Error(error.message)
-
-  const absentIds = entries
-    .filter(e => e.status === 'absent' || e.status === 'late')
-    .map(e => e.studentId)
-
-  if (absentIds.length > 0) {
-    try {
-      await inngest.send(
-        absentIds.map(studentId => ({
-          name: 'attendance/absent' as const,
-          data: { studentId, classId, date, schoolId: ability.schoolId },
-        }))
-      )
-    } catch (e) {
-      logger.error({ classId, date, absentCount: absentIds.length, err: e instanceof Error ? e.message : String(e) }, 'saveYoklama: Inngest event gönderilemedi')
-    }
-  }
+export async function getStudentAttendanceHistory(studentId: string) {
+  UUID.parse(studentId)
+  return AttendanceService.getStudentHistory(studentId)
 }
