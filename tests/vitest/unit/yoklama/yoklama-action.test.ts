@@ -15,10 +15,12 @@ vi.mock('@/src/shared/authorization/server', () => ({
 
 const mockSingle    = vi.fn()
 const mockUpsert    = vi.fn()
+const mockIn        = vi.fn()
 const mockFromResult = {
   select: vi.fn().mockReturnThis(),
   eq:     vi.fn().mockReturnThis(),
   is:     vi.fn().mockReturnThis(),
+  in:     mockIn,
   single: mockSingle,
   upsert: mockUpsert,
 }
@@ -58,6 +60,8 @@ beforeEach(() => {
   mockFromResult.is.mockReturnThis()
   mockSingle.mockResolvedValue({ data: { id: CLASS_ID }, error: null })
   mockUpsert.mockResolvedValue({ error: null })
+  // Öğrenci sahipliği kontrolü — varsayılan olarak tüm test öğrencileri geçerli
+  mockIn.mockResolvedValue({ data: [S1, S2, SA, SP, SE].map(id => ({ id })), error: null })
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -125,6 +129,15 @@ describe('saveYoklama() — service-level guards', () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     mockUpsert.mockResolvedValue({ error: { message: 'DB hatası' } })
     await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('DB hatası')
+  })
+
+  it('başka sınıfın öğrencisi → throw Bazı öğrenciler bu sınıfa ait değil', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const FOREIGN = '99999999-9999-4999-8999-999999999999'
+    mockIn.mockResolvedValueOnce({ data: [], error: null }) // sınıfta eşleşen öğrenci yok
+    await expect(
+      saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: FOREIGN, status: 'absent' }])
+    ).rejects.toThrow('Bazı öğrenciler bu sınıfa ait değil')
   })
 })
 

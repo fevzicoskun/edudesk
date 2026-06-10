@@ -16,17 +16,20 @@ export function generateTempPassword(): string {
   return randomString('ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789', 10)
 }
 
+function istanbulToday(): { year: number; month: number } {
+  const iso = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  const [y, m] = iso.split('-').map(Number)
+  return { year: y, month: m }
+}
+
 export function getEgitimYili(): string {
-  const now = new Date()
-  const ay = now.getMonth() + 1
-  const yil = now.getFullYear()
-  return ay >= 9 ? `${yil}-${yil + 1}` : `${yil - 1}-${yil}`
+  const { year, month } = istanbulToday()
+  return month >= 9 ? `${year}-${year + 1}` : `${year - 1}-${year}`
 }
 
 export function schoolYearStart(): string {
-  const now = new Date()
-  const year = now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1
-  return `${year}-09-01`
+  const { year, month } = istanbulToday()
+  return `${month >= 9 ? year : year - 1}-09-01`
 }
 
 export function getGreeting(fullName: string): string {

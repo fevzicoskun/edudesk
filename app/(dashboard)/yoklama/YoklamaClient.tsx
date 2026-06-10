@@ -5,7 +5,7 @@ import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/consta
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
-import { formatAbsenceBadge } from '@/src/domains/attendance/lib/attendanceMath'
+import { formatAbsenceBadge, isWeekendISO } from '@/src/domains/attendance/lib/attendanceMath'
 import Tooltip from '@/components/ui/Tooltip'
 
 interface Props {
@@ -41,12 +41,6 @@ function schoolYearStartISO() {
   return `${month >= 9 ? year : year - 1}-09-01`
 }
 
-function isWeekend(iso: string) {
-  const [y, m, d] = iso.split('-').map(Number)
-  const day = new Date(y, m - 1, d).getDay()
-  return day === 0 || day === 6
-}
-
 export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId }: Props) {
   const [today]          = useState(todayISO)           // mount'ta bir kez
   const [schoolYearStart] = useState(schoolYearStartISO)  // mount'ta bir kez
@@ -69,7 +63,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
 
   const cls = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
-  const weekend    = isWeekend(date)
+  const weekend    = isWeekendISO(date)
   const isPastDate = date < today
 
   const guardDirty = useCallback((): boolean => {

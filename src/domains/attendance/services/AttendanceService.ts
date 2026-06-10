@@ -45,6 +45,19 @@ export const AttendanceService = {
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)
     if (!cls) throw new Error('Sınıf bulunamadı')
 
+    if (entries.length > 0) {
+      const { data: validStudents } = await db
+        .from('students')
+        .select('id')
+        .eq('class_id', classId)
+        .eq('school_id', ability.schoolId)
+        .is('deleted_at', null)
+        .in('id', entries.map(e => e.studentId))
+      const validSet = new Set((validStudents ?? []).map(s => s.id))
+      const invalid = entries.filter(e => !validSet.has(e.studentId))
+      if (invalid.length > 0) throw new Error('Bazı öğrenciler bu sınıfa ait değil')
+    }
+
     await AttendanceRepository.upsertEntries(db, entries.map(e => ({
       class_id:   classId,
       student_id: e.studentId,

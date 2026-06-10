@@ -24,6 +24,7 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   z.array(entrySchema).max(200).parse(entries)
   await AttendanceService.saveYoklama(classId, date, entries)
   revalidatePath('/yonetim')
+  revalidatePath('/yoklama')
 }
 
 export async function getCizelge(classId: string, year: number, month: number) {
