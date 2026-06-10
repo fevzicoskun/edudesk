@@ -7,8 +7,9 @@ import { veliAbsenceNotifierFn } from '@/src/domains/notifications/functions/vel
 import { aylikBultenFn } from '@/src/domains/notifications/functions/aylikBulten'
 import { odevSonrasiVeliNotifierFn } from '@/src/domains/notifications/functions/odevSonrasiVeliNotifier'
 import { homeworkCreatedNotifierFn } from '@/src/domains/notifications/functions/homeworkCreatedNotifier'
+import { yoklamaHatirlaticiFn } from '@/src/domains/notifications/functions/yoklamaHatirlatici'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [exportXlsxFn, exportDeadLetterFn, homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn],
+  functions: [exportXlsxFn, exportDeadLetterFn, homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, yoklamaHatirlaticiFn],
 })
