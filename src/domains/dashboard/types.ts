@@ -17,17 +17,15 @@ export type WeeklyStats = {
 }
 
 export type OdevTamamlanmaItem = {
-  title:   string
-  yapildi: number
-  eksik:   number
-  diger:   number
-}
-
-export type YoklamaTrendItem = {
-  hafta:    string
-  oran:     number
-  devamsiz: number
-  toplam:   number
+  id:           string   // homework id — /odevler/[id] linki için
+  title:        string   // maks 14 karakter, truncated
+  classId:      string   // client tab filtresi için
+  className:    string   // tab label için
+  yapildi:      number   // % (0-100)
+  eksik:        number   // %
+  diger:        number   // %
+  yapildiCount: number   // gerçek tamamlayan öğrenci sayısı
+  total:        number   // toplam submission sayısı
 }
 
 export type YoklamaDurumItem = {
@@ -44,7 +42,6 @@ export type DashboardMetrics = {
   weekly: WeeklyStats
   homeworks: HomeworkLite[]
   tamamlanmaData: OdevTamamlanmaItem[]
-  yoklamaTrendData: YoklamaTrendItem[]
   yoklamaDurumu: YoklamaDurumItem[]
   riskAlerts: RiskAlert[]
 }
