@@ -5,7 +5,7 @@ import { subDays, todayLocalISO } from '@/src/shared/date'
 import { turkeyDate } from '@/src/lib/email-utils'
 import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
 import { logger } from '@/src/infrastructure/observability/logger'
-import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaTrendItem, YoklamaDurumItem } from '../types'
+import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaDurumItem } from '../types'
 
 export function mondayOf(dateStr: string): string {
   // Yerel tarih constructor kullan — toISOString UTC kaymasını önle
@@ -16,12 +16,6 @@ export function mondayOf(dateStr: string): string {
   date.setDate(date.getDate() + diff)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
-function shortLabel(isoDate: string): string {
-  const d = new Date(isoDate)
-  const months = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara']
-  return `${d.getDate()} ${months[d.getMonth()]}`
 }
 
 type StudentRow = { id: string; full_name: string; class_id: string; classes: { name: string } | null }
@@ -165,9 +159,8 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
 
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
-    const today         = todayLocalISO()
-    const eightWeeksAgo = turkeyDate(subDays(new Date(), 56))
-    const weekStart     = getWeekStart()
+    const today     = todayLocalISO()
+    const weekStart = getWeekStart()
 
     const profile  = await getCurrentProfile()
     if (!profile?.school_id) throw new Error('Profil bulunamadı')
@@ -178,15 +171,13 @@ export const TeacherDashboardService = {
       await fetchRiskInputs(teacherId, schoolId)
 
     // Aşama 2: hwIds/classIds gerektiren diğer 3 sorgu
-    const [weeklyResult, trendResult, todayAttResult] = await Promise.all([
+    const [weeklyResult, todayAttResult] = await Promise.all([
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
-      DashboardRepository.getAttendanceTrend(classIds, eightWeeksAgo),
       DashboardRepository.getTodayClassAttendance(classIds, today),
     ])
 
     const classesWithAttToday = new Set((todayAttResult.data ?? []).map(a => (a as { class_id: string }).class_id))
     const weeklySubmissions   = (weeklyResult.data ?? []) as SubmissionRow[]
-    const trendRows           = (trendResult.data  ?? []) as { date: string; status: string }[]
 
     const todayHomeworkCount = homeworks.filter(h => h.due_date === today).length
     const totalMissingCount  = submissions.filter(s => s.status === 'eksik').length
@@ -199,8 +190,19 @@ export const TeacherDashboardService = {
       ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
       : 0
 
-    // Ödev tamamlanma chart: son 6 geçmiş ödev
-    const pastHws = homeworks.filter(h => h.due_date <= today).slice(0, 6)
+    // Ödev tamamlanma chart: sınıf başına son 6 geçmiş ödev (homeworks due_date DESC sıralı)
+    const pastHwByClass = new Map<string, HwRow[]>()
+    for (const hw of homeworks) {
+      if (hw.due_date > today) continue
+      const list = pastHwByClass.get(hw.class_id) ?? []
+      if (list.length < 6) {
+        list.push(hw)
+        pastHwByClass.set(hw.class_id, list)
+      }
+    }
+    const pastHws: HwRow[] = [...pastHwByClass.values()].flat()
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))  // eskiden yeniye
+
     const subByHw = new Map<string, { yapildi: number; eksik: number; diger: number; toplam: number }>()
     for (const hw of pastHws) subByHw.set(hw.id, { yapildi: 0, eksik: 0, diger: 0, toplam: 0 })
     for (const s of submissions) {
@@ -209,37 +211,24 @@ export const TeacherDashboardService = {
       e.toplam++
       if      (s.status === 'yapildi') e.yapildi++
       else if (s.status === 'eksik')   e.eksik++
-      else                              e.diger++
+      else                             e.diger++
     }
-    const tamamlanmaData: OdevTamamlanmaItem[] = [...pastHws].reverse().map(hw => {
-      const s = subByHw.get(hw.id)!
+    const tamamlanmaData: OdevTamamlanmaItem[] = pastHws.map(hw => {
+      const s = subByHw.get(hw.id) ?? { yapildi: 0, eksik: 0, diger: 0, toplam: 0 }
       const t = s.toplam
       const title = hw.title.length > 14 ? hw.title.slice(0, 13) + '…' : hw.title
       return {
+        id:           hw.id,
         title,
-        yapildi: t > 0 ? Math.round((s.yapildi / t) * 100) : 0,
-        eksik:   t > 0 ? Math.round((s.eksik   / t) * 100) : 0,
-        diger:   t > 0 ? Math.round((s.diger   / t) * 100) : 0,
+        classId:      hw.class_id,
+        className:    hw.classes?.name ?? '—',
+        yapildi:      t > 0 ? Math.round((s.yapildi / t) * 100) : 0,
+        eksik:        t > 0 ? Math.round((s.eksik   / t) * 100) : 0,
+        diger:        t > 0 ? Math.round((s.diger   / t) * 100) : 0,
+        yapildiCount: s.yapildi,
+        total:        t,
       }
     })
-
-    // Yoklama trend chart: son 8 hafta
-    const weekMap = new Map<string, { devamsiz: number; toplam: number }>()
-    for (const r of trendRows) {
-      const key = mondayOf(r.date)
-      if (!weekMap.has(key)) weekMap.set(key, { devamsiz: 0, toplam: 0 })
-      const e = weekMap.get(key)!
-      e.toplam++
-      if (r.status === 'absent') e.devamsiz++
-    }
-    const yoklamaTrendData: YoklamaTrendItem[] = Array.from(weekMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([week, { devamsiz, toplam }]) => ({
-        hafta: shortLabel(week),
-        oran:  toplam > 0 ? Math.round((devamsiz / toplam) * 100) : 0,
-        devamsiz,
-        toplam,
-      }))
 
     // Öğretmenin sınıflarını unique listele, grade+name'e göre sırala
     const seenClasses = new Map<string, { classId: string; className: string; grade: number }>()
@@ -267,7 +256,6 @@ export const TeacherDashboardService = {
       },
       homeworks: homeworks as HomeworkLite[],
       tamamlanmaData,
-      yoklamaTrendData,
       yoklamaDurumu,
       riskAlerts: alerts,
     }
