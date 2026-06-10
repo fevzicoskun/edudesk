@@ -5,7 +5,7 @@ import { P } from '@/src/shared/permissions'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { schoolYearStart } from '@/src/shared/utils'
 import { AttendanceRepository } from '../repositories/AttendanceRepository'
-import { schoolDaysOfMonth } from '../lib/attendanceMath'
+import { schoolDaysOfMonth, isWeekendISO } from '../lib/attendanceMath'
 import type { PermissionKey } from '@/src/shared/authorization'
 import type { AttendanceStatus } from '../types'
 
@@ -37,8 +37,7 @@ export const AttendanceService = {
 
   async saveYoklama(classId: string, date: string, entries: AttendanceEntry[]) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Geçersiz tarih formatı')
-    const day = new Date(date).getDay()
-    if (day === 0 || day === 6) throw new Error('Hafta sonu için yoklama girilemez')
+    if (isWeekendISO(date)) throw new Error('Hafta sonu için yoklama girilemez')
     const ability = await requireAbility(P.ATTENDANCE.UPDATE)
     const db = await createClient()
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)

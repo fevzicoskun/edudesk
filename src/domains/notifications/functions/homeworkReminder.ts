@@ -91,7 +91,7 @@ export const homeworkReminderFn = inngest.createFunction(
         .from('notifications')
         .select('homework_id, user_id')
         .in('homework_id', candidates.map((c) => c.homeworkId))
-        .gte('created_at', turkeyDate())
+        .gte('created_at', turkeyDate() + 'T00:00:00+03:00')
 
       const sent = new Set(existing?.map((n) => `${n.homework_id}:${n.user_id}`) ?? [])
       return candidates.filter((c) => !sent.has(`${c.homeworkId}:${c.teacherId}`))
