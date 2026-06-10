@@ -7,6 +7,8 @@ const NO_ATTENDANCE_PERMS: GrantedPermission[] = OGRETMEN_PERMS.filter(
   p => p.resource !== 'attendance'
 )
 
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+
 vi.mock('@/src/shared/authorization/server', () => ({
   getAbility: vi.fn(),
 }))
@@ -164,6 +166,13 @@ describe('saveYoklama() — başarılı kayıt', () => {
       { studentId: SP, status: 'present' },
     ])
     expect(inngest.send).not.toHaveBeenCalled()
+  })
+
+  it('başarılı kayıt → revalidatePath("/yonetim") çağrılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    const { revalidatePath } = await import('next/cache')
+    await saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: S1, status: 'present' }])
+    expect(revalidatePath).toHaveBeenCalledWith('/yonetim')
   })
 })
 

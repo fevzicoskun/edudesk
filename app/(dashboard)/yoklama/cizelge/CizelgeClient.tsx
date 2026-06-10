@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { getCizelge } from '@/app/actions/yoklama'
 import { buildMonthGrid, countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
@@ -26,10 +26,10 @@ function todayISTStr() {
 }
 
 export default function CizelgeClient({ classes, yearCounts }: { classes: ClassItem[]; yearCounts: AbsenceCounts }) {
-  const todayStr = todayISTStr()
-  const [year0, month0] = todayStr.split('-').map(Number)
+  const [todayStr] = useState(todayISTStr)  // mount'ta bir kez, Intl.DateTimeFormat maliyeti atlanır
+  const [todayYear, todayMonth] = todayStr.split('-').map(Number)
   const [classId, setClassId] = useState(classes[0]?.id ?? '')
-  const [ym, setYm] = useState(`${year0}-${String(month0).padStart(2, '0')}`)
+  const [ym, setYm] = useState(`${todayYear}-${String(todayMonth).padStart(2, '0')}`)
   const [days, setDays] = useState<string[]>([])
   const [grid, setGrid] = useState<Record<string, Record<string, AttendanceStatus>>>({})
   const [counts, setCounts] = useState<ReturnType<typeof countAbsences>>({})
@@ -40,11 +40,20 @@ export default function CizelgeClient({ classes, yearCounts }: { classes: ClassI
   const [year, month] = ym.split('-').map(Number)
   const cls = classes.find(c => c.id === classId)
 
-  const dangerStudents = cls ? cls.students.filter(s => (yearCounts[s.id]?.unexcused ?? 0) >= ATTENDANCE_LIMIT_DAYS).length : 0
-  const warnStudents   = cls ? cls.students.filter(s => {
-    const u = yearCounts[s.id]?.unexcused ?? 0
-    return u >= ATTENDANCE_WARN_DAYS && u < ATTENDANCE_LIMIT_DAYS
-  }).length : 0
+  const schoolYearStartYm = `${todayMonth >= 9 ? todayYear : todayYear - 1}-09`
+  const currentYm         = `${todayYear}-${String(todayMonth).padStart(2, '0')}`
+
+  const dangerStudents = useMemo(
+    () => (cls ? cls.students.filter(s => (yearCounts[s.id]?.unexcused ?? 0) >= ATTENDANCE_LIMIT_DAYS).length : 0),
+    [cls, yearCounts]
+  )
+  const warnStudents = useMemo(
+    () => (cls ? cls.students.filter(s => {
+      const u = yearCounts[s.id]?.unexcused ?? 0
+      return u >= ATTENDANCE_WARN_DAYS && u < ATTENDANCE_LIMIT_DAYS
+    }).length : 0),
+    [cls, yearCounts]
+  )
 
   const load = useCallback(async () => {
     if (!classId) return
@@ -78,7 +87,7 @@ export default function CizelgeClient({ classes, yearCounts }: { classes: ClassI
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Ay</label>
-          <input type="month" value={ym} onChange={e => e.target.value && setYm(e.target.value)} className={inputCls} />
+          <input type="month" value={ym} onChange={e => e.target.value && setYm(e.target.value)} min={schoolYearStartYm} max={currentYm} className={inputCls} />
         </div>
         <div className="ml-auto">
           {cls && days.length > 0 && (
