@@ -48,7 +48,7 @@ export default function StudentAttendanceHistory({ studentId }: { studentId: str
       </p>
       <ul className="divide-y divide-gray-100 dark:divide-slate-700 max-h-72 overflow-y-auto">
         {rows.map(r => (
-          <li key={`${r.date}-${r.status}`} className="flex items-center justify-between py-1.5 text-sm">
+          <li key={r.date} className="flex items-center justify-between py-1.5 text-sm">
             <span className="text-gray-700 dark:text-slate-300 tabular-nums">{fmtTR(r.date)}</span>
             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${COLORS[r.status] ?? ''}`}>
               {LABELS[r.status] ?? r.status}

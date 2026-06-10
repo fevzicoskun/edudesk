@@ -61,15 +61,6 @@ export const submissionStatusSchema = z.enum(['yapildi', 'eksik', 'yapilmadi', '
 
 export const attendanceStatusSchema = z.enum(['present', 'absent', 'late', 'excused'])
 
-export const saveAttendanceSchema = z.object({
-  classId: UUID,
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı'),
-  records: z.array(z.object({
-    studentId: UUID,
-    status: attendanceStatusSchema,
-  })).max(100),
-})
-
 export const profileSchema = z.object({
   full_name: z.string().min(2, 'Ad en az 2 karakter olmalı').max(120),
   subject: z.string().max(100).optional().nullable(),

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { getCizelge } from '@/app/actions/yoklama'
 import { buildMonthGrid, countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
@@ -55,24 +55,29 @@ export default function CizelgeClient({ classes, yearCounts }: { classes: ClassI
     [cls, yearCounts]
   )
 
-  const load = useCallback(async () => {
+  // classId/yıl/ay değiştiğinde çizelgeyi yükle — cancellation flag ile race condition önlenir
+  useEffect(() => {
     if (!classId) return
+    let cancelled = false
     setLoading(true)
     setError('')
-    try {
-      const { days: d, rows } = await getCizelge(classId, year, month)
-      setDays(d)
-      setGrid(buildMonthGrid(rows))
-      setCounts(countAbsences(rows))
-    } catch (e) {
-      console.error('[CizelgeClient] load:', e)
-      setError(e instanceof Error ? e.message : 'Çizelge yüklenemedi')
-    } finally {
-      setLoading(false)
-    }
+    getCizelge(classId, year, month)
+      .then(({ days: d, rows }) => {
+        if (cancelled) return
+        setDays(d)
+        setGrid(buildMonthGrid(rows))
+        setCounts(countAbsences(rows))
+      })
+      .catch(e => {
+        if (cancelled) return
+        console.error('[CizelgeClient] load:', e)
+        setError(e instanceof Error ? e.message : 'Çizelge yüklenemedi')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [classId, year, month])
-
-  useEffect(() => { load() }, [load])
 
   const inputCls = 'px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
 

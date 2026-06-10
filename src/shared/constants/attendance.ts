@@ -1,3 +1,3 @@
-// MEB yönetmeliği: yıl içi toplam devamsızlık sınırı 20 gün (özürsüz+özürlü birlikte)
-export const ATTENDANCE_WARN_DAYS  = 15  // uyarı — MEB sınırına 5 gün kala
+// Özürsüz devamsızlık (absent×1 + late×0.5) için MEB uyarı ve sınır eşikleri
+export const ATTENDANCE_WARN_DAYS  = 15  // uyarı — özürsüz 15 güne ulaştı
 export const ATTENDANCE_LIMIT_DAYS = 20  // tehlike — sınıf tekrarı riski

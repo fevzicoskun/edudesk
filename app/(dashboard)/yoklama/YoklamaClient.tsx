@@ -42,29 +42,77 @@ function schoolYearStartISO() {
 }
 
 export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId }: Props) {
-  const [today]          = useState(todayISO)           // mount'ta bir kez
+  const [today]           = useState(todayISO)            // mount'ta bir kez
   const [schoolYearStart] = useState(schoolYearStartISO)  // mount'ta bir kez
-  const [classId,   setClassId]   = useState(initialClassId ?? classes[0]?.id ?? '')
-  const [date,      setDate]      = useState(initialDate ?? today)
-  const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>(initialStatuses ?? {})
-  const [loading,   setLoading]   = useState(false)
-  const [saving,    setSaving]    = useState(false)
-  const [toast,     setToast]     = useState('')
-  const [error,     setError]     = useState('')
+  const [classId,  setClassId]  = useState(initialClassId ?? classes[0]?.id ?? '')
+  const [date,     setDate]     = useState(initialDate ?? today)
+  const [statuses, setStatuses] = useState<Record<string, AttendanceStatus>>(initialStatuses ?? {})
+  const [loading,  setLoading]  = useState(false)
+  const [saving,   setSaving]   = useState(false)
+  const [toast,    setToast]    = useState('')
+  const [error,    setError]    = useState('')
   const isDirty = useRef(false)
+  // Server'dan gelen initialStatuses varsa ilk mount'ta getYoklama çağrısını atla
+  const skipInitialLoad = useRef(initialStatuses !== undefined)
 
+  // Toast 5 sn sonra kendiliğinden kapanır
   useEffect(() => {
     if (!toast) return
     const t = setTimeout(() => setToast(''), 5000)
     return () => clearTimeout(t)
   }, [toast])
-  // initialStatuses geçilmişse ilk mount'ta getYoklama çağrısını skip et
-  const skipInitialLoad = useRef(initialStatuses !== undefined)
 
-  const cls = classes.find(c => c.id === classId)
+  // Kaydedilmemiş değişiklik varken sekme/tarayıcı kapatılmasını engelle
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (!isDirty.current) return
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [])
+
+  // classId veya date değiştiğinde yoklama yükle — cancellation flag ile race condition önlenir
+  useEffect(() => {
+    if (skipInitialLoad.current) {
+      skipInitialLoad.current = false
+      return
+    }
+    if (!classId) return
+    let cancelled = false
+    setLoading(true)
+    setError('')
+    getYoklama(classId, date)
+      .then(data => {
+        if (cancelled) return
+        setStatuses(data)
+        isDirty.current = false
+      })
+      .catch(e => {
+        if (cancelled) return
+        console.error('[YoklamaClient] loadYoklama:', e)
+        setError('Yoklama verileri yüklenemedi')
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
+  }, [classId, date])
+
+  const cls      = classes.find(c => c.id === classId)
   const students = cls?.students ?? []
   const weekend    = isWeekendISO(date)
   const isPastDate = date < today
+
+  // Araç çubuğu durum sayıları — her toggle'da yeniden hesaplamayı önler
+  const statusSummary = useMemo(() => {
+    const vals = Object.values(statuses)
+    return {
+      absent:  vals.filter(s => s === 'absent').length,
+      late:    vals.filter(s => s === 'late').length,
+      excused: vals.filter(s => s === 'excused').length,
+    }
+  }, [statuses])
 
   const guardDirty = useCallback((): boolean => {
     if (!isDirty.current) return true
@@ -80,40 +128,6 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     if (!guardDirty()) return
     setDate(e.target.value)
   }, [guardDirty])
-
-  const loadYoklama = useCallback(async () => {
-    if (!classId) return
-    setLoading(true)
-    setError('')
-    try {
-      const data = await getYoklama(classId, date)
-      setStatuses(data)
-      isDirty.current = false
-    } catch (e) {
-      console.error('[YoklamaClient] loadYoklama:', e)
-      setError('Yoklama verileri yüklenemedi')
-    } finally {
-      setLoading(false)
-    }
-  }, [classId, date])
-
-  useEffect(() => {
-    if (skipInitialLoad.current) {
-      skipInitialLoad.current = false
-      return
-    }
-    loadYoklama()
-  }, [loadYoklama])
-
-  // Kaydedilmemiş değişiklik varken sekme/tarayıcı kapatılmasını engelle
-  useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (!isDirty.current) return
-      e.preventDefault()
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [])
 
   function toggle(studentId: string) {
     isDirty.current = true
@@ -174,7 +188,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
           <select value={classId} onChange={handleClassChange} className={inputCls}>
             {(() => {
-              const mine = new Set(myClassIds ?? [])
+              const mine   = new Set(myClassIds ?? [])
               const my     = classes.filter(c => mine.has(c.id))
               const others = classes.filter(c => !mine.has(c.id))
               if (my.length === 0) return classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
@@ -195,7 +209,14 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Tarih</label>
-          <input type="date" value={date} onChange={handleDateChange} max={today} min={schoolYearStart} className={inputCls} />
+          <input
+            type="date"
+            value={date}
+            onChange={handleDateChange}
+            max={today}
+            min={schoolYearStart}
+            className={inputCls}
+          />
         </div>
       </div>
 
@@ -225,19 +246,19 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60">
               <span className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-2">
                 {students.length} öğrenci
-                {Object.values(statuses).filter(s => s === 'absent').length > 0 && (
+                {statusSummary.absent > 0 && (
                   <span className="text-red-600 dark:text-red-400 font-semibold">
-                    · {Object.values(statuses).filter(s => s === 'absent').length} devamsız
+                    · {statusSummary.absent} devamsız
                   </span>
                 )}
-                {Object.values(statuses).filter(s => s === 'late').length > 0 && (
+                {statusSummary.late > 0 && (
                   <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
-                    · {Object.values(statuses).filter(s => s === 'late').length} geç
+                    · {statusSummary.late} geç
                   </span>
                 )}
-                {Object.values(statuses).filter(s => s === 'excused').length > 0 && (
+                {statusSummary.excused > 0 && (
                   <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                    · {Object.values(statuses).filter(s => s === 'excused').length} özürlü
+                    · {statusSummary.excused} özürlü
                   </span>
                 )}
               </span>
