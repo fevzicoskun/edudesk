@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { schoolYearStart } from '@/src/shared/utils'
+import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
 import CizelgeClient from './CizelgeClient'
 
 export default async function CizelgePage() {
@@ -38,6 +40,20 @@ export default async function CizelgePage() {
     classes = classes.filter(c => allowed.has(c.id))
   }
 
+  const allStudentIds = classes.flatMap(c => c.students.map(s => s.id))
+  const { data: yearRows } = allStudentIds.length > 0
+    ? await supabase
+        .from('attendance')
+        .select('student_id, status, date')
+        .eq('school_id', profile.school_id)
+        .in('student_id', allStudentIds)
+        .gte('date', schoolYearStart())
+        .in('status', ['absent', 'late', 'excused'])
+        .limit(100000)
+    : { data: [] as { student_id: string; status: string; date: string }[] }
+
+  const yearCounts = countAbsences(yearRows ?? [])
+
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="mb-5">
@@ -51,7 +67,7 @@ export default async function CizelgePage() {
           Görüntüleyebileceğiniz sınıf yok. Sınıf öğretmeni atamanız veya ders programınız bulunmuyor.
         </p>
       ) : (
-        <CizelgeClient classes={classes} />
+        <CizelgeClient classes={classes} yearCounts={yearCounts} />
       )}
     </div>
   )

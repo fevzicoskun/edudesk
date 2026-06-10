@@ -10,6 +10,7 @@ import YoklamaExcelButton from './YoklamaExcelButton'
 
 interface Student  { id: string; full_name: string; student_number: string | null }
 interface ClassItem { id: string; name: string; students: Student[] }
+type AbsenceCounts = ReturnType<typeof countAbsences>
 
 const CELL: Record<string, { ch: string; cls: string }> = {
   present: { ch: '·', cls: 'text-gray-300 dark:text-slate-600' },
@@ -24,7 +25,7 @@ function todayISTStr() {
   return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
 
-export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
+export default function CizelgeClient({ classes, yearCounts }: { classes: ClassItem[]; yearCounts: AbsenceCounts }) {
   const todayStr = todayISTStr()
   const [year0, month0] = todayStr.split('-').map(Number)
   const [classId, setClassId] = useState(classes[0]?.id ?? '')
@@ -38,6 +39,12 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
 
   const [year, month] = ym.split('-').map(Number)
   const cls = classes.find(c => c.id === classId)
+
+  const dangerStudents = cls ? cls.students.filter(s => (yearCounts[s.id]?.unexcused ?? 0) >= ATTENDANCE_LIMIT_DAYS).length : 0
+  const warnStudents   = cls ? cls.students.filter(s => {
+    const u = yearCounts[s.id]?.unexcused ?? 0
+    return u >= ATTENDANCE_WARN_DAYS && u < ATTENDANCE_LIMIT_DAYS
+  }).length : 0
 
   const load = useCallback(async () => {
     if (!classId) return
@@ -87,6 +94,23 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
 
       {error && <p className="text-sm text-red-500">{error}</p>}
 
+      {(dangerStudents > 0 || warnStudents > 0) && (
+        <div className="flex flex-wrap gap-2">
+          {dangerStudents > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+              <span className="font-bold">⚠</span>
+              <span><strong>{dangerStudents}</strong> öğrenci MEB sınırını aştı ({ATTENDANCE_LIMIT_DAYS}+ özürsüz gün)</span>
+            </div>
+          )}
+          {warnStudents > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-700 dark:text-amber-300">
+              <span className="font-semibold">!</span>
+              <span><strong>{warnStudents}</strong> öğrenci uyarı bölgesinde ({ATTENDANCE_WARN_DAYS}+ özürsüz gün)</span>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-x-auto">
         {loading ? (
           <p className="p-6 text-center text-sm text-gray-400">Yükleniyor…</p>
@@ -117,16 +141,18 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
                     </th>
                   )
                 })}
-                <th className="px-2 py-2 font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
-                  Özürsüz | Özürlü
+                <th className="px-2 py-2 font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap text-right">
+                  <div>Özürsüz | Özürlü</div>
+                  <div className="text-[9px] font-normal opacity-60">bu ay | yıllık</div>
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
               {cls.students.map(s => {
-                const c = counts[s.id] ?? { unexcused: 0, excused: 0 }
-                const isDanger = c.unexcused >= ATTENDANCE_LIMIT_DAYS
-                const isWarn   = !isDanger && c.unexcused >= ATTENDANCE_WARN_DAYS
+                const c      = counts[s.id]     ?? { unexcused: 0, excused: 0 }
+                const yc     = yearCounts[s.id] ?? { unexcused: 0, excused: 0 }
+                const isDanger = yc.unexcused >= ATTENDANCE_LIMIT_DAYS
+                const isWarn   = !isDanger && yc.unexcused >= ATTENDANCE_WARN_DAYS
                 const rowBg    = isDanger
                   ? 'bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20'
                   : isWarn
@@ -167,14 +193,19 @@ export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
                         </td>
                       )
                     })}
-                    <td className="text-center px-2 py-1.5 tabular-nums whitespace-nowrap">
-                      <span className={isDanger ? 'text-red-600 dark:text-red-400 font-bold' : isWarn ? 'text-amber-600 dark:text-amber-400 font-semibold' : c.unexcused > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}>
-                        {c.unexcused}
-                      </span>
-                      <span className="text-gray-300 dark:text-slate-600 mx-1">|</span>
-                      <span className={c.excused > 0 ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-400'}>
-                        {c.excused}
-                      </span>
+                    <td className="text-right px-2 py-1.5 tabular-nums whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1 text-xs">
+                        <span className={c.unexcused > 0 ? 'text-red-500 dark:text-red-400' : 'text-gray-400'}>
+                          {c.unexcused}
+                        </span>
+                        <span className="text-gray-300 dark:text-slate-600">|</span>
+                        <span className={c.excused > 0 ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'}>
+                          {c.excused}
+                        </span>
+                      </div>
+                      <div className={`text-[10px] text-right font-semibold ${isDanger ? 'text-red-600 dark:text-red-400' : isWarn ? 'text-amber-600 dark:text-amber-400' : yc.unexcused > 0 ? 'text-gray-500 dark:text-slate-400' : 'text-gray-300 dark:text-slate-600'}`}>
+                        {yc.unexcused > 0 ? `${yc.unexcused}g yıllık` : ''}
+                      </div>
                     </td>
                   </tr>
                 )
