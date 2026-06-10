@@ -1,0 +1,168 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { getCizelge } from '@/app/actions/yoklama'
+import { buildMonthGrid, countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import type { AttendanceStatus } from '@/src/domains/attendance/types'
+import StudentAttendanceHistory from '@/components/student/StudentAttendanceHistory'
+import YoklamaExcelButton from './YoklamaExcelButton'
+
+interface Student  { id: string; full_name: string; student_number: string | null }
+interface ClassItem { id: string; name: string; students: Student[] }
+
+const CELL: Record<string, { ch: string; cls: string }> = {
+  present: { ch: '·', cls: 'text-gray-300 dark:text-slate-600' },
+  absent:  { ch: 'D', cls: 'text-red-600 dark:text-red-400 font-bold' },
+  late:    { ch: 'G', cls: 'text-yellow-600 dark:text-yellow-400 font-bold' },
+  excused: { ch: 'Ö', cls: 'text-blue-600 dark:text-blue-400 font-bold' },
+}
+
+export default function CizelgeClient({ classes }: { classes: ClassItem[] }) {
+  const now = new Date()
+  const [classId, setClassId] = useState(classes[0]?.id ?? '')
+  const [ym, setYm] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`)
+  const [days, setDays] = useState<string[]>([])
+  const [grid, setGrid] = useState<Record<string, Record<string, AttendanceStatus>>>({})
+  const [counts, setCounts] = useState<ReturnType<typeof countAbsences>>({})
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [openStudent, setOpenStudent] = useState<Student | null>(null)
+
+  const [year, month] = ym.split('-').map(Number)
+  const cls = classes.find(c => c.id === classId)
+
+  const load = useCallback(async () => {
+    if (!classId) return
+    setLoading(true)
+    setError('')
+    try {
+      const { days: d, rows } = await getCizelge(classId, year, month)
+      setDays(d)
+      setGrid(buildMonthGrid(rows))
+      setCounts(countAbsences(rows))
+    } catch (e) {
+      console.error('[CizelgeClient] load:', e)
+      setError(e instanceof Error ? e.message : 'Çizelge yüklenemedi')
+    } finally {
+      setLoading(false)
+    }
+  }, [classId, year, month])
+
+  useEffect(() => { load() }, [load])
+
+  const inputCls = 'px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-wrap gap-3 items-end">
+        <div>
+          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
+          <select value={classId} onChange={e => setClassId(e.target.value)} className={inputCls}>
+            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Ay</label>
+          <input type="month" value={ym} onChange={e => e.target.value && setYm(e.target.value)} className={inputCls} />
+        </div>
+        <div className="ml-auto">
+          {cls && days.length > 0 && (
+            <YoklamaExcelButton
+              classId={classId}
+              className={cls.name}
+              since={days[0]}
+              until={days[days.length - 1]}
+            />
+          )}
+        </div>
+      </div>
+
+      {error && <p className="text-sm text-red-500">{error}</p>}
+
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-x-auto">
+        {loading ? (
+          <p className="p-6 text-center text-sm text-gray-400">Yükleniyor…</p>
+        ) : !cls || cls.students.length === 0 ? (
+          <p className="p-6 text-center text-sm text-gray-400">Bu sınıfta öğrenci yok.</p>
+        ) : (
+          <table className="text-xs w-full">
+            <thead>
+              <tr className="border-b border-gray-200 dark:border-slate-700">
+                <th className="sticky left-0 bg-white dark:bg-slate-800 text-left px-3 py-2 font-medium text-gray-500 dark:text-slate-400 min-w-[160px]">
+                  Öğrenci
+                </th>
+                {days.map(d => (
+                  <th key={d} className="px-1 py-2 font-medium text-gray-400 dark:text-slate-500 tabular-nums">
+                    {Number(d.slice(8, 10))}
+                  </th>
+                ))}
+                <th className="px-2 py-2 font-medium text-gray-500 dark:text-slate-400 whitespace-nowrap">
+                  Özürsüz | Özürlü
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
+              {cls.students.map(s => {
+                const c = counts[s.id] ?? { unexcused: 0, excused: 0 }
+                return (
+                  <tr
+                    key={s.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-700/40 cursor-pointer"
+                    onClick={() => setOpenStudent(s)}
+                  >
+                    <td className="sticky left-0 bg-white dark:bg-slate-800 px-3 py-1.5 text-gray-800 dark:text-slate-200 whitespace-nowrap">
+                      {s.full_name}
+                      {s.student_number ? <span className="text-gray-400 ml-1">#{s.student_number}</span> : null}
+                    </td>
+                    {days.map(d => {
+                      const st = grid[s.id]?.[d]
+                      const cell = st ? CELL[st] : undefined
+                      return (
+                        <td key={d} className={`text-center px-1 py-1.5 ${cell?.cls ?? 'text-gray-200 dark:text-slate-700'}`}>
+                          {cell?.ch ?? ''}
+                        </td>
+                      )
+                    })}
+                    <td className="text-center px-2 py-1.5 tabular-nums">
+                      <span className={c.unexcused > 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-400'}>
+                        {c.unexcused}
+                      </span>
+                      <span className="text-gray-300 dark:text-slate-600 mx-1">|</span>
+                      <span className={c.excused > 0 ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-400'}>
+                        {c.excused}
+                      </span>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {openStudent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setOpenStudent(null) }}
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-slate-700">
+              <h2 className="font-semibold text-gray-900 dark:text-slate-100">
+                {openStudent.full_name} — Devamsızlık
+              </h2>
+              <button
+                onClick={() => setOpenStudent(null)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 text-xl leading-none px-2"
+              >
+                ×
+              </button>
+            </div>
+            <div className="overflow-y-auto px-4 py-2">
+              <StudentAttendanceHistory studentId={openStudent.id} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
