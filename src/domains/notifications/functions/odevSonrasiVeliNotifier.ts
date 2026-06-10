@@ -32,46 +32,46 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
 
     if (!homeworks.length) return { sent: 0, reason: 'ödev-yok' }
 
-    // 2. Her ödev için: teslim etmemiş öğrencilerin velilerini topla
+    // 2. Teslim etmemiş öğrencilerin velilerini topla (2 toplu sorgu — N+1 yerine)
     const candidates = await step.run('teslim-etmeyenler', async () => {
       const supabase = createServiceClient()
-      const results: {
-        homeworkId: string
-        studentId: string
-        schoolId: string
-        to: string
-        veliAd: string
-        ogrenciAdi: string
-        odevBaslik: string
-        dueDate: string
-      }[] = []
 
+      const uniqueClassIds  = [...new Set(homeworks.map(hw => hw.class_id))]
+      const uniqueSchoolIds = [...new Set(homeworks.map(hw => hw.school_id))]
+      const hwIds           = homeworks.map(hw => hw.id)
+
+      const [{ data: allStudents }, { data: allSubs }] = await Promise.all([
+        supabase
+          .from('students')
+          .select('id, full_name, veli_email, veli_ad, veli_email_opt_out, class_id')
+          .in('class_id', uniqueClassIds)
+          .in('school_id', uniqueSchoolIds)
+          .is('deleted_at', null)
+          .not('veli_email', 'is', null)
+          .eq('veli_email_opt_out', false),
+        supabase
+          .from('homework_submissions')
+          .select('student_id, homework_id, status')
+          .in('homework_id', hwIds)
+          .in('school_id', uniqueSchoolIds),
+      ])
+
+      const studentsByClass = new Map<string, { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string }[]>()
+      for (const s of allStudents ?? []) {
+        if (!s.veli_email) continue
+        const list = studentsByClass.get(s.class_id) ?? []
+        list.push(s as { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string })
+        studentsByClass.set(s.class_id, list)
+      }
+
+      const subKey = new Map<string, string>()
+      for (const s of allSubs ?? []) subKey.set(`${s.homework_id}:${s.student_id}`, s.status)
+
+      const results: { homeworkId: string; studentId: string; schoolId: string; to: string; veliAd: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }[] = []
       for (const hw of homeworks) {
-        const [{ data: students }, { data: subs }] = await Promise.all([
-          supabase
-            .from('students')
-            .select('id, full_name, veli_email, veli_ad, veli_email_opt_out')
-            .eq('class_id', hw.class_id)
-            .eq('school_id', hw.school_id)
-            .is('deleted_at', null)
-            .not('veli_email', 'is', null)
-            .eq('veli_email_opt_out', false),
-          supabase
-            .from('homework_submissions')
-            .select('student_id, status')
-            .eq('homework_id', hw.id)
-            .eq('school_id', hw.school_id),
-        ])
-
-        if (!students?.length) continue
-
-        const subMap = new Map(subs?.map(s => [s.student_id, s.status]) ?? [])
-
-        for (const student of students) {
-          if (!student.veli_email) continue
-          const status = subMap.get(student.id) ?? 'yapilmadi'
+        for (const student of (studentsByClass.get(hw.class_id) ?? [])) {
+          const status = subKey.get(`${hw.id}:${student.id}`) ?? 'yapilmadi'
           if (status === 'yapildi' || status === 'mazeretli') continue
-
           results.push({
             homeworkId: hw.id,
             studentId:  student.id,
@@ -84,7 +84,6 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
           })
         }
       }
-
       return results
     })
 
