@@ -21,6 +21,7 @@ function TabButton({
   const active = selected === id
   return (
     <button
+      type="button"
       onClick={() => onSelect(id)}
       className={`text-[11px] font-medium px-2.5 py-1 rounded-full border transition-colors ${
         active
