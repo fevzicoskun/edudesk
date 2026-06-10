@@ -13,6 +13,8 @@ interface Props {
   absenceCounts: Record<string, AbsenceCount>
   initialStatuses?: Record<string, AttendanceStatus>
   initialDate?: string
+  myClassIds?: string[]
+  initialClassId?: string
 }
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -38,8 +40,8 @@ function isWeekend(iso: string) {
   return day === 0 || day === 6
 }
 
-export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate }: Props) {
-  const [classId,   setClassId]   = useState(classes[0]?.id ?? '')
+export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId }: Props) {
+  const [classId,   setClassId]   = useState(initialClassId ?? classes[0]?.id ?? '')
   const [date,      setDate]      = useState(initialDate ?? todayISO())
   const [statuses,  setStatuses]  = useState<Record<string, AttendanceStatus>>(initialStatuses ?? {})
   const [loading,   setLoading]   = useState(false)
@@ -139,7 +141,24 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         <div>
           <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
           <select value={classId} onChange={e => setClassId(e.target.value)} className={inputCls}>
-            {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {(() => {
+              const mine = new Set(myClassIds ?? [])
+              const my     = classes.filter(c => mine.has(c.id))
+              const others = classes.filter(c => !mine.has(c.id))
+              if (my.length === 0) return classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+              return (
+                <>
+                  <optgroup label="Sınıflarım">
+                    {my.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </optgroup>
+                  {others.length > 0 && (
+                    <optgroup label="Diğer sınıflar">
+                      {others.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </optgroup>
+                  )}
+                </>
+              )
+            })()}
           </select>
         </div>
         <div>
