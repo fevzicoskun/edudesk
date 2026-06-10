@@ -5,7 +5,6 @@ import { Suspense } from 'react'
 import { addDays, format, parseISO } from '@/src/shared/date'
 import { getGreeting } from '@/src/shared/utils'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
-import YoklamaTrendWidget from './YoklamaTrendWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
@@ -103,9 +102,8 @@ export default async function OgretmenDashboard() {
         </div>
       </div>
 
-      {/* Analitik Widgetlar */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <YoklamaTrendWidget data={metrics.yoklamaTrendData} />
+      {/* Ödev Tamamlanma Widget */}
+      <div className="mb-4">
         <OdevTamamlanmaWidget data={metrics.tamamlanmaData} />
       </div>
 
