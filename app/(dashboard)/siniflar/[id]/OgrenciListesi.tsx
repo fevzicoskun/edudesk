@@ -3,7 +3,7 @@
 import { useState, useActionState } from 'react'
 import Link from 'next/link'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
-import { deleteStudent, updateVeliContact } from '@/src/domains/classes/actions'
+import { deleteStudent, updateVeliContact, addStudentNote } from '@/src/domains/classes/actions'
 
 interface Student {
   id: string
@@ -37,6 +37,7 @@ function OgrenciSatiri({
   absenceCount: number; warnDays: number; limitDays: number
 }) {
   const [open, setOpen] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
 
   const [state, action, pending] = useActionState(
     async (_: null | { ok: boolean; error?: string }, formData: FormData) => {
@@ -44,6 +45,19 @@ function OgrenciSatiri({
       if (result.error) return { ok: false, error: result.error }
       setOpen(false)
       return { ok: true }
+    },
+    null
+  )
+
+  const [noteState, noteAction, notePending] = useActionState(
+    async (_: null | { ok: boolean; error?: string }, formData: FormData) => {
+      try {
+        await addStudentNote(s.id, classId, formData)
+        setNoteOpen(false)
+        return { ok: true }
+      } catch (e) {
+        return { ok: false, error: e instanceof Error ? e.message : 'Not eklenemedi.' }
+      }
     },
     null
   )
@@ -121,6 +135,21 @@ function OgrenciSatiri({
             </svg>
           </button>
 
+          {/* Hızlı not */}
+          <button
+            onClick={() => setNoteOpen(v => !v)}
+            title="Hızlı not"
+            className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
+              noteOpen
+                ? 'text-purple-600 bg-purple-50 dark:bg-purple-950'
+                : 'text-gray-400 hover:text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950'
+            }`}
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          </button>
+
           {canDelete && (
             <ConfirmDeleteButton
               action={deleteStudent.bind(null, s.id, classId)}
@@ -178,6 +207,40 @@ function OgrenciSatiri({
               )}
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Inline hızlı not paneli */}
+      {noteOpen && (
+        <div className="border-t border-gray-100 dark:border-slate-700 px-4 py-3 bg-purple-50/50 dark:bg-slate-900/50">
+          <form action={noteAction} className="flex gap-2 items-end">
+            <textarea
+              name="body"
+              required
+              placeholder="Hızlı not..."
+              rows={2}
+              className="flex-1 min-w-0 px-2.5 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400 resize-none"
+            />
+            <div className="flex flex-col gap-1 shrink-0">
+              <button
+                type="submit"
+                disabled={notePending}
+                className="px-3 py-1.5 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-60 transition-colors"
+              >
+                {notePending ? '...' : 'Kaydet'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setNoteOpen(false)}
+                className="px-3 py-1.5 text-gray-500 dark:text-slate-400 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+          {noteState?.error && (
+            <p className="text-xs text-red-600 dark:text-red-400 mt-1">{noteState.error}</p>
+          )}
         </div>
       )}
     </div>
