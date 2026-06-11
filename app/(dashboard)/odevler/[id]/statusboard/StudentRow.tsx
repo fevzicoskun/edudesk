@@ -20,6 +20,9 @@ type Props = {
   onNoteBlur: (studentId: string, value: string) => void
   onToggleHistory: (studentId: string) => void
   onSelectStudent: (studentId: string) => void
+  selectionMode: boolean
+  selected: boolean
+  onToggleSelect: (studentId: string) => void
 }
 
 export default function StudentRow({
@@ -39,6 +42,9 @@ export default function StudentRow({
   onNoteBlur,
   onToggleHistory,
   onSelectStudent,
+  selectionMode,
+  selected,
+  onToggleSelect,
 }: Props) {
   const hasNote = !!note
   const next    = nextInCycle(status)
@@ -49,6 +55,19 @@ export default function StudentRow({
         isPending ? 'border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-slate-700'
       }`}
     >
+      {selectionMode && (
+        <div className="mb-2">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={() => onToggleSelect(item.student_id)}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <span className="text-xs text-gray-500 dark:text-slate-400">Seç</span>
+          </label>
+        </div>
+      )}
       {/* Üst satır: isim + geçmiş + not butonu */}
       <div className="flex items-start justify-between gap-2 mb-2.5">
         <div className="min-w-0 pt-0.5">

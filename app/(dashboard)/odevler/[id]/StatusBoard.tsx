@@ -11,7 +11,7 @@ import VeliIletisimPaneli from './VeliIletisimPaneli'
 import StatusBoardProgress from './statusboard/StatusBoardProgress'
 import StatusBoardToolbar from './statusboard/StatusBoardToolbar'
 import StudentRow from './statusboard/StudentRow'
-import { STATUS_OPTIONS, LABELS } from './statusboard/types'
+import { STATUS_OPTIONS, LABELS, BULK_OPTIONS, STYLES } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
 
 export type { StatusItem }
@@ -55,6 +55,8 @@ export default function StatusBoard({
   const [historyOpenId, setHistoryOpenId]   = useState<string | null>(null)
   const [historyMap, setHistoryMap]         = useState<Record<string, SubmissionLogEntry[]>>({})
   const [historyLoadingIds, setHistoryLoadingIds] = useState<Set<string>>(new Set())
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (!errorMsg) return
@@ -120,6 +122,41 @@ export default function StatusBoard({
     const logs = await getSubmissionLogs(homeworkId, studentId)
     setHistoryMap(prev => ({ ...prev, [studentId]: logs }))
     setHistoryLoadingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
+  }
+
+  function toggleSelect(studentId: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(studentId)) next.delete(studentId)
+      else next.add(studentId)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === filteredItems.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredItems.map(i => i.student_id)))
+    }
+  }
+
+  function setSelectedStatuses(next: SubmissionStatus) {
+    if (selectedIds.size === 0) return
+    const ids = [...selectedIds]
+    const prevStatuses = { ...statuses }
+    setStatuses(s => ({ ...s, ...Object.fromEntries(ids.map(id => [id, next])) }))
+    startTransition(async () => {
+      const result = await updateAllSubmissionStatuses(homeworkId, ids, next)
+      if (result?.error) {
+        setStatuses(prevStatuses)
+        setErrorMsg(result.error)
+      } else {
+        setRecordedIds(cur => new Set([...cur, ...ids]))
+      }
+    })
+    setSelectionMode(false)
+    setSelectedIds(new Set())
   }
 
   function setAllStatuses(next: SubmissionStatus) {
@@ -195,6 +232,11 @@ export default function StatusBoard({
           isPending={isPending}
           onBulkUpdate={setAllStatuses}
           onExportExcel={exportToExcel}
+          selectionMode={selectionMode}
+          onToggleSelectMode={() => {
+            setSelectionMode(p => !p)
+            setSelectedIds(new Set())
+          }}
         />
       )}
 
@@ -252,9 +294,40 @@ export default function StatusBoard({
             onNoteBlur={saveNote}
             onToggleHistory={toggleHistory}
             onSelectStudent={setSelectedStudentId}
+            selectionMode={selectionMode}
+            selected={selectedIds.has(item.student_id)}
+            onToggleSelect={toggleSelect}
           />
         ))}
       </div>
+
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 bg-gray-900 dark:bg-slate-700 text-white rounded-2xl shadow-2xl px-4 py-3 flex-wrap justify-center">
+          <button
+            onClick={toggleSelectAll}
+            className="text-xs text-gray-300 hover:text-white transition-colors whitespace-nowrap"
+          >
+            {selectedIds.size === filteredItems.length ? 'Seçimi Temizle' : 'Tümünü Seç'}
+          </button>
+          <span className="text-sm font-medium whitespace-nowrap">{selectedIds.size} seçildi</span>
+          {BULK_OPTIONS.map(status => (
+            <button
+              key={status}
+              disabled={isPending}
+              onClick={() => setSelectedStatuses(status)}
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-60 ${STYLES[status]}`}
+            >
+              {LABELS[status]}
+            </button>
+          ))}
+          <button
+            onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }}
+            className="text-xs text-gray-400 hover:text-white transition-colors"
+          >
+            İptal
+          </button>
+        </div>
+      )}
 
       {errorMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">
