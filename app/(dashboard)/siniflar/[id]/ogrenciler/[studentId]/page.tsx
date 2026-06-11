@@ -5,6 +5,7 @@ import { format, parseISO } from '@/src/shared/date'
 import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
 import VeliIletisimForm from './VeliIletisimForm'
 import CopyVeliLink from './CopyVeliLink'
+import ParentContactLogSection from './ParentContactLogSection'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import { schoolYearStart } from '@/src/shared/utils'
@@ -46,13 +47,20 @@ export default async function OgrenciDetayPage({
 
   const schoolId = currentProfile.school_id
 
-  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes] = await Promise.all([
+  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
+    supabase
+      .from('parent_contact_logs')
+      .select('id, note, contact_method, contacted_at, teacher_id')
+      .eq('student_id', studentId)
+      .eq('school_id', schoolId)
+      .order('contacted_at', { ascending: false })
+      .limit(50),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
@@ -353,6 +361,13 @@ export default async function OgrenciDetayPage({
           </div>
         </section>
       )}
+
+      <ParentContactLogSection
+        logs={(contactLogsRes.data ?? []) as Array<{ id: string; note: string; contact_method: string; contacted_at: string; teacher_id: string }>}
+        studentId={studentId}
+        classId={classId}
+        currentUserId={currentProfile.id}
+      />
 
     </div>
   )
