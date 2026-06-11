@@ -17,6 +17,8 @@ const schema = z.object({
   RESEND_API_KEY: z.string().default(''),
   RESEND_FROM:    z.string().default('EduDesk <noreply@myedudesk.com.tr>'),
   FEEDBACK_TO:    z.string().default(''),
+  // Kritik hata bildirimi alıcısı — boşsa FEEDBACK_TO'ya düşülür
+  ALERT_EMAIL:    z.string().default(''),
 
   // ── Loglama ───────────────────────────────────────────────────────────────
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
