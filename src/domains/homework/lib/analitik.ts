@@ -210,3 +210,63 @@ export function computeKpiCards(
 
   return { totalHomeworks, avgCompletionPct, riskyStudentCount, pendingReviewCount }
 }
+
+export type TeacherStat = {
+  teacher_id: string
+  full_name: string
+  homeworkCount: number
+  avgCompletionPct: number
+  riskyStudentCount: number
+}
+
+export function computeTeacherStats(
+  teachers: { id: string; full_name: string }[],
+  homeworks: AnalitikHomework[],
+  submissions: AnalitikSubmission[],
+  students: AnalitikStudent[],
+): TeacherStat[] {
+  const studentsByClass = new Map<string, number>()
+  for (const s of students) {
+    studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
+  }
+
+  return teachers
+    .map(t => {
+      const teacherHws    = homeworks.filter(h => h.teacher_id === t.id)
+      const homeworkCount = teacherHws.length
+      if (homeworkCount === 0) return null
+
+      const teacherHwIds = new Set(teacherHws.map(h => h.id))
+
+      const subsByHw = new Map<string, { yapildi: number; mazeretli: number }>()
+      for (const s of submissions) {
+        if (!teacherHwIds.has(s.homework_id)) continue
+        const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0 }
+        if (s.status === 'yapildi')        cur.yapildi++
+        else if (s.status === 'mazeretli') cur.mazeretli++
+        subsByHw.set(s.homework_id, cur)
+      }
+      let completionSum = 0
+      let counted = 0
+      for (const hw of teacherHws) {
+        const count = studentsByClass.get(hw.class_id) ?? 0
+        if (count === 0) continue
+        const { yapildi = 0, mazeretli = 0 } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0 }
+        const eligible = count - mazeretli
+        if (eligible > 0) { completionSum += Math.round((yapildi / eligible) * 100); counted++ }
+      }
+      const avgCompletionPct = counted === 0 ? 0 : Math.round(completionSum / counted)
+
+      const missedByStudent = new Map<string, number>()
+      for (const s of submissions) {
+        if (!teacherHwIds.has(s.homework_id)) continue
+        if (s.status !== 'yapilmadi' && s.status !== 'eksik') continue
+        missedByStudent.set(s.student_id, (missedByStudent.get(s.student_id) ?? 0) + 1)
+      }
+      const riskyStudentCount = [...missedByStudent.values()].filter(c => c >= 3).length
+
+      return { teacher_id: t.id, full_name: t.full_name, homeworkCount, avgCompletionPct, riskyStudentCount }
+    })
+    .filter((t): t is TeacherStat => t !== null)
+    .sort((a, b) => b.homeworkCount - a.homeworkCount)
+}
