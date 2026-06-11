@@ -1,13 +1,25 @@
 'use client'
 
+import { useEffect } from 'react'
+import { reportClientError } from '@/app/actions/error-report'
+
 // Root-level error boundary — yakalanacak layoutlar: app/layout.tsx
 // error.tsx'in aksine <html> ve <body> içermek zorunda
 export default function GlobalError({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    reportClientError({
+      message: (error.message || 'Bilinmeyen global hata').slice(0, 500),
+      digest:  error.digest,
+      url:     typeof window !== 'undefined' ? window.location.href.slice(0, 200) : undefined,
+    }).catch(() => { /* raporlama hatası UI'ı etkilemesin */ })
+  }, [error])
+
   return (
     <html lang="tr">
       <body style={{ margin: 0, fontFamily: 'system-ui, sans-serif', background: '#f9fafb' }}>
