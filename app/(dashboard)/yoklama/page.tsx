@@ -52,7 +52,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const studentIds = classes.flatMap(c => c.students.map(s => s.id))
   const todayISO   = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 
-  const [absencesRes, todayRes] = await Promise.all([
+  const [absencesRes, todayRes, takenTodayRes] = await Promise.all([
     studentIds.length > 0
       ? supabase
           .from('attendance')
@@ -71,7 +71,17 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
           .eq('school_id', profile.school_id)
           .eq('date', todayISO)
       : Promise.resolve({ data: [] as { student_id: string; status: string }[] }),
+    classes.length > 0
+      ? supabase
+          .from('attendance')
+          .select('class_id')
+          .eq('school_id', profile.school_id)
+          .eq('date', todayISO)
+          .in('class_id', classes.map(c => c.id))
+      : Promise.resolve({ data: [] as { class_id: string }[] }),
   ])
+
+  const takenTodayIds = [...new Set((takenTodayRes.data ?? []).map(r => r.class_id))]
 
   const absenceCounts: Record<string, AbsenceCount> = countAbsences(absencesRes.data ?? [])
 
@@ -102,6 +112,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
         myClassIds={[...myClassIds]}
         initialClassId={firstClassId}
         canEditAfterLock={canEditAfterLock}
+        takenTodayIds={takenTodayIds}
       />
     </div>
   )

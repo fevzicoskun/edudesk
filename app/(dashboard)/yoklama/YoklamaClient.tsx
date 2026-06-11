@@ -18,6 +18,7 @@ interface Props {
   myClassIds?: string[]
   initialClassId?: string
   canEditAfterLock: boolean
+  takenTodayIds?: string[]
 }
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -44,7 +45,7 @@ function schoolYearStartISO() {
   return `${month >= 9 ? year : year - 1}-09-01`
 }
 
-export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId, canEditAfterLock }: Props) {
+export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId, canEditAfterLock, takenTodayIds }: Props) {
   const [today]           = useState(todayISO)            // mount'ta bir kez
   const [schoolYearStart] = useState(schoolYearStartISO)  // mount'ta bir kez
   const [classId,  setClassId]  = useState(initialClassId ?? classes[0]?.id ?? '')
@@ -119,6 +120,13 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   }, [canEditAfterLock, date])
 
   const isLocked = lockStatus !== 'open'
+
+  const takenSet = useMemo(() => new Set(takenTodayIds ?? []), [takenTodayIds])
+
+  const isTodayWeekend = useMemo(() => {
+    const d = new Date(today + 'T12:00:00')
+    return d.getDay() === 0 || d.getDay() === 6
+  }, [today])
 
   // Araç çubuğu durum sayıları — her toggle'da yeniden hesaplamayı önler
   const statusSummary = useMemo(() => {
@@ -208,15 +216,19 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
               const mine   = new Set(myClassIds ?? [])
               const my     = classes.filter(c => mine.has(c.id))
               const others = classes.filter(c => !mine.has(c.id))
-              if (my.length === 0) return classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+              const dotLabel = (c: ClassWithStudents) => {
+                if (isTodayWeekend || date !== today) return c.name
+                return takenSet.has(c.id) ? `${c.name} ✓` : `${c.name} ●`
+              }
+              if (my.length === 0) return classes.map(c => <option key={c.id} value={c.id}>{dotLabel(c)}</option>)
               return (
                 <>
                   <optgroup label="Sınıflarım">
-                    {my.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    {my.map(c => <option key={c.id} value={c.id}>{dotLabel(c)}</option>)}
                   </optgroup>
                   {others.length > 0 && (
                     <optgroup label="Diğer sınıflar">
-                      {others.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      {others.map(c => <option key={c.id} value={c.id}>{dotLabel(c)}</option>)}
                     </optgroup>
                   )}
                 </>
@@ -261,6 +273,19 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
           </span>
         </div>
       )}
+
+      {!isTodayWeekend && date === today && (() => {
+        const missing = classes.filter(c => myClassIds?.includes(c.id) && !takenSet.has(c.id))
+        if (missing.length === 0) return null
+        return (
+          <div className="mb-4 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm px-4 py-3 rounded-xl">
+            <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
+            </svg>
+            <span>Bugün yoklama alınmadı: <strong>{missing.map(c => c.name).join(', ')}</strong></span>
+          </div>
+        )
+      })()}
 
       {/* Öğrenci Listesi */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
