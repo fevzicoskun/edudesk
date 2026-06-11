@@ -247,7 +247,7 @@ describe('saveYoklama() — yoklama lock', () => {
   })
 
   it('admin geçmiş tarih → lock bypass, servise ulaşır', async () => {
-    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'admin' })
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'admin' as never })
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     await saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: S1, status: 'present' }])
     expect(mockUpsert).toHaveBeenCalled()
