@@ -114,4 +114,27 @@ export const ClassService = {
     if (error) return { error: error.message }
     return {}
   },
+
+  async addParentContactLog(studentId: string, data: {
+    note: string
+    contact_method: string
+    contacted_at: string
+  }) {
+    const ability = await requireAbility()
+    const { error } = await ClassRepository.insertParentContactLog({
+      school_id:      ability.schoolId,
+      student_id:     studentId,
+      teacher_id:     ability.userId,
+      note:           data.note,
+      contact_method: data.contact_method,
+      contacted_at:   data.contacted_at,
+    })
+    if (error) throw new Error(error.message)
+  },
+
+  async deleteParentContactLog(logId: string) {
+    const ability = await requireAbility()
+    const { error } = await ClassRepository.deleteParentContactLog(logId, ability.userId, ability.schoolId)
+    if (error) throw new Error(error.message)
+  },
 }

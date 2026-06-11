@@ -65,6 +65,12 @@ const excelImportFileSchema = z
   .refine((f) => f.size <= MAX_IMPORT_FILE_BYTES, "Dosya boyutu 2 MB sınırını aşıyor.")
   .refine((f) => f.name.toLowerCase().endsWith('.xlsx'), 'Sadece .xlsx dosyaları destekleniyor.')
 
+const parentContactSchema = z.object({
+  note:           z.string().min(1, 'Not boş olamaz').max(500),
+  contact_method: z.enum(['email', 'telefon', 'whatsapp', 'yuz_yuze', 'diger']),
+  contacted_at:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih'),
+})
+
 export type ExcelImportResult = {
   added: number
   errors: { row: number; message: string }[]
@@ -184,5 +190,48 @@ export async function getMyClasses(): Promise<{ id: string; name: string; grade:
     .order('grade')
     .order('name')
   return data ?? []
+}
+
+export async function addParentContactLog(
+  studentId: string,
+  classId: string,
+  formData: FormData,
+): Promise<ActionResult> {
+  try { UUID.parse(studentId); UUID.parse(classId) }
+  catch { return { error: 'Geçersiz ID' } }
+
+  const parsed = parentContactSchema.safeParse(Object.fromEntries(formData.entries()))
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+
+  try {
+    await ClassService.addParentContactLog(studentId, {
+      note:           parsed.data.note,
+      contact_method: parsed.data.contact_method,
+      contacted_at:   new Date(parsed.data.contacted_at + 'T00:00:00').toISOString(),
+    })
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Kayıt eklenemedi.' }
+  }
+
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  return {}
+}
+
+export async function deleteParentContactLog(
+  logId: string,
+  studentId: string,
+  classId: string,
+): Promise<ActionResult> {
+  try { UUID.parse(logId); UUID.parse(studentId); UUID.parse(classId) }
+  catch { return { error: 'Geçersiz ID' } }
+
+  try {
+    await ClassService.deleteParentContactLog(logId)
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Kayıt silinemedi.' }
+  }
+
+  revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  return {}
 }
 
