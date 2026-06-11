@@ -7,7 +7,6 @@ import { AttendanceService } from '@/src/domains/attendance/services/AttendanceS
 import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
 
 export type { AttendanceStatus } from '@/src/domains/attendance/types'
-export type { AttendanceEntry }
 
 const ISODate    = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı')
 const entrySchema = z.object({ studentId: UUID, status: attendanceStatusSchema })
