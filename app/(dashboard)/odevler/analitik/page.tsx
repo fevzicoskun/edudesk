@@ -8,13 +8,16 @@ import {
   computeRiskyStudents,
   computeClassStats,
   computeWeeklyTrend,
+  computeTeacherStats,
   type AnalitikHomework,
   type AnalitikSubmission,
   type AnalitikStudent,
+  type TeacherStat,
 } from '@/src/domains/homework/lib/analitik'
 import AnalitikOzet from './AnalitikOzet'
 import SinifDetay from './SinifDetay'
 import OgrenciSicil from './OgrenciSicil'
+import OgretmenKarsilastirma from './OgretmenKarsilastirma'
 
 export const revalidate = 30
 
@@ -69,6 +72,18 @@ export default async function AnalitikPage() {
   const students      = (studentsRes.data  ?? []) as AnalitikStudent[]
   const activeClasses = (classesRes.data   ?? []).filter(c => classIds.includes(c.id))
 
+  const teacherProfilesRes = isManager
+    ? await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('school_id', sid)
+        .in('role', ['ogretmen', 'zumre_baskani'])
+    : { data: [] as { id: string; full_name: string }[] }
+
+  const teacherStats: TeacherStat[] = isManager
+    ? computeTeacherStats(teacherProfilesRes.data ?? [], homeworks, submissions, students)
+    : []
+
   const riskyStudents = computeRiskyStudents(students, homeworks, submissions)
   const kpi           = computeKpiCards(homeworks, submissions, students, riskyStudents.length)
   const weeklyTrend   = computeWeeklyTrend(homeworks, submissions, students)
@@ -93,6 +108,7 @@ export default async function AnalitikPage() {
         <AnalitikOzet kpi={kpi} />
         <SinifDetay classStats={classStats} weeklyTrend={weeklyTrend} />
         <OgrenciSicil riskyStudents={riskyStudents} />
+        {isManager && <OgretmenKarsilastirma stats={teacherStats} />}
       </div>
     </div>
   )
