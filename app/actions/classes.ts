@@ -1,9 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { UUID, veliContactSchema } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
+import { parseStudentRows, excelCellToString } from '@/src/domains/classes/services/studentImportParser'
 import { getAbility } from '@/src/shared/authorization/server'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { ActionResult } from '@/src/shared/types'
@@ -53,6 +55,71 @@ export async function addStudentsBulk(
   UUID.parse(classId)
   await ClassService.addStudentsBulk(classId, students)
   revalidatePath(`/siniflar/${classId}`)
+}
+
+const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024 // 2 MB
+
+const excelImportFileSchema = z
+  .instanceof(File, { message: 'Lütfen bir Excel dosyası seç.' })
+  .refine((f) => f.size > 0, 'Dosya boş görünüyor.')
+  .refine((f) => f.size <= MAX_IMPORT_FILE_BYTES, "Dosya boyutu 2 MB sınırını aşıyor.")
+  .refine((f) => f.name.toLowerCase().endsWith('.xlsx'), 'Sadece .xlsx dosyaları destekleniyor.')
+
+export type ExcelImportResult = {
+  added: number
+  errors: { row: number; message: string }[]
+  error?: string
+}
+
+export async function importStudentsFromExcel(
+  classId: string,
+  formData: FormData
+): Promise<ExcelImportResult> {
+  const idParsed = UUID.safeParse(classId)
+  if (!idParsed.success) return { added: 0, errors: [], error: 'Geçersiz ID' }
+
+  const fileParsed = excelImportFileSchema.safeParse(formData.get('file'))
+  if (!fileParsed.success) {
+    return { added: 0, errors: [], error: fileParsed.error.issues[0]?.message ?? 'Geçersiz dosya' }
+  }
+
+  // exceljs lazy-load — bundle'a girmesin (XlsxBuilder ile aynı kalıp)
+  const { default: ExcelJS } = await import('exceljs')
+  const workbook = new ExcelJS.Workbook()
+  try {
+    await workbook.xlsx.load(await fileParsed.data.arrayBuffer())
+  } catch {
+    return { added: 0, errors: [], error: 'Excel dosyası okunamadı. Dosyanın bozuk olmadığından emin ol.' }
+  }
+
+  const sheet = workbook.worksheets[0]
+  if (!sheet) return { added: 0, errors: [], error: 'Excel dosyasında sayfa bulunamadı.' }
+
+  const rows: string[][] = []
+  sheet.eachRow({ includeEmpty: true }, (row, rowNumber) => {
+    const values = row.values as unknown[] // exceljs: 1 tabanlı sparse dizi
+    const cells: string[] = []
+    for (let c = 1; c < values.length; c++) cells.push(excelCellToString(values[c]))
+    rows[rowNumber - 1] = cells
+  })
+
+  const { students, errors } = parseStudentRows(rows)
+  if (students.length === 0) {
+    return { added: 0, errors, error: errors.length === 0 ? 'Dosyada eklenecek öğrenci bulunamadı.' : undefined }
+  }
+
+  try {
+    await ClassService.addStudentsBulk(classId, students)
+  } catch (e) {
+    return {
+      added: 0,
+      errors,
+      error: e instanceof Error ? e.message : 'Öğrenciler eklenirken hata oluştu. Lütfen tekrar dene.',
+    }
+  }
+
+  revalidatePath(`/siniflar/${classId}`)
+  return { added: students.length, errors }
 }
 
 export async function deleteStudent(studentId: string, classId: string) {

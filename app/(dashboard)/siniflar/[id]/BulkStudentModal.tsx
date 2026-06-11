@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addStudentsBulk } from '@/src/domains/classes/actions'
+import ExcelImportTab from './ExcelImportTab'
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog'
 
+type Tab = 'paste' | 'excel'
+
 export default function BulkStudentModal({
   classId,
   maxNumber,
@@ -20,6 +23,7 @@ export default function BulkStudentModal({
   maxNumber: number
 }) {
   const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<Tab>('paste')
   const [text, setText] = useState('')
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -63,8 +67,18 @@ export default function BulkStudentModal({
   }
 
   function handleOpenChange(next: boolean) {
-    if (!next) setText('')
+    if (!next) {
+      setText('')
+      setError('')
+      setTab('paste')
+    }
     setOpen(next)
+  }
+
+  function tabClass(active: boolean) {
+    return active
+      ? 'flex-1 px-3 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600'
+      : 'flex-1 px-3 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent'
   }
 
   return (
@@ -81,40 +95,57 @@ export default function BulkStudentModal({
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Toplu Öğrenci Ekle</DialogTitle>
-            <DialogDescription className="whitespace-pre-line">
-              {`Her satıra bir öğrenci yaz. Format:\nnumara, ad soyad\nveya sadece: ad soyad (numara otomatik verilir)\n\nÖrnek:\n1, Ahmet Yılmaz\n2, Ayşe Demir\nMehmet Kaya`}
-            </DialogDescription>
+            {tab === 'paste' && (
+              <DialogDescription className="whitespace-pre-line">
+                {`Her satıra bir öğrenci yaz. Format:\nnumara, ad soyad\nveya sadece: ad soyad (numara otomatik verilir)\n\nÖrnek:\n1, Ahmet Yılmaz\n2, Ayşe Demir\nMehmet Kaya`}
+              </DialogDescription>
+            )}
           </DialogHeader>
 
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={8}
-            placeholder="Öğrencileri buraya yazın..."
-            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
+          <div className="flex border-b border-gray-200">
+            <button type="button" onClick={() => setTab('paste')} className={tabClass(tab === 'paste')}>
+              Yapıştır
+            </button>
+            <button type="button" onClick={() => setTab('excel')} className={tabClass(tab === 'excel')}>
+              Excel Dosyası
+            </button>
+          </div>
 
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          {tab === 'paste' ? (
+            <>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={8}
+                placeholder="Öğrencileri buraya yazın..."
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+
+              {error && (
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              )}
+
+              <DialogFooter>
+                <button
+                  type="button"
+                  onClick={() => handleOpenChange(false)}
+                  className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  İptal
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isPending || !text.trim()}
+                  className="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isPending ? 'Ekleniyor...' : 'Ekle'}
+                </button>
+              </DialogFooter>
+            </>
+          ) : (
+            <ExcelImportTab classId={classId} onClose={() => handleOpenChange(false)} />
           )}
-
-          <DialogFooter>
-            <button
-              type="button"
-              onClick={() => handleOpenChange(false)}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              İptal
-            </button>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isPending || !text.trim()}
-              className="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {isPending ? 'Ekleniyor...' : 'Ekle'}
-            </button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
