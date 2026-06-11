@@ -293,7 +293,14 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
           </section>
         )}
 
-        <p className="text-center text-xs text-gray-400 py-4">Bu sayfa yalnızca bilgi amaçlıdır · EduDesk</p>
+        <footer className="text-center text-xs text-gray-400 py-4 space-y-1">
+          <p>Bu sayfa yalnızca bilgi amaçlıdır · EduDesk</p>
+          <p>
+            <a href="/gizlilik" target="_blank" className="hover:underline">
+              Gizlilik Politikası &amp; KVKK Aydınlatma Metni
+            </a>
+          </p>
+        </footer>
       </main>
     </div>
   )

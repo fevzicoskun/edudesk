@@ -18,7 +18,7 @@ export default function KullanimKosullariPage() {
             Kullanım Koşulları
           </h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
-            Son güncelleme: Mayıs 2026
+            Son güncelleme: Haziran 2026
           </p>
         </div>
 
