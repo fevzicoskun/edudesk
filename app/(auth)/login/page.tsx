@@ -30,6 +30,23 @@ export default async function LoginPage({
             Bilgi alın
           </a>
         </p>
+
+        <footer className="mt-8 text-center">
+          <div className="flex justify-center gap-4">
+            <a href="/gizlilik" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+              Gizlilik Politikası
+            </a>
+            <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+              Kullanım Koşulları
+            </a>
+          </div>
+          <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+            © 2026 EduDesk ·{' '}
+            <a href="mailto:info@myedudesk.com.tr" className="hover:underline">
+              info@myedudesk.com.tr
+            </a>
+          </p>
+        </footer>
       </div>
     </div>
   )
