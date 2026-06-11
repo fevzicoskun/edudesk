@@ -57,3 +57,6 @@ playwright-report/
 
 .vercel
 test-emails.mjs
+
+# Claude Code yerel dosyalari
+.claude/
