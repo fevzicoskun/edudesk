@@ -58,8 +58,13 @@ export default function WeekLoadBanner({
     )
   }
 
+  const hasDanger = loads.some(l => {
+    const effectiveCount = l.count + (isCreating ? 1 : 0)
+    return effectiveCount >= DANGER_THRESHOLD
+  })
+
   return (
-    <div className="space-y-2">
+    <div className={`space-y-2 ${hasDanger ? 'sticky top-0 z-10' : ''}`}>
       {loads.map(load => (
         <ClassSection
           key={load.classId}
@@ -138,7 +143,7 @@ function ClassSection({
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         )}
-        <span className={`text-xs font-semibold ${headerText}`}>
+        <span className={`text-xs font-semibold ${headerText} ${effectiveLevel === 'danger' ? 'animate-pulse' : ''}`}>
           {showClassName && `${load.className} · `}
           Bu hafta {effectiveCount} ödev
           {hasConflict              && ' — seçili gün kalabalık'}
