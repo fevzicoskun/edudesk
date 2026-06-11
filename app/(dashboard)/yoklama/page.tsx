@@ -43,6 +43,8 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
     ...(tcRows ?? []).map(r => r.class_id),
   ])
 
+  const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)
+
   const validSinif   = sinif && classes.some(c => c.id === sinif) ? sinif : null
   const firstMyClass = classes.find(c => myClassIds.has(c.id))?.id ?? null
   const firstClassId = validSinif ?? firstMyClass ?? classes[0]?.id ?? ''
@@ -99,6 +101,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
         initialDate={todayISO}
         myClassIds={[...myClassIds]}
         initialClassId={firstClassId}
+        canEditAfterLock={canEditAfterLock}
       />
     </div>
   )

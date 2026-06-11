@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react'
-import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS, YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
 import { formatAbsenceBadge, isWeekendISO } from '@/src/domains/attendance/lib/attendanceMath'
 import Tooltip from '@/components/ui/Tooltip'
+
+type LockStatus = 'open' | 'time_locked' | 'date_locked'
 
 interface Props {
   classes: ClassWithStudents[]
@@ -15,6 +17,7 @@ interface Props {
   initialDate?: string
   myClassIds?: string[]
   initialClassId?: string
+  canEditAfterLock: boolean
 }
 
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
@@ -41,7 +44,7 @@ function schoolYearStartISO() {
   return `${month >= 9 ? year : year - 1}-09-01`
 }
 
-export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId }: Props) {
+export default function YoklamaClient({ classes, absenceCounts, initialStatuses, initialDate, myClassIds, initialClassId, canEditAfterLock }: Props) {
   const [today]           = useState(todayISO)            // mount'ta bir kez
   const [schoolYearStart] = useState(schoolYearStartISO)  // mount'ta bir kez
   const [classId,  setClassId]  = useState(initialClassId ?? classes[0]?.id ?? '')
@@ -104,6 +107,19 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const weekend    = isWeekendISO(date)
   const isPastDate = date < today
 
+  const lockStatus = useMemo((): LockStatus => {
+    if (canEditAfterLock) return 'open'
+    const now     = new Date()
+    const todayTR = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
+    if (date < todayTR) return 'date_locked'
+    const trHour   = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(now))
+    const trMinute = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', minute: 'numeric' }).format(now))
+    if (trHour > YOKLAMA_LOCK_HOUR || (trHour === YOKLAMA_LOCK_HOUR && trMinute >= YOKLAMA_LOCK_MINUTE)) return 'time_locked'
+    return 'open'
+  }, [canEditAfterLock, date])
+
+  const isLocked = lockStatus !== 'open'
+
   // Araç çubuğu durum sayıları — her toggle'da yeniden hesaplamayı önler
   const statusSummary = useMemo(() => {
     const vals = Object.values(statuses)
@@ -130,6 +146,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   }, [guardDirty])
 
   function toggle(studentId: string) {
+    if (isLocked) return
     isDirty.current = true
     setStatuses(prev => {
       const cur = prev[studentId] ?? 'present'
@@ -227,10 +244,21 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
       )}
 
-      {isPastDate && !weekend && (
+      {isPastDate && !weekend && !isLocked && (
         <div className="flex items-center gap-2 px-4 py-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl text-sm text-sky-800 dark:text-sky-300">
           <span>📅</span>
           <span>Geçmiş bir tarih için yoklama giriyorsunuz. Mevcut kayıtların üzerine yazılacak.</span>
+        </div>
+      )}
+
+      {isLocked && !weekend && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-sm text-orange-800 dark:text-orange-300">
+          <span>🔒</span>
+          <span>
+            {lockStatus === 'time_locked'
+              ? `Yoklama düzenleme saati doldu (${YOKLAMA_LOCK_HOUR}:${String(YOKLAMA_LOCK_MINUTE).padStart(2, '0')}). Müdür yardımcısına başvurun.`
+              : 'Geçmiş tarih yoklaması düzenlenemez. Müdür yardımcısına başvurun.'}
+          </span>
         </div>
       )}
 
@@ -265,22 +293,25 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
               <div className="flex items-center gap-2">
                 <button
                   type="button"
+                  disabled={isLocked}
                   onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors"
+                  className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Hepsini Mevcut
                 </button>
                 <button
                   type="button"
+                  disabled={isLocked}
                   onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
+                  className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Hepsini Devamsız
                 </button>
                 <button
                   type="button"
+                  disabled={isLocked}
                   onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'excused' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
+                  className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   Hepsini Özürlü
                 </button>
@@ -322,7 +353,8 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
                     <button
                       type="button"
                       onClick={() => toggle(s.id)}
-                      className={`text-xs font-semibold min-w-[80px] text-center min-h-[44px] px-3 py-2 rounded-xl ring-1 ring-inset transition-colors ${STATUS_COLORS[status]}`}
+                      disabled={isLocked}
+                      className={`text-xs font-semibold min-w-[80px] text-center min-h-[44px] px-3 py-2 rounded-xl ring-1 ring-inset transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${STATUS_COLORS[status]}`}
                     >
                       {STATUS_LABELS[status]}
                     </button>
@@ -341,7 +373,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         <button
           type="button"
           onClick={handleSave}
-          disabled={saving || loading || students.length === 0 || weekend}
+          disabled={saving || loading || students.length === 0 || weekend || isLocked}
           className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-medium py-3 rounded-xl transition-colors shadow-lg shadow-blue-500/25 md:shadow-none"
         >
           {saving ? 'Kaydediliyor…' : 'Kaydet'}

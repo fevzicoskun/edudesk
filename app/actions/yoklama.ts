@@ -5,11 +5,23 @@ import { revalidatePath } from 'next/cache'
 import { UUID, attendanceStatusSchema } from '@/src/shared/validation'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
 
 export type { AttendanceStatus } from '@/src/domains/attendance/types'
 
-const ISODate    = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı')
+const ISODate     = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı')
 const entrySchema = z.object({ studentId: UUID, status: attendanceStatusSchema })
+
+const PRIVILEGED_ROLES = ['mudur_yardimcisi', 'mudur', 'admin']
+
+function turkeyTime(): { dateISO: string; hour: number; minute: number } {
+  const now     = new Date()
+  const dateISO = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
+  const hour    = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(now))
+  const minute  = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', minute: 'numeric' }).format(now))
+  return { dateISO, hour, minute }
+}
 
 export async function getYoklama(classId: string, date: string) {
   UUID.parse(classId)
@@ -21,6 +33,21 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   UUID.parse(classId)
   ISODate.parse(date)
   z.array(entrySchema).max(200).parse(entries)
+
+  const profile = await getCurrentProfile()
+  if (!PRIVILEGED_ROLES.includes(profile?.role ?? '')) {
+    const { dateISO, hour, minute } = turkeyTime()
+    if (date !== dateISO) {
+      throw new Error('Geçmiş tarih yoklaması düzenlenemez. Müdür yardımcısına başvurun.')
+    }
+    const pastLock = hour > YOKLAMA_LOCK_HOUR || (hour === YOKLAMA_LOCK_HOUR && minute >= YOKLAMA_LOCK_MINUTE)
+    if (pastLock) {
+      throw new Error(
+        `Yoklama düzenleme saati doldu (${YOKLAMA_LOCK_HOUR}:${String(YOKLAMA_LOCK_MINUTE).padStart(2, '0')}). Müdür yardımcısına başvurun.`
+      )
+    }
+  }
+
   await AttendanceService.saveYoklama(classId, date, entries)
   revalidatePath('/yonetim')
   revalidatePath('/yoklama')

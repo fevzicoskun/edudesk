@@ -13,6 +13,10 @@ vi.mock('@/src/shared/authorization/server', () => ({
   getAbility: vi.fn(),
 }))
 
+vi.mock('@/src/shared/auth', () => ({
+  getCurrentProfile: vi.fn(),
+}))
+
 const mockSingle    = vi.fn()
 const mockUpsert    = vi.fn()
 const mockIn        = vi.fn()
@@ -35,6 +39,7 @@ vi.mock('@/src/infrastructure/inngest', () => ({
 }))
 
 const { getAbility }                = await import('@/src/shared/authorization/server')
+const { getCurrentProfile }         = await import('@/src/shared/auth')
 const { saveYoklama, getYoklama }   = await import('@/app/actions/yoklama')
 
 const SCHOOL_ID  = 'school-yoklama-unit'
@@ -52,8 +57,15 @@ function makeAbility(perms = OGRETMEN_PERMS) {
   return createAbility({ userId: TEACHER_ID, schoolId: SCHOOL_ID, permissions: perms })
 }
 
+const PRIVILEGED_PROFILE = {
+  id: TEACHER_ID, full_name: 'Test User', subject: null,
+  role: 'mudur_yardimcisi', school_id: SCHOOL_ID, schools: null,
+} as const
+
 beforeEach(() => {
   vi.clearAllMocks()
+  // Lock bypass: mevcut testler servis guard'larını test ediyor, lock testleri ayrı
+  vi.mocked(getCurrentProfile).mockResolvedValue(PRIVILEGED_PROFILE)
   mockSupabase.from.mockReturnValue(mockFromResult)
   mockFromResult.select.mockReturnThis()
   mockFromResult.eq.mockReturnThis()
@@ -212,6 +224,33 @@ describe('saveYoklama() — excused durum', () => {
     const events = vi.mocked(inngest.send).mock.calls[0][0] as { data: { studentId: string } }[]
     expect(events).toHaveLength(1)
     expect(events[0].data.studentId).toBe(SA)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('saveYoklama() — yoklama lock', () => {
+  it('öğretmen geçmiş tarih → throw düzenlenemez', async () => {
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'ogretmen' })
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Geçmiş tarih yoklaması düzenlenemez')
+  })
+
+  it('zumre_baskani geçmiş tarih → throw düzenlenemez', async () => {
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'zumre_baskani' })
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Geçmiş tarih yoklaması düzenlenemez')
+  })
+
+  it('mudur geçmiş tarih → lock bypass, servise ulaşır', async () => {
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'mudur' })
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    await saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: S1, status: 'present' }])
+    expect(mockUpsert).toHaveBeenCalled()
+  })
+
+  it('admin geçmiş tarih → lock bypass, servise ulaşır', async () => {
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'admin' })
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    await saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: S1, status: 'present' }])
+    expect(mockUpsert).toHaveBeenCalled()
   })
 })
 
