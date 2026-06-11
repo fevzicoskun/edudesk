@@ -44,7 +44,13 @@ function formatFull(dateStr: string) {
   } catch { return dateStr }
 }
 
-export default function HomeworkCalendar({ homeworks }: { homeworks: HwItem[] }) {
+export default function HomeworkCalendar({
+  homeworks,
+  completionMap = {},
+}: {
+  homeworks: HwItem[]
+  completionMap?: Record<string, { yapildi: number; total: number }>
+}) {
   const today = new Date()
   const todayStr = toISO(today.getFullYear(), today.getMonth(), today.getDate())
 
@@ -257,6 +263,12 @@ export default function HomeworkCalendar({ homeworks }: { homeworks: HwItem[] })
                           </p>
                           {hw.subject && (
                             <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{hw.subject}</p>
+                          )}
+                          {completionMap[hw.id] && completionMap[hw.id].total > 0 && (
+                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+                              %{Math.round((completionMap[hw.id].yapildi / completionMap[hw.id].total) * 100)} tamamlandı
+                              ({completionMap[hw.id].yapildi}/{completionMap[hw.id].total})
+                            </p>
                           )}
                         </div>
                         <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 shrink-0 mt-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

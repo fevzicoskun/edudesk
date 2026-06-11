@@ -34,6 +34,24 @@ export default async function OdevTakvimPage() {
     classes: Array.isArray(hw.classes) ? (hw.classes[0] ?? null) : hw.classes,
   }))
 
+  const hwIds = homeworks.map(h => h.id)
+
+  const { data: subRows } = hwIds.length > 0
+    ? await supabase
+        .from('homework_submissions')
+        .select('homework_id, status')
+        .in('homework_id', hwIds)
+        .eq('school_id', sid)
+    : { data: [] as { homework_id: string; status: string }[] }
+
+  const completionMap: Record<string, { yapildi: number; total: number }> = {}
+  for (const row of subRows ?? []) {
+    const cur = completionMap[row.homework_id] ?? { yapildi: 0, total: 0 }
+    cur.total++
+    if (row.status === 'yapildi') cur.yapildi++
+    completionMap[row.homework_id] = cur
+  }
+
   return (
     <div className="min-h-full bg-gradient-to-br from-slate-50 via-blue-50/10 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -67,7 +85,7 @@ export default async function OdevTakvimPage() {
           </Link>
         </div>
 
-        <HomeworkCalendar homeworks={homeworks ?? []} />
+        <HomeworkCalendar homeworks={homeworks ?? []} completionMap={completionMap} />
 
       </div>
     </div>
