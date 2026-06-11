@@ -23,11 +23,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <ToastProvider>
       <div className="flex h-full bg-gray-50 dark:bg-slate-950">
-        <Sidebar profile={profile} email={user.email ?? ''} />
-        <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main">{children}</main>
+        <div className="print:hidden">
+          <Sidebar profile={profile} email={user.email ?? ''} />
+        </div>
+        <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0">{children}</main>
       </div>
-      {isTeachingRole(profile?.role) && <QuickAddDrawer />}
-      <CommandPalette />
+      <div className="print:hidden">
+        {isTeachingRole(profile?.role) && <QuickAddDrawer />}
+        <CommandPalette />
+      </div>
     </ToastProvider>
   )
 }
