@@ -1688,6 +1688,61 @@ export type Database = {
           },
         ]
       }
+      parent_contact_logs: {
+        Row: {
+          contact_method: string
+          contacted_at: string
+          created_at: string
+          id: string
+          note: string
+          school_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          contact_method?: string
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          note: string
+          school_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          contact_method?: string
+          contacted_at?: string
+          created_at?: string
+          id?: string
+          note?: string
+          school_id?: string
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_contact_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_contact_logs_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parent_contact_logs_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       permissions: {
         Row: {
           action: string
