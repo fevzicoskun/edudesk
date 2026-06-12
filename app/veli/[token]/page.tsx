@@ -4,6 +4,7 @@ import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
+import VeliTracker from './VeliTracker'
 type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 
 const LABELS: Record<SubmissionStatus, string> = {
@@ -57,8 +58,9 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const { token } = await params
 
   let studentId: string
-
   let tokenSchoolId: string | undefined
+  let expiryText  = ''
+  let expiryColor = ''
 
   if (looksLikeToken(token)) {
     const supabase = createServiceClient()
@@ -67,8 +69,17 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
     if (result.payload.jti && await isTokenRevoked(result.payload.jti, supabase)) {
       return <TokenExpiredPage />
     }
-    studentId = result.payload.id
+    studentId     = result.payload.id
     tokenSchoolId = result.payload.m?.school_id
+    const expiresAt = new Date(result.payload.exp * 1000)
+    const daysLeft  = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000)
+    expiryText  = daysLeft > 30
+      ? `${expiresAt.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' })} kadar geçerli`
+      : daysLeft > 1 ? `${daysLeft} gün kaldı` : 'Bugün geçecek'
+    expiryColor = daysLeft > 30
+      ? 'text-green-600 bg-green-50 border-green-200'
+      : daysLeft > 7 ? 'text-yellow-600 bg-yellow-50 border-yellow-200'
+      : 'text-orange-600 bg-orange-50 border-orange-200'
   } else if (UUID.safeParse(token).success) {
     // Eski UUID tabanlı link — geçersiz sayıyoruz (yeni link almaları gerekiyor)
     return <TokenExpiredPage />
@@ -145,6 +156,11 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
           <div>
             <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">EduDesk · Veli Görünümü</p>
             <p className="text-base font-bold text-gray-900 mt-0.5">{student.full_name}</p>
+            {expiryText && (
+              <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border mt-1 inline-block ${expiryColor}`}>
+                🔗 {expiryText}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">
@@ -159,6 +175,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
+        <VeliTracker token={token} />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center overflow-hidden">
             <p className="text-3xl font-bold text-gray-900">{total}</p>
@@ -189,7 +206,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         </div>
 
         {upcoming.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-2xl p-4">
+          <section data-veli-section="odevler" className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Güncel ve Yaklaşan Ödevler</h2>
             <div className="space-y-2.5">
               {upcoming.map(s => {
@@ -219,7 +236,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         )}
 
         {past.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-2xl p-4">
+          <section data-veli-section="odevler" className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Geçmiş Ödevler</h2>
             <div className="space-y-2">
               {past.map(s => {
@@ -243,7 +260,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         )}
 
         {(absentCount > 0 || lateCount > 0) && (
-          <section className="bg-white border border-gray-200 rounded-2xl p-4">
+          <section data-veli-section="devamsizlik" className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Devamsızlık — Son 90 Gün</h2>
             <div className="grid grid-cols-2 gap-3 mb-3">
               <div className={`rounded-xl p-3 text-center ${absentCount > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
@@ -280,7 +297,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         )}
 
         {notes.length > 0 && (
-          <section className="bg-white border border-gray-200 rounded-2xl p-4">
+          <section data-veli-section="notlar" className="bg-white border border-gray-200 rounded-2xl p-4">
             <h2 className="text-sm font-semibold text-gray-700 mb-3">Öğretmen Notları</h2>
             <div className="space-y-2">
               {notes.map(n => (
