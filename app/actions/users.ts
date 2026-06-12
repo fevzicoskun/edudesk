@@ -60,6 +60,20 @@ export async function assignRole(targetId: string, newRole: string): Promise<Act
   return {}
 }
 
+export async function assignTeacherClass(teacherId: string, classId: string): Promise<ActionResult> {
+  if (!UUID.safeParse(teacherId).success || !UUID.safeParse(classId).success) return { error: 'Geçersiz istek' }
+  const result = await UserService.assignTeacherClass(teacherId, classId)
+  if (!result.error) revalidatePath('/kullanicilar')
+  return result
+}
+
+export async function removeTeacherClass(teacherId: string, classId: string): Promise<ActionResult> {
+  if (!UUID.safeParse(teacherId).success || !UUID.safeParse(classId).success) return { error: 'Geçersiz istek' }
+  const result = await UserService.removeTeacherClass(teacherId, classId)
+  if (!result.error) revalidatePath('/kullanicilar')
+  return result
+}
+
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }

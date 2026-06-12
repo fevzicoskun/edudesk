@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
 import RoleSelector from './RoleSelector'
 import DeleteButton from './DeleteButton'
+import TeacherClassModal, { type ClassRow } from './TeacherClassModal'
 
 export type UserRow = {
   id: string
@@ -17,6 +18,8 @@ export type SessionSummary = {
   totalMinutes: number
   lastSeen: string | null
 }
+
+export type { ClassRow }
 
 const ROLE_BADGE: Record<string, string> = {
   mudur:            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
@@ -32,6 +35,8 @@ export default function KullaniciFiltreli({
   isMudur,
   canAssign,
   assignableRoles,
+  classes,
+  teacherAssignments,
 }: {
   users: UserRow[]
   sessions: Record<string, SessionSummary>
@@ -39,6 +44,8 @@ export default function KullaniciFiltreli({
   isMudur: boolean
   canAssign: boolean
   assignableRoles: Role[]
+  classes: ClassRow[]
+  teacherAssignments: Record<string, string[]>
 }) {
   const [search, setSearch]   = useState('')
   const [subject, setSubject] = useState('')
@@ -195,13 +202,22 @@ export default function KullaniciFiltreli({
                       )}
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3">
-                      {canAssign && !isSelf && (
-                        isMudur
-                          ? u.role !== 'mudur'
-                          : ['zumre_baskani', 'ogretmen'].includes(u.role)
-                      ) && (
-                        <DeleteButton userId={u.id} userName={u.full_name} />
-                      )}
+                      <div className="flex items-center gap-1 justify-end">
+                        {canAssign && ['ogretmen', 'zumre_baskani'].includes(u.role) && (
+                          <TeacherClassModal
+                            teacher={{ id: u.id, full_name: u.full_name }}
+                            classes={classes}
+                            initialAssigned={teacherAssignments[u.id] ?? []}
+                          />
+                        )}
+                        {canAssign && !isSelf && (
+                          isMudur
+                            ? u.role !== 'mudur'
+                            : ['zumre_baskani', 'ogretmen'].includes(u.role)
+                        ) && (
+                          <DeleteButton userId={u.id} userName={u.full_name} />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 )

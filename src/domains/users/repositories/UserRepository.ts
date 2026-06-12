@@ -50,4 +50,42 @@ export const UserRepository = {
     const supabase = await createClient()
     return supabase.auth.getUser()
   },
+
+  // ── Öğretmen–Sınıf Atamaları ────────────────────────────────────────────
+
+  async getSchoolClasses(schoolId: string) {
+    const admin = createServiceClient()
+    return admin
+      .from('classes')
+      .select('id, name, grade')
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+      .order('grade')
+      .order('name')
+  },
+
+  async getSchoolTeacherClasses(classIds: string[]) {
+    if (classIds.length === 0) return { data: [] as { teacher_id: string; class_id: string }[], error: null }
+    const admin = createServiceClient()
+    return admin
+      .from('teacher_classes')
+      .select('teacher_id, class_id')
+      .in('class_id', classIds)
+  },
+
+  async addTeacherClass(teacherId: string, classId: string) {
+    const admin = createServiceClient()
+    return admin
+      .from('teacher_classes')
+      .upsert({ teacher_id: teacherId, class_id: classId }, { ignoreDuplicates: true })
+  },
+
+  async removeTeacherClass(teacherId: string, classId: string) {
+    const admin = createServiceClient()
+    return admin
+      .from('teacher_classes')
+      .delete()
+      .eq('teacher_id', teacherId)
+      .eq('class_id', classId)
+  },
 }

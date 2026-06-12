@@ -2,8 +2,9 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { isMudurOrAbove, type Role } from '@/src/shared/types'
+import { UserRepository } from '@/src/domains/users/repositories/UserRepository'
 import InviteUserForm from './InviteUserForm'
-import KullaniciFiltreli, { type UserRow, type SessionSummary } from './KullaniciFiltreli'
+import KullaniciFiltreli, { type UserRow, type SessionSummary, type ClassRow } from './KullaniciFiltreli'
 import SchoolCodeCard from './SchoolCodeCard'
 
 export const revalidate = 60
@@ -22,15 +23,25 @@ export default async function KullanicilarPage() {
   let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').order('full_name')
   if (isMY) profilesQuery = profilesQuery.neq('role', 'mudur')
 
-  const [{ data }, { data: sessionsRaw }, { data: schoolData }] = await Promise.all([
+  const [{ data }, { data: sessionsRaw }, { data: schoolData }, { data: classesData }] = await Promise.all([
     profilesQuery,
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes').eq('school_id', profile.school_id),
     isMudur && profile.school_id
       ? supabase.from('schools').select('slug').eq('id', profile.school_id).single()
       : Promise.resolve({ data: null }),
+    UserRepository.getSchoolClasses(profile.school_id),
   ])
 
-  const users = (data ?? []) as UserRow[]
+  const users      = (data ?? []) as UserRow[]
+  const allClasses = (classesData ?? []) as ClassRow[]
+  const classIds   = allClasses.map(c => c.id)
+
+  const { data: tcData } = await UserRepository.getSchoolTeacherClasses(classIds)
+  const teacherAssignments: Record<string, string[]> = {}
+  for (const row of (tcData ?? [])) {
+    if (!teacherAssignments[row.teacher_id]) teacherAssignments[row.teacher_id] = []
+    teacherAssignments[row.teacher_id].push(row.class_id)
+  }
 
   // Kullanıcı başına oturum özeti — plain object olarak geçir (client component için serialize edilebilir)
   const sessions: Record<string, SessionSummary> = {}
@@ -73,6 +84,8 @@ export default async function KullanicilarPage() {
         isMudur={isMudur}
         canAssign={canAssign}
         assignableRoles={assignableRoles}
+        classes={allClasses}
+        teacherAssignments={teacherAssignments}
       />
     </div>
   )

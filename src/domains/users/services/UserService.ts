@@ -106,6 +106,33 @@ export const UserService = {
     if (error) throw new Error(error.message)
   },
 
+  async assignTeacherClass(teacherId: string, classId: string): Promise<ActionResult> {
+    const ability = await requireAbility()
+    if (ability.cannot(P.USERS.UPDATE)) return { error: 'Yetki yok' }
+
+    const { data: target } = await UserRepository.getProfileById(teacherId)
+    if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
+    if (!['ogretmen', 'zumre_baskani'].includes(target.role as string)) {
+      return { error: 'Yalnızca öğretmene sınıf atanabilir' }
+    }
+
+    const { error } = await UserRepository.addTeacherClass(teacherId, classId)
+    if (error) return { error: error.message }
+    return {}
+  },
+
+  async removeTeacherClass(teacherId: string, classId: string): Promise<ActionResult> {
+    const ability = await requireAbility()
+    if (ability.cannot(P.USERS.UPDATE)) return { error: 'Yetki yok' }
+
+    const { data: target } = await UserRepository.getProfileById(teacherId)
+    if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
+
+    const { error } = await UserRepository.removeTeacherClass(teacherId, classId)
+    if (error) return { error: error.message }
+    return {}
+  },
+
   async updateProfile(
     userId: string,
     data: { full_name: string; subject: string | null }
