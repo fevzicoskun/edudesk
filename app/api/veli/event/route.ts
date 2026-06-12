@@ -8,6 +8,23 @@ const VALID_SECTIONS    = ['odevler', 'devamsizlik', 'notlar'] as const
 type EventType = typeof VALID_EVENT_TYPES[number]
 type Section   = typeof VALID_SECTIONS[number]
 
+// In-memory rate limiter per token_jti (partial protection within function instance)
+const RL_WINDOW_MS = 60_000
+const RL_MAX       = 30
+const rlStore      = new Map<string, { count: number; resetAt: number }>()
+
+function checkRateLimit(jti: string): boolean {
+  const now  = Date.now()
+  const slot = rlStore.get(jti)
+  if (!slot || now > slot.resetAt) {
+    rlStore.set(jti, { count: 1, resetAt: now + RL_WINDOW_MS })
+    return true
+  }
+  if (slot.count >= RL_MAX) return false
+  slot.count++
+  return true
+}
+
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>
   try {
@@ -36,6 +53,10 @@ export async function POST(req: NextRequest) {
 
   const revoked = await isTokenRevoked(result.payload.jti, supabase)
   if (revoked) return NextResponse.json({ error: 'Token iptal edilmiş' }, { status: 401 })
+
+  if (!checkRateLimit(result.payload.jti)) {
+    return NextResponse.json({ error: 'Çok fazla istek' }, { status: 429 })
+  }
 
   const schoolId = result.payload.m?.school_id
   if (!schoolId) return NextResponse.json({ error: 'Eksik school_id' }, { status: 400 })
