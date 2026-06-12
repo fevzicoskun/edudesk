@@ -117,7 +117,11 @@ export default async function OgrenciDetayPage({
             {cls.name} {student.student_number ? `· No: ${student.student_number}` : ''}
           </p>
         </div>
-        <CopyVeliLink studentId={studentId} />
+        <CopyVeliLink
+          studentId={studentId}
+          studentName={student.full_name}
+          veliAd={student.veli_ad ?? null}
+        />
       </div>
 
       {/* Performans özeti */}
