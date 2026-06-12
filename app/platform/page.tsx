@@ -2,11 +2,13 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { Badge } from '@/components/ui/badge'
 import NewSchoolModal from './NewSchoolModal'
 import StatusToggle from './StatusToggle'
+import CancelSchoolButton from './CancelSchoolButton'
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active:    { label: 'Aktif',     variant: 'default' },
   trial:     { label: 'Trial',     variant: 'secondary' },
   suspended: { label: 'Askıda',    variant: 'destructive' },
+  cancelled: { label: 'Kapalı',    variant: 'outline' },
 }
 
 export default async function PlatformPage() {
@@ -79,7 +81,14 @@ export default async function PlatformPage() {
                   </div>
                 </div>
               </div>
-              <StatusToggle schoolId={school.school_id!} current={(school.status ?? 'active') as 'active' | 'trial' | 'suspended'} />
+              <div className="flex items-center gap-2">
+                {school.status !== 'cancelled' && (
+                  <>
+                    <StatusToggle schoolId={school.school_id!} current={(school.status ?? 'active') as 'active' | 'trial' | 'suspended'} />
+                    <CancelSchoolButton schoolId={school.school_id!} schoolName={school.school_name ?? ''} />
+                  </>
+                )}
+              </div>
             </div>
           )
         })}

@@ -2019,22 +2019,34 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          plan: string
           slug: string | null
           status: string
+          suspended_at: string | null
+          suspended_by: string | null
+          trial_ends_at: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name: string
+          plan?: string
           slug?: string | null
           status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          trial_ends_at?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
+          plan?: string
           slug?: string | null
           status?: string
+          suspended_at?: string | null
+          suspended_by?: string | null
+          trial_ends_at?: string | null
         }
         Relationships: []
       }

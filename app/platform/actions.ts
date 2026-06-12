@@ -76,3 +76,16 @@ export async function updateSchoolStatus(schoolId: string, status: 'active' | 't
   await supabase.from('schools').update({ status }).eq('id', schoolId)
   revalidatePath('/platform')
 }
+
+export async function cancelSchool(schoolId: string) {
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return { error: 'Yetkisiz' }
+
+  await supabase
+    .from('schools')
+    .update({ status: 'cancelled', suspended_at: new Date().toISOString() })
+    .eq('id', schoolId)
+
+  revalidatePath('/platform')
+  return { ok: true }
+}

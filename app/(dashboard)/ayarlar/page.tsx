@@ -8,6 +8,7 @@ import { isTeachingRole } from '@/src/shared/types'
 import BildirimTercihleri from '@/app/(dashboard)/profil/BildirimTercihleri'
 import PasswordForm from './PasswordForm'
 import KaynakYonetimi from './KaynakYonetimi'
+import OkulBilgileri from './OkulBilgileri'
 
 export default async function AyarlarPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
@@ -41,6 +42,7 @@ export default async function AyarlarPage() {
         <KaynakYonetimi initial={sourcesRes.data ?? []} />
       )}
       <PasswordForm />
+      {profile.role === 'mudur' && <OkulBilgileri />}
     </div>
   )
 }
