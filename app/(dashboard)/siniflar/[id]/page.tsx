@@ -6,6 +6,7 @@ import { addStudent } from '@/src/domains/classes/actions'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import BulkStudentModal from './BulkStudentModal'
+import BulkVeliLinkModal from './BulkVeliLinkModal'
 import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
@@ -33,7 +34,7 @@ export default async function SinifDetayPage({
       .single(),
     supabase
       .from('students')
-      .select('id, full_name, student_number, veli_email, veli_telefon')
+      .select('id, full_name, student_number, veli_email, veli_telefon, veli_ad')
       .eq('class_id', id)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
@@ -94,7 +95,10 @@ export default async function SinifDetayPage({
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5 mb-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğrenci Ekle</h2>
-            <BulkStudentModal classId={id} maxNumber={maxNumber} />
+            <div className="flex gap-2">
+              <BulkVeliLinkModal classId={id} />
+              <BulkStudentModal classId={id} maxNumber={maxNumber} />
+            </div>
           </div>
           <form action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
             <input

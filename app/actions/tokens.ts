@@ -2,9 +2,12 @@
 
 import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
-import { getCurrentUser } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { TokenService } from '@/src/domains/tokens/services/TokenService'
 import type { TokenType } from '@/src/domains/tokens/types'
+import { createPublicToken, extractJti } from '@/src/infrastructure/tokens'
+import { TokenRepository } from '@/src/domains/tokens/repositories/TokenRepository'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export async function generateVeliToken(studentId: string): Promise<string> {
   UUID.parse(studentId)
@@ -45,4 +48,56 @@ export async function listRevokedTokens() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
   return TokenService.listRevokedTokens()
+}
+
+export type BulkTokenResult = {
+  studentId: string
+  studentName: string
+  veliAd: string | null
+  veliTelefon: string | null
+  token: string
+}
+
+export async function generateBulkVeliTokens(classId: string): Promise<BulkTokenResult[]> {
+  UUID.parse(classId)
+  const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
+  if (!user || !profile?.school_id) redirect('/login')
+
+  const supabase = await createClient()
+  const { data: students } = await supabase
+    .from('students')
+    .select('id, full_name, veli_ad, veli_telefon')
+    .eq('class_id', classId)
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+    .order('full_name')
+
+  if (!students?.length) return []
+
+  const schoolId = profile.school_id
+  const userId   = user.id
+  const ttlDays  = 7
+
+  return Promise.all(
+    students.map(async (s) => {
+      const token = await createPublicToken('veli', s.id, ttlDays, { school_id: schoolId })
+      const jti   = extractJti(token)
+      if (jti) {
+        await TokenRepository.insertVeliToken({
+          student_id: s.id,
+          school_id:  schoolId,
+          issued_by:  userId,
+          jti,
+          expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
+        })
+      }
+      return {
+        studentId:   s.id,
+        studentName: s.full_name,
+        veliAd:      s.veli_ad      ?? null,
+        veliTelefon: s.veli_telefon ?? null,
+        token,
+      }
+    })
+  )
 }
