@@ -1,1 +1,0 @@
-ALTER TABLE students ADD COLUMN IF NOT EXISTS veli_telefon TEXT;
