@@ -58,6 +58,12 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const isDirty = useRef(false)
   // Server'dan gelen initialStatuses varsa ilk mount'ta getYoklama çağrısını atla
   const skipInitialLoad = useRef(initialStatuses !== undefined)
+  // Kilitleme saati gelince lockStatus yeniden hesaplansın
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   // Toast 5 sn sonra kendiliğinden kapanır
   useEffect(() => {
@@ -110,23 +116,22 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
 
   const lockStatus = useMemo((): LockStatus => {
     if (canEditAfterLock) return 'open'
-    const now     = new Date()
     const todayTR = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
     if (date < todayTR) return 'date_locked'
-    const trHour   = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(now))
-    const trMinute = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', minute: 'numeric' }).format(now))
+    const parts    = new Intl.DateTimeFormat('en', {
+      timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(now)
+    const trHour   = parseInt(parts.find(p => p.type === 'hour')!.value)   % 24
+    const trMinute = parseInt(parts.find(p => p.type === 'minute')!.value)
     if (trHour > YOKLAMA_LOCK_HOUR || (trHour === YOKLAMA_LOCK_HOUR && trMinute >= YOKLAMA_LOCK_MINUTE)) return 'time_locked'
     return 'open'
-  }, [canEditAfterLock, date])
+  }, [canEditAfterLock, date, now])
 
   const isLocked = lockStatus !== 'open'
 
-  const takenSet = useMemo(() => new Set(takenTodayIds ?? []), [takenTodayIds])
+  const [takenToday, setTakenToday] = useState<Set<string>>(() => new Set(takenTodayIds ?? []))
 
-  const isTodayWeekend = useMemo(() => {
-    const d = new Date(today + 'T12:00:00')
-    return d.getDay() === 0 || d.getDay() === 6
-  }, [today])
+  const isTodayWeekend = useMemo(() => isWeekendISO(today), [today])
 
   // Araç çubuğu durum sayıları — her toggle'da yeniden hesaplamayı önler
   const statusSummary = useMemo(() => {
@@ -195,6 +200,9 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         parts.push(`Veli bildirimi saat ${saat}'de gönderilecek.`)
       }
       setToast(parts.join(' '))
+      if (date === today) {
+        setTakenToday(prev => { const s = new Set(prev); s.add(classId); return s })
+      }
     } catch (e) {
       console.error('[YoklamaClient] handleSave:', e)
       setError(e instanceof Error ? e.message : 'Kaydedilemedi')
@@ -218,7 +226,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
               const others = classes.filter(c => !mine.has(c.id))
               const dotLabel = (c: ClassWithStudents) => {
                 if (isTodayWeekend || date !== today) return c.name
-                return takenSet.has(c.id) ? `${c.name} ✓` : `${c.name} ●`
+                return takenToday.has(c.id) ? `${c.name} ✓` : `${c.name} ●`
               }
               if (my.length === 0) return classes.map(c => <option key={c.id} value={c.id}>{dotLabel(c)}</option>)
               return (
@@ -275,7 +283,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       )}
 
       {!isTodayWeekend && date === today && (() => {
-        const missing = classes.filter(c => myClassIds?.includes(c.id) && !takenSet.has(c.id))
+        const missing = classes.filter(c => myClassIds?.includes(c.id) && !takenToday.has(c.id))
         if (missing.length === 0) return null
         return (
           <div className="mb-4 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm px-4 py-3 rounded-xl">

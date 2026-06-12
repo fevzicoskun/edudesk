@@ -18,8 +18,11 @@ const PRIVILEGED_ROLES = ['mudur_yardimcisi', 'mudur', 'admin']
 function turkeyTime(): { dateISO: string; hour: number; minute: number } {
   const now     = new Date()
   const dateISO = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
-  const hour    = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(now))
-  const minute  = parseInt(new Intl.DateTimeFormat('en', { timeZone: 'Europe/Istanbul', minute: 'numeric' }).format(now))
+  const parts   = new Intl.DateTimeFormat('en', {
+    timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(now)
+  const hour   = parseInt(parts.find(p => p.type === 'hour')!.value)   % 24
+  const minute = parseInt(parts.find(p => p.type === 'minute')!.value)
   return { dateISO, hour, minute }
 }
 
