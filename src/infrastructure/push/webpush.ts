@@ -2,11 +2,21 @@ import webpush from 'web-push'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { logger } from '@/src/infrastructure/observability/logger'
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-)
+let vapidInitialized = false
+
+function initVapid() {
+  if (vapidInitialized) return true
+  const subject = process.env.VAPID_SUBJECT
+  const pub     = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const priv    = process.env.VAPID_PRIVATE_KEY
+  if (!subject || !pub || !priv) {
+    logger.warn('VAPID env değişkenleri eksik — web push devre dışı')
+    return false
+  }
+  webpush.setVapidDetails(subject, pub, priv)
+  vapidInitialized = true
+  return true
+}
 
 interface PushPayload {
   title: string
@@ -21,6 +31,7 @@ interface Subscription {
 }
 
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  if (!initVapid()) return
   const supabase = createServiceClient()
   const { data: subs } = await supabase
     .from('push_subscriptions')
@@ -54,6 +65,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
 }
 
 export async function sendPushToSchool(schoolId: string, payload: PushPayload): Promise<void> {
+  if (!initVapid()) return
   const supabase = createServiceClient()
   const { data: subs } = await supabase
     .from('push_subscriptions')

@@ -50,6 +50,24 @@ vi.mock('next/cache', () => ({
 // ── server-only → Node.js testlerinde no-op ──────────────────
 vi.mock('server-only', () => ({}))
 
+// ── env doğrulama → sahte değerlerle bypass ─────────────────
+vi.mock('@/src/lib/env', () => ({
+  env: {
+    NEXT_PUBLIC_SUPABASE_URL:             'https://test.supabase.co',
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'test-anon-key',
+    SUPABASE_SERVICE_ROLE_KEY:            'test-service-role-key',
+    TOKEN_SECRET:                         'test-token-secret-min-32-chars-padding',
+    NEXT_PUBLIC_APP_URL:                  'https://myedudesk.com.tr',
+    RESEND_API_KEY:                       '',
+    RESEND_FROM:                          'EduDesk <noreply@myedudesk.com.tr>',
+    FEEDBACK_TO:                          '',
+    ALERT_EMAIL:                          '',
+    LOG_LEVEL:                            'info',
+    RATE_LIMIT_FAIL_MODE:                 'closed',
+    UNSUBSCRIBE_SECRET:                   '',
+  },
+}))
+
 // ── pino logger → unit testlerde no-op ──────────────────────
 vi.mock('@/src/infrastructure/observability/logger', () => {
   const noop = vi.fn()
