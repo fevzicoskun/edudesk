@@ -95,7 +95,7 @@ export async function createHomework(_: unknown, formData: FormData) {
   if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
 
   revalidatePath('/odevler')
-  if (classIds.length === 1 && failedCount === 0) redirect(`/odevler/${succeeded[0]}`)
+  if (classIds.length === 1 && failedCount === 0 && succeeded[0]) redirect(`/odevler/${succeeded[0]}`)
   if (failedCount > 0) redirect(`/odevler?olusturuldu=${succeeded.length}&hatali=${failedCount}`)
   redirect(`/odevler?olusturuldu=${succeeded.length}`)
 }
@@ -137,25 +137,26 @@ export async function quickCreateHomework(
     )
   )
 
-  const ids = results
-    .filter((r): r is PromiseFulfilledResult<{ id?: string; error?: string }> =>
-      r.status === 'fulfilled' && !r.value.error
-    )
-    .map(r => r.value.id!)
-    .filter(Boolean)
+  const succeeded = results
+    .map((r, idx) => ({
+      classId: classIds[idx],
+      id: r.status === 'fulfilled' && !r.value.error ? r.value.id : undefined,
+    }))
+    .filter((x): x is { classId: string; id: string } => !!x.id)
 
-  if (ids.length === 0) return { error: 'Ödev oluşturulamadı' }
+  if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
+  const ids = succeeded.map(x => x.id)
 
   // Veli bildirimi — notify_parents flag true ise Inngest event fire et
   const notifyParents = formData.get('notify_parents') === 'true'
-  if (notifyParents && ids.length > 0) {
+  if (notifyParents) {
     const profile = await getCurrentProfile()
     if (profile?.school_id) {
       await Promise.allSettled(
-        classIds.slice(0, ids.length).map((classId, idx) =>
+        succeeded.map(({ classId, id }) =>
           inngest.send({
             name: 'homework/created',
-            data: { homeworkId: ids[idx], classId, schoolId: profile.school_id! },
+            data: { homeworkId: id, classId, schoolId: profile.school_id! },
           })
         )
       )

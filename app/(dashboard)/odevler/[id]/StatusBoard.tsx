@@ -114,14 +114,16 @@ export default function StatusBoard({
     })
   }
 
-  async function toggleHistory(studentId: string) {
+  function toggleHistory(studentId: string) {
     if (historyOpenId === studentId) { setHistoryOpenId(null); return }
     setHistoryOpenId(studentId)
     if (historyMap[studentId]) return
     setHistoryLoadingIds(cur => new Set([...cur, studentId]))
-    const logs = await getSubmissionLogs(homeworkId, studentId)
-    setHistoryMap(prev => ({ ...prev, [studentId]: logs }))
-    setHistoryLoadingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
+    startTransition(async () => {
+      const logs = await getSubmissionLogs(homeworkId, studentId)
+      setHistoryMap(prev => ({ ...prev, [studentId]: logs }))
+      setHistoryLoadingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
+    })
   }
 
   function toggleSelect(studentId: string) {

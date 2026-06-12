@@ -47,7 +47,7 @@ describe('DashboardRepository — boş dizi guard\'ları', () => {
   })
 
   it('getStudentsByClasses([]): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getStudentsByClasses([])
+    const result = await DashboardRepository.getStudentsByClasses([], 'school-id')
     expect(result).toEqual({ data: [] })
     expect(createClient).not.toHaveBeenCalled()
   })

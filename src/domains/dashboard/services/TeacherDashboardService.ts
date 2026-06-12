@@ -140,7 +140,7 @@ async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const [subsResult, attResult, studentsResult] = await Promise.all([
     DashboardRepository.getSubmissions(hwIds),
     DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
-    DashboardRepository.getStudentsByClasses(classIds),
+    DashboardRepository.getStudentsByClasses(classIds, schoolId),
   ])
 
   if ('error' in subsResult    && subsResult.error)    logger.error({ teacherId, hwCount: hwIds.length, code: (subsResult.error as { code?: string }).code }, 'fetchRiskInputs: submission sorgusu başarısız')
@@ -284,7 +284,7 @@ export const TeacherDashboardService = {
 
     const [subsResult, studentsResult, attResult] = await Promise.all([
       DashboardRepository.getClassSubmissions(classId, teacherId, schoolId),
-      DashboardRepository.getStudentsByClasses([classId]),
+      DashboardRepository.getStudentsByClasses([classId], schoolId),
       DashboardRepository.getAttendanceRows([classId], teacherId, twoWeeksAgo),
     ])
 

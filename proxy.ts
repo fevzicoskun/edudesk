@@ -59,6 +59,7 @@ async function getRedisLimiter(): Promise<RateLimiter | null> {
       'kayit:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3,  '60 s'), prefix: 'rl:kayit' }),
       'onboarding:': new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5,  '60 s'), prefix: 'rl:onboarding' }),
       'login:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '60 s'), prefix: 'rl:login' }),
+      'reset:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3,  '60 s'), prefix: 'rl:reset' }),
       'api:':        new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s'), prefix: 'rl:api' }),
       'public:':     new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, '60 s'), prefix: 'rl:public' }),
     }

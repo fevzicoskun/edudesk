@@ -145,7 +145,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const missing = submissions.filter(s => s.status === 'yapilmadi' || s.status === 'eksik').length
   const rate = total > 0 ? Math.round((done / total) * 100) : 0
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   const upcoming = submissions.filter(s => (s.homeworks?.due_date ?? '') >= today)
   const past = submissions.filter(s => (s.homeworks?.due_date ?? '') < today)
 

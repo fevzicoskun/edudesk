@@ -27,9 +27,10 @@ const CHIP_ORDER: (keyof StatusCounts)[] = ['yapildi', 'yapilmadi', 'eksik', 'ge
 
 function getActiveBadge(dueDate?: string | null): { text: string; cls: string; dot: string } {
   if (!dueDate) return { text: 'Aktif', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100', dot: 'bg-emerald-500' }
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const due   = new Date(dueDate); due.setHours(0, 0, 0, 0)
-  const days  = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  const todayStr = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  const days = Math.round(
+    (new Date(dueDate + 'T00:00:00').getTime() - new Date(todayStr + 'T00:00:00').getTime()) / 86_400_000
+  )
   if (days === 0) return { text: 'Bugün!', cls: 'bg-red-50 text-red-600 border-red-200',    dot: 'bg-red-500'     }
   if (days === 1) return { text: 'Yarın',  cls: 'bg-orange-50 text-orange-600 border-orange-200', dot: 'bg-orange-500' }
   if (days <= 3)  return { text: `${days} gün`, cls: 'bg-amber-50 text-amber-600 border-amber-200', dot: 'bg-amber-500' }

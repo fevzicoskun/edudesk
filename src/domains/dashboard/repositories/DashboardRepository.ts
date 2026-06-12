@@ -37,13 +37,14 @@ export const DashboardRepository = {
       .limit(3000)
   },
 
-  async getStudentsByClasses(classIds: string[]) {
+  async getStudentsByClasses(classIds: string[], schoolId: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
       .from('students')
       .select('id, full_name, class_id, classes(name)')
       .in('class_id', classIds)
+      .eq('school_id', schoolId)
       .is('deleted_at', null)
       .limit(500)
   },
