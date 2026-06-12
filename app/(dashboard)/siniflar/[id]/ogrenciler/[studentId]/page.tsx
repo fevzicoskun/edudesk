@@ -6,6 +6,7 @@ import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions
 import VeliIletisimForm from './VeliIletisimForm'
 import CopyVeliLink from './CopyVeliLink'
 import ParentContactLogSection from './ParentContactLogSection'
+import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import { schoolYearStart } from '@/src/shared/utils'
@@ -365,6 +366,8 @@ export default async function OgrenciDetayPage({
           </div>
         </section>
       )}
+
+      <VeliAnalyticsCard studentId={studentId} schoolId={schoolId} />
 
       <ParentContactLogSection
         logs={(contactLogsRes.data ?? []) as Array<{ id: string; note: string; contact_method: string; contacted_at: string; teacher_id: string }>}

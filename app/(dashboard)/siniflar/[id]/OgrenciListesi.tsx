@@ -20,6 +20,7 @@ interface Props {
   absenceCounts: Record<string, number>
   warnDays: number
   limitDays: number
+  viewCounts?: Record<string, number>
 }
 
 function waLink(telefon: string): string {
@@ -31,10 +32,10 @@ function waLink(telefon: string): string {
 }
 
 function OgrenciSatiri({
-  s, classId, canDelete, index, absenceCount, warnDays, limitDays,
+  s, classId, canDelete, index, absenceCount, warnDays, limitDays, viewCount,
 }: {
   s: Student; classId: string; canDelete: boolean; index: number
-  absenceCount: number; warnDays: number; limitDays: number
+  absenceCount: number; warnDays: number; limitDays: number; viewCount: number
 }) {
   const [open, setOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -76,6 +77,11 @@ function OgrenciSatiri({
             >
               {s.full_name}
             </Link>
+            {viewCount > 0 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
+                👁 {viewCount}
+              </span>
+            )}
             {absenceCount > 0 && (
               <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${
                 absenceCount >= limitDays
@@ -247,7 +253,7 @@ function OgrenciSatiri({
   )
 }
 
-export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays }: Props) {
+export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays, viewCounts }: Props) {
   const [q, setQ] = useState('')
 
   const filtered = q.trim()
@@ -292,6 +298,7 @@ export default function OgrenciListesi({ students, classId, canDelete, absenceCo
               absenceCount={absenceCounts[s.id] ?? 0}
               warnDays={warnDays}
               limitDays={limitDays}
+              viewCount={viewCounts?.[s.id] ?? 0}
             />
           ))}
         </div>

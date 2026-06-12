@@ -7,6 +7,7 @@ import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import BulkStudentModal from './BulkStudentModal'
 import BulkVeliLinkModal from './BulkVeliLinkModal'
+import { VeliAnalyticsRepository } from '@/src/domains/classes/repositories/VeliAnalyticsRepository'
 import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
@@ -24,7 +25,7 @@ export default async function SinifDetayPage({
 
   const yearStart = schoolYearStart()
 
-  const [clsResult, studentsResult, absenceResult] = await Promise.all([
+  const [clsResult, studentsResult, absenceResult, viewCounts] = await Promise.all([
     supabase
       .from('classes')
       .select('name')
@@ -47,6 +48,7 @@ export default async function SinifDetayPage({
       .eq('school_id', schoolId)
       .in('status', ['absent', 'late'])
       .gte('date', yearStart),
+    VeliAnalyticsRepository.getVeliViewCounts(id, schoolId),
   ])
 
   if (!clsResult.data) notFound()
@@ -138,6 +140,7 @@ export default async function SinifDetayPage({
           absenceCounts={absenceCounts}
           warnDays={ATTENDANCE_WARN_DAYS}
           limitDays={ATTENDANCE_LIMIT_DAYS}
+          viewCounts={viewCounts}
         />
       )}
     </div>
