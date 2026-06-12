@@ -8,6 +8,7 @@ import { ClassService } from '@/src/domains/classes/services/ClassService'
 import { parseStudentRows, excelCellToString } from '@/src/domains/classes/services/studentImportParser'
 import { getAbility } from '@/src/shared/authorization/server'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { logger } from '@/src/infrastructure/observability/logger'
 import type { ActionResult } from '@/src/shared/types'
 
 export async function createClass(formData: FormData) {
@@ -117,6 +118,7 @@ export async function importStudentsFromExcel(
   try {
     await ClassService.addStudentsBulk(classId, students)
   } catch (e) {
+    logger.error({ classId, err: e instanceof Error ? e.message : String(e) }, 'importStudentsFromExcel: toplu ekleme başarısız')
     return {
       added: 0,
       errors,
@@ -210,6 +212,7 @@ export async function addParentContactLog(
       contacted_at:   new Date(parsed.data.contacted_at + 'T00:00:00').toISOString(),
     })
   } catch (e) {
+    logger.error({ studentId, err: e instanceof Error ? e.message : String(e) }, 'addParentContactLog: kayıt eklenemedi')
     return { error: e instanceof Error ? e.message : 'Kayıt eklenemedi.' }
   }
 
@@ -228,6 +231,7 @@ export async function deleteParentContactLog(
   try {
     await ClassService.deleteParentContactLog(logId)
   } catch (e) {
+    logger.error({ logId, err: e instanceof Error ? e.message : String(e) }, 'deleteParentContactLog: kayıt silinemedi')
     return { error: e instanceof Error ? e.message : 'Kayıt silinemedi.' }
   }
 

@@ -5,6 +5,14 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentUser } from '@/src/shared/auth'
 import { z } from 'zod'
 
+async function requirePlatformAdmin() {
+  const user = await getCurrentUser()
+  if (!user) return null
+  const supabase = createServiceClient()
+  const { data } = await supabase.from('platform_admins').select('id').eq('id', user.id).maybeSingle()
+  return data ? supabase : null
+}
+
 const NewSchoolSchema = z.object({
   name:         z.string().min(3).max(100),
   slug:         z.string().regex(/^[A-Z]{3,4}\d{3,4}$/, 'Format: ABC123'),
@@ -14,13 +22,8 @@ const NewSchoolSchema = z.object({
 })
 
 export async function createSchool(_prev: { error?: string; ok?: boolean } | null, formData: FormData) {
-  const user = await getCurrentUser()
-  if (!user) return { error: 'Yetkisiz' }
-
-  const supabase = createServiceClient()
-  const isPlatformAdmin = await supabase
-    .from('platform_admins').select('id').eq('id', user.id).maybeSingle()
-  if (!isPlatformAdmin.data) return { error: 'Yetkisiz' }
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return { error: 'Yetkisiz' }
 
   const parsed = NewSchoolSchema.safeParse({
     name:        formData.get('name'),
@@ -67,13 +70,8 @@ export async function createSchool(_prev: { error?: string; ok?: boolean } | nul
 }
 
 export async function updateSchoolStatus(schoolId: string, status: 'active' | 'trial' | 'suspended') {
-  const user = await getCurrentUser()
-  if (!user) return
-
-  const supabase = createServiceClient()
-  const isPlatformAdmin = await supabase
-    .from('platform_admins').select('id').eq('id', user.id).maybeSingle()
-  if (!isPlatformAdmin.data) return
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return
 
   await supabase.from('schools').update({ status }).eq('id', schoolId)
   revalidatePath('/platform')

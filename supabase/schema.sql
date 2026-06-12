@@ -112,7 +112,6 @@ CREATE INDEX IF NOT EXISTS idx_attendance_class_date ON attendance(class_id, dat
 ALTER TABLE attendance ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "attendance_own" ON attendance FOR ALL TO authenticated
   USING (auth.uid() = teacher_id) WITH CHECK (auth.uid() = teacher_id);
-CREATE POLICY "attendance_public_read" ON attendance FOR SELECT TO anon USING (true);
 
 CREATE TABLE student_notes (
   id         UUID DEFAULT gen_random_uuid() PRIMARY KEY,
