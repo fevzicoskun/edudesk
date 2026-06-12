@@ -1,4 +1,8 @@
--- Supabase SQL Schema
+-- Supabase SQL Schema (SNAPSHOT — 2026-05-15)
+-- ⚠️  Bu dosya güncel değil. Yetkili kaynaklar:
+--   - Tip tanımları : src/infrastructure/supabase/database.types.ts
+--   - Schema değişiklikleri: supabase/migrations/*.sql
+-- Bu dosyayı referans olarak kullanmayın.
 -- Run in Supabase SQL Editor
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

@@ -1,6 +1,11 @@
 /**
  * Mentor RLS erişim sınır testleri.
  *
+ * NOT: mentor_reports ve mentor_students tabloları DB'de mevcuttur (migrations/2026-05-19).
+ * Uygulama katmanı (repository/service/UI) henüz yazılmamıştır — bu testler yalnızca
+ * Supabase RLS politikalarının doğruluğunu doğrular, bir domain servisi test etmez.
+ * Uygulama katmanı eklendiğinde bu dosya güncellenmeli ve unit testler de yazılmalıdır.
+ *
  * İki ayrı mentor sistemi test edilir:
  *
  * 1. mentor_reports (sistem öğrencileri için)

@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "quality": "bash -c \"echo '=== TS casts ===' && grep -rn 'as unknown as\\|as any\\b\\|: any\\b\\|<any>' src/ app/ --include='*.ts' --include='*.tsx' | grep -v 'node_modules|\\.next|test|spec|database\\.types' | wc -l && echo '=== 300+ satır dosya ===' && find app/ src/ -name '*.tsx' -o -name '*.ts' | grep -v 'node_modules|\\.next|test|spec|database\\.types' | xargs wc -l 2>/dev/null | awk '$1 > 300' | grep -v total && echo '=== Unit test sonucu ===' && npm run test:unit 2>&1 | grep 'Tests'\""
   },
   "dependencies": {
     "@sentry/nextjs": "^10.53.1",

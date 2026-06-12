@@ -49,3 +49,14 @@ vi.mock('next/cache', () => ({
 
 // ── server-only → Node.js testlerinde no-op ──────────────────
 vi.mock('server-only', () => ({}))
+
+// ── pino logger → unit testlerde no-op ──────────────────────
+vi.mock('@/src/infrastructure/observability/logger', () => {
+  const noop = vi.fn()
+  const child = vi.fn().mockReturnValue({ info: noop, warn: noop, error: noop, debug: noop, fatal: noop })
+  return {
+    logger:      { info: noop, warn: noop, error: noop, debug: noop, fatal: noop, child },
+    childLogger: child,
+    securityLog: noop,
+  }
+})

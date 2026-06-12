@@ -3,6 +3,10 @@
 Her sprint sonunda bu dosyayı referans alarak aynı metodoloji ile ölç.
 Tüm sayılar `git grep` veya `wc -l` ile elde edilmeli — tahmin değil.
 
+> **Windows notu:** Aşağıdaki ölçüm komutları bash gerektirir.
+> Windows'ta Git Bash veya WSL terminali kullanın (`! bash` ile Claude Code'da çalıştırılabilir).
+> Alternatif olarak `npm run quality` komutu aşağıdaki kontrolleri otomatik çalıştırır.
+
 ---
 
 ## Nasıl Ölçülür

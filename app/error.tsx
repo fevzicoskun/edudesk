@@ -1,12 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
-import * as Sentry from '@sentry/nextjs'
 import { reportClientError } from '@/app/actions/error-report'
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    Sentry.captureException(error)
     reportClientError({
       message: (error.message || 'Bilinmeyen istemci hatası').slice(0, 500),
       digest:  error.digest,

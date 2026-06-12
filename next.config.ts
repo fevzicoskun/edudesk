@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 // CSP is handled dynamically in proxy.ts (with nonce per request).
 // Static headers here are kept only for non-middleware responses.
 const nextConfig: NextConfig = {
+  serverExternalPackages: [
+    'exceljs',
+    '@opentelemetry/instrumentation',
+    'import-in-the-middle',
+    'require-in-the-middle',
+    '@fastify/otel',
+    'pino',
+  ],
   experimental: {
     optimizePackageImports: ['recharts', 'lucide-react', '@radix-ui/react-icons'],
   },
