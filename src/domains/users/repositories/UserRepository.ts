@@ -53,6 +53,15 @@ export const UserRepository = {
 
   // ── Öğretmen–Sınıf Atamaları ────────────────────────────────────────────
 
+  async getClassById(classId: string) {
+    const admin = createServiceClient()
+    return admin
+      .from('classes')
+      .select('school_id, deleted_at')
+      .eq('id', classId)
+      .single()
+  },
+
   async getSchoolClasses(schoolId: string) {
     const admin = createServiceClient()
     return admin

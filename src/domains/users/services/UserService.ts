@@ -110,8 +110,13 @@ export const UserService = {
     const ability = await requireAbility()
     if (ability.cannot(P.USERS.UPDATE)) return { error: 'Yetki yok' }
 
-    const { data: target } = await UserRepository.getProfileById(teacherId)
+    const [{ data: target }, { data: cls }] = await Promise.all([
+      UserRepository.getProfileById(teacherId),
+      UserRepository.getClassById(classId),
+    ])
+
     if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
+    if (!cls || cls.deleted_at || cls.school_id !== ability.schoolId) return { error: 'Sınıf bulunamadı' }
     if (!['ogretmen', 'zumre_baskani'].includes(target.role as string)) {
       return { error: 'Yalnızca öğretmene sınıf atanabilir' }
     }
@@ -125,8 +130,13 @@ export const UserService = {
     const ability = await requireAbility()
     if (ability.cannot(P.USERS.UPDATE)) return { error: 'Yetki yok' }
 
-    const { data: target } = await UserRepository.getProfileById(teacherId)
+    const [{ data: target }, { data: cls }] = await Promise.all([
+      UserRepository.getProfileById(teacherId),
+      UserRepository.getClassById(classId),
+    ])
+
     if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
+    if (!cls || cls.school_id !== ability.schoolId) return { error: 'Sınıf bulunamadı' }
 
     const { error } = await UserRepository.removeTeacherClass(teacherId, classId)
     if (error) return { error: error.message }
