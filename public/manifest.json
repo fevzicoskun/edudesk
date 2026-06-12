@@ -1,4 +1,5 @@
 {
+  "id": "/",
   "name": "EduDesk",
   "short_name": "EduDesk",
   "description": "Öğretmen yönetim paneli",
@@ -28,5 +29,19 @@
     }
   ],
   "categories": ["education", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Yoklama Al",
+      "short_name": "Yoklama",
+      "url": "/yoklama",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ödevler",
+      "short_name": "Ödevler",
+      "url": "/odevler",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "screenshots": []
 }
