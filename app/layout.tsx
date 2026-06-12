@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
+import ServiceWorkerInit from '@/app/components/ServiceWorkerInit'
+import InstallBanner from '@/app/components/InstallBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -31,8 +33,19 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `try{const t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme:dark)').matches))document.documentElement.classList.add('dark')}catch{}`
           }}
         />
+        {/* Last-online timestamp — offline sayfasında "Son çevrimiçi" için */}
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: `try{localStorage.setItem('edudesk-last-online',new Date().toISOString())}catch{}`
+          }}
+        />
       </head>
-      <body className="h-full antialiased">{children}</body>
+      <body className="h-full antialiased">
+        <ServiceWorkerInit />
+        <InstallBanner />
+        {children}
+      </body>
     </html>
   )
 }
