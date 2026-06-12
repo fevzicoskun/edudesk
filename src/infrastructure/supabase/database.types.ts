@@ -2569,6 +2569,54 @@ export type Database = {
           },
         ]
       }
+      veli_portal_events: {
+        Row: {
+          created_at: string
+          duration_sec: number | null
+          event_type: string
+          id: string
+          school_id: string
+          section: string | null
+          student_id: string
+          token_jti: string
+        }
+        Insert: {
+          created_at?: string
+          duration_sec?: number | null
+          event_type: string
+          id?: string
+          school_id: string
+          section?: string | null
+          student_id: string
+          token_jti: string
+        }
+        Update: {
+          created_at?: string
+          duration_sec?: number | null
+          event_type?: string
+          id?: string
+          school_id?: string
+          section?: string | null
+          student_id?: string
+          token_jti?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "veli_portal_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "veli_portal_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       veli_tokens: {
         Row: {
           created_at: string
