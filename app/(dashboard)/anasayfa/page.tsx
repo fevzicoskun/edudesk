@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { format } from '@/src/shared/date'
 import OgretmenDashboard     from './OgretmenDashboard'
 import MudurOgretmenAktivite from './MudurOgretmenAktivite'
+import WidgetErrorBoundary from './WidgetErrorBoundary'
 import MYStatsWidget          from './MYStatsWidget'
 import MYSolSutunWidget       from './MYSolSutunWidget'
 import { getGreeting }        from '@/src/shared/utils'
@@ -56,7 +57,9 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
           <MYSolSutunWidget />
         </Suspense>
         <Suspense fallback={<WidgetSkeleton tall />}>
-          <MudurOgretmenAktivite />
+          <WidgetErrorBoundary label="Öğretmen aktivitesi">
+            <MudurOgretmenAktivite />
+          </WidgetErrorBoundary>
         </Suspense>
       </div>
 
