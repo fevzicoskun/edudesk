@@ -1,4 +1,5 @@
 import { format, parseISO } from '@/src/shared/date'
+import VeliDevamsizlikChart from './VeliDevamsizlikChart'
 
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
@@ -16,6 +17,7 @@ export default function VeliDevamsizlikSection({
   return (
     <section data-veli-section="devamsizlik" className="bg-white border border-gray-200 rounded-2xl p-4">
       <h2 className="text-sm font-semibold text-gray-700 mb-3">Devamsızlık — Son 90 Gün</h2>
+      <VeliDevamsizlikChart attendance={attendance} />
       <div className="grid grid-cols-2 gap-3 mb-3">
         <div className={`rounded-xl p-3 text-center ${absentCount > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
           <p className={`text-2xl font-bold ${absentCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{absentCount}</p>
