@@ -5,6 +5,14 @@ import { logger } from '@/src/infrastructure/observability/logger'
 
 const YONETICI_ROLLER = ['mudur', 'mudur_yardimcisi']
 
+export function findMissingClasses<T extends { id: string }>(
+  classes: T[],
+  attendanceTaken: { class_id: string }[]
+): T[] {
+  const taken = new Set(attendanceTaken.map(a => a.class_id))
+  return classes.filter(c => !taken.has(c.id))
+}
+
 export const yoklamaHatirlaticiFn = inngest.createFunction(
   { id: 'yoklama-hatirlatici', triggers: [{ cron: 'TZ=Europe/Istanbul 0 10 * * 1-5' }] },
   async ({ step }) => {
@@ -22,8 +30,7 @@ export const yoklamaHatirlaticiFn = inngest.createFunction(
         .select('class_id')
         .eq('date', todayISO)
         .in('school_id', schoolIds)
-      const taken = new Set((attData ?? []).map(a => a.class_id))
-      return classes.filter(c => !taken.has(c.id))
+      return findMissingClasses(classes, attData ?? [])
     })
 
     if (missing.length === 0) return { sent: 0 }

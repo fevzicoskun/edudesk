@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { shouldNotifyVeli } from '@/src/domains/notifications/functions/veliAbsenceNotifier'
 import { filterEligibleVeliler } from '@/src/domains/notifications/functions/homeworkCreatedNotifier'
+import { filterMissingCandidates, yesterdayInTurkey } from '@/src/domains/notifications/functions/odevSonrasiVeliNotifier'
+import { findMissingClasses } from '@/src/domains/notifications/functions/yoklamaHatirlatici'
 
 // ── shouldNotifyVeli ──────────────────────────
 describe('shouldNotifyVeli()', () => {
@@ -81,5 +83,81 @@ describe('filterEligibleVeliler()', () => {
       makeStudent('c@b.com'),
     ]
     expect(filterEligibleVeliler(list)).toHaveLength(2)
+  })
+})
+
+// ── yesterdayInTurkey ─────────────────────────
+describe('yesterdayInTurkey()', () => {
+  it('YYYY-MM-DD formatında döner', () => {
+    expect(yesterdayInTurkey()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
+  })
+
+  it('bugünden farklı olmalı', () => {
+    const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+    expect(yesterdayInTurkey()).not.toBe(today)
+  })
+})
+
+// ── filterMissingCandidates ───────────────────
+describe('filterMissingCandidates()', () => {
+  const hw = { id: 'hw1', title: 'Ödev', due_date: '2026-01-10', school_id: 'sch1', class_id: 'cls1' }
+  const student = { id: 'st1', full_name: 'Ali', veli_email: 'v@t.com', veli_ad: 'Veli Ali', class_id: 'cls1' }
+
+  it('teslim etmemiş öğrenci → aday listesine girer', () => {
+    const result = filterMissingCandidates([hw], [student], [])
+    expect(result).toHaveLength(1)
+    expect(result[0].studentId).toBe('st1')
+  })
+
+  it('yapildi durumundaki → hariç', () => {
+    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'yapildi' }]
+    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(0)
+  })
+
+  it('mazeretli durumundaki → hariç', () => {
+    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'mazeretli' }]
+    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(0)
+  })
+
+  it('eksik durumundaki → aday listesinde kalır', () => {
+    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'eksik' }]
+    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(1)
+  })
+
+  it('farklı sınıftaki öğrenci → eşleşmez', () => {
+    const otherStudent = { ...student, class_id: 'cls2' }
+    expect(filterMissingCandidates([hw], [otherStudent], [])).toHaveLength(0)
+  })
+
+  it('veli adı null ise varsayılan atanır', () => {
+    const s = { ...student, veli_ad: null }
+    const result = filterMissingCandidates([hw], [s], [])
+    expect(result[0].veliAd).toBe('Sayın Veli')
+  })
+})
+
+// ── findMissingClasses ────────────────────────
+describe('findMissingClasses()', () => {
+  const classes = [
+    { id: 'cls1', name: '9-A', school_id: 'sch1', mentor_teacher_id: 't1' },
+    { id: 'cls2', name: '9-B', school_id: 'sch1', mentor_teacher_id: null },
+  ]
+
+  it('tüm yoklamalar alınmışsa boş döner', () => {
+    expect(findMissingClasses(classes, [{ class_id: 'cls1' }, { class_id: 'cls2' }])).toHaveLength(0)
+  })
+
+  it('yoklaması alınmayanlar listelenir', () => {
+    const result = findMissingClasses(classes, [{ class_id: 'cls1' }])
+    expect(result).toHaveLength(1)
+    expect(result[0].id).toBe('cls2')
+  })
+
+  it('hiç yoklama alınmamışsa hepsi listelenir', () => {
+    expect(findMissingClasses(classes, [])).toHaveLength(2)
+  })
+
+  it('boş sınıf listesi → boş döner', () => {
+    expect(findMissingClasses([], [{ class_id: 'cls1' }])).toHaveLength(0)
   })
 })

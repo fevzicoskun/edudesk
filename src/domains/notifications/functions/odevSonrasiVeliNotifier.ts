@@ -5,10 +5,49 @@ import { formatDateTR, buildMissedEmail } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
 
 // "Dün" Türkiye saatine göre hesapla. Server UTC'de çalışsa da Intl ile doğru tarihi üretiriz.
-function yesterdayInTurkey(): string {
+export function yesterdayInTurkey(): string {
   const d = new Date()
   d.setDate(d.getDate() - 1)
   return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
+}
+
+type HwRow = { id: string; title: string; due_date: string | null; school_id: string; class_id: string }
+type StudentVeliRow = { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string }
+type SubRow = { student_id: string; homework_id: string; status: string }
+type VeliCandidate = { homeworkId: string; studentId: string; schoolId: string; to: string; veliAd: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }
+
+export function filterMissingCandidates(
+  homeworks: HwRow[],
+  allStudents: StudentVeliRow[],
+  allSubs: SubRow[]
+): VeliCandidate[] {
+  const studentsByClass = new Map<string, StudentVeliRow[]>()
+  for (const s of allStudents) {
+    const list = studentsByClass.get(s.class_id) ?? []
+    list.push(s)
+    studentsByClass.set(s.class_id, list)
+  }
+  const subKey = new Map<string, string>()
+  for (const s of allSubs) subKey.set(`${s.homework_id}:${s.student_id}`, s.status)
+
+  const results: VeliCandidate[] = []
+  for (const hw of homeworks) {
+    for (const student of (studentsByClass.get(hw.class_id) ?? [])) {
+      const status = subKey.get(`${hw.id}:${student.id}`) ?? 'yapilmadi'
+      if (status === 'yapildi' || status === 'mazeretli') continue
+      results.push({
+        homeworkId: hw.id,
+        studentId: student.id,
+        schoolId: hw.school_id,
+        to: student.veli_email,
+        veliAd: student.veli_ad ?? 'Sayın Veli',
+        ogrenciAdi: student.full_name,
+        odevBaslik: hw.title,
+        dueDate: hw.due_date ?? '',
+      })
+    }
+  }
+  return results
 }
 
 export const odevSonrasiVeliNotifierFn = inngest.createFunction(
@@ -56,35 +95,11 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
           .in('school_id', uniqueSchoolIds),
       ])
 
-      const studentsByClass = new Map<string, { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string }[]>()
-      for (const s of allStudents ?? []) {
-        if (!s.veli_email) continue
-        const list = studentsByClass.get(s.class_id) ?? []
-        list.push(s as { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string })
-        studentsByClass.set(s.class_id, list)
-      }
-
-      const subKey = new Map<string, string>()
-      for (const s of allSubs ?? []) subKey.set(`${s.homework_id}:${s.student_id}`, s.status)
-
-      const results: { homeworkId: string; studentId: string; schoolId: string; to: string; veliAd: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }[] = []
-      for (const hw of homeworks) {
-        for (const student of (studentsByClass.get(hw.class_id) ?? [])) {
-          const status = subKey.get(`${hw.id}:${student.id}`) ?? 'yapilmadi'
-          if (status === 'yapildi' || status === 'mazeretli') continue
-          results.push({
-            homeworkId: hw.id,
-            studentId:  student.id,
-            schoolId:   hw.school_id,
-            to:         student.veli_email,
-            veliAd:     student.veli_ad ?? 'Sayın Veli',
-            ogrenciAdi: student.full_name,
-            odevBaslik: hw.title,
-            dueDate:    hw.due_date ?? '',
-          })
-        }
-      }
-      return results
+      return filterMissingCandidates(
+        homeworks,
+        (allStudents ?? []) as StudentVeliRow[],
+        allSubs ?? []
+      )
     })
 
     if (!candidates.length) return { sent: 0, reason: 'teslim-edildi' }
