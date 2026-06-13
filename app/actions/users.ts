@@ -77,7 +77,7 @@ export async function assignRole(targetId: string, newRole: string): Promise<Act
   if (!roleResult.success) return { error: 'Geçersiz rol' }
 
   try {
-    await UserService.assignRole(targetId, newRole)
+    await UserService.assignRole(targetId, roleResult.data)
   } catch (e) {
     logger.error({ targetId, newRole, err: e instanceof Error ? e.message : String(e) }, 'assignRole: rol ataması başarısız')
     return { error: e instanceof Error ? e.message : 'Rol atanamadı' }

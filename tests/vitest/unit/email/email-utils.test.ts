@@ -21,11 +21,11 @@ describe('buildInviteEmail()', () => {
       fullName:     '<script>alert(1)</script>',
       schoolName:   'Okul & Test',
       email:        'x@test.com',
-      tempPassword: 'Pass"Word',
+      tempPassword: 'Pass"Word<br>',
     })
     expect(html).not.toContain('<script>')
     expect(html).toContain('&lt;script&gt;')
     expect(html).toContain('Okul &amp; Test')
-    expect(html).toContain('Pass&quot;Word')
+    expect(html).toContain('Pass&quot;Word&lt;br&gt;')
   })
 })

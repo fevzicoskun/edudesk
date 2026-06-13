@@ -25,7 +25,7 @@ describe('getWhatsAppHref()', () => {
     delete process.env.NEXT_PUBLIC_WHATSAPP_NUMBER
     const { getWhatsAppHref } = await import('@/app/components/landing/whatsapp')
     const href = getWhatsAppHref()
-    expect(href).toContain('wa.me/')
+    expect(href).toContain('wa.me/905000000000')
     expect(href).toContain('EduDesk')
   })
 })
