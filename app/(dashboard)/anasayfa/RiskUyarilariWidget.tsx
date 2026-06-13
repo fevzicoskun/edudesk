@@ -61,7 +61,9 @@ export default function RiskUyarilariWidget({ alerts }: { alerts: RiskAlert[] })
           )}
         </div>
         {alerts.length > 5 && (
-          <span className="text-xs text-gray-400">{alerts.length} öğrenci</span>
+          <Link href="/siniflar" className="text-xs text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+            {alerts.length} öğrenci →
+          </Link>
         )}
       </header>
 
@@ -91,6 +93,16 @@ export default function RiskUyarilariWidget({ alerts }: { alerts: RiskAlert[] })
               </Link>
             </li>
           ))}
+          {alerts.length > 5 && (
+            <li>
+              <Link
+                href="/siniflar"
+                className="flex items-center justify-center gap-1 py-2 text-xs text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700/50"
+              >
+                + {alerts.length - 5} öğrenci daha · Tümünü gör →
+              </Link>
+            </li>
+          )}
         </ul>
       )}
     </div>
