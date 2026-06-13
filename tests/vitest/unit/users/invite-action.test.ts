@@ -81,7 +81,6 @@ describe('inviteUser — mail davranışı', () => {
   it('getCurrentProfile null dönerse schoolName "Okulunuz" fallback ile mail gider', async () => {
     vi.mocked(UserService.invite).mockResolvedValue({ success: true, tempPassword: 'TmpPass123' })
     vi.mocked(getCurrentProfile).mockResolvedValue(null)
-    vi.mocked(mailer.sendMail).mockResolvedValue(undefined)
 
     const result = await inviteUser(undefined, makeFormData({
       email: 'ogretmen@test.com', full_name: 'Test Öğretmen', role: 'ogretmen',
