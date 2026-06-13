@@ -265,7 +265,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         loading={loading}
         students={students}
         isLocked={isLocked}
-        isDirty={isDirty}
+        onDirty={() => { isDirty.current = true }}
         statuses={statuses}
         setStatuses={setStatuses}
         absenceCounts={absenceCounts}

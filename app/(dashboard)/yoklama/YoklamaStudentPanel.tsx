@@ -1,6 +1,5 @@
 'use client'
 
-import type { MutableRefObject } from 'react'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import type { AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
@@ -24,12 +23,12 @@ export const STATUS_COLORS: Record<AttendanceStatus, string> = {
 }
 
 export default function YoklamaStudentPanel({
-  loading, students, isLocked, isDirty, statuses, setStatuses, absenceCounts, statusSummary, toggle,
+  loading, students, isLocked, onDirty, statuses, setStatuses, absenceCounts, statusSummary, toggle,
 }: {
   loading: boolean
   students: Student[]
   isLocked: boolean
-  isDirty: MutableRefObject<boolean>
+  onDirty: () => void
   statuses: Record<string, AttendanceStatus>
   setStatuses: React.Dispatch<React.SetStateAction<Record<string, AttendanceStatus>>>
   absenceCounts: Record<string, AbsenceCount>
@@ -60,17 +59,17 @@ export default function YoklamaStudentPanel({
             <div className="flex items-center gap-2">
               <button
                 type="button" disabled={isLocked}
-                onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus]))) }}
+                onClick={() => { onDirty(); setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus]))) }}
                 className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >Hepsini Mevcut</button>
               <button
                 type="button" disabled={isLocked}
-                onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus]))) }}
+                onClick={() => { onDirty(); setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus]))) }}
                 className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >Hepsini Devamsız</button>
               <button
                 type="button" disabled={isLocked}
-                onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'excused' as AttendanceStatus]))) }}
+                onClick={() => { onDirty(); setStatuses(Object.fromEntries(students.map(s => [s.id, 'excused' as AttendanceStatus]))) }}
                 className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >Hepsini Özürlü</button>
             </div>

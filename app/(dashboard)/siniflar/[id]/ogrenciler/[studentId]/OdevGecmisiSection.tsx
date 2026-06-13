@@ -1,13 +1,10 @@
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
+import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
 
 type HomeworkRel = { id: string; title: string; subject: string; due_date: string } | null
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
-
-const LABELS: Record<SubmissionStatus, string> = {
-  yapildi: 'Yapıldı', eksik: 'Eksik', yapilmadi: 'Yapılmadı', gec: 'Geç', mazeretli: 'Mazeretli',
-}
 
 const BADGE: Record<SubmissionStatus, string> = {
   yapildi:   'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',

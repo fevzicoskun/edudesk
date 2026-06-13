@@ -15,8 +15,8 @@ const CLASS_COLORS = [
 
 function classColor(name: string | null | undefined): string {
   if (!name) return CLASS_COLORS[0]
-  let h = 0
-  for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0x7fffffff
+  let h = 5381
+  for (const c of name) h = ((h << 5) + h + c.charCodeAt(0)) >>> 0
   return CLASS_COLORS[h % CLASS_COLORS.length]
 }
 

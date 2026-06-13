@@ -30,6 +30,10 @@ function useIsDark() {
 
 const LABEL: Record<string, string> = { yapildi: 'Yapıldı', eksik: 'Eksik', diger: 'Yapılmadı' }
 
+interface ChartClickPayload {
+  activePayload?: Array<{ payload: { id?: string } }>
+}
+
 export default function OdevTamamlanmaChart({ data }: { data: DataPoint[] }) {
   const isDark = useIsDark()
   const router = useRouter()
@@ -46,8 +50,7 @@ export default function OdevTamamlanmaChart({ data }: { data: DataPoint[] }) {
           data={data}
           margin={{ top: 4, right: 4, left: -18, bottom: 0 }}
           onClick={(payload) => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const id = (payload as any)?.activePayload?.[0]?.payload?.id as string | undefined
+            const id = (payload as ChartClickPayload)?.activePayload?.[0]?.payload?.id
             if (id) router.push(`/odevler/${id}`)
           }}
           style={{ cursor: 'pointer' }}

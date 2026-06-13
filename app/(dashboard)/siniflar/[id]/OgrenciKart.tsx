@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useActionState } from 'react'
+import { useState, useEffect, useActionState } from 'react'
 import Link from 'next/link'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteStudent, updateVeliContact, addStudentNote } from '@/src/domains/classes/actions'
@@ -29,6 +29,7 @@ export default function OgrenciKart({
 }) {
   const [open, setOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
+  const [showOk, setShowOk] = useState(false)
 
   const [state, action, pending] = useActionState(
     async (_: null | { ok: boolean; error?: string }, formData: FormData) => {
@@ -39,6 +40,8 @@ export default function OgrenciKart({
     },
     null
   )
+
+  useEffect(() => { if (state?.ok) setShowOk(true) }, [state?.ok])
 
   const [noteState, noteAction, notePending] = useActionState(
     async (_: null | { ok: boolean; error?: string }, formData: FormData) => {
@@ -115,7 +118,7 @@ export default function OgrenciKart({
             </a>
           )}
           <button
-            onClick={() => setOpen(v => !v)}
+            onClick={() => { setOpen(v => !v); setShowOk(false) }}
             title="Veli iletişim bilgisi"
             className={`w-10 h-10 flex items-center justify-center rounded-lg transition-colors ${
               open ? 'text-blue-600 bg-blue-50 dark:bg-blue-950' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950'
@@ -168,7 +171,7 @@ export default function OgrenciKart({
                 className="px-3 py-1.5 text-gray-500 dark:text-slate-400 rounded-lg text-sm hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
                 İptal
               </button>
-              {state?.ok && <span className="text-xs text-green-600 dark:text-green-400">Kaydedildi</span>}
+              {showOk && <span className="text-xs text-green-600 dark:text-green-400">Kaydedildi</span>}
               {state?.error && <span className="text-xs text-red-600 dark:text-red-400">{state.error}</span>}
             </div>
           </form>

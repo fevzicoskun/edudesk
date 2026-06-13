@@ -226,7 +226,8 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
       },
     })
 
-    const finalY = (doc as unknown as { lastAutoTable?: { finalY?: number } }).lastAutoTable?.finalY ?? pageH - 15
+    const docWithTable = doc as typeof doc & { lastAutoTable?: { finalY?: number } }
+    const finalY = docWithTable.lastAutoTable?.finalY ?? pageH - 15
     const legendY = Math.min(finalY + 6, pageH - 8)
     doc.setFontSize(7)
     doc.setTextColor(140, 140, 140)

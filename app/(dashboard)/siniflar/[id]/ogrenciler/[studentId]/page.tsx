@@ -15,16 +15,9 @@ import DevamsizlikPaneli from './DevamsizlikPaneli'
 import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
+import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
 
 export const revalidate = 60
-
-const LABELS: Record<SubmissionStatus, string> = {
-  yapildi: 'Yapıldı',
-  eksik: 'Eksik',
-  yapilmadi: 'Yapılmadı',
-  gec: 'Geç',
-  mazeretli: 'Mazeretli',
-}
 
 const BADGE: Record<SubmissionStatus, string> = {
   yapildi: 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
