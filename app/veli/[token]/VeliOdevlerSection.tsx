@@ -1,4 +1,5 @@
 import { format, parseISO } from '@/src/shared/date'
+import HomeworkDescriptionToggle from './HomeworkDescriptionToggle'
 
 type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 type HomeworkRel = { title: string; subject: string; due_date: string; description: string | null } | null
@@ -51,6 +52,9 @@ export default function VeliOdevlerSection({
                         {isOverdue ? ' (Geçti)' : ''}
                       </span>
                     </p>
+                    {hw?.description && (
+                      <HomeworkDescriptionToggle description={hw.description} />
+                    )}
                   </div>
                   <span className={`border rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${BADGE_COLOR[s.status]}`}>
                     {LABELS[s.status]}
@@ -75,6 +79,9 @@ export default function VeliOdevlerSection({
                     <p className="text-xs text-gray-400 mt-0.5">
                       {hw?.subject ?? '—'} · {hw?.due_date ? format(parseISO(hw.due_date), 'd MMM yyyy') : '—'}
                     </p>
+                    {hw?.description && (
+                      <HomeworkDescriptionToggle description={hw.description} />
+                    )}
                   </div>
                   <span className={`border rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${BADGE_COLOR[s.status]}`}>
                     {LABELS[s.status]}
