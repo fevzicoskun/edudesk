@@ -29,12 +29,6 @@ function makeFormData(data: Record<string, string>): FormData {
   return fd
 }
 
-const VALID_FD = makeFormData({
-  email:     'ogretmen@test.com',
-  full_name: 'Test Öğretmen',
-  role:      'ogretmen',
-})
-
 beforeEach(() => { vi.clearAllMocks() })
 
 describe('inviteUser — mail davranışı', () => {
@@ -42,10 +36,11 @@ describe('inviteUser — mail davranışı', () => {
     vi.mocked(UserService.invite).mockResolvedValue({ success: true, tempPassword: 'TmpPass123' })
     vi.mocked(getCurrentProfile).mockResolvedValue({
       schools: { name: 'Mevlana Ortaokulu', slug: 'mevlana' },
-    } as never)
-    vi.mocked(mailer.sendMail).mockResolvedValue(undefined)
+    } as Awaited<ReturnType<typeof getCurrentProfile>>)
 
-    const result = await inviteUser(undefined, VALID_FD)
+    const result = await inviteUser(undefined, makeFormData({
+      email: 'ogretmen@test.com', full_name: 'Test Öğretmen', role: 'ogretmen',
+    }))
 
     expect(result.success).toBe(true)
     expect(mailer.sendMail).toHaveBeenCalledOnce()
@@ -61,10 +56,12 @@ describe('inviteUser — mail davranışı', () => {
     vi.mocked(UserService.invite).mockResolvedValue({ success: true, tempPassword: 'TmpPass123' })
     vi.mocked(getCurrentProfile).mockResolvedValue({
       schools: { name: 'Test Okulu', slug: 'test' },
-    } as never)
+    } as Awaited<ReturnType<typeof getCurrentProfile>>)
     vi.mocked(mailer.sendMail).mockRejectedValue(new Error('SMTP bağlantı hatası'))
 
-    const result = await inviteUser(undefined, VALID_FD)
+    const result = await inviteUser(undefined, makeFormData({
+      email: 'ogretmen@test.com', full_name: 'Test Öğretmen', role: 'ogretmen',
+    }))
 
     expect(result.success).toBe(true)
     expect(result.error).toBeUndefined()
@@ -73,9 +70,24 @@ describe('inviteUser — mail davranışı', () => {
   it('UserService.invite hata döndürünce mailer hiç çağrılmaz', async () => {
     vi.mocked(UserService.invite).mockResolvedValue({ error: 'Bu e-posta zaten kayıtlı' })
 
-    const result = await inviteUser(undefined, VALID_FD)
+    const result = await inviteUser(undefined, makeFormData({
+      email: 'ogretmen@test.com', full_name: 'Test Öğretmen', role: 'ogretmen',
+    }))
 
     expect(result.error).toBe('Bu e-posta zaten kayıtlı')
     expect(mailer.sendMail).not.toHaveBeenCalled()
+  })
+
+  it('getCurrentProfile null dönerse schoolName "Okulunuz" fallback ile mail gider', async () => {
+    vi.mocked(UserService.invite).mockResolvedValue({ success: true, tempPassword: 'TmpPass123' })
+    vi.mocked(getCurrentProfile).mockResolvedValue(null)
+    vi.mocked(mailer.sendMail).mockResolvedValue(undefined)
+
+    const result = await inviteUser(undefined, makeFormData({
+      email: 'ogretmen@test.com', full_name: 'Test Öğretmen', role: 'ogretmen',
+    }))
+
+    expect(result.success).toBe(true)
+    expect(mailer.sendMail).toHaveBeenCalledOnce()
   })
 })
