@@ -26,7 +26,7 @@ export default async function KullanicilarPage() {
   const [{ data }, { data: sessionsRaw }, { data: schoolData }, { data: classesData }] = await Promise.all([
     profilesQuery,
     supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes').eq('school_id', profile.school_id),
-    isMudur && profile.school_id
+    (isMudur || isMY) && profile.school_id
       ? supabase.from('schools').select('slug').eq('id', profile.school_id).single()
       : Promise.resolve({ data: null }),
     UserRepository.getSchoolClasses(profile.school_id),
@@ -73,7 +73,7 @@ export default async function KullanicilarPage() {
         {canAssign && <InviteUserForm canAssignRoles={assignableRoles} />}
       </div>
 
-      {isMudur && (
+      {(isMudur || isMY) && (
         <SchoolCodeCard initialCode={(schoolData as { slug?: string } | null)?.slug ?? null} />
       )}
 
