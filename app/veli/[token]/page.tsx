@@ -5,6 +5,7 @@ import { format, parseISO } from '@/src/shared/date'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
 import VeliTracker from './VeliTracker'
+import VeliOzetKart from './VeliOzetKart'
 import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
 import VeliDevamsizlikSection from './VeliDevamsizlikSection'
 
@@ -151,6 +152,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         <VeliTracker token={token} />
+        <VeliOzetKart devamsizliklar={attendance} odevler={submissions} today={today} />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center overflow-hidden">
             <p className="text-3xl font-bold text-gray-900">{total}</p>
