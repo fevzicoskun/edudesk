@@ -21,6 +21,7 @@ export default function LandingHero() {
             href={waHref}
             target="_blank"
             rel="noopener noreferrer"
+            aria-label="WhatsApp'tan bilgi al (yeni sekmede açılır)"
             className="w-full rounded-xl bg-orange-500 px-8 py-4 text-base font-semibold text-white shadow-md hover:bg-orange-600 transition-colors sm:w-auto"
           >
             📱 WhatsApp&apos;tan Bilgi Al

@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   title: 'EduDesk — Okulunuzun tüm takibi tek ekranda',
   description:
     'Yoklama, ödev, veli iletişimi ve zümre toplantıları. Türk okulları için tasarlanmış okul yönetim platformu.',
+  openGraph: {
+    title: 'EduDesk — Okulunuzun tüm takibi tek ekranda',
+    description:
+      'Yoklama, ödev, veli iletişimi ve zümre toplantıları. Türk okulları için tasarlanmış okul yönetim platformu.',
+    url: 'https://myedudesk.com.tr',
+    siteName: 'EduDesk',
+    locale: 'tr_TR',
+    type: 'website',
+  },
 }
 
 export default function HomePage() {

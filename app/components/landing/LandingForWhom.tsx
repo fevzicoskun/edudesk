@@ -29,7 +29,7 @@ export default function LandingForWhom() {
               key={p.title}
               className="rounded-2xl border border-orange-100 bg-orange-50 p-6"
             >
-              <div className="mb-3 text-4xl">{p.emoji}</div>
+              <div className="mb-3 text-4xl" aria-hidden="true">{p.emoji}</div>
               <h3 className="mb-2 text-lg font-semibold text-stone-900">{p.title}</h3>
               <p className="text-sm leading-relaxed text-stone-600">{p.desc}</p>
             </div>

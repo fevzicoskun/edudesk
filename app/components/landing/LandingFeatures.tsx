@@ -47,7 +47,7 @@ export default function LandingFeatures() {
               key={f.title}
               className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="mb-3 text-3xl">{f.icon}</div>
+              <div className="mb-3 text-3xl" aria-hidden="true">{f.icon}</div>
               <h3 className="mb-2 text-lg font-semibold text-stone-900">{f.title}</h3>
               <p className="text-sm leading-relaxed text-stone-600">{f.desc}</p>
             </div>
