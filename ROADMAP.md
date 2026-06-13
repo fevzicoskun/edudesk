@@ -70,6 +70,6 @@
 ## Teknik Borç
 
 - [ ] Playwright E2E kapsamını genişlet (modal, status update, matrix)
-- [ ] 9 `as unknown as` Supabase join cast → typed overload ile gider
-- [ ] 7 dosya 300+ satır → bölünmeye aday (odevler/page.tsx başta)
+- [x] 9 `as unknown as` Supabase join cast → 0'a indirildi (kalite sprinti)
+- [x] 7 dosya 300+ satır → bölündü (kalite sprinti)
 - [ ] `app/platform/actions.ts` N+1 pattern → batched query

@@ -16,7 +16,7 @@ Türk ilk/ortaöğretim okulları için öğretmen yönetim platformu. Ödev tak
 | Auth | Supabase SSR + PKCE |
 | E-posta | Resend |
 | Arka plan işler | Inngest |
-| Test | Vitest (409 unit) + Playwright (8 E2E spec) |
+| Test | Vitest (563 unit) + Playwright (8 E2E spec) |
 | Deploy | Vercel |
 
 ---

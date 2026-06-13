@@ -1,7 +1,15 @@
 import { Resend } from 'resend'
 import { env } from '@/src/lib/env'
 
-const resend = new Resend(env.RESEND_API_KEY || undefined)
+let _resend: Resend | null = null
+
+function getResend(): Resend {
+  if (!_resend) {
+    if (!env.RESEND_API_KEY) throw new Error('RESEND_API_KEY yapılandırılmamış — e-posta gönderilemez.')
+    _resend = new Resend(env.RESEND_API_KEY)
+  }
+  return _resend
+}
 
 export const mailer = {
   async sendMail(opts: {
@@ -23,7 +31,7 @@ export const mailer = {
       ...(opts.html ? { html: opts.html } : { text: opts.text ?? '' }),
     }
 
-    const { error } = await resend.emails.send(payload)
+    const { error } = await getResend().emails.send(payload)
     if (error) throw new Error(error.message)
   },
 }
