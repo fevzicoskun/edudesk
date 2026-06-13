@@ -2,11 +2,13 @@
 
 import { revalidatePath } from 'next/cache'
 import { UUID } from '@/src/shared/validation'
-import { getCurrentUser } from '@/src/shared/auth'
+import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { z } from 'zod'
 import { profileSchema, AssignableRole } from '@/src/domains/users/validators'
 import { UserService } from '@/src/domains/users/services/UserService'
+import { mailer } from '@/src/lib/mailer'
+import { buildInviteEmail } from '@/src/lib/email-utils'
 import type { Role } from '@/src/shared/types'
 import type { InviteResult } from '@/src/domains/users/types'
 import type { ActionResult } from '@/src/shared/types'
@@ -34,7 +36,31 @@ export async function inviteUser(_: unknown, formData: FormData): Promise<Invite
     role:      parsed.data.role as Role,
   })
 
-  if (result.success) revalidatePath('/kullanicilar')
+  if (result.success) {
+    revalidatePath('/kullanicilar')
+    if (result.tempPassword) {
+      const profile    = await getCurrentProfile()
+      const schoolName = profile?.schools?.name ?? 'Okulunuz'
+      try {
+        await mailer.sendMail({
+          to:      parsed.data.email,
+          subject: 'EduDesk — Giriş Bilgileriniz',
+          html:    buildInviteEmail({
+            fullName:     parsed.data.full_name,
+            schoolName,
+            email:        parsed.data.email,
+            tempPassword: result.tempPassword,
+          }),
+        })
+      } catch (err) {
+        logger.error(
+          { event: 'invite_mail_failed', email: parsed.data.email, err: err instanceof Error ? err.message : String(err) },
+          'Davet maili gönderilemedi'
+        )
+      }
+    }
+  }
+
   return result
 }
 
