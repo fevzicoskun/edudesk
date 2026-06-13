@@ -9,12 +9,15 @@ vi.mock('@/src/shared/authorization/server', () => ({
 
 vi.mock('@/src/domains/users/repositories/UserRepository', () => ({
   UserRepository: {
-    createAuthUser:  vi.fn(),
-    adminSetProfile: vi.fn(),
-    deleteAuthUser:  vi.fn(),
-    getProfileById:  vi.fn(),
-    assignRole:      vi.fn(),
-    updateProfile:   vi.fn(),
+    createAuthUser:     vi.fn(),
+    adminSetProfile:    vi.fn(),
+    deleteAuthUser:     vi.fn(),
+    getProfileById:     vi.fn(),
+    assignRole:         vi.fn(),
+    updateProfile:      vi.fn(),
+    getClassById:       vi.fn(),  // YENİ
+    addTeacherClass:    vi.fn(),  // YENİ
+    removeTeacherClass: vi.fn(),  // YENİ
   },
 }))
 
@@ -198,5 +201,96 @@ describe('UserService.assignRole()', () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
     vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
     await expect(UserService.assignRole(TARGET_ID, 'mudur_yardimcisi')).rejects.toThrow('Bu rolü atayamazsınız')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('UserService.assignTeacherClass()', () => {
+  beforeEach(() => {
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(
+      { data: { role: 'ogretmen', school_id: SCHOOL_ID }, error: null } as never
+    )
+    vi.mocked(UserRepository.getClassById).mockResolvedValue(
+      { data: { id: 'cls1', school_id: SCHOOL_ID, deleted_at: null }, error: null } as never
+    )
+    vi.mocked(UserRepository.addTeacherClass).mockResolvedValue({ error: null } as never)
+  })
+
+  it('giriş yapılmamış → hata fırlatır', async () => {
+    vi.mocked(requireAbility).mockRejectedValue(new Error('Giriş gerekli'))
+    await expect(UserService.assignTeacherClass(TARGET_ID, 'cls1')).rejects.toThrow('Giriş gerekli')
+    expect(UserRepository.addTeacherClass).not.toHaveBeenCalled()
+  })
+
+  it('hedef mudur rolündeyse hata döner', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(
+      { data: { role: 'mudur', school_id: SCHOOL_ID }, error: null } as never
+    )
+    const result = await UserService.assignTeacherClass(TARGET_ID, 'cls1')
+    expect(result.error).toBeTruthy()
+  })
+
+  it('başarılı atama', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    const result = await UserService.assignTeacherClass(TARGET_ID, 'cls1')
+    expect(result.error).toBeUndefined()
+    expect(UserRepository.addTeacherClass).toHaveBeenCalledWith(TARGET_ID, 'cls1')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('UserService.removeTeacherClass()', () => {
+  it('başarılı kaldırma', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(
+      { data: { role: 'ogretmen', school_id: SCHOOL_ID }, error: null } as never
+    )
+    vi.mocked(UserRepository.getClassById).mockResolvedValue(
+      { data: { id: 'cls1', school_id: SCHOOL_ID }, error: null } as never
+    )
+    vi.mocked(UserRepository.removeTeacherClass).mockResolvedValue({ error: null } as never)
+    const result = await UserService.removeTeacherClass(TARGET_ID, 'cls1')
+    expect(result.error).toBeUndefined()
+    expect(UserRepository.removeTeacherClass).toHaveBeenCalledWith(TARGET_ID, 'cls1')
+  })
+
+  it('farklı okul sınıfı → hata döner', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(
+      { data: { role: 'ogretmen', school_id: SCHOOL_ID }, error: null } as never
+    )
+    vi.mocked(UserRepository.getClassById).mockResolvedValue(
+      { data: { id: 'cls1', school_id: 'baska-okul' }, error: null } as never
+    )
+    const result = await UserService.removeTeacherClass(TARGET_ID, 'cls1')
+    expect(result.error).toBeTruthy()
+    expect(UserRepository.removeTeacherClass).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('UserService.updateProfile()', () => {
+  const PARAMS = { full_name: 'Yeni Ad', subject: 'Fizik' }
+
+  it('başkasının profilini güncelleme → yetki yok', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS, CALLER_ID) as never)
+    const result = await UserService.updateProfile('baska-user', PARAMS)
+    expect(result.error).toBe('Yetki yok')
+    expect(UserRepository.updateProfile).not.toHaveBeenCalled()
+  })
+
+  it('giriş yapılmamış → yetki yok', async () => {
+    vi.mocked(getAbility).mockResolvedValue(null)
+    const result = await UserService.updateProfile(CALLER_ID, PARAMS)
+    expect(result.error).toBe('Yetki yok')
+  })
+
+  it('kendi profilini güncelleme başarılı', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS, CALLER_ID) as never)
+    vi.mocked(UserRepository.updateProfile).mockResolvedValue({ data: null, error: null } as never)
+    const result = await UserService.updateProfile(CALLER_ID, PARAMS)
+    expect(result.error).toBeUndefined()
+    expect(UserRepository.updateProfile).toHaveBeenCalledWith(CALLER_ID, PARAMS)
   })
 })

@@ -150,3 +150,24 @@ describe('AuthService.updatePassword()', () => {
     expect(AuthRepository.updateUser).toHaveBeenCalledWith('yeniSifre123!')
   })
 })
+
+// ─── signOut ────────────────────────────────────────────────
+describe('AuthService.signOut()', () => {
+  it('AuthRepository.signOut çağrılır', async () => {
+    vi.mocked(AuthRepository.signOut).mockResolvedValue({ error: null } as never)
+    await AuthService.signOut()
+    expect(AuthRepository.signOut).toHaveBeenCalledOnce()
+  })
+})
+
+// ─── updatePassword hata senaryosu ──────────────────────────
+describe('AuthService.updatePassword() — hata senaryosu', () => {
+  it('updateUser hatası → error mesajı döner', async () => {
+    vi.mocked(AuthRepository.getUser).mockResolvedValue({ data: { user: { id: 'u1' } }, error: null } as never)
+    vi.mocked(AuthRepository.updateUser).mockResolvedValue({
+      data: {}, error: { message: 'Şifre çok kısa' },
+    } as never)
+    const result = await AuthService.updatePassword('kısa')
+    expect(result).toEqual({ error: 'Şifre çok kısa' })
+  })
+})
