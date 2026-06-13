@@ -119,7 +119,7 @@ export default async function HomeworkSection({
       <SinifChipBar classes={classes} activeByClass={activeByClass} pendingByClass={pendingByClass} />
       <HomeworkStatCards activeCount={active.length} pendingCount={pendingCheck.length} />
       <BekleyenKontrollerPanel
-        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as unknown as { name: string } | null }))}
+        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
         statusMap={statusMap}
         classStudentMap={classStudentMap}
         now={now}

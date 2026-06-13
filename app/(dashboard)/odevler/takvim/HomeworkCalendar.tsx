@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { SCHOOL_YEAR_HOLIDAYS } from '@/src/shared/constants/holidays'
+import CalendarEventCard from './CalendarEventCard'
 
 type HwItem = {
   id: string
@@ -249,33 +250,7 @@ export default function HomeworkCalendar({
               ) : (
                 <ul className="divide-y divide-gray-50 dark:divide-slate-700/60">
                   {selectedHws.map(hw => (
-                    <li key={hw.id}>
-                      <Link
-                        href={`/odevler/${hw.id}`}
-                        className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors group"
-                      >
-                        <span className={`mt-1 shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-md ${classColor(hw.classes?.name)}`}>
-                          {hw.classes?.name ?? '—'}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-gray-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug">
-                            {hw.title}
-                          </p>
-                          {hw.subject && (
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{hw.subject}</p>
-                          )}
-                          {completionMap[hw.id] && completionMap[hw.id].total > 0 && (
-                            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
-                              %{Math.round((completionMap[hw.id].yapildi / completionMap[hw.id].total) * 100)} tamamlandı
-                              ({completionMap[hw.id].yapildi}/{completionMap[hw.id].total})
-                            </p>
-                          )}
-                        </div>
-                        <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 shrink-0 mt-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </Link>
-                    </li>
+                    <CalendarEventCard key={hw.id} hw={hw} completionInfo={completionMap[hw.id]} />
                   ))}
                 </ul>
               )}

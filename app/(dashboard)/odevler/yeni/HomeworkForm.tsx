@@ -3,9 +3,7 @@
 import { useActionState, useState, useEffect } from 'react'
 import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
-import { getClassWeekLoad } from '@/app/actions/homework'
-import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
-import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
+import ClassWeekLoadSection from './ClassWeekLoadSection'
 
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
@@ -49,22 +47,6 @@ export default function HomeworkForm({
   const [selectedClasses, setSelectedClasses] = useState<string[]>(
     defaults?.class_id ? [defaults.class_id] : []
   )
-  const [dueDate, setDueDate]         = useState(defaults?.due_date ?? '')
-  const [weekLoad, setWeekLoad]       = useState<ClassWeekLoad[]>([])
-  const [loadingLoad, setLoadingLoad] = useState(false)
-
-  useEffect(() => {
-    if (isTemplate || selectedClasses.length === 0 || !dueDate) {
-      setWeekLoad([])
-      return
-    }
-    let active = true
-    setLoadingLoad(true)
-    getClassWeekLoad(selectedClasses, dueDate)
-      .then(result => { if (active) { setWeekLoad(result); setLoadingLoad(false) } })
-      .catch(() => { if (active) { setWeekLoad([]); setLoadingLoad(false) } })
-    return () => { active = false }
-  }, [selectedClasses, dueDate, isTemplate])
 
   function toggleClass(id: string) {
     setSelectedClasses(prev =>
@@ -181,23 +163,7 @@ export default function HomeworkForm({
           </div>
 
           {/* Son Teslim Tarihi + Haftalık Yük */}
-          {!isTemplate && (
-            <>
-              <div className="space-y-2">
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-                <input
-                  name="due_date"
-                  type="date"
-                  required={!isTemplate}
-                  min={todayISO()}
-                  className={field}
-                  value={dueDate}
-                  onChange={e => setDueDate(e.target.value)}
-                />
-              </div>
-              <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} isCreating />
-            </>
-          )}
+          <ClassWeekLoadSection isTemplate={isTemplate} selectedClasses={selectedClasses} initialDueDate={defaults?.due_date} />
 
           {/* Ders */}
           <div className="space-y-2">

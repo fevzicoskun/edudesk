@@ -5,34 +5,9 @@ import { format, parseISO } from '@/src/shared/date'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
 import VeliTracker from './VeliTracker'
-type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
+import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
+import VeliDevamsizlikSection from './VeliDevamsizlikSection'
 
-const LABELS: Record<SubmissionStatus, string> = {
-  yapildi: 'Yapıldı',
-  eksik: 'Eksik',
-  yapilmadi: 'Yapılmadı',
-  gec: 'Geç Teslim',
-  mazeretli: 'Mazeretli',
-}
-
-const BADGE_COLOR: Record<SubmissionStatus, string> = {
-  yapildi: 'bg-green-100 text-green-700 border-green-200',
-  eksik: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-  yapilmadi: 'bg-red-100 text-red-700 border-red-200',
-  gec: 'bg-orange-100 text-orange-700 border-orange-200',
-  mazeretli: 'bg-slate-100 text-slate-600 border-slate-200',
-}
-
-const DOT_COLOR: Record<SubmissionStatus, string> = {
-  yapildi: 'bg-green-500',
-  eksik: 'bg-yellow-400',
-  yapilmadi: 'bg-red-500',
-  gec: 'bg-orange-400',
-  mazeretli: 'bg-slate-400',
-}
-
-type HomeworkRel = { title: string; subject: string; due_date: string; description: string | null } | null
-type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
@@ -131,8 +106,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   if (!studentResult.data) notFound()
 
   const student = studentResult.data
-  const cls = student.classes as unknown as { name: string; grade: number } | null
-  const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
+  const cls = student.classes as { name: string; grade: number } | null
+  const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
   const notes      = (notesResult.data ?? []) as NoteRow[]
@@ -205,96 +180,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
           <p className="text-xs text-gray-400 mt-2">{done} ödev tamamlandı · {total - done} ödev bekliyor veya eksik</p>
         </div>
 
-        {upcoming.length > 0 && (
-          <section data-veli-section="odevler" className="bg-white border border-gray-200 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Güncel ve Yaklaşan Ödevler</h2>
-            <div className="space-y-2.5">
-              {upcoming.map(s => {
-                const hw = s.homeworks
-                const isOverdue = (hw?.due_date ?? '') < today
-                return (
-                  <div key={s.id} className="flex items-start gap-3">
-                    <div className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${DOT_COLOR[s.status]}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{hw?.title ?? 'Ödev'}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
-                        {hw?.subject ?? '—'} ·{' '}
-                        <span className={isOverdue ? 'text-red-500 font-medium' : ''}>
-                          {hw?.due_date ? format(parseISO(hw.due_date), 'd MMMM yyyy') : '—'}
-                          {isOverdue ? ' (Geçti)' : ''}
-                        </span>
-                      </p>
-                    </div>
-                    <span className={`border rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${BADGE_COLOR[s.status]}`}>
-                      {LABELS[s.status]}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {past.length > 0 && (
-          <section data-veli-section="odevler" className="bg-white border border-gray-200 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Geçmiş Ödevler</h2>
-            <div className="space-y-2">
-              {past.map(s => {
-                const hw = s.homeworks
-                return (
-                  <div key={s.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-gray-50 last:border-0">
-                    <div className="min-w-0">
-                      <p className="text-sm text-gray-800 truncate">{hw?.title ?? 'Ödev'}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {hw?.subject ?? '—'} · {hw?.due_date ? format(parseISO(hw.due_date), 'd MMM yyyy') : '—'}
-                      </p>
-                    </div>
-                    <span className={`border rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 ${BADGE_COLOR[s.status]}`}>
-                      {LABELS[s.status]}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {(absentCount > 0 || lateCount > 0) && (
-          <section data-veli-section="devamsizlik" className="bg-white border border-gray-200 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Devamsızlık — Son 90 Gün</h2>
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div className={`rounded-xl p-3 text-center ${absentCount > 0 ? 'bg-red-50 border border-red-200' : 'bg-gray-50 border border-gray-200'}`}>
-                <p className={`text-2xl font-bold ${absentCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>{absentCount}</p>
-                <p className={`text-xs mt-0.5 ${absentCount > 0 ? 'text-red-500' : 'text-gray-400'}`}>Gelmedi</p>
-              </div>
-              <div className={`rounded-xl p-3 text-center ${lateCount > 0 ? 'bg-orange-50 border border-orange-200' : 'bg-gray-50 border border-gray-200'}`}>
-                <p className={`text-2xl font-bold ${lateCount > 0 ? 'text-orange-600' : 'text-gray-400'}`}>{lateCount}</p>
-                <p className={`text-xs mt-0.5 ${lateCount > 0 ? 'text-orange-500' : 'text-gray-400'}`}>Geç Geldi</p>
-              </div>
-            </div>
-            {attendance.length > 0 && (
-              <div className="space-y-1.5">
-                {attendance.slice(0, 10).map(a => (
-                  <div key={a.date} className="flex items-center justify-between py-1 border-b border-gray-50 last:border-0">
-                    <p className="text-sm text-gray-700">{format(parseISO(a.date), 'd MMMM yyyy')}</p>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                      a.status === 'absent'
-                        ? 'bg-red-50 text-red-600 border-red-200'
-                        : 'bg-orange-50 text-orange-600 border-orange-200'
-                    }`}>
-                      {a.status === 'absent' ? 'Gelmedi' : 'Geç Geldi'}
-                    </span>
-                  </div>
-                ))}
-                {attendance.length > 10 && (
-                  <p className="text-xs text-gray-400 text-center pt-1">
-                    +{attendance.length - 10} kayıt daha
-                  </p>
-                )}
-              </div>
-            )}
-          </section>
-        )}
+        <VeliOdevlerSection upcoming={upcoming} past={past} today={today} />
+        <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />
 
         {notes.length > 0 && (
           <section data-veli-section="notlar" className="bg-white border border-gray-200 rounded-2xl p-4">

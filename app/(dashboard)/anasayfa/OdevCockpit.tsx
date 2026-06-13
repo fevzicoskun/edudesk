@@ -22,7 +22,7 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
 
   const allOverdue = overdueRes.data ?? []
   const unreviewed = allOverdue.filter(hw => {
-    const subs = (hw.homework_submissions as unknown as { homework_id: string }[] | null) ?? []
+    const subs = (hw.homework_submissions as { homework_id: string }[] | null) ?? []
     return subs.length === 0
   })
 

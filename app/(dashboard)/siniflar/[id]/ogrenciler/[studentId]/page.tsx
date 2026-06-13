@@ -9,6 +9,9 @@ import ParentContactLogSection from './ParentContactLogSection'
 import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
+import OdevGecmisiSection from './OdevGecmisiSection'
+import NotGecmisiSection from './NotGecmisiSection'
+import DevamsizlikPaneli from './DevamsizlikPaneli'
 import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
@@ -68,7 +71,7 @@ export default async function OgrenciDetayPage({
 
   const cls = classResult.data
   const student = studentResult.data
-  const submissions = ((submissionsResult.data ?? []) as unknown as SubmissionRow[]).sort((a, b) =>
+  const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
   const studentNotesTableExists = notesResult.error?.code !== '42P01'
@@ -102,8 +105,7 @@ export default async function OgrenciDetayPage({
 
   // Not defteri
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
-  const grades = (gradesRes.data ?? []) as unknown as GradeRow[]
-  const GRADE_TYPE_LABELS: Record<string, string> = { yazili: 'Yazılı', quiz: 'Quiz', proje: 'Proje', odev: 'Ödev', performans: 'Performans' }
+  const grades = (gradesRes.data ?? []) as GradeRow[]
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -182,86 +184,17 @@ export default async function OgrenciDetayPage({
         ))}
       </div>
 
-      {/* Devamsızlık */}
-      {attendanceTableExists && (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yıl İçi Devamsızlık</h2>
-            <span className={`text-sm font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-500 dark:text-slate-400'}`}>
-              {absentDays} / {ATTENDANCE_LIMIT_DAYS} gün
-            </span>
-          </div>
-          <div className="w-full h-2.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
-            <div
-              className={`h-full rounded-full transition-all ${absenceDanger ? 'bg-red-500' : absenceWarn ? 'bg-yellow-400' : 'bg-green-400'}`}
-              style={{ width: `${absentPct}%` }}
-            />
-          </div>
-          <div className="flex gap-4 text-xs text-gray-500 dark:text-slate-400">
-            <span className="text-red-500 dark:text-red-400">{attendanceRecords.filter(r => r.status === 'absent').length} gün yok</span>
-            <span className="text-yellow-500 dark:text-yellow-400">{attendanceRecords.filter(r => r.status === 'late').length} geç</span>
-            <span className="text-blue-500 dark:text-blue-400">{attendanceRecords.filter(r => r.status === 'excused').length} mazeretli</span>
-            {absenceDanger && <span className="text-red-600 dark:text-red-400 font-semibold ml-auto">Sınır aşıldı!</span>}
-            {absenceWarn && <span className="text-yellow-600 dark:text-yellow-400 font-semibold ml-auto">Sınıra yakın</span>}
-          </div>
-          {attendanceRecords.length > 0 && (
-            <div className="mt-3">
-              <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">
-                Devamsızlık Kayıtları ({attendanceRecords.length})
-              </p>
-              <div className="space-y-1 max-h-48 overflow-y-auto">
-                {attendanceRecords.map((r, i) => {
-                  const statusLabel: Record<string, string> = { absent: 'Yok', late: 'Geç', excused: 'Mazeretli' }
-                  const statusColor: Record<string, string> = {
-                    absent:  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-                    late:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
-                    excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-                  }
-                  return (
-                    <div key={i} className="flex items-center justify-between text-xs">
-                      <span className="text-gray-600 dark:text-slate-400">
-                        {format(parseISO(r.date), 'd MMM yyyy')}
-                      </span>
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${statusColor[r.status] ?? ''}`}>
-                        {statusLabel[r.status] ?? r.status}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      <DevamsizlikPaneli
+        attendanceTableExists={attendanceTableExists}
+        attendanceRecords={attendanceRecords}
+        absentDays={absentDays}
+        absentPct={absentPct}
+        absenceDanger={absenceDanger}
+        absenceWarn={absenceWarn}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Ödev Geçmişi</h2>
-          {submissions.length === 0 ? (
-            <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-10">Henüz ödev kaydı yok.</p>
-          ) : (
-            <div className="space-y-2">
-              {submissions.map((s) => (
-                <Link
-                  key={s.id}
-                  href={s.homeworks?.id ? `/odevler/${s.homeworks.id}` : '#'}
-                  className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors block"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.homeworks?.title ?? 'Ödev'}</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                      {s.homeworks?.subject ?? '—'} ·{' '}
-                      {s.homeworks?.due_date ? format(parseISO(s.homeworks.due_date), 'd MMM yyyy') : 'Tarih yok'}
-                    </p>
-                  </div>
-                  <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${BADGE[s.status]}`}>
-                    {LABELS[s.status]}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </section>
+        <OdevGecmisiSection submissions={submissions} />
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>
@@ -307,65 +240,7 @@ export default async function OgrenciDetayPage({
         </section>
       </div>
 
-      {/* Not defteri */}
-      {grades.length > 0 && (
-        <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mt-4">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Not Defteri</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-100 dark:border-slate-700">
-                  <th className="text-left text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Sınav / Etkinlik</th>
-                  <th className="text-left text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Tür</th>
-                  <th className="text-right text-xs font-medium text-gray-500 dark:text-slate-400 pb-2 pr-4">Puan</th>
-                  <th className="text-right text-xs font-medium text-gray-500 dark:text-slate-400 pb-2">Tarih</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50 dark:divide-slate-700/50">
-                {grades.map((g, i) => {
-                  const pct = g.score != null && g.grade_columns.max_score > 0
-                    ? g.score / g.grade_columns.max_score
-                    : null
-                  return (
-                    <tr key={i}>
-                      <td className="py-2 pr-4 font-medium text-gray-900 dark:text-slate-100">{g.grade_columns.title}</td>
-                      <td className="py-2 pr-4 text-gray-500 dark:text-slate-400 text-xs">{GRADE_TYPE_LABELS[g.grade_columns.grade_type] ?? g.grade_columns.grade_type}</td>
-                      <td className="py-2 pr-4 text-right">
-                        {g.score != null ? (
-                          <span className={`font-bold ${pct != null && pct >= 0.7 ? 'text-green-600 dark:text-green-400' : pct != null && pct >= 0.5 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {g.score}
-                            <span className="text-xs font-normal text-gray-400 dark:text-slate-500"> / {g.grade_columns.max_score}</span>
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 dark:text-slate-500">—</span>
-                        )}
-                      </td>
-                      <td className="py-2 text-right text-xs text-gray-400 dark:text-slate-500">
-                        {g.grade_columns.exam_date ? format(parseISO(g.grade_columns.exam_date), 'd MMM yyyy') : '—'}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-              {grades.length > 1 && (() => {
-                const scoredGrades = grades.filter(g => g.score != null)
-                const avg = scoredGrades.length > 0
-                  ? scoredGrades.reduce((sum, g) => sum + ((g.score! / g.grade_columns.max_score) * 100), 0) / scoredGrades.length
-                  : null
-                return avg != null ? (
-                  <tfoot>
-                    <tr className="border-t border-gray-200 dark:border-slate-600">
-                      <td colSpan={2} className="pt-2 text-xs text-gray-500 dark:text-slate-400 font-medium">Ortalama (100 üzerinden)</td>
-                      <td className="pt-2 text-right font-bold text-gray-900 dark:text-slate-100">{Math.round(avg)}</td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                ) : null
-              })()}
-            </table>
-          </div>
-        </section>
-      )}
+      <NotGecmisiSection grades={grades} />
 
       <VeliAnalyticsCard studentId={studentId} schoolId={schoolId} />
 

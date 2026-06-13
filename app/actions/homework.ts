@@ -3,10 +3,9 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
-import { createHomeworkSchema, submissionStatusSchema } from '@/src/domains/homework/validators'
+import { createHomeworkSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
-import type { SubmissionStatus, HomeworkTemplate, ActionResult } from '@/src/shared/types'
-import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
+import type { HomeworkTemplate, ActionResult } from '@/src/shared/types'
 import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { getAbility } from '@/src/shared/authorization/server'
@@ -19,7 +18,6 @@ import { logger } from '@/src/infrastructure/observability/logger'
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
 
-  // --- Template yolu: tek sınıf, tarih yok ---
   if (isTemplate) {
     const parsed = createHomeworkSchema.safeParse({
       class_id:    formData.get('class_id'),
@@ -42,7 +40,6 @@ export async function createHomework(_: unknown, formData: FormData) {
     redirect('/odevler/yeni?templateSaved=1')
   }
 
-  // --- Normal ödev yolu: çoklu sınıf ---
   const classIds = (formData.getAll('class_id') as string[]).filter(Boolean)
   if (classIds.length === 0) return { error: 'En az bir sınıf seçin' }
   for (const id of classIds) {
@@ -147,7 +144,6 @@ export async function quickCreateHomework(
   if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
   const ids = succeeded.map(x => x.id)
 
-  // Veli bildirimi — notify_parents flag true ise Inngest event fire et
   const notifyParents = formData.get('notify_parents') === 'true'
   if (notifyParents) {
     const profile = await getCurrentProfile()
@@ -166,45 +162,6 @@ export async function quickCreateHomework(
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
   return { ids }
-}
-
-export async function updateSubmissionStatus(
-  homeworkId: string,
-  studentId: string,
-  status: SubmissionStatus
-) {
-  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { error: 'Geçersiz istek' }
-  if (!submissionStatusSchema.safeParse(status).success) return { error: 'Geçersiz durum değeri' }
-
-  const result = await HomeworkService.updateSubmissionStatus(homeworkId, studentId, status)
-  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
-  return result
-}
-
-export async function updateAllSubmissionStatuses(
-  homeworkId: string,
-  studentIds: string[],
-  status: SubmissionStatus
-) {
-  if (!UUID.safeParse(homeworkId).success) return { error: 'Geçersiz istek' }
-  if (!submissionStatusSchema.safeParse(status).success) return { error: 'Geçersiz durum değeri' }
-  if (studentIds.some(id => !UUID.safeParse(id).success)) return { error: 'Geçersiz öğrenci listesi' }
-
-  const result = await HomeworkService.updateAllSubmissionStatuses(homeworkId, studentIds, status)
-  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
-  return result
-}
-
-export async function updateSubmissionNote(
-  homeworkId: string,
-  studentId: string,
-  note: string
-) {
-  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return { error: 'Geçersiz istek' }
-
-  const result = await HomeworkService.updateSubmissionNote(homeworkId, studentId, note)
-  if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
-  return result
 }
 
 export async function updateHomework(_: unknown, formData: FormData) {
@@ -278,22 +235,9 @@ export async function restoreHomework(id: string): Promise<ActionResult> {
   return {}
 }
 
-export async function getStudentHomeworkProfile(studentId: string, classId: string) {
-  if (!UUID.safeParse(studentId).success || !UUID.safeParse(classId).success) return { error: 'Geçersiz istek', data: null }
-  return HomeworkService.getStudentHomeworkProfile(studentId, classId)
-}
-
 export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
   if (!UUID.safeParse(classId).success) return []
   return HomeworkService.getTemplatesByClass(classId)
-}
-
-export async function getSubmissionLogs(
-  homeworkId: string,
-  studentId:  string,
-): Promise<SubmissionLogEntry[]> {
-  if (!UUID.safeParse(homeworkId).success || !UUID.safeParse(studentId).success) return []
-  return HomeworkService.getSubmissionLogs(homeworkId, studentId)
 }
 
 export async function getClassWeekLoad(
@@ -302,7 +246,6 @@ export async function getClassWeekLoad(
 ): Promise<ClassWeekLoad[]> {
   if (!classIds.length || !weekOf) return []
 
-  // Geçersiz UUID veya hatalı tarih formatı → erken çık
   const validIds = classIds.filter(id => UUID.safeParse(id).success)
   if (!validIds.length) return []
   if (!/^\d{4}-\d{2}-\d{2}$/.test(weekOf)) return []

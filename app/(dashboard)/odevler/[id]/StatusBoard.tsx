@@ -11,8 +11,11 @@ import VeliIletisimPaneli from './VeliIletisimPaneli'
 import StatusBoardProgress from './statusboard/StatusBoardProgress'
 import StatusBoardToolbar from './statusboard/StatusBoardToolbar'
 import StudentRow from './statusboard/StudentRow'
-import { STATUS_OPTIONS, LABELS, BULK_OPTIONS, STYLES } from './statusboard/types'
+import { STATUS_OPTIONS } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
+import { useExcelExport } from './useExcelExport'
+import SearchInput from './SearchInput'
+import SelectionBar from './statusboard/SelectionBar'
 
 export type { StatusItem }
 
@@ -176,42 +179,7 @@ export default function StatusBoard({
     })
   }
 
-  async function exportToExcel() {
-    const { default: ExcelJS } = await import('exceljs')
-    const workbook = new ExcelJS.Workbook()
-    const sheet = workbook.addWorksheet('Ödev Durumu')
-    sheet.columns = [{ width: 6 }, { width: 12 }, { width: 26 }, { width: 16 }, { width: 40 }]
-
-    const infoRows: [string, string][] = [
-      ['Ödev', homeworkTitle ?? '—'],
-      ['Sınıf', className ?? '—'],
-      ['Son Teslim', dueDate ?? '—'],
-      ['Tarih', new Date().toLocaleDateString('tr-TR')],
-    ]
-    infoRows.forEach(([label, value]) => {
-      const row = sheet.addRow([label, value])
-      row.getCell(1).font = { bold: true, color: { argb: 'FF6B7280' } }
-      row.getCell(2).font = { bold: true }
-    })
-
-    sheet.addRow([])
-
-    const colHeader = sheet.addRow(['No', 'Numara', 'Ad Soyad', 'Durum', 'Not'])
-    colHeader.font = { bold: true }
-    colHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9EAD3' } }
-
-    items.forEach((item, i) => {
-      sheet.addRow([i + 1, item.student_number ?? '', item.full_name, LABELS[statuses[item.student_id] ?? 'yapilmadi'], notes[item.student_id] ?? ''])
-    })
-
-    const buffer = await workbook.xlsx.writeBuffer()
-    const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
-    const a = document.createElement('a')
-    a.href = url
-    a.download = homeworkTitle ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx` : 'odev_durumu.xlsx'
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+  const exportToExcel = useExcelExport({ homeworkTitle, className, dueDate, items, statuses, notes })
 
   return (
     <div>
@@ -242,38 +210,7 @@ export default function StatusBoard({
         />
       )}
 
-      {/* Öğrenci arama */}
-      {items.length > 6 && (
-        <div className="relative mb-4">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Öğrenci ara..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-full pl-9 pr-8 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 placeholder:text-gray-400 transition-all"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Arama sonucu bilgisi */}
-      {search && (
-        <p className="text-xs text-gray-400 mb-3">
-          {filteredItems.length === 0 ? 'Sonuç bulunamadı.' : `${filteredItems.length} öğrenci gösteriliyor`}
-        </p>
-      )}
+      <SearchInput show={items.length > 6} value={search} onChange={setSearch} resultCount={filteredItems.length} />
 
       {/* Öğrenci listesi */}
       <div className="space-y-2">
@@ -303,33 +240,15 @@ export default function StatusBoard({
         ))}
       </div>
 
-      {selectionMode && selectedIds.size > 0 && (
-        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-2 bg-gray-900 dark:bg-slate-700 text-white rounded-2xl shadow-2xl px-4 py-3 flex-wrap justify-center">
-          <button
-            onClick={toggleSelectAll}
-            className="text-xs text-gray-300 hover:text-white transition-colors whitespace-nowrap"
-          >
-            {selectedIds.size === filteredItems.length ? 'Seçimi Temizle' : 'Tümünü Seç'}
-          </button>
-          <span className="text-sm font-medium whitespace-nowrap">{selectedIds.size} seçildi</span>
-          {BULK_OPTIONS.map(status => (
-            <button
-              key={status}
-              disabled={isPending}
-              onClick={() => setSelectedStatuses(status)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border transition-colors disabled:opacity-60 ${STYLES[status]}`}
-            >
-              {LABELS[status]}
-            </button>
-          ))}
-          <button
-            onClick={() => { setSelectionMode(false); setSelectedIds(new Set()) }}
-            className="text-xs text-gray-400 hover:text-white transition-colors"
-          >
-            İptal
-          </button>
-        </div>
-      )}
+      <SelectionBar
+        show={selectionMode && selectedIds.size > 0}
+        selectedCount={selectedIds.size}
+        filteredCount={filteredItems.length}
+        isPending={isPending}
+        onSelectAll={toggleSelectAll}
+        onSetStatus={setSelectedStatuses}
+        onCancel={() => { setSelectionMode(false); setSelectedIds(new Set()) }}
+      />
 
       {errorMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">

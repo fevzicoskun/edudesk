@@ -18,7 +18,7 @@ export default async function AylikDevamsizlikWidget() {
     .eq('status', 'absent')
 
   type Row = { class_id: string; classes: { name: string } | null }
-  const rows = (data ?? []) as unknown as Row[]
+  const rows = (data ?? []) as Row[]
 
   const byClass = new Map<string, { name: string; count: number }>()
   for (const row of rows) {

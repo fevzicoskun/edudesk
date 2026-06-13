@@ -60,3 +60,5 @@ test-emails.mjs
 
 # Claude Code yerel dosyalari
 .claude/
+
+.vercel

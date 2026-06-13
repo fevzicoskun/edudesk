@@ -1,161 +1,23 @@
 import { DashboardRepository } from '../repositories/DashboardRepository'
-import { computeRiskLevel } from '../risk'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { subDays, todayLocalISO } from '@/src/shared/date'
-import { turkeyDate } from '@/src/lib/email-utils'
-import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
+import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaDurumItem } from '../types'
+import {
+  mondayOf as _mondayOf,
+  getWeekStart,
+  buildHwMissMap,
+  buildAbsenceMap,
+  computeAlerts,
+  computeClassRisk,
+  fetchRiskInputs,
+  type HwRow,
+  type SubmissionRow,
+  type StudentRow,
+} from '../lib/riskEngine'
 
-export function mondayOf(dateStr: string): string {
-  // Yerel tarih constructor kullan — toISOString UTC kaymasını önle
-  const [y, m, d] = dateStr.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  const day = date.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  date.setDate(date.getDate() + diff)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
-type StudentRow = { id: string; full_name: string; class_id: string; classes: { name: string } | null }
-type SubmissionRow = { homework_id: string; student_id: string; status: string }
-type HwRow = { id: string; title: string; subject: string; due_date: string; class_id: string; classes: { name: string; grade: number } | null }
-
-function getWeekStart(): string {
-  // Europe/Istanbul'da Pazartesi'yi bul
-  const nowTR = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
-  const d = new Date(nowTR)
-  const day = d.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  d.setDate(d.getDate() + diff)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T00:00:00`
-}
-
-const RISK_SORT_ORDER = { high: 0, medium: 1, low: 2 } as const
-
-// Öğrenci bazında ödev eksikliği sayısını hesaplar.
-// limitToHwIds verilirse sadece o ödev kimliklerindeki eksikler sayılır (son N ödev filtresi).
-export function buildHwMissMap(
-  submissions: SubmissionRow[],
-  limitToHwIds?: Set<string>,
-): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const sub of submissions) {
-    if (limitToHwIds && !limitToHwIds.has(sub.homework_id)) continue
-    if (sub.status === 'eksik' || sub.status === 'yapilmadi' || sub.status === 'gec') {
-      map.set(sub.student_id, (map.get(sub.student_id) ?? 0) + 1)
-    }
-  }
-  return map
-}
-
-export function buildAbsenceMap(attendanceRows: { student_id: string; status: string }[]): Map<string, number> {
-  const map = new Map<string, number>()
-  for (const att of attendanceRows) {
-    if (att.status === 'absent') map.set(att.student_id, (map.get(att.student_id) ?? 0) + 1)
-  }
-  return map
-}
-
-function buildRiskAlerts(
-  hwMissMap:   Map<string, number>,
-  absenceMap:  Map<string, number>,
-  students:    StudentRow[],
-  reasonFmt:   (hwMisses: number, absences: number) => string[],
-): RiskAlert[] {
-  const alerts: RiskAlert[] = []
-  for (const student of students) {
-    const hwMisses = hwMissMap.get(student.id) ?? 0
-    const absences = absenceMap.get(student.id) ?? 0
-    if (hwMisses === 0 && absences === 0) continue
-    alerts.push({
-      studentId:   student.id,
-      studentName: student.full_name,
-      classId:     student.class_id,
-      className:   student.classes?.name ?? '—',
-      riskLevel:   computeRiskLevel(hwMisses, absences),
-      reasons:     reasonFmt(hwMisses, absences),
-      hwMisses,
-      absences,
-    })
-  }
-  return alerts.sort((a, b) => RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel])
-}
-
-export function computeAlerts(
-  homeworks:      HwRow[],
-  submissions:    SubmissionRow[],
-  attendanceRows: { student_id: string; status: string }[],
-  students:       StudentRow[],
-): RiskAlert[] {
-  // Son RISK_HW_LOOKBACK ödev/sınıf bazında filtrele
-  const limitHwIds = new Set<string>()
-  const lastHwByClass = new Map<string, number>()
-  for (const hw of homeworks) {
-    const seen = lastHwByClass.get(hw.class_id) ?? 0
-    if (seen < RISK_HW_LOOKBACK) {
-      limitHwIds.add(hw.id)
-      lastHwByClass.set(hw.class_id, seen + 1)
-    }
-  }
-  return buildRiskAlerts(
-    buildHwMissMap(submissions, limitHwIds),
-    buildAbsenceMap(attendanceRows),
-    students,
-    (hw, ab) => [
-      ...(hw >= 1 ? [`Son ${RISK_HW_LOOKBACK} ödevde ${hw} eksik`] : []),
-      ...(ab >= 1 ? [`Son 14 günde ${ab} gün devamsız`]           : []),
-    ],
-  )
-}
-
-function computeClassRisk(
-  submissions:    SubmissionRow[],
-  attendanceRows: { student_id: string; status: string }[],
-  students:       StudentRow[],
-): RiskAlert[] {
-  return buildRiskAlerts(
-    buildHwMissMap(submissions),
-    buildAbsenceMap(attendanceRows),
-    students,
-    (hw, ab) => [
-      ...(hw >= 1 ? [`${hw} eksik ödev`]               : []),
-      ...(ab >= 1 ? [`Son 14 günde ${ab} gün devamsız`] : []),
-    ],
-  )
-}
-
-async function fetchRiskInputs(teacherId: string, schoolId: string) {
-  const twoWeeksAgo   = turkeyDate(subDays(new Date(), 14))
-  const ninetyDaysAgo = turkeyDate(subDays(new Date(), 90))
-
-  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId, ninetyDaysAgo)
-  if (hwError) logger.error({ teacherId, schoolId, code: (hwError as { code?: string }).code }, 'fetchRiskInputs: ödev sorgusu başarısız')
-  const homeworks  = (hwData ?? []) as HwRow[]
-  const hwIds      = homeworks.map(h => h.id)
-  const classIds   = [...new Set(homeworks.map(h => h.class_id))]
-
-  const [subsResult, attResult, studentsResult] = await Promise.all([
-    DashboardRepository.getSubmissions(hwIds),
-    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
-    DashboardRepository.getStudentsByClasses(classIds, schoolId),
-  ])
-
-  if ('error' in subsResult    && subsResult.error)    logger.error({ teacherId, hwCount: hwIds.length, code: (subsResult.error as { code?: string }).code }, 'fetchRiskInputs: submission sorgusu başarısız')
-  if ('error' in attResult     && attResult.error)     logger.error({ teacherId, classCount: classIds.length, code: (attResult.error as { code?: string }).code }, 'fetchRiskInputs: yoklama sorgusu başarısız')
-  if ('error' in studentsResult && studentsResult.error) logger.error({ teacherId, classCount: classIds.length, code: (studentsResult.error as { code?: string }).code }, 'fetchRiskInputs: öğrenci sorgusu başarısız')
-
-  return {
-    homeworks,
-    hwIds,
-    classIds,
-    submissions:    (subsResult.data    ?? []) as SubmissionRow[],
-    attendanceRows: (attResult.data      ?? []) as { student_id: string; status: string }[],
-    students:       (studentsResult.data ?? []) as StudentRow[],
-  }
-}
+export { mondayOf } from '../lib/riskEngine'
+export { buildHwMissMap, buildAbsenceMap, computeAlerts } from '../lib/riskEngine'
 
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
@@ -166,11 +28,9 @@ export const TeacherDashboardService = {
     if (!profile?.school_id) throw new Error('Profil bulunamadı')
     const schoolId = profile.school_id
 
-    // Aşama 1: risk verisi (hwIds ve classIds buradan geliyor)
     const { homeworks, hwIds, classIds, submissions, attendanceRows, students } =
       await fetchRiskInputs(teacherId, schoolId)
 
-    // Aşama 2: hwIds/classIds gerektiren diğer 3 sorgu
     const [weeklyResult, todayAttResult] = await Promise.all([
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
       DashboardRepository.getTodayClassAttendance(classIds, today),
@@ -190,7 +50,6 @@ export const TeacherDashboardService = {
       ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
       : 0
 
-    // Ödev tamamlanma chart: sınıf başına son 6 geçmiş ödev (homeworks due_date DESC sıralı)
     const pastHwByClass = new Map<string, HwRow[]>()
     for (const hw of homeworks) {
       if (hw.due_date > today) continue
@@ -201,7 +60,7 @@ export const TeacherDashboardService = {
       }
     }
     const pastHws: HwRow[] = [...pastHwByClass.values()].flat()
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))  // eskiden yeniye
+      .sort((a, b) => a.due_date.localeCompare(b.due_date))
 
     const subByHw = new Map<string, { yapildi: number; eksik: number; diger: number; toplam: number }>()
     for (const hw of pastHws) subByHw.set(hw.id, { yapildi: 0, eksik: 0, diger: 0, toplam: 0 })
@@ -230,7 +89,6 @@ export const TeacherDashboardService = {
       }
     })
 
-    // Öğretmenin sınıflarını unique listele, grade+name'e göre sırala
     const seenClasses = new Map<string, { classId: string; className: string; grade: number }>()
     for (const hw of homeworks) {
       if (!seenClasses.has(hw.class_id)) {
@@ -274,6 +132,8 @@ export const TeacherDashboardService = {
   },
 
   async getClassSummary(classId: string, teacherId: string): Promise<ClassSummary | null> {
+    const { subDays } = await import('@/src/shared/date')
+    const { turkeyDate } = await import('@/src/lib/email-utils')
     const twoWeeksAgo = turkeyDate(subDays(new Date(), 14))
     const profile     = await getCurrentProfile()
     if (!profile?.school_id) {
@@ -288,9 +148,9 @@ export const TeacherDashboardService = {
       DashboardRepository.getAttendanceRows([classId], teacherId, twoWeeksAgo),
     ])
 
-    if ('error' in subsResult    && subsResult.error)    logger.error({ classId, teacherId, code: (subsResult.error as { code?: string }).code }, 'getClassSummary: submission sorgusu başarısız')
+    if ('error' in subsResult     && subsResult.error)     logger.error({ classId, teacherId, code: (subsResult.error as { code?: string }).code }, 'getClassSummary: submission sorgusu başarısız')
     if ('error' in studentsResult && studentsResult.error) logger.error({ classId, code: (studentsResult.error as { code?: string }).code }, 'getClassSummary: öğrenci sorgusu başarısız')
-    if ('error' in attResult     && attResult.error)     logger.error({ classId, teacherId, code: (attResult.error as { code?: string }).code }, 'getClassSummary: yoklama sorgusu başarısız')
+    if ('error' in attResult      && attResult.error)      logger.error({ classId, teacherId, code: (attResult.error as { code?: string }).code }, 'getClassSummary: yoklama sorgusu başarısız')
 
     const submissions    = (subsResult.data    ?? []) as SubmissionRow[]
     const students       = (studentsResult.data ?? []) as StudentRow[]

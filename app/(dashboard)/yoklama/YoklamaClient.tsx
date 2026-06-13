@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react'
-import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS, YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
+import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
-import { formatAbsenceBadge, isWeekendISO } from '@/src/domains/attendance/lib/attendanceMath'
-import Tooltip from '@/components/ui/Tooltip'
+import { isWeekendISO } from '@/src/domains/attendance/lib/attendanceMath'
+import YoklamaLockBanner from './YoklamaLockBanner'
+import YoklamaStudentPanel from './YoklamaStudentPanel'
 
 type LockStatus = 'open' | 'time_locked' | 'date_locked'
 
@@ -19,19 +20,6 @@ interface Props {
   initialClassId?: string
   canEditAfterLock: boolean
   takenTodayIds?: string[]
-}
-
-const STATUS_LABELS: Record<AttendanceStatus, string> = {
-  present: 'Mevcut',
-  absent:  'Devamsız',
-  late:    'Geç',
-  excused: 'Özürlü',
-}
-const STATUS_COLORS: Record<AttendanceStatus, string> = {
-  present: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 ring-green-500',
-  absent:  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 ring-red-500',
-  late:    'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 ring-yellow-500',
-  excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 ring-blue-500',
 }
 
 function todayISO() {
@@ -211,6 +199,11 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     }
   }
 
+  const missingClassNames = useMemo(() => {
+    if (isTodayWeekend || date !== today) return []
+    return classes.filter(c => myClassIds?.includes(c.id) && !takenToday.has(c.id)).map(c => c.name)
+  }, [classes, myClassIds, takenToday, isTodayWeekend, date, today])
+
   const inputCls = 'px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
 
   return (
@@ -257,147 +250,28 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         </div>
       </div>
 
-      {weekend && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-800 dark:text-amber-300">
-          <span>⚠️</span>
-          <span>Seçilen tarih hafta sonuna denk geliyor. Yoklama alınamaz.</span>
-        </div>
-      )}
+      <YoklamaLockBanner
+        weekend={weekend}
+        isPastDate={isPastDate}
+        isLocked={isLocked}
+        lockStatus={lockStatus}
+        isTodayWeekend={isTodayWeekend}
+        date={date}
+        today={today}
+        missingClassNames={missingClassNames}
+      />
 
-      {isPastDate && !weekend && !isLocked && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl text-sm text-sky-800 dark:text-sky-300">
-          <span>📅</span>
-          <span>Geçmiş bir tarih için yoklama giriyorsunuz. Mevcut kayıtların üzerine yazılacak.</span>
-        </div>
-      )}
-
-      {isLocked && !weekend && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-sm text-orange-800 dark:text-orange-300">
-          <span>🔒</span>
-          <span>
-            {lockStatus === 'time_locked'
-              ? `Yoklama düzenleme saati doldu (${YOKLAMA_LOCK_HOUR}:${String(YOKLAMA_LOCK_MINUTE).padStart(2, '0')}). Müdür yardımcısına başvurun.`
-              : 'Geçmiş tarih yoklaması düzenlenemez. Müdür yardımcısına başvurun.'}
-          </span>
-        </div>
-      )}
-
-      {!isTodayWeekend && date === today && (() => {
-        const missing = classes.filter(c => myClassIds?.includes(c.id) && !takenToday.has(c.id))
-        if (missing.length === 0) return null
-        return (
-          <div className="mb-4 flex items-center gap-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm px-4 py-3 rounded-xl">
-            <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z" />
-            </svg>
-            <span>Bugün yoklama alınmadı: <strong>{missing.map(c => c.name).join(', ')}</strong></span>
-          </div>
-        )
-      })()}
-
-      {/* Öğrenci Listesi */}
-      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
-        {loading ? (
-          <p className="p-6 text-center text-sm text-gray-400">Yükleniyor…</p>
-        ) : students.length === 0 ? (
-          <p className="p-6 text-center text-sm text-gray-400">Bu sınıfta öğrenci yok.</p>
-        ) : (
-          <>
-            {/* Toplu işlem araç çubuğu */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/60">
-              <span className="text-xs font-medium text-gray-500 dark:text-slate-400 flex items-center gap-2">
-                {students.length} öğrenci
-                {statusSummary.absent > 0 && (
-                  <span className="text-red-600 dark:text-red-400 font-semibold">
-                    · {statusSummary.absent} devamsız
-                  </span>
-                )}
-                {statusSummary.late > 0 && (
-                  <span className="text-yellow-600 dark:text-yellow-400 font-semibold">
-                    · {statusSummary.late} geç
-                  </span>
-                )}
-                {statusSummary.excused > 0 && (
-                  <span className="text-blue-600 dark:text-blue-400 font-semibold">
-                    · {statusSummary.excused} özürlü
-                  </span>
-                )}
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'present' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Hepsini Mevcut
-                </button>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'absent' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Hepsini Devamsız
-                </button>
-                <button
-                  type="button"
-                  disabled={isLocked}
-                  onClick={() => { isDirty.current = true; setStatuses(Object.fromEntries(students.map(s => [s.id, 'excused' as AttendanceStatus]))) }}
-                  className="text-xs font-medium text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Hepsini Özürlü
-                </button>
-              </div>
-            </div>
-            <ul className="divide-y divide-gray-100 dark:divide-slate-700">
-              {students.map((s, i) => {
-                const status = statuses[s.id] ?? 'present'
-                return (
-                  <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm text-gray-800 dark:text-slate-100 flex items-center gap-1 min-w-0">
-                      <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums shrink-0">{i + 1}.</span>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="font-medium text-gray-900 dark:text-slate-100 truncate text-sm">
-                          {s.full_name}
-                        </span>
-                        {(() => {
-                          const c = absenceCounts[s.id]
-                          if (!c) return null
-                          const danger = c.unexcused >= ATTENDANCE_LIMIT_DAYS
-                          const warn   = c.unexcused >= ATTENDANCE_WARN_DAYS
-                          return (
-                            <Tooltip content={`Özürsüz: ${c.unexcused} gün · Özürlü: ${c.excused} gün (MEB sınırı ${ATTENDANCE_LIMIT_DAYS} gün)`}>
-                              <span
-                                className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                                  danger ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
-                                  : warn  ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                                  :         'bg-gray-100 text-gray-500 dark:bg-slate-700 dark:text-slate-400'
-                                }`}
-                              >
-                                {formatAbsenceBadge(c)}
-                              </span>
-                            </Tooltip>
-                          )
-                        })()}
-                      </div>
-                      {s.student_number && <span className="ml-1.5 text-xs text-gray-400 shrink-0">#{s.student_number}</span>}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => toggle(s.id)}
-                      disabled={isLocked}
-                      className={`text-xs font-semibold min-w-[80px] text-center min-h-[44px] px-3 py-2 rounded-xl ring-1 ring-inset transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${STATUS_COLORS[status]}`}
-                    >
-                      {STATUS_LABELS[status]}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          </>
-        )}
-      </div>
+      <YoklamaStudentPanel
+        loading={loading}
+        students={students}
+        isLocked={isLocked}
+        isDirty={isDirty}
+        statuses={statuses}
+        setStatuses={setStatuses}
+        absenceCounts={absenceCounts}
+        statusSummary={statusSummary}
+        toggle={toggle}
+      />
 
       {error && <p className="text-sm text-red-500">{error}</p>}
       {toast && <p className="text-sm text-green-600 dark:text-green-400">{toast}</p>}

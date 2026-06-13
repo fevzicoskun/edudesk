@@ -60,7 +60,7 @@ export default async function OdevDetayPage({
   if (!isManager && hw.teacher_id !== user.id) notFound()
 
   const canWrite = isTeachingRole(profile.role)
-  const cls = hw.classes as unknown as { name: string } | null
+  const cls = hw.classes as { name: string } | null
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
