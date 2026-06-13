@@ -59,3 +59,33 @@ export function buildMissedEmail(opts: {
 <div class="footer">EduDesk — Okul Takip Sistemi</div>
 </div></body></html>`
 }
+
+// Davetiye e-postası (yeni kullanıcı için giriş bilgileri)
+export function buildInviteEmail(opts: {
+  fullName:     string
+  schoolName:   string
+  email:        string
+  tempPassword: string
+}): string {
+  const { fullName, schoolName, email, tempPassword } = opts
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>${BASE_CSS}
+h2{margin:0 0 16px;color:#1f2937}
+table{width:100%;border-collapse:collapse;margin:16px 0}
+td{padding:8px;border-bottom:1px solid #e5e7eb}
+td:first-child{color:#6b7280;width:40%}
+.btn{display:inline-block;background:#10b981;color:#fff;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600}
+.hint{color:#6b7280;font-size:14px}
+</style></head>
+<body><div class="box">
+<h2>Hoş Geldiniz, ${esc(fullName)}!</h2>
+<p><strong>${esc(schoolName)}</strong> için EduDesk hesabınız oluşturuldu.</p>
+<table>
+  <tr><td>E-posta</td><td><strong>${esc(email)}</strong></td></tr>
+  <tr><td>Geçici Şifre</td><td><strong>${esc(tempPassword)}</strong></td></tr>
+</table>
+<p><a href="https://myedudesk.com.tr/login" class="btn">Giriş Yap</a></p>
+<p class="hint">İlk girişden sonra şifrenizi değiştirmenizi öneririz.</p>
+<div class="footer">EduDesk — Okul Takip Sistemi</div>
+</div></body></html>`
+}
