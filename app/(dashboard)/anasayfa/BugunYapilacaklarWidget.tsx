@@ -6,11 +6,13 @@ interface Props {
   yoklamaDurumu:  YoklamaDurumItem[]
   todayHomeworks: HomeworkLite[]
   activeRiskCount: number
+  hasClasses: boolean
 }
 
-export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks, activeRiskCount }: Props) {
+export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks, activeRiskCount, hasClasses }: Props) {
   const eksikYoklama = yoklamaDurumu.filter(c => !c.alindi)
-  const allDone = eksikYoklama.length === 0 && todayHomeworks.length === 0 && activeRiskCount === 0
+  const allDone   = hasClasses && eksikYoklama.length === 0 && todayHomeworks.length === 0 && activeRiskCount === 0
+  const noClasses = !hasClasses && todayHomeworks.length === 0 && activeRiskCount === 0
 
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden mb-4">
@@ -84,6 +86,11 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
         {allDone && (
           <div className="px-4 py-4 text-center">
             <p className="text-sm text-gray-400 dark:text-slate-500">Bugün için bekleyen işlem yok.</p>
+          </div>
+        )}
+        {noClasses && (
+          <div className="px-4 py-4 text-center">
+            <p className="text-sm text-gray-400 dark:text-slate-500">Henüz sınıf atanmamış.</p>
           </div>
         )}
       </div>

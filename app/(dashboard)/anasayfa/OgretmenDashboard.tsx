@@ -74,6 +74,7 @@ export default async function OgretmenDashboard() {
         yoklamaDurumu={metrics.yoklamaDurumu}
         todayHomeworks={todayHws}
         activeRiskCount={metrics.activeRiskCount}
+        hasClasses={metrics.yoklamaDurumu.length > 0}
       />
 
       {/* 3 Ana Kart */}
