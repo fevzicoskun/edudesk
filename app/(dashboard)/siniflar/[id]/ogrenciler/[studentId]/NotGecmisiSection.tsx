@@ -35,7 +35,7 @@ export default function NotGecmisiSection({ grades }: { grades: GradeRow[] }) {
             {grades.map((g, i) => {
               const pct = g.score != null && g.grade_columns.max_score > 0 ? g.score / g.grade_columns.max_score : null
               return (
-                <tr key={i}>
+                <tr key={`${g.grade_columns.title}-${g.grade_columns.exam_date ?? i}`}>
                   <td className="py-2 pr-4 font-medium text-gray-900 dark:text-slate-100">{g.grade_columns.title}</td>
                   <td className="py-2 pr-4 text-gray-500 dark:text-slate-400 text-xs">{GRADE_TYPE_LABELS[g.grade_columns.grade_type] ?? g.grade_columns.grade_type}</td>
                   <td className="py-2 pr-4 text-right">

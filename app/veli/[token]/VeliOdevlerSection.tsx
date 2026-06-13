@@ -63,7 +63,7 @@ export default function VeliOdevlerSection({
       )}
 
       {past.length > 0 && (
-        <section data-veli-section="odevler" className="bg-white border border-gray-200 rounded-2xl p-4">
+        <section data-veli-section="odevler-gecmis" className="bg-white border border-gray-200 rounded-2xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Geçmiş Ödevler</h2>
           <div className="space-y-2">
             {past.map(s => {

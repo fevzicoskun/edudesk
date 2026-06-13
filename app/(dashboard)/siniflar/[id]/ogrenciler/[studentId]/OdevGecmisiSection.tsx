@@ -29,7 +29,7 @@ export default function OdevGecmisiSection({ submissions }: { submissions: Submi
             <Link
               key={s.id}
               href={s.homeworks?.id ? `/odevler/${s.homeworks.id}` : '#'}
-              className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors block"
+              className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.homeworks?.title ?? 'Ödev'}</p>

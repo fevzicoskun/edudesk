@@ -1,3 +1,5 @@
+'use client'
+
 import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
 
 type LockStatus = 'open' | 'time_locked' | 'date_locked'

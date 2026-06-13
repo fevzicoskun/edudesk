@@ -6,9 +6,7 @@ import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
 
 function todayISO() {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
 
 const field =

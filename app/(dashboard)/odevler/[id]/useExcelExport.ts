@@ -48,6 +48,6 @@ export function useExcelExport({
     a.href = url
     a.download = homeworkTitle ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx` : 'odev_durumu.xlsx'
     a.click()
-    URL.revokeObjectURL(url)
+    setTimeout(() => URL.revokeObjectURL(url), 100)
   }, [homeworkTitle, className, dueDate, items, statuses, notes])
 }

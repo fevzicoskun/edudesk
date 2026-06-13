@@ -55,7 +55,7 @@ export default function DevamsizlikPaneli({
           </p>
           <div className="space-y-1 max-h-48 overflow-y-auto">
             {attendanceRecords.map((r, i) => (
-              <div key={i} className="flex items-center justify-between text-xs">
+              <div key={`${r.date}-${r.status}`} className="flex items-center justify-between text-xs">
                 <span className="text-gray-600 dark:text-slate-400">
                   {format(parseISO(r.date), 'd MMM yyyy')}
                 </span>
