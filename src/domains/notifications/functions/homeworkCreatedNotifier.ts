@@ -6,10 +6,15 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 
 interface StudentRow {
-  id:         string
-  full_name:  string
-  veli_email: string | null
-  veli_ad:    string | null
+  id:                 string
+  full_name:          string
+  veli_email:         string | null
+  veli_ad:            string | null
+  veli_email_opt_out?: boolean
+}
+
+export function filterEligibleVeliler(students: StudentRow[]): StudentRow[] {
+  return students.filter(s => s.veli_email && !s.veli_email_opt_out).slice(0, 50)
 }
 
 export const homeworkCreatedNotifierFn = inngest.createFunction(
@@ -45,7 +50,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
         .is('deleted_at', null)
         .not('veli_email', 'is', null)
         .eq('veli_email_opt_out', false)
-      return ((data ?? []) as StudentRow[]).filter(s => s.veli_email)
+      return filterEligibleVeliler((data ?? []) as StudentRow[])
     })
 
     if (!targets.length) return { sent: 0, reason: 'veli-email-yok' }

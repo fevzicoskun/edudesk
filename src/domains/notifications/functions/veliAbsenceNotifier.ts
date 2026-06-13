@@ -10,6 +10,21 @@ interface StudentRow {
   veli_email_opt_out: boolean
 }
 
+export function shouldNotifyVeli(
+  record: {
+    status: string | null
+    notified_at: string | null
+    students: { veli_email: string | null; veli_email_opt_out: boolean } | null
+  } | null | undefined
+): boolean {
+  if (!record) return false
+  if (record.status === 'excused') return false
+  if (record.status !== 'absent' && record.status !== 'late') return false
+  if (record.notified_at) return false
+  if (!record.students?.veli_email || record.students.veli_email_opt_out) return false
+  return true
+}
+
 export const veliAbsenceNotifierFn = inngest.createFunction(
   { id: 'veli-absence-notifier', triggers: [{ event: 'attendance/absent' }] },
   async ({ event, step }) => {
