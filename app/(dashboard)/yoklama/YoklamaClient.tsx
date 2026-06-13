@@ -48,6 +48,20 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const skipInitialLoad = useRef(initialStatuses !== undefined)
   // Kilitleme saati gelince lockStatus yeniden hesaplansın
   const [now, setNow] = useState(() => new Date())
+  const [pendingSwitch, setPendingSwitch] = useState<{ type: 'class' | 'date'; value: string } | null>(null)
+
+  function applySwitch(type: 'class' | 'date', value: string) {
+    if (type === 'class') setClassId(value)
+    else setDate(value)
+    isDirty.current = false
+    setPendingSwitch(null)
+  }
+
+  function trySwitch(type: 'class' | 'date', value: string) {
+    if (!isDirty.current) { applySwitch(type, value); return }
+    setPendingSwitch({ type, value })
+  }
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000)
     return () => clearInterval(id)
@@ -131,20 +145,13 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     }
   }, [statuses])
 
-  const guardDirty = useCallback((): boolean => {
-    if (!isDirty.current) return true
-    return window.confirm('Kaydedilmemiş değişiklikler var. Devam edilirse kaybolacak.')
+  const handleClassChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
+    trySwitch('class', e.target.value)
   }, [])
 
-  const handleClassChange = useCallback((e: ChangeEvent<HTMLSelectElement>) => {
-    if (!guardDirty()) return
-    setClassId(e.target.value)
-  }, [guardDirty])
-
   const handleDateChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-    if (!guardDirty()) return
-    setDate(e.target.value)
-  }, [guardDirty])
+    trySwitch('date', e.target.value)
+  }, [])
 
   function toggle(studentId: string) {
     if (isLocked) return
@@ -208,6 +215,26 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
 
   return (
     <div className="space-y-4">
+      {pendingSwitch && (
+        <div className="flex flex-wrap items-center gap-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-700 rounded-xl px-4 py-3 text-amber-800 dark:text-amber-300">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <span className="text-sm flex-1">Kaydedilmemiş değişiklikler var.</span>
+          <button
+            onClick={() => setPendingSwitch(null)}
+            className="text-xs font-medium text-amber-700 dark:text-amber-400 hover:underline"
+          >
+            Geri dön
+          </button>
+          <button
+            onClick={() => applySwitch(pendingSwitch.type, pendingSwitch.value)}
+            className="text-xs font-semibold bg-amber-100 dark:bg-amber-800/50 text-amber-800 dark:text-amber-200 px-2 py-1 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+          >
+            Devam et ve kaybet
+          </button>
+        </div>
+      )}
       {/* Sınıf + Tarih */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-wrap gap-3 items-end">
         <div>
