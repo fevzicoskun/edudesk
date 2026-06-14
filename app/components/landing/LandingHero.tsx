@@ -1,8 +1,6 @@
 import Link from 'next/link'
-import { getWhatsAppHref } from './whatsapp'
 
 export default function LandingHero() {
-  const waHref = getWhatsAppHref()
   return (
     <section className="bg-gradient-to-b from-emerald-50 to-stone-50 px-4 py-20 text-center">
       <div className="mx-auto max-w-3xl">
@@ -16,16 +14,7 @@ export default function LandingHero() {
         <p className="mt-6 text-lg leading-relaxed text-stone-600">
           Yoklama, ödev, veli iletişimi ve zümre toplantıları — hepsi bir arada.
         </p>
-        <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <a
-            href={waHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="WhatsApp'tan bilgi al (yeni sekmede açılır)"
-            className="w-full rounded-xl bg-orange-500 px-8 py-4 text-base font-semibold text-white shadow-md hover:bg-orange-600 transition-colors sm:w-auto"
-          >
-            📱 WhatsApp&apos;tan Bilgi Al
-          </a>
+        <div className="mt-10 flex justify-center">
           <Link
             href="/login"
             className="w-full rounded-xl border border-stone-300 px-8 py-4 text-base font-semibold text-stone-700 hover:bg-stone-100 transition-colors sm:w-auto"
