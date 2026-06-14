@@ -41,7 +41,7 @@ export default async function BugunYoklamaWidget() {
       .eq('school_id', school_id)
       .gte('date', schoolYearStart())
       .in('status', ['absent', 'late'])
-      .limit(100000),
+      .limit(10000),
   ])
 
   const classes    = classesRes.data ?? []

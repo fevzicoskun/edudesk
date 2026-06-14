@@ -133,7 +133,7 @@ export async function fetchRiskInputs(teacherId: string, schoolId: string) {
 
   const [subsResult, attResult, studentsResult] = await Promise.all([
     DashboardRepository.getSubmissions(hwIds),
-    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo),
+    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId),
     DashboardRepository.getStudentsByClasses(classIds, schoolId),
   ])
 

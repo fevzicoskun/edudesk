@@ -25,7 +25,7 @@ export const DashboardRepository = {
       .limit(5000)
   },
 
-  async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string) {
+  async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string, schoolId: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
@@ -33,6 +33,7 @@ export const DashboardRepository = {
       .select('student_id, status')
       .in('class_id', classIds)
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
       .gte('date', sinceDate)
       .limit(3000)
   },

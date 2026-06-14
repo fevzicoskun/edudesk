@@ -41,7 +41,7 @@ describe('DashboardRepository — boş dizi guard\'ları', () => {
   })
 
   it('getAttendanceRows([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getAttendanceRows([], TEACHER_ID, '2026-01-01')
+    const result = await DashboardRepository.getAttendanceRows([], TEACHER_ID, '2026-01-01', SCHOOL_ID)
     expect(result).toEqual({ data: [] })
     expect(createClient).not.toHaveBeenCalled()
   })

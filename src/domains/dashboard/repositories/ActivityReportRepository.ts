@@ -18,6 +18,6 @@ export const ActivityReportRepository = {
       .eq('school_id', schoolId)
       .gte('created_at', since)
       .order('created_at', { ascending: false })
-      .limit(500)
+      .limit(2000)
   },
 }

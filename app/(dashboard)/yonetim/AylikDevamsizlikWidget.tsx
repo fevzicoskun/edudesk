@@ -5,9 +5,10 @@ import Link from 'next/link'
 
 export default async function AylikDevamsizlikWidget() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-  const today     = new Date()
-  const todayStr  = today.toISOString().split('T')[0]
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+  const istFmt   = (d: Date) => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
+  const todayStr  = istFmt(new Date())
+  const [y, m]    = todayStr.split('-')
+  const monthStart = `${y}-${m}-01`
 
   const { data } = await supabase
     .from('attendance')
@@ -37,7 +38,7 @@ export default async function AylikDevamsizlikWidget() {
         <div>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bu Ay Devamsızlık</h2>
           <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
-            {format(new Date(today.getFullYear(), today.getMonth(), 1), 'd MMM')} – {format(today, 'd MMM')}
+            {format(new Date(`${monthStart}T00:00:00`), 'd MMM')} – {format(new Date(`${todayStr}T00:00:00`), 'd MMM')}
           </p>
         </div>
         <div className="flex items-center gap-2">
