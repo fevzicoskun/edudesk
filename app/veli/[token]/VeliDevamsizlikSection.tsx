@@ -1,5 +1,5 @@
 import { format, parseISO } from '@/src/shared/date'
-import VeliDevamsizlikChart from './VeliDevamsizlikChart'
+import VeliDevamsizlikChart from './VeliDevamsizlikChartLazy'
 
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
 

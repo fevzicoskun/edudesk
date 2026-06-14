@@ -281,7 +281,7 @@ _Aşağıdaki liste bölüm 1–3 bulgularını etkiye göre sıralıyor. Her sa
 
 ### 4.1 Uygulanan Düzeltmeler (Düzeltme Turu — 2026-06-14)
 
-Kapsam: 🔴 kritikler + düşük-efor 🟡'ler. Orta-efor (#4 waterfall) ve 🟢'ler ayrı tura bırakıldı.
+Kapsam: 1. turda 🔴 kritikler + düşük-efor 🟡'ler (#1,2,5,6,7); 2. turda kalan tüm maddeler (#3,4,8,9,10) — "hatasız" ilkesiyle, riskli/marjinal alt-kısımlar gerekçeyle ertelenerek.
 
 | # | Durum | Ne yapıldı |
 |---|-------|-----------|
@@ -290,10 +290,13 @@ Kapsam: 🔴 kritikler + düşük-efor 🟡'ler. Orta-efor (#4 waterfall) ve �
 | 5 | ✅ | Migration `drop_duplicate_indexes`: 4 özdeş index kopyası + 1 redundant unique constraint (`uq_permissions_ras`) düşürüldü. `duplicate_index` advisor **5 → 0**. |
 | 6 | ✅ | Migration `add_missing_fk_indexes`: 7 index'siz FK kolonuna covering index (nullable olanlar partial). `unindexed_foreign_keys` **54 → 47**. (Yeni index'ler trafik görene dek geçici olarak `unused_index`'te görünür.) |
 | 7 | ✅ | `getSchoolTeachers` (cache'li) eklendi (`schoolStats.ts`); `MYStatsWidget` + `MYSolSutunWidget` artık bu tek sorguyu paylaşıyor — request içi dedup ile bir `profiles` sorgusu elendi. |
-| 3 | ⏸️ ertelendi | **Olduğu gibi uygulanmadı.** `limit(100000)` kasıtlı (yıl boyu devamsızlık satırları `countAbsences`'a verilir); küçültmek sayımları sessizce bozar. Seçilen kolonlar zaten minimal — gerçek over-fetch yok. Doğru çözüm sunucu-taraflı `COUNT … GROUP BY` (RPC) — orta efor, ayrı tura. |
-| 4, 8, 9, 10 | ⏭️ kapsam dışı | Bu turda ele alınmadı (orta-efor / 🟢). |
+| 3 | ✅ (2. tur) | `limit(100000)` küçültmek yerine **doğru çözüm**: `count_absences_by_student` RPC (hafta sonu hariç, `countAbsences` ile birebir doğrulandı — 19/19 satır, 0 uyumsuzluk). `AttendanceRepository.getAbsenceCounts` üzerinden yoklama/cizelge/devamsizlik bağlandı — artık yıl boyu satırlar yerine öğrenci-başı sayım dönüyor. `MudurOgretmenAktivite` 2 over-fetch sorgusu → 1 `school_teacher_activity` distinct RPC + profiles `getSchoolTeachers` cache'ine bağlandı. |
+| 4 | ✅ kısmi (2. tur) | **Güvenli paralelizasyon:** `cizelge` + `yoklama`'da `teacher_classes` artık `classes` ile paralel (seri değildi). `riskEngine`/`TeacherDashboardService` zinciri **kaçınılmaz veri bağımlılığı** (`homeworks→hwIds→bağımlı sorgular`) ve `getCurrentProfile` zaten `cache()`'li → JOIN/RPC rewrite riski alınmadı. |
+| 10 | ✅ kısmi (2. tur) | **Permissive konsolidasyon:** aynı tablo+cmd+rol için 2'şer permissive politika olan 8 grup tek policy(A OR B)'ye birleştirildi (permissive=OR → birebir eşdeğer; doğrulama: `multiple_permissive` **70 → 32**). **Redundant index:** composite lead-kolonuyla karşılanan 4 gereksiz tek-kolonlu index düşürüldü. Kalan 32 örtüşme `FOR ALL` + spesifik desen (6 tablo) — farklı principal'lar nedeniyle yapısal/riskli, gerekçeyle ertelendi. Salt "unused" index'ler genç DB nedeniyle korundu. |
+| 8 | ✅ kısmi (2. tur) | Bundle zaten iyi optimize (dashboard chart'ları `dynamic ssr:false`, `exceljs` `serverExternalPackages`, `optimizePackageImports`). Tek statik recharts importu olan veli portalı chart'ı `VeliDevamsizlikChartLazy` ile lazy-load edildi. Public landing chunk'ı framework+ssr baseline'ı — güvenle küçültülemez. |
+| 9 | ✅ incelendi (2. tur) | **Aksiyon alınabilir kod nedeni yok.** Tüm geometri-okuma API'leri (`getBoundingClientRect`/`scrollIntoView`) event-driven (klavye nav, hata-scroll, dropdown click) — hiçbiri ilk render'da çalışmıyor. 48ms ForcedReflow **dev modda** ölçülmüştü (rapor prod'u yansıtmaz diye not düşmüş); framework hydration/dev-bundle kaynaklı, uygulama koduna atfedilemiyor. |
 
-**Doğrulama:** TypeScript `tsc --noEmit` temiz; 610 unit test geçti; advisor toplamı ~242 → ~137.
+**Doğrulama (2. tur):** `tsc --noEmit` temiz · 610 unit test geçti · prod `npm run build` başarılı · güvenlik advisor'ında yeni bulgu yok (yeni RPC'ler `SECURITY INVOKER` + `search_path=''`) · performans advisor toplamı **~242 → ~95** (`auth_rls_initplan` 99→0, `duplicate_index` 5→0, `multiple_permissive` 70→32, `unindexed_fk` 54→47).
 
 ---
 
