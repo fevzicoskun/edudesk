@@ -238,8 +238,8 @@ _Ölçüm tarihi: 2026-06-14 — Chrome DevTools MCP (performance_start_trace + 
 - `/_next/static/chunks/3ha8-7h-xizg1.css` render-blocking olarak işaretlendi; ancak download süresi 0.2 ms (Vercel CDN + Brotli, max-age: 1 yıl). Tahmini LCP/FCP tasarrufu: 0 ms — pratik etki yok.
 
 **Canlı console hataları (Best Practices puanını etkiliyor):**
-- `sw.js` ServiceWorker kaydı başarısız: script kaynağı yönlendirme arkasında (SecurityError). Offline destek çalışmıyor.
-- `manifest.json` sözdizimi hatası: PWA kurulumu kırık.
+- `sw.js` ServiceWorker kaydı başarısız: `proxy.ts:5`'teki `PUBLIC_PATHS` listesi `/sw.js`'i içermiyor; `proxy.ts:227`'deki `matcher` yalnızca `_next/static`, `_next/image`, favicon ve resim uzantılarını muaf tutuyor. Kimlik doğrulanmamış `/sw.js` istekleri `/login` sayfasına yönlendiriliyor; tarayıcı JS yerine HTML alıyor → SecurityError ile ServiceWorker kaydı başarısız oluyor. Offline destek çalışmıyor.
+- `manifest.json` parse edilemiyor: aynı nedenle — `proxy.ts:5` ve `proxy.ts:227` `/manifest.json`'ı muaf tutmuyor. Kimlik doğrulanmamış istek `/login` HTML'ine yönlendiriliyor; tarayıcı JSON yerine HTML alıyor → manifest parse başarısız → PWA kurulumu kırık. (`public/manifest.json` dosyasının içeriği geçerli JSON'dur; sorun dosyada değil, middleware'dedir.)
 
 **Yerel dev rotaları (prod değerler önemli ölçüde daha iyi olacak):**
 - TTFB 370–500 ms aralığında: dev modda webpack JIT derleme + Supabase SSR sorgu süresi birlikte görünüyor.
@@ -248,11 +248,10 @@ _Ölçüm tarihi: 2026-06-14 — Chrome DevTools MCP (performance_start_trace + 
 - `/yoklama` ve `/anasayfa`'da **ForcedReflow** (48 ms) tespit edildi: JavaScript DOM değişiklikinden sonra geometrik özellik (offsetWidth vb.) sorguluyor. Kod kanalı: `[unattributed]` (muhtemelen Tailwind animasyonu veya sidebar collapse bileşeni).
 
 **Başlıca fırsatlar öncelik sırası:**
-1. **`sw.js` redirect hatası düzeltilmeli** — ServiceWorker kaydedilemiyor, offline/PWA işlevselliği kırık. Vercel route yapılandırması veya `next.config` `public` klasörü ayarı gözden geçirilmeli.
-2. **`manifest.json` sözdizimi hatası** — PWA manifest parse edilemiyor. Dosya içeriği doğrulanmalı.
-3. **ForcedReflow kaynağı belirlenmeli** — `/anasayfa`, `/odevler`, `/yoklama`'da 48 ms reflow var. Sidebar collapse veya animasyon bileşenlerinde `offsetWidth`/`getBoundingClientRect()` DOM mutation sonrası çağrılıyor olabilir; `requestAnimationFrame` içine alınmalı.
-4. **Büyük tek chunk** (`3w8d8k_dca5rp.js`, 227 KB decoded / 72.5 KB gzip): Route-level code splitting veya dinamik import ile public sayfaların JS yükü azaltılabilir. Render delay'in ana kaynağı bu bundle'ın parse süresi.
-5. **Yerel dev TTFB** (Supabase SSR, 370–500 ms): `riskEngine` waterfall `src/domains/dashboard/services/TeacherDashboardService.ts:27–37` üretimde SSR TTFB'ye katkıda bulunuyor; Task 2'de belirtilen paralel refactor TTFB'yi doğrudan azaltır.
+1. **`sw.js` + `manifest.json` middleware muafiyeti** — `proxy.ts:5` `PUBLIC_PATHS` listesine ve/veya `proxy.ts:227` `matcher` pattern'ına `/sw.js` ve `/manifest.json` eklenmeli; böylece kimlik doğrulanmamış istekler doğrudan dosyaya ulaşır, `/login`'e yönlendirilmez. ServiceWorker kaydı ve PWA kurulumu düzelir.
+2. **ForcedReflow kaynağı belirlenmeli** — `/anasayfa`, `/odevler`, `/yoklama`'da 48 ms reflow var. Sidebar collapse veya animasyon bileşenlerinde `offsetWidth`/`getBoundingClientRect()` DOM mutation sonrası çağrılıyor olabilir; `requestAnimationFrame` içine alınmalı.
+3. **Büyük tek chunk** (`3w8d8k_dca5rp.js`, 227 KB decoded / 72.5 KB gzip): Route-level code splitting veya dinamik import ile public sayfaların JS yükü azaltılabilir. Render delay'in ana kaynağı bu bundle'ın parse süresi.
+4. **Yerel dev TTFB** (Supabase SSR, 370–500 ms): `riskEngine` waterfall `src/domains/dashboard/services/TeacherDashboardService.ts:27–37` üretimde SSR TTFB'ye katkıda bulunuyor; Task 2'de belirtilen paralel refactor TTFB'yi doğrudan azaltır.
 
 **Ölçüm kapsamı özeti:**
 - `/`, `/login`, `/gizlilik`: canlı site üzerinde Chrome DevTools MCP performance trace ile ölçüldü — gerçek sayılar.
@@ -260,10 +259,109 @@ _Ölçüm tarihi: 2026-06-14 — Chrome DevTools MCP (performance_start_trace + 
 - TBT ve INP: Chrome DevTools MCP performance trace özeti bu metrikleri raporlamıyor; ölçülemedi.
 
 ## 4. Önceliklendirilmiş Aksiyon Listesi
-_(Task 5)_
+
+_Aşağıdaki liste bölüm 1–3 bulgularını etkiye göre sıralıyor. Her satır: önem derecesi · kaynak referansı · beklenen kazanım · tahmini efor._
+
+| # | Önem | Referans | Sorun | Beklenen Kazanım | Efor |
+|---|------|----------|-------|-----------------|------|
+| 1 | 🔴 | `proxy.ts:5` (`PUBLIC_PATHS`) + `proxy.ts:227` (`matcher`) | `/sw.js` ve `/manifest.json` middleware muafiyeti yok → kimlik doğrulanmamış istekler `/login`'e yönlendiriliyor → tarayıcı JSON/JS yerine HTML alıyor → ServiceWorker kaydı + PWA manifest parse başarısız | PWA kurulumu + offline destek düzelir; Best Practices puanı iyileşir | Düşük (2 satır değişikliği) |
+| 2 | 🔴 | RLS politikaları — `attendance`, `homeworks`, `homework_submissions`, `profiles`, `students` (99 `auth_rls_initplan` uyarısı) | `auth.uid()` her satır için yeniden değerlendiriliyor | Hot tablolarda satır başı RLS maliyeti ortadan kalkar; yüksek trafik altında sorgular hızlanır | Orta (birçok policy'i touch eden migration) |
+| 3 | 🟡 | `app/(dashboard)/yoklama/page.tsx:64`, `app/(dashboard)/yoklama/cizelge/page.tsx:52`, `app/(dashboard)/rapor/devamsizlik/page.tsx:34`, `app/(dashboard)/anasayfa/MudurOgretmenAktivite.tsx:29,33` | `.limit(100000)` veya limit yok — yıl boyu kayıtlar tek sorguda çekiliyor | Bellek baskısı azalır; TTFB kısalır; SSR maliyeti düşer | Düşük-orta (her sayfada limit + kolon daraltma) |
+| 4 | 🟡 | `src/domains/dashboard/lib/riskEngine.ts:124–138`, `src/domains/dashboard/services/TeacherDashboardService.ts:32–37`, `app/(dashboard)/odevler/sinif/[classId]/page.tsx:51–58`, `app/(dashboard)/yoklama/cizelge/page.tsx:31–40` | Seri/waterfall sorgular — bağımsız olanlar paralel başlatılabilir; hwIds bağımlılığı JOIN ile çözülebilir | SSR TTFB'de 100–300 ms kazanım; yerel dev LCP düşer | Orta |
+| 5 | 🟡 | `classes` (`idx_classes_active`=`idx_classes_school_grade`), `export_jobs`, `homework_submissions` (`idx_homework_submissions_student_id`=`idx_hw_submissions_student`), `homeworks` (`homeworks_teacher_id_idx`=`idx_homeworks_teacher_id`), `permissions` — 5 `duplicate_index` uyarısı | Özdeş index çiftleri; planner overhead + write amplification | Write performansı iyileşir; storage azalır | Düşük (DROP INDEX migration) |
+| 6 | 🟡 | `attendance_teacher_id_fkey`, `homeworks_deleted_by_fkey`, `homeworks_source_id_fkey`, `students_deleted_by_fkey`, `classes_*_fkey` — 54 `unindexed_foreign_keys` uyarısından hot olanlar | FK üzerinden JOIN/lookup'larda Seq Scan riski | Hot tablo JOIN'leri hızlanır | Düşük-orta (index ekleme migration) |
+| 7 | 🟡 | `app/(dashboard)/anasayfa/MYStatsWidget.tsx:37` + `app/(dashboard)/anasayfa/MYSolSutunWidget.tsx:19` | Aynı `profiles` filtresi iki bağımsız bileşende; React `cache()` dedup uygulanmıyor | Bir profiles sorgusu eliminasyonu; daha temiz prop drilling | Düşük |
+| 8 | 🟢 | Büyük JS chunk `3w8d8k_dca5rp.js` — 72.5 KB gzip / 227 KB parsed | Route-level code splitting ile public sayfalarda JS yükü azaltılabilir | Render delay kısalır; public sayfa LCP iyileşir | Orta |
+| 9 | 🟢 | `/anasayfa`, `/odevler`, `/yoklama` — ForcedReflow ~48 ms | Sidebar/animasyon bileşeni DOM mutation sonrası geometrik özellik sorgulayarak reflow tetikliyor | 48 ms reflow kazanımı; INP iyileşir | Düşük-orta (kaynak tespiti gerekiyor) |
+| 10 | 🟢 | 14 `unused_index` + 70 `multiple_permissive_policies` | Kullanılmayan indexler write overhead; çok sayıda permissive policy her sorguda tüm policy setini çalıştırıyor | Write hızı + RLS değerlendirme süresi iyileşir | Orta (inceleme + konsolidasyon) |
+
+**Not:** Platform N+1 borcu çözülmüş (`app/platform/page.tsx` tek `tenant_metrics` view sorgusu kullanıyor, in-memory render döngüleri ek DB sorgusu içermiyor).
+
+---
 
 ## 5. Baseline Metrikler
-_(Task 5)_
+
+_Bu bölüm bir sonraki tur karşılaştırması için bugünkü sayıları sabitler. Ölçüm tarihi: 2026-06-14._
+
+### 5.1 Canlı Sayfa Performansı (Chrome DevTools MCP performance trace)
+
+| Rota | LCP | CLS | JS Transfer (ilk ziyaret) | Not |
+|------|-----|-----|--------------------------|-----|
+| `/` | 309–317 ms | 0.00 | ~156 KB (11 chunk) | — |
+| `/login` | 252 ms | 0.00 | ~156 KB (önbellekten) | — |
+| `/gizlilik` | 284 ms | 0.00 | ~156 KB (önbellekten) | — |
+
+> TBT ve INP: Chrome DevTools MCP performance trace özeti bu metrikleri raporlamıyor; ölçülemedi.
+
+### 5.2 Kimlik Doğrulamalı Sayfalar (yerel dev — prod'dan yavaş)
+
+| Rota | LCP (dev) | Başlıca katkı | Uyarı |
+|------|-----------|--------------|-------|
+| `/anasayfa` | 888 ms | TTFB 499 ms (SSR + Supabase), ForcedReflow 48 ms | Yalnızca göreli karşılaştırma için kullanılmalı |
+| `/odevler` | 1174 ms | Render delay 803 ms (dev bundle + hydration) | Yalnızca göreli karşılaştırma için kullanılmalı |
+| `/yoklama` | 1124 ms | TTFB 373 ms + render delay 750 ms | Yalnızca göreli karşılaştırma için kullanılmalı |
+
+### 5.3 Supabase Advisor Sayıları
+
+| Tür | Seviye | Sayı (2026-06-14) |
+|-----|--------|-------------------|
+| `auth_rls_initplan` | WARN | 99 |
+| `multiple_permissive_policies` | WARN | 70 |
+| `unindexed_foreign_keys` | INFO | 54 |
+| `unused_index` | INFO | 14 |
+| `duplicate_index` | WARN | 5 |
+| **Toplam** | | **242** |
+
+### 5.4 Index Durumu
+
+Hot filtre index kapsamı: mevcut (bkz. Bölüm 1 — Index Envanteri tablosu).
+
+---
 
 ## 6. Yeniden Ölçüm Yönergesi
-_(Task 5)_
+
+_Bu bölüm bir sonraki tur denetiminin nasıl yeniden üretileceğini açıklar. Kaynak plan: `docs/superpowers/plans/2026-06-14-performans-olcum-taramasi.md`_
+
+### Adım 1 — Veritabanı Katmanı
+
+1. **Supabase MCP advisor taraması:**
+   ```
+   get_advisors(type: "performance", project_id: "agijvfrcudpzsofgfogu")
+   ```
+   Yeni bulgu sayılarını Bölüm 5.3 tablosuyla karşılaştır; azalma olmayan kategoriler için aksiyon listesini gözden geçir.
+
+2. **Index envanteri:**
+   ```sql
+   SELECT indexname, tablename, indexdef
+   FROM pg_indexes
+   WHERE schemaname = 'public'
+   AND tablename IN ('attendance','homeworks','homework_submissions','students','classes','profiles')
+   ORDER BY tablename, indexname;
+   ```
+   Duplicate ve unused index sayılarının değişip değişmediğini doğrula.
+
+3. **EXPLAIN ANALYZE — iki hot sorgu:**
+   - `attendance` devamsızlık sorgusu (son 30 gün, gerçek `school_id` ile)
+   - `homeworks` öğretmen+okul filtresi (gerçek `teacher_id` + `school_id` ile)
+
+   Bölüm 1 "EXPLAIN Sonuçları" tablolarıyla plan türü ve süreyi karşılaştır; üretim verisiyle Index Scan'e geçildi mi gözlemle.
+
+### Adım 2 — Sunucu Sorgu Denetimi
+
+1. Hot sayfalardaki sorgu pattern'larını statik olarak tara:
+   ```
+   grep -n "\.limit(100000\|\.limit(10000\|from('attendance')\|from('homeworks')" \
+     app/\(dashboard\)/yoklama/page.tsx \
+     app/\(dashboard\)/yoklama/cizelge/page.tsx \
+     app/\(dashboard\)/rapor/devamsizlik/page.tsx \
+     app/\(dashboard\)/anasayfa/MudurOgretmenAktivite.tsx
+   ```
+2. `riskEngine.ts` ve `TeacherDashboardService.ts` waterfall satırlarını yeniden oku; `Promise.all` refactor uygulandıysa seri bekleme kaldı mı doğrula.
+3. `MYStatsWidget.tsx:37` ve `MYSolSutunWidget.tsx:19` — profiles sorgusu hâlâ iki kez çekiliyor mu, yoksa prop drilling'e geçildi mi?
+
+### Adım 3 — İstemci (Lighthouse / DevTools)
+
+1. **Canlı public rotalar** (`/`, `/login`, `/gizlilik`) — Chrome DevTools MCP `performance_start_trace` + `evaluate_script` ile LCP ve CLS ölç; Bölüm 5.1 değerleriyle karşılaştır.
+2. **Kimlik doğrulamalı rotalar** (`/anasayfa`, `/odevler`, `/yoklama`) — Playwright MCP ile test kullanıcısı girişi (`browser_navigate` → login form → `browser_fill_form`) yap, ardından performance trace; Bölüm 5.2 dev değerleriyle karşılaştır.
+3. **PWA doğrulama:** `/manifest.json` ve `/sw.js`'e kimlik doğrulanmamış GET isteği gönder; HTTP 200 + doğru `Content-Type` (`application/json` ve `application/javascript`) aldığını doğrula.
+4. **ForcedReflow:** Performance trace'de `[unattributed]` reflow kaynağını tespit et; 48 ms'nin altına indi mi ölç.
