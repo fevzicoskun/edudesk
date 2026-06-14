@@ -212,7 +212,52 @@ _Statik kaynak denetimi — 2026-06-14. Her bulgu gerçek dosya:satır referans�
 `app/platform/page.tsx:17` → tek bir `tenant_metrics` view sorgusu tüm okul metriklerini (teacher_count, student_count vb.) tek seferde çekiyor. `schools?.map()` (satır 57) ve `.map()` (satır 42) yalnızca in-memory render işlemi, ek DB sorgusu içermiyor. `app/platform/actions.ts` dosyasındaki `from()` çağrıları mutation action'larına ait (createSchool, updateSchoolStatus, cancelSchool) ve hiçbiri döngü/map içinde çalışmıyor. **Platform N+1 yok.**
 
 ## 3. İstemci (Lighthouse)
-_(Task 4)_
+
+_Ölçüm tarihi: 2026-06-14 — Chrome DevTools MCP (performance_start_trace + evaluate_script). Perf skoru: Chrome DevTools MCP performance trace aracı Lighthouse Perf skoru üretmiyor; "—" olarak gösterildi. TBT: trace aracının özet çıktısı LCP ve CLS'i raporluyor, TBT/INP doğrudan ölçülemiyor._
+
+### 3.1 Ölçüm Tablosu
+
+| Rota | Ölçüm yöntemi | Perf skoru | LCP | TBT/INP | CLS | JS (KB, transfer) | Başlıca fırsat |
+|------|--------------|-----------|-----|---------|-----|-------------------|----------------|
+| `/` | canlı | — | 309–317 ms | ölçülemedi (araç TBT raporlamıyor) | 0.00 | 156 KB | Render delay %80 (248–258 ms): JS değerlendirme gecikmesi; `sw.js` redirect hatası |
+| `/login` | canlı | — | 252 ms | ölçülemedi | 0.00 | ~156 KB (önbellekten) | Render delay %77 (194 ms): JS parse/hydration süresi |
+| `/gizlilik` | canlı | — | 284 ms | ölçülemedi | 0.00 | ~156 KB (önbellekten) | Render delay %81 (229 ms): kritik yol CSS zinciri (max 277 ms) |
+| `/anasayfa` | yerel dev — prod'dan yavaş | — | 888 ms | ölçülemedi | 0.00 | (dev, minifikasyonsuz) | TTFB 499 ms (server render + Supabase sorguları); ForcedReflow 48 ms |
+| `/odevler` | yerel dev — prod'dan yavaş | — | 1174 ms | ölçülemedi | 0.00 | (dev, minifikasyonsuz) | Render delay 803 ms; ForcedReflow; riskEngine waterfall tetiklenmiyor ama client hydration ağır |
+| `/yoklama` | yerel dev — prod'dan yavaş | — | 1124 ms | ölçülemedi | 0.00 | (dev, minifikasyonsuz) | TTFB 373 ms + render delay 750 ms; ForcedReflow; `limit(100000)` sorgusu TTFB'ye katkı |
+
+### 3.2 Bulgular
+
+**Canlı genel durum — LCP çok iyi, CLS mükemmel:**
+- Tüm canlı rotalar LCP < 320 ms; "İyi" eşiği olan 2500 ms'nin çok altında.
+- CLS tüm rotalarda 0.00 — layout kayması yok.
+- Render delay LCP süresinin %77–81'ini oluşturuyor: H1 metin elemanı ağ kaynağı beklemiyor (LCP image yok), asıl gecikme JS bundle'ların parse ve React hydration süresi.
+- JS transfer: İlk ziyarette **156 KB** (sıkıştırılmış, 11 chunk), parsed/decoded 514 KB. Cache'den sonraki sayfa geçişleri neredeyse 0 KB aktarım. Tek büyük chunk `3w8d8k_dca5rp.js` — 72.5 KB transfer / 227 KB decoded (muhtemelen Supabase istemcisi + React framework).
+
+**Canlı render-blocking CSS:**
+- `/_next/static/chunks/3ha8-7h-xizg1.css` render-blocking olarak işaretlendi; ancak download süresi 0.2 ms (Vercel CDN + Brotli, max-age: 1 yıl). Tahmini LCP/FCP tasarrufu: 0 ms — pratik etki yok.
+
+**Canlı console hataları (Best Practices puanını etkiliyor):**
+- `sw.js` ServiceWorker kaydı başarısız: script kaynağı yönlendirme arkasında (SecurityError). Offline destek çalışmıyor.
+- `manifest.json` sözdizimi hatası: PWA kurulumu kırık.
+
+**Yerel dev rotaları (prod değerler önemli ölçüde daha iyi olacak):**
+- TTFB 370–500 ms aralığında: dev modda webpack JIT derleme + Supabase SSR sorgu süresi birlikte görünüyor.
+- Render delay 390–800 ms: minifikasyonsuz dev bundle'lar React hydration'ı uzatıyor.
+- `/odevler` en yüksek LCP: 1174 ms — render delay 803 ms. Supabase sorgu zinciri (3 paralel sorgu) ve büyük dev bundle birleşimi.
+- `/yoklama` ve `/anasayfa`'da **ForcedReflow** (48 ms) tespit edildi: JavaScript DOM değişiklikinden sonra geometrik özellik (offsetWidth vb.) sorguluyor. Kod kanalı: `[unattributed]` (muhtemelen Tailwind animasyonu veya sidebar collapse bileşeni).
+
+**Başlıca fırsatlar öncelik sırası:**
+1. **`sw.js` redirect hatası düzeltilmeli** — ServiceWorker kaydedilemiyor, offline/PWA işlevselliği kırık. Vercel route yapılandırması veya `next.config` `public` klasörü ayarı gözden geçirilmeli.
+2. **`manifest.json` sözdizimi hatası** — PWA manifest parse edilemiyor. Dosya içeriği doğrulanmalı.
+3. **ForcedReflow kaynağı belirlenmeli** — `/anasayfa`, `/odevler`, `/yoklama`'da 48 ms reflow var. Sidebar collapse veya animasyon bileşenlerinde `offsetWidth`/`getBoundingClientRect()` DOM mutation sonrası çağrılıyor olabilir; `requestAnimationFrame` içine alınmalı.
+4. **Büyük tek chunk** (`3w8d8k_dca5rp.js`, 227 KB decoded / 72.5 KB gzip): Route-level code splitting veya dinamik import ile public sayfaların JS yükü azaltılabilir. Render delay'in ana kaynağı bu bundle'ın parse süresi.
+5. **Yerel dev TTFB** (Supabase SSR, 370–500 ms): `riskEngine` waterfall `src/domains/dashboard/services/TeacherDashboardService.ts:27–37` üretimde SSR TTFB'ye katkıda bulunuyor; Task 2'de belirtilen paralel refactor TTFB'yi doğrudan azaltır.
+
+**Ölçüm kapsamı özeti:**
+- `/`, `/login`, `/gizlilik`: canlı site üzerinde Chrome DevTools MCP performance trace ile ölçüldü — gerçek sayılar.
+- `/anasayfa`, `/odevler`, `/yoklama`: yerel dev sunucu (localhost:3000) üzerinde ölçüldü; test kullanıcısıyla giriş yapıldı. Dev mod sayıları minifikasyonsuz bundle ve webpack JIT derleme nedeniyle prod değerlerinden önemli ölçüde yüksektir — yalnızca göreli karşılaştırma için kullanılmalı.
+- TBT ve INP: Chrome DevTools MCP performance trace özeti bu metrikleri raporlamıyor; ölçülemedi.
 
 ## 4. Önceliklendirilmiş Aksiyon Listesi
 _(Task 5)_
