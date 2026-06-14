@@ -35,7 +35,7 @@ beforeEach(() => vi.clearAllMocks())
 
 describe('DashboardRepository — boş dizi guard\'ları', () => {
   it('getSubmissions([]): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getSubmissions([])
+    const result = await DashboardRepository.getSubmissions([], SCHOOL_ID)
     expect(result).toEqual({ data: [] })
     expect(createClient).not.toHaveBeenCalled()
   })
@@ -59,13 +59,13 @@ describe('DashboardRepository — boş dizi guard\'ları', () => {
   })
 
   it('getTodayClassAttendance([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getTodayClassAttendance([], '2026-06-07')
+    const result = await DashboardRepository.getTodayClassAttendance([], '2026-06-07', SCHOOL_ID)
     expect(result).toEqual({ data: [] })
     expect(createClient).not.toHaveBeenCalled()
   })
 
   it('getAttendanceTrend([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getAttendanceTrend([], '2026-01-01')
+    const result = await DashboardRepository.getAttendanceTrend([], '2026-01-01', SCHOOL_ID)
     expect(result).toEqual({ data: [] })
     expect(createClient).not.toHaveBeenCalled()
   })

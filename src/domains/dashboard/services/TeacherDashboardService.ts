@@ -33,7 +33,7 @@ export const TeacherDashboardService = {
 
     const [weeklyResult, todayAttResult] = await Promise.all([
       DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
-      DashboardRepository.getTodayClassAttendance(classIds, today),
+      DashboardRepository.getTodayClassAttendance(classIds, today, schoolId),
     ])
 
     const classesWithAttToday = new Set((todayAttResult.data ?? []).map(a => (a as { class_id: string }).class_id))

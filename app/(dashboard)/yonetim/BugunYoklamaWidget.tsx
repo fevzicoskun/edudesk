@@ -56,7 +56,7 @@ export default async function BugunYoklamaWidget() {
   }
   const teacherIds = [...new Set([...takerByClass.values()].map(t => t.teacherId))]
   const { data: teacherProfiles } = teacherIds.length
-    ? await supabase.from('profiles').select('id, full_name').in('id', teacherIds)
+    ? await supabase.from('profiles').select('id, full_name').eq('school_id', school_id).in('id', teacherIds)
     : { data: [] }
   const teacherName = new Map((teacherProfiles ?? []).map(p => [p.id, p.full_name]))
 

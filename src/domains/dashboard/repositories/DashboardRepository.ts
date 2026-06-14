@@ -15,13 +15,14 @@ export const DashboardRepository = {
     return q
   },
 
-  async getSubmissions(hwIds: string[]) {
+  async getSubmissions(hwIds: string[], schoolId: string) {
     if (hwIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
       .in('homework_id', hwIds)
+      .eq('school_id', schoolId)
       .limit(5000)
   },
 
@@ -71,23 +72,25 @@ export const DashboardRepository = {
     await supabase.from('teacher_activity_log').insert({ ...row, meta: row.meta as Json | undefined })
   },
 
-  async getTodayClassAttendance(classIds: string[], todayStr: string) {
+  async getTodayClassAttendance(classIds: string[], todayStr: string, schoolId: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
       .from('attendance')
       .select('class_id')
       .in('class_id', classIds)
+      .eq('school_id', schoolId)
       .eq('date', todayStr)
   },
 
-  async getAttendanceTrend(classIds: string[], since: string) {
+  async getAttendanceTrend(classIds: string[], since: string, schoolId: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
     return supabase
       .from('attendance')
       .select('date, status')
       .in('class_id', classIds)
+      .eq('school_id', schoolId)
       .gte('date', since)
       .order('date')
       .limit(2000)

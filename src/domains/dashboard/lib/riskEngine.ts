@@ -132,7 +132,7 @@ export async function fetchRiskInputs(teacherId: string, schoolId: string) {
   const classIds  = [...new Set(homeworks.map(h => h.class_id))]
 
   const [subsResult, attResult, studentsResult] = await Promise.all([
-    DashboardRepository.getSubmissions(hwIds),
+    DashboardRepository.getSubmissions(hwIds, schoolId),
     DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId),
     DashboardRepository.getStudentsByClasses(classIds, schoolId),
   ])

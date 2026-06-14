@@ -20,7 +20,7 @@ export default async function KullanicilarPage() {
   const isMY = profile.role === 'mudur_yardimcisi'
   const isMudur = profile.role === 'mudur'
 
-  let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').order('full_name')
+  let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', profile.school_id).order('full_name')
   if (isMY) profilesQuery = profilesQuery.neq('role', 'mudur')
 
   const [{ data }, { data: sessionsRaw }, { data: schoolData }, { data: classesData }] = await Promise.all([
