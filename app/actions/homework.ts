@@ -14,6 +14,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { turkeyDate } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
@@ -91,6 +92,11 @@ export async function createHomework(_: unknown, formData: FormData) {
 
   if (succeeded.length === 0) return { error: 'Ödev oluşturulamadı' }
 
+  const logProfile = await getCurrentProfile()
+  if (logProfile?.id) {
+    await TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title })
+  }
+
   revalidatePath('/odevler')
   if (classIds.length === 1 && failedCount === 0 && succeeded[0]) redirect(`/odevler/${succeeded[0]}`)
   if (failedCount > 0) redirect(`/odevler?olusturuldu=${succeeded.length}&hatali=${failedCount}`)
@@ -161,6 +167,12 @@ export async function quickCreateHomework(
 
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
+
+  const logProfile = await getCurrentProfile()
+  if (logProfile?.id) {
+    void TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title }).catch(() => {})
+  }
+
   return { ids }
 }
 
@@ -193,6 +205,12 @@ export async function updateHomework(_: unknown, formData: FormData) {
   revalidatePath('/odevler')
   revalidatePath('/odevler/yeni')
   if (is_template) redirect('/odevler/yeni?guncellendi=1')
+
+  const logProfile = await getCurrentProfile()
+  if (logProfile?.id) {
+    await TeacherDashboardService.logActivity(logProfile.id, 'odev_guncellendi', { title: parsed.data.title })
+  }
+
   revalidatePath(`/odevler/${id}`)
   redirect(`/odevler/${id}?guncellendi=1`)
 }

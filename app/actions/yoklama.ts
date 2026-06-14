@@ -7,6 +7,7 @@ import { AttendanceService } from '@/src/domains/attendance/services/AttendanceS
 import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
+import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
 export type { AttendanceStatus } from '@/src/domains/attendance/types'
 
@@ -52,6 +53,9 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   }
 
   await AttendanceService.saveYoklama(classId, date, entries)
+  if (profile?.id) {
+    await TeacherDashboardService.logActivity(profile.id, 'yoklama_kaydedildi', { class_id: classId })
+  }
   revalidatePath('/yonetim')
   revalidatePath('/yoklama')
 }
