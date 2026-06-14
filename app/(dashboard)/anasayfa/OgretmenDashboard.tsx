@@ -35,6 +35,8 @@ export default async function OgretmenDashboard() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile) redirect('/login')
 
+  void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
+
   const metrics = await TeacherDashboardService.getDashboardMetrics(user.id)
 
   const today = new Date()
