@@ -17,6 +17,20 @@ export const getAbsentYearRows = cache(async (schoolId: string, yearStart: strin
   return data ?? []
 })
 
+// MYStatsWidget (sadece id+sayım) ve MYSolSutunWidget (id, full_name, subject, role + sıralı)
+// aynı profiles filtresini çekiyordu — üst-küme kolonlarıyla cache()'leyip request içi dedup sağlanır
+export const getSchoolTeachers = cache(async (schoolId: string) => {
+  const db = await createClient()
+  const { data, error } = await db
+    .from('profiles')
+    .select('id, full_name, subject, role')
+    .eq('school_id', schoolId)
+    .in('role', ['ogretmen', 'zumre_baskani'])
+    .order('full_name')
+  if (error) logger.error({ event: 'db_query_failed', query: 'getSchoolTeachers', school_id: schoolId, message: error.message }, 'Öğretmen sorgusu başarısız')
+  return data ?? []
+})
+
 export const getSessionRows = cache(async (schoolId: string) => {
   const db = await createClient()
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()

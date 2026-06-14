@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { subDays } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
-import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
+import { getAbsentYearRows, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 
 export default async function MYSolSutunWidget() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
@@ -13,17 +13,16 @@ export default async function MYSolSutunWidget() {
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [studentsRes, classesRes, profilesRes, absentYearRows, sessionRows] = await Promise.all([
+  const [studentsRes, classesRes, teachers, absentYearRows, sessionRows] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null).order('grade').order('name'),
-    supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']).order('full_name'),
+    getSchoolTeachers(school_id),
     getAbsentYearRows(school_id, yearStart),
     getSessionRows(school_id),
   ])
 
   const students = studentsRes.data ?? []
   const classes  = classesRes.data  ?? []
-  const teachers = profilesRes.data ?? []
 
   const absenceMap = new Map<string, number>()
   for (const a of absentYearRows) {

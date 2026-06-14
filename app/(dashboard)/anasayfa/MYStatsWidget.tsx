@@ -4,7 +4,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import { subDays, todayLocalISO } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
-import { getAbsentYearRows, getSessionRows } from '@/src/domains/dashboard/queries/schoolStats'
+import { getAbsentYearRows, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -33,8 +33,8 @@ export default async function MYStatsWidget() {
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [profilesRes, classesRes, studentsRes, todayAttRes, absentYearRows, sessionRows] = await Promise.all([
-    supabase.from('profiles').select('id').eq('school_id', school_id).in('role', ['ogretmen', 'zumre_baskani']),
+  const [teachers, classesRes, studentsRes, todayAttRes, absentYearRows, sessionRows] = await Promise.all([
+    getSchoolTeachers(school_id),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
@@ -42,7 +42,6 @@ export default async function MYStatsWidget() {
     getSessionRows(school_id),
   ])
 
-  const teachers      = profilesRes.data ?? []
   const classCount    = classesRes.count  ?? 0
   const totalStudents = studentsRes.count ?? 0
 
