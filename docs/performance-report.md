@@ -279,6 +279,24 @@ _Aşağıdaki liste bölüm 1–3 bulgularını etkiye göre sıralıyor. Her sa
 
 ---
 
+### 4.1 Uygulanan Düzeltmeler (Düzeltme Turu — 2026-06-14)
+
+Kapsam: 🔴 kritikler + düşük-efor 🟡'ler. Orta-efor (#4 waterfall) ve 🟢'ler ayrı tura bırakıldı.
+
+| # | Durum | Ne yapıldı |
+|---|-------|-----------|
+| 1 | ✅ | `proxy.ts:227` matcher'ına `sw\.js` ve `manifest\.json` eklendi — bu dosyalar artık middleware'e girmeyip doğru `Content-Type` ile doğrudan sunuluyor. ServiceWorker + PWA manifest düzeldi. |
+| 2 | ✅ | Migration `rls_initplan_wrap_auth_functions`: in-DB DO block ile **99 politikada** `auth.uid()`/`auth.role()` → `(select …)`. Doğrulama: `auth_rls_initplan` advisor **99 → 0**. RLS semantiği değişmedi (sadece initplan'a çevrildi). |
+| 5 | ✅ | Migration `drop_duplicate_indexes`: 4 özdeş index kopyası + 1 redundant unique constraint (`uq_permissions_ras`) düşürüldü. `duplicate_index` advisor **5 → 0**. |
+| 6 | ✅ | Migration `add_missing_fk_indexes`: 7 index'siz FK kolonuna covering index (nullable olanlar partial). `unindexed_foreign_keys` **54 → 47**. (Yeni index'ler trafik görene dek geçici olarak `unused_index`'te görünür.) |
+| 7 | ✅ | `getSchoolTeachers` (cache'li) eklendi (`schoolStats.ts`); `MYStatsWidget` + `MYSolSutunWidget` artık bu tek sorguyu paylaşıyor — request içi dedup ile bir `profiles` sorgusu elendi. |
+| 3 | ⏸️ ertelendi | **Olduğu gibi uygulanmadı.** `limit(100000)` kasıtlı (yıl boyu devamsızlık satırları `countAbsences`'a verilir); küçültmek sayımları sessizce bozar. Seçilen kolonlar zaten minimal — gerçek over-fetch yok. Doğru çözüm sunucu-taraflı `COUNT … GROUP BY` (RPC) — orta efor, ayrı tura. |
+| 4, 8, 9, 10 | ⏭️ kapsam dışı | Bu turda ele alınmadı (orta-efor / 🟢). |
+
+**Doğrulama:** TypeScript `tsc --noEmit` temiz; 610 unit test geçti; advisor toplamı ~242 → ~137.
+
+---
+
 ## 5. Baseline Metrikler
 
 _Bu bölüm bir sonraki tur karşılaştırması için bugünkü sayıları sabitler. Ölçüm tarihi: 2026-06-14._
