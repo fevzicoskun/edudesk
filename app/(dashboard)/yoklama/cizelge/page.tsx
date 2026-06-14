@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { schoolYearStart } from '@/src/shared/utils'
-import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import CizelgeClient from './CizelgeClient'
 
 export default async function CizelgePage() {
@@ -11,13 +11,19 @@ export default async function CizelgePage() {
 
   const isYonetici = ['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')
 
-  const { data: rawClasses } = await supabase
-    .from('classes')
-    .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .order('grade')
-    .order('name')
+  // classes ve teacher_classes birbirinden bağımsız — paralel çek (teacher_classes yalnızca profile.id'ye bağlı)
+  const [{ data: rawClasses }, tcRes] = await Promise.all([
+    supabase
+      .from('classes')
+      .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
+      .order('grade')
+      .order('name'),
+    isYonetici
+      ? Promise.resolve(null)
+      : supabase.from('teacher_classes').select('class_id').eq('teacher_id', profile.id),
+  ])
 
   let classes = (rawClasses ?? []).map(cls => ({
     id: cls.id,
@@ -29,30 +35,17 @@ export default async function CizelgePage() {
   }))
 
   if (!isYonetici) {
-    const { data: tcRows } = await supabase
-      .from('teacher_classes')
-      .select('class_id')
-      .eq('teacher_id', profile.id)
     const allowed = new Set([
       ...classes.filter(c => c.mentor_teacher_id === profile.id).map(c => c.id),
-      ...(tcRows ?? []).map(r => r.class_id),
+      ...(tcRes?.data ?? []).map(r => r.class_id),
     ])
     classes = classes.filter(c => allowed.has(c.id))
   }
 
   const allStudentIds = classes.flatMap(c => c.students.map(s => s.id))
-  const { data: yearRows } = allStudentIds.length > 0
-    ? await supabase
-        .from('attendance')
-        .select('student_id, status, date')
-        .eq('school_id', profile.school_id)
-        .in('student_id', allStudentIds)
-        .gte('date', schoolYearStart())
-        .in('status', ['absent', 'late', 'excused'])
-        .limit(100000)
-    : { data: [] as { student_id: string; status: string; date: string }[] }
-
-  const yearCounts = countAbsences(yearRows ?? [])
+  const yearCounts = allStudentIds.length > 0
+    ? await AttendanceRepository.getAbsenceCounts(supabase, profile.school_id, schoolYearStart())
+    : {}
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">

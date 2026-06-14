@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { schoolYearStart } from '@/src/shared/utils'
-import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import { buildReportRows } from '@/src/domains/attendance/lib/absenceReport'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import DevamsizlikExcelButton from './DevamsizlikExcelButton'
@@ -30,19 +30,14 @@ export default async function DevamsizlikRaporuPage() {
   const db    = await createClient()
   const since = schoolYearStart()
 
-  const [{ data: attRows }, { data: studentRows }] = await Promise.all([
-    db.from('attendance')
-      .select('student_id, status, date')
-      .eq('school_id', profile.school_id)
-      .gte('date', since)
-      .neq('status', 'present'),
+  const [counts, { data: studentRows }] = await Promise.all([
+    AttendanceRepository.getAbsenceCounts(db, profile.school_id, since),
     db.from('students')
       .select('id, full_name, student_number, classes(name)')
       .eq('school_id', profile.school_id)
       .is('deleted_at', null),
   ])
 
-  const counts   = countAbsences(attRows ?? [])
   const students = (studentRows ?? []).map(s => ({
     id:        s.id,
     fullName:  s.full_name,

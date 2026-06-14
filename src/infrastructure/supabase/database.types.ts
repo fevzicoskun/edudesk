@@ -3048,6 +3048,14 @@ export type Database = {
       can_manage_zumre_item: { Args: { item_branch: string }; Returns: boolean }
       can_revoke_tokens: { Args: never; Returns: boolean }
       can_see_zumre_item: { Args: { item_branch: string }; Returns: boolean }
+      count_absences_by_student: {
+        Args: { p_school_id: string; p_since: string }
+        Returns: {
+          student_id: string
+          unexcused: number
+          excused: number
+        }[]
+      }
       current_school_id: { Args: never; Returns: string }
       delete_school: { Args: { p_school_id: string }; Returns: undefined }
       find_school_by_slug: {
@@ -3102,6 +3110,14 @@ export type Database = {
       restore_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
+      }
+      school_teacher_activity: {
+        Args: { p_school_id: string; p_since: string }
+        Returns: {
+          teacher_id: string
+          has_homework: boolean
+          has_attendance: boolean
+        }[]
       }
       soft_delete: {
         Args: { p_id: string; p_table: string }

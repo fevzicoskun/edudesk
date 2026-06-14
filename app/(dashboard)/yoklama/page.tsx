@@ -6,7 +6,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
 import { type AttendanceStatus } from '@/app/actions/yoklama'
-import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
+import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
 import YoklamaClient from './YoklamaClient'
 
@@ -15,13 +15,20 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')
 
-  const { data: rawClasses } = await supabase
-    .from('classes')
-    .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .order('grade')
-    .order('name')
+  // classes ve teacher_classes birbirinden bağımsız — paralel çek (teacher_classes yalnızca profile.id'ye bağlı)
+  const [{ data: rawClasses }, { data: tcRows }] = await Promise.all([
+    supabase
+      .from('classes')
+      .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
+      .order('grade')
+      .order('name'),
+    supabase
+      .from('teacher_classes')
+      .select('class_id')
+      .eq('teacher_id', profile.id),
+  ])
 
   const classes: ClassWithStudents[] = (rawClasses ?? []).map(cls => ({
     id: cls.id,
@@ -32,11 +39,6 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
       .filter(s => !s.deleted_at)
       .map(({ deleted_at: _omit, ...s }) => s),
   }))
-
-  const { data: tcRows } = await supabase
-    .from('teacher_classes')
-    .select('class_id')
-    .eq('teacher_id', profile.id)
 
   const myClassIds = new Set<string>([
     ...classes.filter(c => c.mentor_teacher_id === profile.id).map(c => c.id),
@@ -52,17 +54,10 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const studentIds = classes.flatMap(c => c.students.map(s => s.id))
   const todayISO   = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 
-  const [absencesRes, todayRes, takenTodayRes] = await Promise.all([
+  const [absenceCounts, todayRes, takenTodayRes] = await Promise.all([
     studentIds.length > 0
-      ? supabase
-          .from('attendance')
-          .select('student_id, status, date')
-          .eq('school_id', profile.school_id)
-          .in('student_id', studentIds)
-          .gte('date', schoolYearStart())
-          .in('status', ['absent', 'late', 'excused'])
-          .limit(100000)
-      : Promise.resolve({ data: [] as { student_id: string; status: string; date: string }[] }),
+      ? AttendanceRepository.getAbsenceCounts(supabase, profile.school_id, schoolYearStart())
+      : Promise.resolve({} as Record<string, AbsenceCount>),
     firstClassId
       ? supabase
           .from('attendance')
@@ -82,8 +77,6 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   ])
 
   const takenTodayIds = [...new Set((takenTodayRes.data ?? []).map(r => r.class_id))]
-
-  const absenceCounts: Record<string, AbsenceCount> = countAbsences(absencesRes.data ?? [])
 
   const initialStatuses: Record<string, AttendanceStatus> = {}
   for (const row of todayRes.data ?? []) {

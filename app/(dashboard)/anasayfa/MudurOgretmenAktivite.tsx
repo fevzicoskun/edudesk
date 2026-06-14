@@ -1,6 +1,7 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import { subDays } from '@/src/shared/date'
+import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 function getWeekRange(): { from: string; label: string; isWeekend: boolean } {
@@ -22,22 +23,13 @@ export default async function MudurOgretmenAktivite() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { from: weekAgoStr, label: periodLabel, isWeekend } = getWeekRange()
 
-  const [profilesRes, homeworksRes, attendanceRes] = await Promise.all([
-    supabase.from('profiles').select('id, full_name, subject, role')
-      .eq('school_id', school_id)
-      .in('role', ['ogretmen', 'zumre_baskani']),
-    supabase.from('homeworks').select('teacher_id')
-      .eq('school_id', school_id)
-      .gte('assigned_date', weekAgoStr)
-      .is('deleted_at', null),
-    supabase.from('attendance').select('teacher_id')
-      .eq('school_id', school_id)
-      .gte('date', weekAgoStr),
+  const [teachers, { data: activity }] = await Promise.all([
+    getSchoolTeachers(school_id),
+    supabase.rpc('school_teacher_activity', { p_school_id: school_id, p_since: weekAgoStr }),
   ])
 
-  const teachers             = profilesRes.data ?? []
-  const teachersWithHomework = new Set((homeworksRes.data ?? []).map(h => h.teacher_id))
-  const teachersWithAtt      = new Set((attendanceRes.data ?? []).map(a => a.teacher_id))
+  const teachersWithHomework = new Set((activity ?? []).filter(a => a.has_homework).map(a => a.teacher_id))
+  const teachersWithAtt      = new Set((activity ?? []).filter(a => a.has_attendance).map(a => a.teacher_id))
 
   const rows = teachers
     .map(t => ({
