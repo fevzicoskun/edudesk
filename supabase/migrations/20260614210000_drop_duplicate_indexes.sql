@@ -1,0 +1,7 @@
+-- Perf raporu #5: 5 özdeş index çiftinin birer kopyasını kaldır (her çiftten biri korunur)
+DROP INDEX IF EXISTS public.idx_classes_active;            -- = idx_classes_school_grade (korunur)
+DROP INDEX IF EXISTS public.export_jobs_user_status;        -- = idx_export_jobs_user_status (korunur)
+DROP INDEX IF EXISTS public.idx_hw_submissions_student;     -- = idx_homework_submissions_student_id (korunur)
+DROP INDEX IF EXISTS public.homeworks_teacher_id_idx;       -- = idx_homeworks_teacher_id (korunur, FK kapsar)
+-- permissions: ikisi de UNIQUE CONSTRAINT — constraint olarak düşür (biri korunur)
+ALTER TABLE public.permissions DROP CONSTRAINT IF EXISTS uq_permissions_ras;  -- = permissions_resource_action_scope_key (korunur)
