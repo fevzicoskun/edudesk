@@ -339,7 +339,33 @@ Tüm rotalar "İyi" eşiği (2500 ms) çok altında, CLS 0.00. `/login` farkı �
 
 **Henüz ölçülmedi (opsiyonel):** Adım 3.2 (kimlik doğrulamalı `/anasayfa`, `/odevler`, `/yoklama` — Playwright login gerekir; baseline zaten yalnızca dev/göreli) ve Adım 3.4 (ForcedReflow — 14 Haz'da dev-only ölçülmüş, uygulama koduna atfedilemiyordu).
 
-**Sonuç:** 14 Haziran düzeltme turu production'da **tam olarak tuttu**; regresyon yok. Kalan en büyük kaldıraç 32 `multiple_permissive_policies` (yapısal, ertelenmişti).
+**Sonuç:** 14 Haziran düzeltme turu production'da **tam olarak tuttu**; regresyon yok. Kalan en büyük kaldıraç 32 `multiple_permissive_policies` (yapısal, ertelenmişti) — aşağıda 4.3'te çözüldü.
+
+---
+
+### 4.3 RLS Permissive Konsolidasyonu — Tamamlandı (2026-06-15)
+
+Bölüm 4.2'de kalan 32 `multiple_permissive_policies` (8 tablo) iki aşamada tamamen elendi. Migration dosyaları: `20260615120000_drop_redundant_permissive_policies_tier1.sql`, `20260615120001_consolidate_permissive_policies_tier2.sql`.
+
+**Tip 1 — saf gereksizlik (5 DROP, anlam değişmez, 32→15):** Her silinen policy kalan birinin strict alt kümesi:
+- `notification_preferences` "okuyabilir" (SELECT) ≡ ALL policy'nin USING'i
+- `teacher_classes` `tc_school_read` ≡ `tc_school_write` (ALL) USING'i
+- `permissions` `permissions_read_all` (authenticated,true) ⊆ `permissions_select` (public,true)
+- `roles` `roles_read_school` ⊆ `roles_select` (public,true)
+- `school_meetings` `mudur_write` ≡ `yonetici` (current_school_id() = profil school_id → özdeş; yonetici public/daha geniş)
+
+**Tip 2 — yapısal (FOR ALL → komut-bazlı + SELECT'i OR ile birleştir, 15→0):** `push_subscriptions`, `zumre_meeting_templates`, `school_meetings`, `user_roles` tablolarındaki `FOR ALL` politikaları INSERT/UPDATE/DELETE'e bölündü; SELECT tek politikaya indirildi. Eklenen tüm `auth.*` çağrıları `(select …)` ile sarıldı → yeni initplan uyarısı yok.
+
+| Metrik | 4.2 (önce) | 4.3 (sonra) |
+|--------|-----------:|------------:|
+| `multiple_permissive_policies` | 32 | **0** ✅ |
+| `auth_rls_initplan` | 0 | **0** (korundu) |
+| `duplicate_index` | 0 | 0 |
+| `unindexed_foreign_keys` | 47 | 47 |
+| `unused_index` | 16 | 16 |
+| **Performans advisor toplamı** | 78 | **63** |
+
+Doğrulama: `get_advisors(performance)` → `multiple_permissive` ve `auth_rls_initplan` kategorileri tamamen yok; her tablo+komut için tek permissive policy (pg_policies ile teyit). Erişim semantiği değişmedi (her değişiklik OR-eşdeğer veya strict-subset).
 
 ---
 
