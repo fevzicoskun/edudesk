@@ -300,6 +300,49 @@ Kapsam: 1. turda 🔴 kritikler + düşük-efor 🟡'ler (#1,2,5,6,7); 2. turda 
 
 ---
 
+### 4.2 Production Doğrulama Turu (2026-06-15)
+
+_Düzeltmeler production'a deploy edildikten sonra (`dpl_5qvoV9BPcVNkyADG7bdZNZhCHATF`) canlı ortamda yeniden ölçüldü. Yöntem: Supabase MCP advisor + Chrome DevTools MCP (canlı `myedudesk.com.tr`)._
+
+**Adım 1 — DB advisor (production, canlı):**
+
+| Kategori | Seviye | 2026-06-15 | 14 Haz baseline | Fark |
+|----------|--------|-----------:|----------------:|-----:|
+| `auth_rls_initplan` | WARN | **0** | 99 | −99 ✅ |
+| `duplicate_index` | WARN | **0** | 5 | −5 ✅ |
+| `multiple_permissive_policies` | WARN | 32 | 70 | −38 |
+| `unindexed_foreign_keys` | INFO | 47 | 54 | −7 |
+| `unused_index` | INFO | 16 | 14 | +2 (yeni FK index'leri trafik görene dek beklenen) |
+| **Toplam** | | **95** | 242 | **−61%** |
+
+**Adım 2 — Server sorgu (statik):** `limit(100000)` pattern'ı tüm kod tabanında **kalmadı**; `count_absences_by_student` / `school_teacher_activity` RPC'leri yoklama, cizelge, devamsizlik, MudurOgretmenAktivite sayfalarında + `AttendanceRepository`'de aktif. `proxy.ts:227` matcher `sw\.js` + `manifest\.json` muafiyetini içeriyor.
+
+**Adım 3.3 — PWA (canlı, eski #1 kritik bug):**
+
+| Kontrol | Sonuç |
+|---------|-------|
+| `GET /manifest.json` | 200/304, `Content-Type: application/manifest`, geçerli JSON gövdesi (HTML redirect yok) |
+| `GET /sw.js` | 200, `application/javascript; charset=utf-8`, gerçek JS içeriği |
+| ServiceWorker | Kayıtlı + **activated**, scope `https://myedudesk.com.tr/` |
+| `link[rel=manifest]` | DOM'da mevcut |
+| Console error/warn | **0** (14 Haz'da SecurityError + manifest parse error vardı) |
+
+**Adım 3.1 — Canlı public LCP (Chrome DevTools MCP performance trace):**
+
+| Rota | LCP (2026-06-15) | LCP (5.1 baseline) | CLS | TTFB | Render delay |
+|------|-----------------:|-------------------:|-----|-----:|-------------:|
+| `/` | 292 ms | 309–317 ms | 0.00 | 239 ms | 53 ms |
+| `/login` | 362 ms | 252 ms | 0.00 | 295 ms | 67 ms |
+| `/gizlilik` | 267 ms | 284 ms | 0.00 | 207 ms | 61 ms |
+
+Tüm rotalar "İyi" eşiği (2500 ms) çok altında, CLS 0.00. `/login` farkı ölçüm gürültüsü (soğuk cache + ağ jitter). LCP'nin baskın bileşeni TTFB; render delay 14 Haz'a göre belirgin düştü. ServiceWorker artık aktif olduğundan tekrar ziyaretlerde statik varlıklar SW cache'inden geliyor.
+
+**Henüz ölçülmedi (opsiyonel):** Adım 3.2 (kimlik doğrulamalı `/anasayfa`, `/odevler`, `/yoklama` — Playwright login gerekir; baseline zaten yalnızca dev/göreli) ve Adım 3.4 (ForcedReflow — 14 Haz'da dev-only ölçülmüş, uygulama koduna atfedilemiyordu).
+
+**Sonuç:** 14 Haziran düzeltme turu production'da **tam olarak tuttu**; regresyon yok. Kalan en büyük kaldıraç 32 `multiple_permissive_policies` (yapısal, ertelenmişti).
+
+---
+
 ## 5. Baseline Metrikler
 
 _Bu bölüm bir sonraki tur karşılaştırması için bugünkü sayıları sabitler. Ölçüm tarihi: 2026-06-14._
