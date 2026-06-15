@@ -100,19 +100,6 @@ Her aşılan sorgu için log:
 
 ---
 
-## Export Failure Logging
-
-`src/domains/export/functions/exportDeadLetter.ts`
-
-Export job max retry'dan sonra başarısız olursa:
-
-1. `ExportRepository.markDeadLetter(jobId, errorMessage)`
-2. `logger.error(...)` — structured log
-3. `securityLog('export.dead_letter', {...})` — güvenlik logu
-4. `withCorrelationId(newCorrelationId(), ...)` ile correlation context açılır
-
----
-
 ## Auth Anomaly Logging
 
 `src/shared/authorization/server.ts` → `requireAbility()`
@@ -127,7 +114,6 @@ throw new AuthorizationError({ code: 'UNAUTHENTICATED', permission: '*' })
 | Event | Nerede |
 |---|---|
 | `auth.unauthenticated_server_action` | `requireAbility()` |
-| `export.dead_letter` | `exportDeadLetterFn` |
 | Diğerleri | `logger.ts` içindeki mevcut çağrılar |
 
 ---

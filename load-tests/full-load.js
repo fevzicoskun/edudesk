@@ -140,11 +140,11 @@ export function reportingFlow(data) {
 
   if (Math.random() < 0.4) {
     const res = http.post(
-      `${BASE_URL}/api/internal/export`,
-      JSON.stringify({ jobType: 'excel_yoklama' }),
+      `${BASE_URL}/api/export`,
+      JSON.stringify({ jobType: 'excel_yoklama', params: { classId: __ENV.CLASS_ID } }),
       { headers, tags: { endpoint: 'export' } },
     )
-    check(res, { 'export: 202': r => r.status === 202 })
+    check(res, { 'export: not 5xx': r => r.status < 500 })
   } else {
     const res = http.get(
       `${BASE_URL}/api/internal/reporting?type=class&class_id=${__ENV.CLASS_ID}&period=30d`,

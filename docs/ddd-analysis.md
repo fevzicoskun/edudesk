@@ -73,7 +73,7 @@
 | tüm servisler → rbac | HomeworkService vb. | PermissionService / Ability | Shared Kernel | Doğru pattern |
 | mentor_reports → classes | DB FK | `mentor_teacher_id`, `class_id` | DB FK | Risk (aşağıda) |
 | app/actions/classes.ts | addMentorReport | Inline Supabase | Action layer | Yanlış yer |
-| export → tüm tablolar | ExportService | Direct SQL | DB | Acceptable for reporting |
+| export → tüm tablolar | XlsxBuilder (senkron `/api/export`) | Direct SQL | DB | Acceptable for reporting |
 
 ### Kritik coupling: Mentor + Classes
 `mentor_teacher_id` kolonu `classes` tablosundadır. `mentor_reports` ise ayrı tablodadır ama sınıfa FK'ı var. Bu, mentor kavramının iki farklı yerde yaşadığı anlamına gelir:

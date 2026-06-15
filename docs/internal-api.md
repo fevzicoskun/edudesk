@@ -98,64 +98,20 @@ Her endpoint aynı zarfı kullanır:
 
 ## Endpoint Referansı
 
-### POST `/api/internal/export`
+### Export (Excel) → `POST /api/export`
 **Yetki:** `P.EXPORT.CREATE`  
-**Açıklama:** Asenkron dışa aktarma işi kuyruğa alır.
+**Açıklama:** Tüm Excel dışa aktarmaları **senkron** olarak bu endpoint'ten yapılır; dosya doğrudan response gövdesinde (`.xlsx`) döner — kuyruk/polling yoktur. Bu endpoint `/api/internal/*` zarfını kullanmaz, dosyayı `Content-Disposition: attachment` ile gönderir.
 
 Request:
 ```json
 {
-  "jobType": "excel_odevler" | "excel_notlar" | "excel_sinif_ogrencileri",
-  "params": { "class_id": "uuid", "since": "2026-01-01" }
+  "jobType": "excel_odevler" | "excel_yoklama" | "excel_notlar" | "excel_sinif_ogrencileri",
+  "params": { "classId": "uuid", "since": "2026-01-01", "until": "2026-06-15" }
 }
 ```
-Response `202`:
-```json
-{ "ok": true, "data": { "jobId": "uuid" }, "meta": { ... } }
-```
+Response `200`: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (ikili dosya)
 
-> **Not:** Yoklama Excel'i (`excel_yoklama`) bu asenkron kuyruğa **dahil değildir**; senkron `POST /api/export` üzerinden dosyayı doğrudan döndürür.
-
----
-
-### GET `/api/internal/export?jobId=<uuid>`
-**Yetki:** Herhangi bir oturum (kendi işleri)  
-**Açıklama:** Export işinin mevcut durumunu döner.
-
-Response `200`:
-```json
-{
-  "ok": true,
-  "data": {
-    "id": "uuid",
-    "status": "pending" | "processing" | "done" | "error" | "cancelled" | "dead_letter",
-    "progress": 60,
-    "progressStep": "Excel oluşturuluyor…",
-    "resultUrl": "https://…",
-    "errorMsg": null,
-    "jobType": "excel_odevler",
-    "attempt": 1,
-    "createdAt": "…",
-    "updatedAt": "…"
-  },
-  "meta": { ... }
-}
-```
-
----
-
-### DELETE `/api/internal/export`
-**Yetki:** Herhangi bir oturum (kendi işleri)  
-**Açıklama:** Çalışan veya bekleyen export işini iptal eder.
-
-Request:
-```json
-{ "jobId": "uuid" }
-```
-Response `200`:
-```json
-{ "ok": true, "data": { "cancelled": true, "jobId": "uuid" }, "meta": { ... } }
-```
+> **Tarihçe:** Önceden bir `/api/internal/export` asenkron kuyruğu (Inngest + `export_jobs` tablosu) vardı ancak hiçbir UI tarafından kullanılmıyordu; 2026-06-15'te kaldırıldı. Tek standart senkron `/api/export`.
 
 ---
 
