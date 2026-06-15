@@ -8,8 +8,6 @@ import { HomeworkService } from '@/src/domains/homework/services/HomeworkService
 import type { HomeworkTemplate, ActionResult } from '@/src/shared/types'
 import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { getAbility } from '@/src/shared/authorization/server'
-import { P } from '@/src/shared/permissions'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { turkeyDate } from '@/src/lib/email-utils'
@@ -227,21 +225,11 @@ export async function deleteHomework(id: string): Promise<ActionResult> {
 export async function bulkDeleteHomeworks(ids: string[]): Promise<{ deleted: number; error?: string }> {
   const validIds = ids.filter(id => UUID.safeParse(id).success)
   if (validIds.length === 0) return { deleted: 0 }
-  const ability = await getAbility()
-  if (!ability) return { deleted: 0, error: 'Giriş gerekli' }
-  if (ability.cannot(P.HOMEWORK.DELETE)) return { deleted: 0, error: 'Bu işlem için yetkiniz yok.' }
-  const supabase = await createClient()
-  const { error, count } = await supabase
-    .from('homeworks')
-    .update({ deleted_at: new Date().toISOString() })
-    .in('id', validIds)
-    .eq('teacher_id', ability.userId)
-    .eq('school_id', ability.schoolId)
-    .is('deleted_at', null)
-  if (error) return { deleted: 0, error: error.message }
+  const result = await HomeworkService.bulkDelete(validIds)
+  if (result.error) return result
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
-  return { deleted: count ?? validIds.length }
+  return { deleted: result.deleted }
 }
 
 export async function restoreHomework(id: string): Promise<ActionResult> {

@@ -193,6 +193,21 @@ export const HomeworkService = {
     return {}
   },
 
+  async bulkDelete(ids: string[]): Promise<{ deleted: number; error?: string }> {
+    const ability = await getAbility()
+    if (!ability) return { deleted: 0, error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.DELETE)) return { deleted: 0, error: 'Bu işlem için yetkiniz yok.' }
+
+    const { error, count } = await HomeworkRepository.bulkSoftDeleteHomeworks(
+      ids, ability.userId, ability.schoolId,
+    )
+    if (error) {
+      logger.error({ schoolId: ability.schoolId, code: error.code }, 'bulkDelete DB hatası')
+      return { deleted: 0, error: error.message }
+    }
+    return { deleted: count ?? ids.length }
+  },
+
   async restoreHomework(id: string): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

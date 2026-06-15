@@ -151,6 +151,17 @@ export const HomeworkRepository = {
       .eq('id', homeworkId).eq('school_id', schoolId)
   },
 
+  // Öğretmen kendi ödevlerini toplu siler — teacher_id ile sınırlı
+  async bulkSoftDeleteHomeworks(ids: string[], teacherId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('homeworks')
+      .update({ deleted_at: new Date().toISOString(), deleted_by: teacherId })
+      .in('id', ids)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+  },
+
   async restoreHomework(homeworkId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('homeworks')

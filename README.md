@@ -16,7 +16,7 @@ Türk ilk/ortaöğretim okulları için öğretmen yönetim platformu. Ödev tak
 | Auth | Supabase SSR + PKCE |
 | E-posta | Resend |
 | Arka plan işler | Inngest |
-| Test | Vitest (563 unit) + Playwright (8 E2E spec) |
+| Test | Vitest (610 unit) + Playwright (8 E2E spec) |
 | Deploy | Vercel |
 
 ---
@@ -102,7 +102,7 @@ Her rol üstündeki rolün tüm izinlerini miras alır. İzinler `P.RESOURCE.ACT
 
 ```bash
 npm run dev           # localhost:3000
-npm run test:unit     # hızlı unit testler (409 test)
+npm run test:unit     # hızlı unit testler (610 test)
 npm run test          # tüm testler
 npx vitest run tests/vitest/unit/path/to/file.test.ts  # tek dosya
 npx tsc --noEmit      # tip kontrolü

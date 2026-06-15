@@ -105,7 +105,7 @@ Her endpoint aynı zarfı kullanır:
 Request:
 ```json
 {
-  "jobType": "excel_odevler" | "excel_yoklama" | "excel_mufredat" | "excel_notlar" | "excel_sinif_ogrencileri",
+  "jobType": "excel_odevler" | "excel_notlar" | "excel_sinif_ogrencileri",
   "params": { "class_id": "uuid", "since": "2026-01-01" }
 }
 ```
@@ -113,6 +113,8 @@ Response `202`:
 ```json
 { "ok": true, "data": { "jobId": "uuid" }, "meta": { ... } }
 ```
+
+> **Not:** Yoklama Excel'i (`excel_yoklama`) bu asenkron kuyruğa **dahil değildir**; senkron `POST /api/export` üzerinden dosyayı doğrudan döndürür.
 
 ---
 
