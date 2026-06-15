@@ -1,4 +1,4 @@
-const APP_SHELL = 'app-shell-v1'
+const APP_SHELL = 'app-shell-v2'
 const STATIC_CACHE = 'static-v1'
 const OFFLINE_URL = '/offline'
 
