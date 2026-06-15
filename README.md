@@ -91,10 +91,11 @@ Her rol üstündeki rolün tüm izinlerini miras alır. İzinler `P.RESOURCE.ACT
 
 ### Altyapı
 - Structured logging (Pino)
-- Export jobs: Excel export kuyruklu, progress takip
+- Excel export: senkron `POST /api/export` (tek standart, dosya doğrudan döner)
 - Web Push bildirimleri (Inngest, SW)
 - Audit log
 - Zod env validation
+- Çok-kiracılı güvenlik: tüm view'ler `security_invoker`, RLS okul kapsamına kilitli
 
 ---
 

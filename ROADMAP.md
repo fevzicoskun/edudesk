@@ -38,12 +38,19 @@
 
 ### Altyapı & Kalite
 - [x] Supabase typed client (`database.types.ts`)
-- [x] 409 unit test + 8 Playwright E2E spec
+- [x] 600 unit test + 8 Playwright E2E spec
 - [x] Structured logging (Pino, 5 domain)
 - [x] Web Push bildirimleri
 - [x] Platform admin paneli (okul/tenant yönetimi)
 - [x] Güvenlik: XSS, cross-tenant, RBAC düzeltmeleri (17 bulgu)
-- [x] Performans: N+1 giderildi, pagination, lazy charts
+- [x] Performans: N+1 giderildi, pagination, lazy charts, RLS konsolidasyonu (advisor 242→63)
+
+### Sertleştirme & Temizlik (2026-06-15)
+- [x] Export tek standarda indirildi — kullanılmayan async kuyruk (`export_jobs`, Inngest exportXlsx) silindi, tek senkron `/api/export`
+- [x] `schools` abonelik kolonları eklendi (plan/trial_ends_at/suspended_*) → /ayarlar kartı düzeldi
+- [x] **Kritik güvenlik:** `active_*` + `tenant_metrics` view'lerinde `security_invoker=on` — anon kiracı izolasyonu açığı kapatıldı
+- [x] 10 fonksiyona sabit `search_path`, notifications INSERT policy service_role'e kısıt, schedule-files geniş listeleme kaldırıldı
+- [x] Güvenlik advisor: ERROR 4→0
 
 ---
 
@@ -67,9 +74,23 @@
 
 ---
 
+## Faz 4 — Abonelik & Faturalama (sıradaki büyük hamle)
+
+EdTech'in en büyük açığı; DB temeli hazır (`schools.plan` / `trial_ends_at` / `suspended_*`).
+
+- [ ] **Stripe entegrasyonu** — okul abonelik planları (free/starter/pro/enterprise)
+- [ ] Plan bazlı kota/özellik kapısı (öğretmen/öğrenci limiti)
+- [ ] Deneme süresi (`trial_ends_at`) ve süre dolunca askıya alma akışı
+- [ ] Faturalama webhook'ları (Inngest) + ödeme başarısız → `status=suspended`
+- [ ] Pro plana geçişte: Supabase "Leaked password protection" toggle'ını aç (Free'de kilitli)
+
+---
+
 ## Teknik Borç
 
 - [ ] Playwright E2E kapsamını genişlet (modal, status update, matrix)
 - [x] 9 `as unknown as` Supabase join cast → 0'a indirildi (kalite sprinti)
 - [x] 7 dosya 300+ satır → bölündü (kalite sprinti)
 - [ ] `app/platform/actions.ts` N+1 pattern → batched query
+- [ ] `active_*` view'leri migration geçmişinde yok (drift) — özellik gerekince CREATE VIEW migration'a eklenmeli
+- [ ] Güvenlik advisor kalan 52 WARN: SECURITY DEFINER RLS yardımcı fonksiyonları (bilerek bırakıldı — revoke RLS'i kırar)
