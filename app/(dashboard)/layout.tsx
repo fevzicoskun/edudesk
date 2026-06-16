@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Sidebar from '@/components/layout/Sidebar'
+import TopBar from '@/components/layout/TopBar'
 import { ToastProvider } from '@/components/Toast'
 import QuickAddDrawer from '@/components/homework/QuickAddDrawer'
 import CommandPalette from '@/components/CommandPalette'
@@ -26,7 +27,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="print:hidden">
           <Sidebar profile={profile} email={user.email ?? ''} />
         </div>
-        <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0">{children}</main>
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <div className="print:hidden">
+            <TopBar userId={profile?.id} />
+          </div>
+          <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0">{children}</main>
+        </div>
       </div>
       <div className="print:hidden">
         {isTeachingRole(profile?.role) && <QuickAddDrawer />}

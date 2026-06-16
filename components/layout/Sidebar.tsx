@@ -155,28 +155,8 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             </div>
           )}
           <div className={`flex items-center gap-1 ${collapsed ? 'w-full justify-center flex-col' : 'shrink-0'}`}>
-            <NotificationBell align="left" userId={profile?.id} />
             <ThemeToggle />
           </div>
-        </div>
-
-        {/* Search trigger */}
-        <div className="px-2 py-2 border-b border-gray-100 dark:border-slate-800">
-          <button
-            onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))}
-            title={collapsed ? 'Ara (Ctrl+K)' : undefined}
-            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-gray-400 dark:text-slate-500 bg-gray-50 dark:bg-slate-800/60 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors ${collapsed ? 'justify-center' : ''}`}
-          >
-            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            {!collapsed && (
-              <>
-                <span className="flex-1 text-left text-xs">Ara...</span>
-                <kbd className="text-[10px] border border-gray-200 dark:border-slate-700 rounded px-1">⌘K</kbd>
-              </>
-            )}
-          </button>
         </div>
 
         {/* Nav */}
