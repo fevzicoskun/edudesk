@@ -26,7 +26,7 @@ export default function LandingHowItWorks() {
         <div className="grid gap-8 sm:grid-cols-3">
           {STEPS.map((s) => (
             <div key={s.num} className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-700">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-100 text-2xl font-bold text-blue-700">
                 {s.num}
               </div>
               <h3 className="mb-2 text-lg font-semibold text-stone-900">{s.title}</h3>

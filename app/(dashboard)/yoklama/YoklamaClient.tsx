@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react'
-import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
+import { isYoklamaTimeLocked } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
@@ -120,12 +120,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     if (canEditAfterLock) return 'open'
     const todayTR = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
     if (date < todayTR) return 'date_locked'
-    const parts    = new Intl.DateTimeFormat('en', {
-      timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hour12: false,
-    }).formatToParts(now)
-    const trHour   = parseInt(parts.find(p => p.type === 'hour')!.value)   % 24
-    const trMinute = parseInt(parts.find(p => p.type === 'minute')!.value)
-    if (trHour > YOKLAMA_LOCK_HOUR || (trHour === YOKLAMA_LOCK_HOUR && trMinute >= YOKLAMA_LOCK_MINUTE)) return 'time_locked'
+    if (isYoklamaTimeLocked(now)) return 'time_locked'
     return 'open'
   }, [canEditAfterLock, date, now])
 

@@ -17,7 +17,7 @@ export default function LandingFooter() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="WhatsApp'tan bilgi al (yeni sekmede açılır)"
-          className="inline-block rounded-xl bg-emerald-600 px-8 py-4 text-base font-semibold text-white hover:bg-emerald-700 transition-colors"
+          className="inline-block rounded-xl bg-blue-600 px-8 py-4 text-base font-semibold text-white hover:bg-blue-700 transition-colors"
         >
           📱 WhatsApp&apos;tan Bilgi Al
         </a>

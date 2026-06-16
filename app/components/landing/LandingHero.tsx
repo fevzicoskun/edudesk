@@ -2,14 +2,14 @@ import Link from 'next/link'
 
 export default function LandingHero() {
   return (
-    <section className="bg-gradient-to-b from-emerald-50 to-stone-50 px-4 py-20 text-center">
+    <section className="bg-gradient-to-b from-blue-50 to-stone-50 px-4 py-20 text-center">
       <div className="mx-auto max-w-3xl">
-        <span className="mb-4 inline-block rounded-full bg-emerald-100 px-4 py-1 text-sm font-medium text-emerald-800">
+        <span className="mb-4 inline-block rounded-full bg-blue-100 px-4 py-1 text-sm font-medium text-blue-800">
           Türk okulları için tasarlandı
         </span>
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl">
           Okulunuzun tüm takibini{' '}
-          <span className="text-emerald-600">tek ekranda</span> yapın
+          <span className="text-blue-600">tek ekranda</span> yapın
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-stone-600">
           Yoklama, ödev, veli iletişimi ve zümre toplantıları — hepsi bir arada.

@@ -4,16 +4,33 @@ import type { YoklamaDurumItem } from '@/src/domains/dashboard/types'
 interface Props {
   yoklamaDurumu: YoklamaDurumItem[]
   bugunHwSayisi: number
+  /** 10:30 geçti ve kullanıcı kilit sonrası düzenleyemiyor → CTA "al" demesin */
+  yoklamaLocked?: boolean
 }
 
-export default function HizliAksiyonlar({ yoklamaDurumu, bugunHwSayisi }: Props) {
+export default function HizliAksiyonlar({ yoklamaDurumu, bugunHwSayisi, yoklamaLocked = false }: Props) {
   const eksikYoklama = yoklamaDurumu.filter(c => !c.alindi)
   const firstEksik = eksikYoklama[0]
 
   return (
     <div className="flex flex-wrap gap-2 mb-5">
       {/* Yoklama al — en öncelikli aksiyon */}
-      {firstEksik ? (
+      {firstEksik && yoklamaLocked ? (
+        /* Kilitli: alınamayacağı için kırmızı "al" yerine nötr "kilitli" rozeti.
+           Yine /yoklama'ya gider — orada kilit banner'ı + müdür yardımcısı yönlendirmesi var. */
+        <Link
+          href="/yoklama"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 text-amber-700 dark:text-amber-400 text-xs font-semibold border border-amber-200 dark:border-amber-800 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+          Yoklama kilitli — {firstEksik.className}
+          {eksikYoklama.length > 1 && (
+            <span className="ml-0.5 bg-black/5 dark:bg-white/10 rounded px-1 text-[10px]">+{eksikYoklama.length - 1}</span>
+          )}
+        </Link>
+      ) : firstEksik ? (
         <Link
           href="/yoklama"
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-xs font-semibold shadow-sm transition-colors"

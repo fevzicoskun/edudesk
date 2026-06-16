@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
+import { usePathname } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 import { quickCreateHomework, getHomeworkTemplates } from '@/app/actions/homework'
 import { getMyClasses } from '@/app/actions/classes'
@@ -34,6 +35,10 @@ export default function QuickAddDrawer() {
   const [error, setError]                     = useState<string | null>(null)
   const [isPending, startTransition]          = useTransition()
   const { toast }                             = useToast()
+  const pathname                              = usePathname()
+
+  // Yoklama ekranında ödev FAB'ı hem alakasız hem de satır aksiyon butonlarını kapatıyor → gizle
+  const hidden = pathname?.startsWith('/yoklama') ?? false
 
   useEffect(() => {
     if (!open || classes.length > 0) return
@@ -95,6 +100,8 @@ export default function QuickAddDrawer() {
   }
 
   const today = new Date().toISOString().split('T')[0]
+
+  if (hidden) return null
 
   return (
     <>

@@ -14,13 +14,13 @@ export default function LandingNavbar() {
             target="_blank"
             rel="noopener noreferrer"
             aria-label="WhatsApp'tan bilgi al (yeni sekmede açılır)"
-            className="rounded-lg border border-emerald-600 px-4 py-2 text-sm font-medium text-emerald-700 hover:bg-emerald-50 transition-colors"
+            className="rounded-lg border border-blue-600 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-50 transition-colors"
           >
             WhatsApp&apos;tan Bilgi Al
           </a>
           <Link
             href="/login"
-            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-700 transition-colors"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             Giriş Yap →
           </Link>

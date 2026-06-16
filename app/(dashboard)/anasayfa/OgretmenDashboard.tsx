@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { addDays, format, parseISO } from '@/src/shared/date'
+import { isYoklamaTimeLocked } from '@/src/shared/constants/attendance'
 import { getGreeting } from '@/src/shared/utils'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
@@ -46,6 +47,10 @@ export default async function OgretmenDashboard() {
 
   const greeting = getGreeting(profile.full_name ?? '')
 
+  // Öğretmen 10:30'dan sonra bugünün yoklamasını düzenleyemez; CTA bunu yansıtmalı.
+  const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)
+  const yoklamaLocked = !canEditAfterLock && isYoklamaTimeLocked(today)
+
   const todayHws = metrics.homeworks.filter(h => h.due_date === todayStr)
   const upcomingHws = metrics.homeworks
     .filter(h => h.due_date > todayStr && h.due_date <= next7Str)
@@ -64,6 +69,7 @@ export default async function OgretmenDashboard() {
       <HizliAksiyonlar
         yoklamaDurumu={metrics.yoklamaDurumu}
         bugunHwSayisi={todayHws.length}
+        yoklamaLocked={yoklamaLocked}
       />
 
       {/* Gecikmiş Ödev Uyarısı */}
