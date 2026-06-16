@@ -79,4 +79,28 @@ export const MentorRepository = {
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
   },
+
+  // ── Sınıfa rehber öğretmen atama ────────────────────────────────────────
+
+  // Sınıfın mentor_teacher_id'sini set/temizle (teacherId null → kaldır)
+  async setClassMentor(classId: string, teacherId: string | null, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('classes')
+      .update({ mentor_teacher_id: teacherId })
+      .eq('id', classId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+  },
+
+  // Atanacak kişinin aynı okulda bir profil olduğunu doğrula (cross-tenant koruması)
+  async findSchoolStaff(profileId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', profileId)
+      .eq('school_id', schoolId)
+      .single()
+  },
 }

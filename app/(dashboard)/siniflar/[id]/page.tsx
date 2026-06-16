@@ -12,6 +12,7 @@ import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
 import PerformansWidget from './PerformansWidget'
+import MentorAtamaKarti from './MentorAtamaKarti'
 
 export default async function SinifDetayPage({
   params,
@@ -25,10 +26,10 @@ export default async function SinifDetayPage({
 
   const yearStart = schoolYearStart()
 
-  const [clsResult, studentsResult, absenceResult, viewCounts] = await Promise.all([
+  const [clsResult, studentsResult, absenceResult, viewCounts, teachersResult] = await Promise.all([
     supabase
       .from('classes')
-      .select('name')
+      .select('name, mentor_teacher_id')
       .eq('id', id)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
@@ -49,6 +50,12 @@ export default async function SinifDetayPage({
       .in('status', ['absent', 'late'])
       .gte('date', yearStart),
     VeliAnalyticsRepository.getVeliViewCounts(id, schoolId),
+    supabase
+      .from('profiles')
+      .select('id, full_name')
+      .eq('school_id', schoolId)
+      .in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi', 'mudur'])
+      .order('full_name'),
   ])
 
   if (!clsResult.data) notFound()
@@ -73,6 +80,10 @@ export default async function SinifDetayPage({
   }
 
   const canManage = profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
+
+  // Rehber öğretmen dropdown'ı için okul personeli (ad'ı olanlar)
+  const teachers = (teachersResult.data ?? [])
+    .filter((t): t is { id: string; full_name: string } => !!t.full_name)
 
   const maxNumber = students.reduce((max, s) => {
     const n = parseInt(s.student_number ?? '', 10)
@@ -124,6 +135,14 @@ export default async function SinifDetayPage({
             </button>
           </form>
         </div>
+      )}
+
+      {canManage && (
+        <MentorAtamaKarti
+          classId={id}
+          teachers={teachers}
+          currentMentorId={cls.mentor_teacher_id ?? null}
+        />
       )}
 
       <Suspense fallback={null}>

@@ -12,6 +12,8 @@ import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
 import NotGecmisiSection from './NotGecmisiSection'
 import DevamsizlikPaneli from './DevamsizlikPaneli'
+import RehberlikRaporlariSection from './RehberlikRaporlariSection'
+import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
@@ -45,7 +47,7 @@ export default async function OgrenciDetayPage({
   const schoolId = currentProfile.school_id
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
-    supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
+    supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     supabase.from('homework_submissions').select('id, status, updated_at, homeworks(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
@@ -99,6 +101,14 @@ export default async function OgrenciDetayPage({
   // Not defteri
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
   const grades = (gradesRes.data ?? []) as GradeRow[]
+
+  // Rehberlik görüşmeleri — sadece sınıfın atanmış mentörü + yöneticiler görür (RLS ile aynı)
+  const isManager = ['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(currentProfile.role)
+  const isClassMentor = !!cls.mentor_teacher_id && cls.mentor_teacher_id === currentProfile.id
+  const canSeeMentorReports = isManager || isClassMentor
+  const mentorReports = canSeeMentorReports && cls.mentor_teacher_id
+    ? await MentorService.getMentorReportsByStudent(studentId)
+    : []
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -232,6 +242,24 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
+
+      {canSeeMentorReports && (
+        cls.mentor_teacher_id ? (
+          <RehberlikRaporlariSection
+            studentId={studentId}
+            classId={classId}
+            reports={mentorReports}
+            canWrite={isClassMentor}
+          />
+        ) : isManager ? (
+          <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mt-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Rehberlik Görüşmeleri</h2>
+            <p className="text-sm text-gray-400 dark:text-slate-500">
+              Bu sınıfa henüz rehber öğretmen atanmadı. Sınıf sayfasından atayabilirsiniz.
+            </p>
+          </section>
+        ) : null
+      )}
 
       <NotGecmisiSection grades={grades} />
 

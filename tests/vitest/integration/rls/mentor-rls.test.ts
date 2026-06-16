@@ -2,9 +2,10 @@
  * Mentor RLS erişim sınır testleri.
  *
  * NOT: mentor_reports ve mentor_students tabloları DB'de mevcuttur (migrations/2026-05-19).
- * Uygulama katmanı (repository/service/UI) henüz yazılmamıştır — bu testler yalnızca
- * Supabase RLS politikalarının doğruluğunu doğrular, bir domain servisi test etmez.
- * Uygulama katmanı eklendiğinde bu dosya güncellenmeli ve unit testler de yazılmalıdır.
+ * Sınıf rehberliği (mentor_reports) uygulama katmanı 2026-06-17'de eklendi:
+ * MentorRepository/MentorService/app/actions/mentor.ts + sınıf detayı (atama) ve
+ * öğrenci profili (raporlar) UI'ı. assignClassMentor için ayrıca unit test vardır
+ * (tests/vitest/unit/mentor/). Bu dosya yalnızca RLS politikalarının doğruluğunu doğrular.
  *
  * İki ayrı mentor sistemi test edilir:
  *

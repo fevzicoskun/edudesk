@@ -17,6 +17,24 @@ const mentorStudentSchema = z.object({
   phone:       z.string().max(20).optional(),
 })
 
+// ── Sınıfa Rehber Öğretmen Atama ───────────────────────────────────────────────
+
+export async function assignClassMentor(
+  classId: string,
+  teacherId: string | null,
+): Promise<ActionResult> {
+  try {
+    UUID.parse(classId)
+    if (teacherId !== null) UUID.parse(teacherId)
+  } catch { return { error: 'Geçersiz ID' } }
+
+  const result = await MentorService.assignClassMentor(classId, teacherId)
+  if (result.error) return { error: result.error }
+
+  revalidatePath(`/siniflar/${classId}`)
+  return {}
+}
+
 // ── Mentor Raporları ─────────────────────────────────────────────────────────
 
 export async function addMentorReport(

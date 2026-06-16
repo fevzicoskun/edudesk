@@ -1,8 +1,31 @@
 import { MentorRepository } from '../repositories/MentorRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
+import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
 
+// Bir sınıfa rehber öğretmen atayabilen roller (yalnızca idare)
+const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi', 'admin']
+
 export const MentorService = {
+  // Sınıfa rehber öğretmen ata/kaldır — yalnızca müdür + müdür yardımcısı (+admin).
+  async assignClassMentor(classId: string, teacherId: string | null): Promise<{ error?: string }> {
+    const profile = await getCurrentProfile()
+    if (!profile?.school_id) return { error: 'Giriş gerekli' }
+    if (!MENTOR_ASSIGN_ROLES.includes(profile.role)) {
+      return { error: 'Bu işlem için yetkiniz yok' }
+    }
+
+    // Atanacak kişi varsa, aynı okulda olduğunu doğrula (cross-tenant koruması)
+    if (teacherId) {
+      const { data: staff } = await MentorRepository.findSchoolStaff(teacherId, profile.school_id)
+      if (!staff) return { error: 'Seçilen öğretmen bu okulda bulunamadı' }
+    }
+
+    const { error } = await MentorRepository.setClassMentor(classId, teacherId, profile.school_id)
+    if (error) return { error: error.message }
+    return {}
+  },
+
   // Sınıf öğrencisi için mentor raporu ekle.
   // Sadece sınıfın mentor_teacher_id'si ekleyebilir.
   async addMentorReport(data: {
