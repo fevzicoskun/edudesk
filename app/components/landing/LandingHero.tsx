@@ -12,7 +12,7 @@ export default function LandingHero() {
           <span className="text-blue-600">tek ekranda</span> yapın
         </h1>
         <p className="mt-6 text-lg leading-relaxed text-stone-600">
-          Yoklama, ödev, veli iletişimi ve zümre toplantıları — hepsi bir arada.
+          Yoklama, ödev ve veli iletişimi — hepsi bir arada.
         </p>
         <div className="mt-10 flex justify-center">
           <Link

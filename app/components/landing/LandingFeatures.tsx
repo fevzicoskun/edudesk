@@ -20,11 +20,6 @@ const FEATURES = [
     desc: 'Risk analizi, sınıf karşılaştırması ve trend grafikleriyle hızlı karar alın.',
   },
   {
-    icon: '📋',
-    title: 'Zümre Toplantıları',
-    desc: 'Toplantı notları, alınan kararlar ve müfredat planı dijital ortamda.',
-  },
-  {
     icon: '⚙️',
     title: 'Okul Yönetimi',
     desc: 'Öğretmen rolleri, okul ayarları ve sistem kontrolü tek panelde.',

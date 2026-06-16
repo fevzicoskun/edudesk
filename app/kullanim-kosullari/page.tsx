@@ -28,7 +28,7 @@ export default function KullanimKosullariPage() {
             <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">1. Hizmet Tanımı</h2>
             <p>
               EduDesk, özel ve resmi okullara yönelik dijital okul yönetim platformudur. Yoklama,
-              ödev takibi, not defteri, zümre yönetimi ve veli bilgilendirme başta olmak üzere
+              ödev takibi, not defteri ve veli bilgilendirme başta olmak üzere
               okul iş süreçlerini tek platformda yönetmeyi sağlar.
             </p>
             <p className="mt-2">

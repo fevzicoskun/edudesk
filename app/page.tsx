@@ -9,11 +9,11 @@ import LandingFooter from '@/app/components/landing/LandingFooter'
 export const metadata: Metadata = {
   title: 'EduDesk — Okulunuzun tüm takibi tek ekranda',
   description:
-    'Yoklama, ödev, veli iletişimi ve zümre toplantıları. Türk okulları için tasarlanmış okul yönetim platformu.',
+    'Yoklama, ödev ve veli iletişimi. Türk okulları için tasarlanmış okul yönetim platformu.',
   openGraph: {
     title: 'EduDesk — Okulunuzun tüm takibi tek ekranda',
     description:
-      'Yoklama, ödev, veli iletişimi ve zümre toplantıları. Türk okulları için tasarlanmış okul yönetim platformu.',
+      'Yoklama, ödev ve veli iletişimi. Türk okulları için tasarlanmış okul yönetim platformu.',
     url: 'https://myedudesk.com.tr',
     siteName: 'EduDesk',
     locale: 'tr_TR',
