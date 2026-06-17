@@ -62,7 +62,7 @@ export default async function KullanicilarPage() {
     : ['zumre_baskani', 'ogretmen']) as Role[]
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-4">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Kullanıcılar</h1>

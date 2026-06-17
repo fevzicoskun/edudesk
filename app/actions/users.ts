@@ -100,6 +100,22 @@ export async function removeTeacherClass(teacherId: string, classId: string): Pr
   return result
 }
 
+const changeSchema = z.object({
+  teacherId: UUID,
+  classId:   UUID,
+  assigned:  z.boolean(),
+})
+
+export async function saveTeacherClassChanges(
+  changes: { teacherId: string; classId: string; assigned: boolean }[]
+): Promise<ActionResult> {
+  const parsed = z.array(changeSchema).max(2000).safeParse(changes)
+  if (!parsed.success) return { error: 'Geçersiz istek' }
+  const result = await UserService.saveTeacherClassChanges(parsed.data)
+  if (!result.error) revalidatePath('/kullanicilar')
+  return result
+}
+
 export async function updateProfile(formData: FormData): Promise<ActionResult> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }

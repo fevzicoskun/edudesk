@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
 import RoleSelector from './RoleSelector'
 import DeleteButton from './DeleteButton'
-import TeacherClassModal, { type ClassRow } from './TeacherClassModal'
+import SinifAtamaMatrisi from './SinifAtamaMatrisi'
 
 export type UserRow = {
   id: string
@@ -19,7 +19,7 @@ export type SessionSummary = {
   lastSeen: string | null
 }
 
-export type { ClassRow }
+export type ClassRow = { id: string; name: string; grade: number | null }
 
 const ROLE_BADGE: Record<string, string> = {
   mudur:            'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300',
@@ -47,10 +47,16 @@ export default function KullaniciFiltreli({
   classes: ClassRow[]
   teacherAssignments: Record<string, string[]>
 }) {
+  const [tab, setTab]         = useState<'liste' | 'atama'>('liste')
   const [search, setSearch]   = useState('')
   const [subject, setSubject] = useState('')
   const [role, setRole]       = useState('')
   const [sortAsc, setSortAsc] = useState(true)
+
+  const teachers = useMemo(
+    () => users.filter(u => u.role === 'ogretmen' || u.role === 'zumre_baskani'),
+    [users]
+  )
 
   const uniqueSubjects = useMemo(() => {
     const s = new Set(users.map(u => u.subject).filter(Boolean) as string[])
@@ -76,6 +82,28 @@ export default function KullaniciFiltreli({
 
   return (
     <div className="space-y-3">
+      {canAssign && (
+        <div className="flex gap-1 border-b border-gray-200 dark:border-slate-700">
+          {([['liste', 'Liste'], ['atama', 'Sınıf Atamaları']] as const).map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                tab === key
+                  ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                  : 'border-transparent text-gray-500 dark:text-slate-400 hover:text-gray-800 dark:hover:text-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {canAssign && tab === 'atama' ? (
+        <SinifAtamaMatrisi teachers={teachers} classes={classes} initialAssignments={teacherAssignments} />
+      ) : (
+      <>
       {/* Filtre çubuğu */}
       <div className="flex flex-wrap gap-2 items-center">
         {/* İsim arama */}
@@ -203,13 +231,6 @@ export default function KullaniciFiltreli({
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3">
                       <div className="flex items-center gap-1 justify-end">
-                        {canAssign && ['ogretmen', 'zumre_baskani'].includes(u.role) && (
-                          <TeacherClassModal
-                            teacher={{ id: u.id, full_name: u.full_name }}
-                            classes={classes}
-                            initialAssigned={teacherAssignments[u.id] ?? []}
-                          />
-                        )}
                         {canAssign && !isSelf && (
                           isMudur
                             ? u.role !== 'mudur'
@@ -230,6 +251,8 @@ export default function KullaniciFiltreli({
       <p className="text-xs text-gray-400 dark:text-slate-500">
         {filtered.length} / {users.length} kullanıcı gösteriliyor
       </p>
+      </>
+      )}
     </div>
   )
 }

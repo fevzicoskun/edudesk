@@ -18,6 +18,9 @@ vi.mock('@/src/domains/users/repositories/UserRepository', () => ({
     getClassById:       vi.fn(),  // YENİ
     addTeacherClass:    vi.fn(),  // YENİ
     removeTeacherClass: vi.fn(),  // YENİ
+    getSchoolTeacherIds: vi.fn(), // matris
+    getSchoolClasses:    vi.fn(), // matris
+    addTeacherClasses:   vi.fn(), // matris
   },
 }))
 
@@ -266,6 +269,51 @@ describe('UserService.removeTeacherClass()', () => {
     const result = await UserService.removeTeacherClass(TARGET_ID, 'cls1')
     expect(result.error).toBeTruthy()
     expect(UserRepository.removeTeacherClass).not.toHaveBeenCalled()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('UserService.saveTeacherClassChanges()', () => {
+  beforeEach(() => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getSchoolTeacherIds).mockResolvedValue(
+      { data: [{ id: 't1' }, { id: 't2' }], error: null } as never
+    )
+    vi.mocked(UserRepository.getSchoolClasses).mockResolvedValue(
+      { data: [{ id: 'c1' }, { id: 'c2' }], error: null } as never
+    )
+    vi.mocked(UserRepository.addTeacherClasses).mockResolvedValue({ error: null } as never)
+    vi.mocked(UserRepository.removeTeacherClass).mockResolvedValue({ error: null } as never)
+  })
+
+  it('yetki yoksa hata döner, yazma yapılmaz', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbility([]) as never)
+    const result = await UserService.saveTeacherClassChanges([{ teacherId: 't1', classId: 'c1', assigned: true }])
+    expect(result.error).toBe('Yetki yok')
+    expect(UserRepository.addTeacherClasses).not.toHaveBeenCalled()
+  })
+
+  it('okul dışı öğretmen/sınıf → reddedilir, yazma yapılmaz', async () => {
+    const result = await UserService.saveTeacherClassChanges([{ teacherId: 'baska', classId: 'c1', assigned: true }])
+    expect(result.error).toBeTruthy()
+    expect(UserRepository.addTeacherClasses).not.toHaveBeenCalled()
+    expect(UserRepository.removeTeacherClass).not.toHaveBeenCalled()
+  })
+
+  it('geçerli ekleme + çıkarma → upsert ve delete doğru çağrılır', async () => {
+    const result = await UserService.saveTeacherClassChanges([
+      { teacherId: 't1', classId: 'c1', assigned: true },
+      { teacherId: 't2', classId: 'c2', assigned: false },
+    ])
+    expect(result.error).toBeUndefined()
+    expect(UserRepository.addTeacherClasses).toHaveBeenCalledWith([{ teacher_id: 't1', class_id: 'c1' }])
+    expect(UserRepository.removeTeacherClass).toHaveBeenCalledWith('t2', 'c2')
+  })
+
+  it('boş değişiklik listesi → sorun çıkarmadan döner', async () => {
+    const result = await UserService.saveTeacherClassChanges([])
+    expect(result.error).toBeUndefined()
+    expect(UserRepository.addTeacherClasses).not.toHaveBeenCalled()
   })
 })
 

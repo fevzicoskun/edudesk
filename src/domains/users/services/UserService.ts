@@ -143,6 +143,42 @@ export const UserService = {
     return {}
   },
 
+  // Matris toplu kaydet: yalnızca değişen hücreler. Okul içi öğretmen/sınıf doğrulanır,
+  // eklenenler tek upsert, çıkarılanlar tek tek silinir.
+  async saveTeacherClassChanges(
+    changes: { teacherId: string; classId: string; assigned: boolean }[]
+  ): Promise<ActionResult> {
+    const ability = await requireAbility()
+    if (ability.cannot(P.USERS.UPDATE)) return { error: 'Yetki yok' }
+    if (changes.length === 0) return {}
+
+    const [teachersRes, classesRes] = await Promise.all([
+      UserRepository.getSchoolTeacherIds(ability.schoolId),
+      UserRepository.getSchoolClasses(ability.schoolId),
+    ])
+    const teacherIds = new Set((teachersRes.data ?? []).map(t => t.id))
+    const classIds   = new Set((classesRes.data ?? []).map(c => c.id))
+
+    for (const ch of changes) {
+      if (!teacherIds.has(ch.teacherId) || !classIds.has(ch.classId)) {
+        return { error: 'Geçersiz öğretmen veya sınıf' }
+      }
+    }
+
+    const toAdd = changes.filter(c => c.assigned).map(c => ({ teacher_id: c.teacherId, class_id: c.classId }))
+    if (toAdd.length > 0) {
+      const { error } = await UserRepository.addTeacherClasses(toAdd)
+      if (error) return { error: error.message }
+    }
+
+    for (const c of changes.filter(c => !c.assigned)) {
+      const { error } = await UserRepository.removeTeacherClass(c.teacherId, c.classId)
+      if (error) return { error: error.message }
+    }
+
+    return {}
+  },
+
   async updateProfile(
     userId: string,
     data: { full_name: string; subject: string | null }

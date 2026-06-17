@@ -82,6 +82,21 @@ export const UserRepository = {
       .in('class_id', classIds)
   },
 
+  // Okuldaki sınıf atanabilir öğretmenlerin id'leri (ogretmen + zumre_baskani)
+  async getSchoolTeacherIds(schoolId: string) {
+    const admin = createServiceClient()
+    return admin
+      .from('profiles')
+      .select('id')
+      .eq('school_id', schoolId)
+      .in('role', ['ogretmen', 'zumre_baskani'])
+  },
+
+  async addTeacherClasses(pairs: { teacher_id: string; class_id: string }[]) {
+    const admin = createServiceClient()
+    return admin.from('teacher_classes').upsert(pairs, { ignoreDuplicates: true })
+  },
+
   async addTeacherClass(teacherId: string, classId: string) {
     const admin = createServiceClient()
     return admin
