@@ -148,18 +148,10 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
     trySwitch('date', e.target.value)
   }, [])
 
-  function toggle(studentId: string) {
+  function setStatus(studentId: string, status: AttendanceStatus) {
     if (isLocked) return
     isDirty.current = true
-    setStatuses(prev => {
-      const cur = prev[studentId] ?? 'present'
-      const next: AttendanceStatus =
-        cur === 'present' ? 'absent'
-        : cur === 'absent' ? 'late'
-        : cur === 'late'   ? 'excused'
-        :                    'present'
-      return { ...prev, [studentId]: next }
-    })
+    setStatuses(prev => ({ ...prev, [studentId]: status }))
   }
 
   async function handleSave() {
@@ -292,7 +284,7 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         setStatuses={setStatuses}
         absenceCounts={absenceCounts}
         statusSummary={statusSummary}
-        toggle={toggle}
+        setStatus={setStatus}
       />
 
       {error && <p className="text-sm text-red-500">{error}</p>}
@@ -307,9 +299,6 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
         >
           {saving ? 'Kaydediliyor…' : 'Kaydet'}
         </button>
-        <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-1.5">
-          Butona her tıklayınca: Mevcut → Devamsız → Geç → Özürlü → Mevcut
-        </p>
       </div>
     </div>
   )

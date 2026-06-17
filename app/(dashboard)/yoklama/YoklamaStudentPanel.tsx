@@ -22,8 +22,15 @@ export const STATUS_COLORS: Record<AttendanceStatus, string> = {
   excused: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 ring-blue-500',
 }
 
+const STATUS_SHORT: Record<AttendanceStatus, string> = {
+  present: 'Mevcut',
+  absent:  'Dev.',
+  late:    'Geç',
+  excused: 'Özür.',
+}
+
 export default function YoklamaStudentPanel({
-  loading, students, isLocked, onDirty, statuses, setStatuses, absenceCounts, statusSummary, toggle,
+  loading, students, isLocked, onDirty, statuses, setStatuses, absenceCounts, statusSummary, setStatus,
 }: {
   loading: boolean
   students: Student[]
@@ -33,7 +40,7 @@ export default function YoklamaStudentPanel({
   setStatuses: React.Dispatch<React.SetStateAction<Record<string, AttendanceStatus>>>
   absenceCounts: Record<string, AbsenceCount>
   statusSummary: { absent: number; late: number; excused: number }
-  toggle: (studentId: string) => void
+  setStatus: (studentId: string, status: AttendanceStatus) => void
 }) {
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -79,9 +86,9 @@ export default function YoklamaStudentPanel({
             {students.map((s, i) => {
               const status = statuses[s.id] ?? 'present'
               return (
-                <li key={s.id} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="text-sm text-gray-800 dark:text-slate-100 flex items-center gap-1 min-w-0">
-                    <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums shrink-0">{i + 1}.</span>
+                <li key={s.id} className="px-4 py-2.5">
+                  <div className="flex items-center gap-1 min-w-0 mb-2">
+                    <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums shrink-0 text-sm">{i + 1}.</span>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium text-gray-900 dark:text-slate-100 truncate text-sm">{s.full_name}</span>
                       {(() => {
@@ -103,15 +110,25 @@ export default function YoklamaStudentPanel({
                       })()}
                     </div>
                     {s.student_number && <span className="ml-1.5 text-xs text-gray-400 shrink-0">#{s.student_number}</span>}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => toggle(s.id)}
-                    disabled={isLocked}
-                    className={`text-xs font-semibold min-w-[80px] text-center min-h-[44px] px-3 py-2 rounded-xl ring-1 ring-inset transition-colors disabled:opacity-60 disabled:cursor-not-allowed ${STATUS_COLORS[status]}`}
-                  >
-                    {STATUS_LABELS[status]}
-                  </button>
+                  </div>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {(['present', 'absent', 'late', 'excused'] as AttendanceStatus[]).map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setStatus(s.id, opt)}
+                        disabled={isLocked}
+                        className={`min-h-[44px] px-2 py-2 rounded-xl text-xs font-semibold ring-inset transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${
+                          status === opt
+                            ? `${STATUS_COLORS[opt]} ring-2`
+                            : 'bg-gray-50 text-gray-400 ring-1 ring-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:ring-slate-600 hover:ring-gray-300 dark:hover:ring-slate-500'
+                        }`}
+                      >
+                        <span className="md:hidden">{STATUS_SHORT[opt]}</span>
+                        <span className="hidden md:inline">{STATUS_LABELS[opt]}</span>
+                      </button>
+                    ))}
+                  </div>
                 </li>
               )
             })}
