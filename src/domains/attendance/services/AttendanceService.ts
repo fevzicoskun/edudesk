@@ -96,11 +96,10 @@ export const AttendanceService = {
   ) {
     const cls = await AttendanceRepository.findClass(db, classId, ability.schoolId)
     if (!cls) throw new Error('Sınıf bulunamadı')
-    const { data: me } = await db.from('profiles').select('role').eq('id', ability.userId).eq('school_id', ability.schoolId).single()
-    if (YONETICI_ROLLER.includes(me?.role ?? '')) return cls
-    if (cls.mentor_teacher_id === ability.userId) return cls
-    if (await AttendanceRepository.isTeacherOfClass(db, ability.userId, classId)) return cls
-    throw new Error('Bu sınıfın çizelgesine erişim yetkiniz yok')
+    // Okul-içi tüm öğretmenler her sınıfın yoklama verisini görüntüleyebilir
+    // (çizelge/yoklama UI'ı tüm sınıfları listeler). Cross-tenant koruması:
+    // findClass zaten school_id ile filtreler.
+    return cls
   },
 
   async getClassMonth(classId: string, year: number, month: number) {

@@ -79,14 +79,4 @@ export const AttendanceRepository = {
     if (error) throw new Error(error.message)
     return data ?? []
   },
-
-  async isTeacherOfClass(db: Client, teacherId: string, classId: string) {
-    const { data } = await db
-      .from('teacher_classes')
-      .select('class_id')
-      .eq('teacher_id', teacherId)
-      .eq('class_id', classId)
-      .maybeSingle()
-    return !!data
-  },
 }

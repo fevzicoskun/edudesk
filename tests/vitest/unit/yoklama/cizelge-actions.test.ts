@@ -71,15 +71,19 @@ describe('getCizelge()', () => {
     expect(result.rows).toEqual([{ student_id: 'st1', status: 'absent', date: '2026-06-08' }])
   })
 
-  it('öğretmen kendi sınıfı değilse erişim hatası verir', async () => {
+  it('öğretmen okul-içi başka sınıfın çizelgesini de görebilir', async () => {
     vi.mocked(getAbility).mockResolvedValue(
       createAbility({ userId: TEACHER_ID, schoolId: SCHOOL_ID, permissions: OGRETMEN_PERMS }) as never
     )
-    mockSingle
-      .mockResolvedValueOnce({ data: { id: CLASS_ID, mentor_teacher_id: 'baskasi' }, error: null })
-      .mockResolvedValueOnce({ data: { role: 'ogretmen' }, error: null })
-    mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null })
-    await expect(getCizelge(CLASS_ID, 2026, 6)).rejects.toThrow('erişim yetkiniz yok')
+    // findClass → başka öğretmenin sınıfı; okul-içi olduğu için erişim serbest
+    mockSingle.mockResolvedValueOnce({ data: { id: CLASS_ID, mentor_teacher_id: 'baskasi' }, error: null })
+    mockLimit.mockResolvedValueOnce({
+      data: [{ student_id: 'st1', status: 'absent', date: '2026-06-08' }],
+      error: null,
+    })
+    const result = await getCizelge(CLASS_ID, 2026, 6)
+    expect(result.days).toHaveLength(22)
+    expect(result.rows).toHaveLength(1)
   })
 
   it('geçersiz yıl → hata fırlatır', async () => {
