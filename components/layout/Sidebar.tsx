@@ -146,8 +146,8 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       {/* Desktop sidebar */}
       <aside className={`hidden md:flex flex-col shrink-0 bg-white dark:bg-slate-900 border-r border-gray-200 dark:border-slate-700 transition-all duration-200 ${collapsed ? 'w-16' : 'w-60'}`}>
 
-        {/* Header */}
-        <div className="px-3 py-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-2">
+        {/* Header — TopBar (h-16) ile aynı yükseklik, alt-çizgiler ve logo/arama hizası uysun */}
+        <div className="h-16 px-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-2">
           {!collapsed && (
             <div className="min-w-0">
               <EduDeskLogo size="md" />

@@ -9,38 +9,22 @@ export default async function CizelgePage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')
 
-  const isYonetici = ['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')
+  // Çizelge tüm okul sınıflarını gösterir (yoklama dropdown'ı ile tutarlı) — rol filtresi yok.
+  const { data: rawClasses } = await supabase
+    .from('classes')
+    .select('id, name, grade, students(id, full_name, student_number, deleted_at)')
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+    .order('grade')
+    .order('name')
 
-  // classes ve teacher_classes birbirinden bağımsız — paralel çek (teacher_classes yalnızca profile.id'ye bağlı)
-  const [{ data: rawClasses }, tcRes] = await Promise.all([
-    supabase
-      .from('classes')
-      .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
-      .eq('school_id', profile.school_id)
-      .is('deleted_at', null)
-      .order('grade')
-      .order('name'),
-    isYonetici
-      ? Promise.resolve(null)
-      : supabase.from('teacher_classes').select('class_id').eq('teacher_id', profile.id),
-  ])
-
-  let classes = (rawClasses ?? []).map(cls => ({
+  const classes = (rawClasses ?? []).map(cls => ({
     id: cls.id,
     name: cls.name,
     students: ((cls.students ?? []) as { id: string; full_name: string; student_number: string | null; deleted_at: string | null }[])
       .filter(s => !s.deleted_at)
       .map(({ deleted_at: _omit, ...s }) => s),
-    mentor_teacher_id: cls.mentor_teacher_id,
   }))
-
-  if (!isYonetici) {
-    const allowed = new Set([
-      ...classes.filter(c => c.mentor_teacher_id === profile.id).map(c => c.id),
-      ...(tcRes?.data ?? []).map(r => r.class_id),
-    ])
-    classes = classes.filter(c => allowed.has(c.id))
-  }
 
   const allStudentIds = classes.flatMap(c => c.students.map(s => s.id))
   const yearCounts = allStudentIds.length > 0
@@ -57,7 +41,7 @@ export default async function CizelgePage() {
       </div>
       {classes.length === 0 ? (
         <p className="text-sm text-gray-400">
-          Görüntüleyebileceğiniz sınıf yok. Sınıf öğretmeni atamanız veya ders programınız bulunmuyor.
+          Henüz sınıf eklenmemiş.
         </p>
       ) : (
         <CizelgeClient classes={classes} yearCounts={yearCounts} />
