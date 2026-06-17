@@ -58,12 +58,14 @@ Yoklamadaki durum seçimini ödev `StudentRow` desenine hizalamak: **her durumu 
 - `isLocked` ise tüm durum butonları `disabled` (bugünkü gibi).
 - `YoklamaClient` içindeki `toggle` fonksiyonu silinir; yerine `setStatus(studentId, status)` gelir ve `YoklamaStudentPanel`'e prop olarak geçer (`toggle` prop'unun yerine).
 
-## Test
+## Test / Doğrulama
 
-`tests/vitest/` altında, ödev `StatusBoard` testleri şablon alınarak:
-- Bir öğrencinin "Geç" butonuna basınca `statuses[id] === 'late'` olması.
-- Buton basışından sonra `isDirty` işaretlenmesi (kaydedilmemiş değişiklik guard'ının tetiklenmesi).
-- `isLocked` iken butonların `disabled` olması.
+Bu projede React component testi altyapısı yok (vitest `environment: 'node'`, RTL kurulu değil; testler saf fonksiyon/action seviyesinde). Bu değişiklik tamamen sunum/etkileşim katmanı — sildiğimiz `toggle` döngü mantığının yerine gelen `setStatus(id, status)` trivial setter, test edilecek saf mantık içermez. Bu yüzden yeni otomatik test eklenmez (uydurma test borç yaratır).
+
+Doğrulama:
+- `npm run build` — TypeScript + derleme temiz geçer (prop imza değişikliği `toggle` → `setStatus` her iki dosyada tutarlı).
+- `npx vitest run tests/vitest/unit/yoklama/yoklama-action.test.ts` — mevcut yoklama action testleri hâlâ geçer (bu dosyalara dokunulmadığının kanıtı).
+- Manuel: dev sunucuda bir öğrenciyi her duruma tek tıkla geçir, kilit saatinde butonların disabled olduğunu, Kaydet sonrası bildirim toast'ının değişmediğini gör.
 
 ## Risk
 
