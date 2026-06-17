@@ -19,7 +19,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const [{ data: rawClasses }, { data: tcRows }] = await Promise.all([
     supabase
       .from('classes')
-      .select('id, name, grade, mentor_teacher_id, students(id, full_name, student_number, deleted_at)')
+      .select('id, name, grade, students(id, full_name, student_number, deleted_at)')
       .eq('school_id', profile.school_id)
       .is('deleted_at', null)
       .order('grade')
@@ -34,16 +34,14 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
     id: cls.id,
     name: cls.name,
     grade: cls.grade,
-    mentor_teacher_id: cls.mentor_teacher_id,
     students: ((cls.students ?? []) as (Student & { deleted_at: string | null })[])
       .filter(s => !s.deleted_at)
       .map(({ deleted_at: _omit, ...s }) => s),
   }))
 
-  const myClassIds = new Set<string>([
-    ...classes.filter(c => c.mentor_teacher_id === profile.id).map(c => c.id),
-    ...(tcRows ?? []).map(r => r.class_id),
-  ])
+  // "Sınıflarım" = ders verdiğim sınıflar (teacher_classes). Rehberlik (mentor_teacher_id)
+  // yoklama grubunu belirlemez — yoklamayı ders saatinde branş öğretmeni alır.
+  const myClassIds = new Set<string>((tcRows ?? []).map(r => r.class_id))
 
   const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)
 
@@ -116,6 +114,5 @@ export interface ClassWithStudents {
   id: string
   name: string
   grade: number
-  mentor_teacher_id: string | null
   students: Student[]
 }
