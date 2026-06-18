@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { schoolYearStart } from '@/src/shared/utils'
+import EmptyState from '@/app/components/EmptyState'
 import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import CizelgeClient from './CizelgeClient'
 
@@ -40,9 +41,13 @@ export default async function CizelgePage() {
         </p>
       </div>
       {classes.length === 0 ? (
-        <p className="text-sm text-gray-400">
-          Henüz sınıf eklenmemiş.
-        </p>
+        <EmptyState
+          title="Henüz sınıf yok"
+          description="Çizelge için önce sınıf eklenmeli."
+          action={['mudur', 'mudur_yardimcisi'].includes(profile.role)
+            ? { label: 'Sınıf ekle', href: '/siniflar' }
+            : undefined}
+        />
       ) : (
         <CizelgeClient classes={classes} yearCounts={yearCounts} />
       )}

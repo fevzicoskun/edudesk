@@ -11,6 +11,9 @@ import { TeacherDashboardService } from '@/src/domains/dashboard/services/Teache
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { firstRunState, type Role } from '@/src/domains/dashboard/lib/firstRun'
+import { BeklemeWidget } from './IlkAdimlarWidget'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -46,6 +49,25 @@ export default async function OgretmenDashboard() {
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
 
   const greeting = getGreeting(profile.full_name ?? '')
+
+  // İlk-kullanım: ATANMIŞ sınıf (teacher_classes) yoksa sade bekleme ekranı göster.
+  // Not: ödev-türevli yoklamaDurumu DEĞİL — ödevi olmayan ama sınıfı olan öğretmen yanlış ekran görmesin.
+  const supabaseTc = await createClient()
+  const { count: assignedClassCount } = await supabaseTc
+    .from('teacher_classes')
+    .select('class_id', { count: 'exact', head: true })
+    .eq('teacher_id', profile.id)
+  if (firstRunState(profile.role as Role, assignedClassCount ?? 0) === 'waiting') {
+    return (
+      <div className="p-4 md:p-6 max-w-6xl mx-auto">
+        <div className="mb-5">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{greeting}</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{format(today, 'd MMMM yyyy, EEEE')}</p>
+        </div>
+        <BeklemeWidget />
+      </div>
+    )
+  }
 
   // Öğretmen 10:30'dan sonra bugünün yoklamasını düzenleyemez; CTA bunu yansıtmalı.
   const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)

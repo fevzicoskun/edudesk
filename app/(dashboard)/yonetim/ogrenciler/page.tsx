@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
+import EmptyState from '@/app/components/EmptyState'
 import OgrencilerClient from './OgrencilerClient'
 
 export const revalidate = 60
@@ -48,7 +49,15 @@ export default async function OgrencilerPage() {
         </div>
       </div>
 
-      <OgrencilerClient classes={classes} />
+      {totalStudents === 0 ? (
+        <EmptyState
+          title="Henüz öğrenci yok"
+          description="Sınıflarına öğrenci ekleyerek başla."
+          action={{ label: 'Sınıflara git', href: '/siniflar' }}
+        />
+      ) : (
+        <OgrencilerClient classes={classes} />
+      )}
     </div>
   )
 }
