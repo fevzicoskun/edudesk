@@ -11,7 +11,8 @@ import { TeacherDashboardService } from '@/src/domains/dashboard/services/Teache
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
-import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { firstRunState, type Role } from '@/src/domains/dashboard/lib/firstRun'
 import { BeklemeWidget } from './IlkAdimlarWidget'
 
 type Tone = 'blue' | 'orange' | 'rose'
@@ -49,8 +50,14 @@ export default async function OgretmenDashboard() {
 
   const greeting = getGreeting(profile.full_name ?? '')
 
-  // İlk-kullanım: atanmış sınıf yoksa sade bekleme ekranı göster.
-  if (firstRunState(profile.role as 'ogretmen' | 'zumre_baskani' | 'mudur_yardimcisi' | 'mudur' | 'admin', metrics.yoklamaDurumu.length) === 'waiting') {
+  // İlk-kullanım: ATANMIŞ sınıf (teacher_classes) yoksa sade bekleme ekranı göster.
+  // Not: ödev-türevli yoklamaDurumu DEĞİL — ödevi olmayan ama sınıfı olan öğretmen yanlış ekran görmesin.
+  const supabaseTc = await createClient()
+  const { count: assignedClassCount } = await supabaseTc
+    .from('teacher_classes')
+    .select('class_id', { count: 'exact', head: true })
+    .eq('teacher_id', profile.id)
+  if (firstRunState(profile.role as Role, assignedClassCount ?? 0) === 'waiting') {
     return (
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <div className="mb-5">
