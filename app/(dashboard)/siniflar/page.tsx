@@ -5,6 +5,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClass } from '@/src/domains/classes/actions'
 import { getEgitimYili } from '@/src/shared/utils'
+import EmptyState from '@/app/components/EmptyState'
 import SinifArama from './SinifArama'
 
 export default async function SiniflarPage() {
@@ -60,7 +61,12 @@ export default async function SiniflarPage() {
       )}
 
       {!classes?.length ? (
-        <div className="text-center py-20 text-gray-400 text-sm">Henüz sınıf eklenmemiş.</div>
+        <EmptyState
+          title="Henüz sınıf yok"
+          description={canManageClasses
+            ? 'Yukarıdaki formdan ilk sınıfını ekleyerek başla.'
+            : 'Müdürün sınıf eklediğinde burada görünecek.'}
+        />
       ) : (
         <SinifArama
           classes={(classes as { id: string; name: string; grade: number; students: { id: string; deleted_at: string | null }[] }[]).map(c => ({
