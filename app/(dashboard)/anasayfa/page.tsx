@@ -8,6 +8,9 @@ import WidgetErrorBoundary from './WidgetErrorBoundary'
 import MYStatsWidget          from './MYStatsWidget'
 import MYSolSutunWidget       from './MYSolSutunWidget'
 import { getGreeting }        from '@/src/shared/utils'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
+import { KurulumWidget } from './IlkAdimlarWidget'
 
 export const revalidate = 60
 
@@ -33,7 +36,7 @@ function DashboardSkeleton() {
   )
 }
 
-async function MudurWidgets({ fullName }: { fullName: string }) {
+async function MudurWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
@@ -46,6 +49,8 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
           {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {firstRunState('mudur', classCount) === 'setup' && <KurulumWidget />}
 
       {/* Alert + Stat kartları */}
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
@@ -67,7 +72,7 @@ async function MudurWidgets({ fullName }: { fullName: string }) {
   )
 }
 
-async function MYWidgets({ fullName }: { fullName: string }) {
+async function MYWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div>
@@ -76,6 +81,8 @@ async function MYWidgets({ fullName }: { fullName: string }) {
           {format(new Date(), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {firstRunState('mudur_yardimcisi', classCount) === 'setup' && <KurulumWidget />}
 
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
         <MYStatsWidget />
@@ -95,8 +102,18 @@ export default async function AnasayfaPage() {
 
   const fullName = profile.full_name ?? ''
 
-  if (profile.role === 'mudur') return <MudurWidgets fullName={fullName} />
-  if (profile.role === 'mudur_yardimcisi') return <MYWidgets fullName={fullName} />
+  if (profile.role === 'mudur' || profile.role === 'mudur_yardimcisi') {
+    const supabase = await createClient()
+    const { count } = await supabase
+      .from('classes')
+      .select('id', { count: 'exact', head: true })
+      .eq('school_id', profile.school_id!)
+      .is('deleted_at', null)
+    const classCount = count ?? 0
+    return profile.role === 'mudur'
+      ? <MudurWidgets fullName={fullName} classCount={classCount} />
+      : <MYWidgets fullName={fullName} classCount={classCount} />
+  }
 
   return (
     <Suspense fallback={<DashboardSkeleton />}>

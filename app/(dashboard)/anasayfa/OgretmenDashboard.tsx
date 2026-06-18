@@ -11,6 +11,8 @@ import { TeacherDashboardService } from '@/src/domains/dashboard/services/Teache
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
+import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
+import { BeklemeWidget } from './IlkAdimlarWidget'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -46,6 +48,19 @@ export default async function OgretmenDashboard() {
   const next7Str = addDays(today, 7).toISOString().split('T')[0]
 
   const greeting = getGreeting(profile.full_name ?? '')
+
+  // İlk-kullanım: atanmış sınıf yoksa sade bekleme ekranı göster.
+  if (firstRunState(profile.role as 'ogretmen' | 'zumre_baskani' | 'mudur_yardimcisi' | 'mudur' | 'admin', metrics.yoklamaDurumu.length) === 'waiting') {
+    return (
+      <div className="p-4 md:p-6 max-w-6xl mx-auto">
+        <div className="mb-5">
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{greeting}</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{format(today, 'd MMMM yyyy, EEEE')}</p>
+        </div>
+        <BeklemeWidget />
+      </div>
+    )
+  }
 
   // Öğretmen 10:30'dan sonra bugünün yoklamasını düzenleyemez; CTA bunu yansıtmalı.
   const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)
