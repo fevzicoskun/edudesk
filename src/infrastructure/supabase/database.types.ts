@@ -2993,6 +2993,13 @@ export type Database = {
           name: string
         }[]
       }
+      get_class_attendance_coverage: {
+        Args: { p_school_id: string; p_since: string }
+        Returns: {
+          class_id: string
+          covered_days: number
+        }[]
+      }
       get_first_unread_announcement: {
         Args: { p_school_id: string; p_user_id: string; p_user_role: string }
         Returns: Database["public"]["CompositeTypes"]["unread_announcement_row"][]
