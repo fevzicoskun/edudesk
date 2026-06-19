@@ -1,4 +1,5 @@
 import { requireAbility } from '@/src/shared/authorization/server'
+import { logger } from '@/src/infrastructure/observability/logger'
 import { ScheduleRepository } from '../repositories/ScheduleRepository'
 import { DEFAULT_PERIODS, validatePeriods, validateSlots, type Period, type Slot } from '../scheduleMath'
 
@@ -9,12 +10,19 @@ export const ScheduleService = {
       ScheduleRepository.getByTeacher(ability.userId, ability.schoolId),
       ScheduleRepository.listSchoolClasses(ability.schoolId),
     ])
+    // Okuma hatasını sessizce yutma — boş program/sınıf listesi "veri yok" gibi görünür.
+    if (rowRes.error || classRes.error) {
+      logger.error(
+        { event: 'schedule_read_failed', userId: ability.userId, rowErr: rowRes.error?.message, classErr: classRes.error?.message },
+        'Ders programı okuma hatası',
+      )
+    }
     const row = rowRes.data
     const periods = (row?.periods as Period[] | null)?.length ? (row!.periods as unknown as Period[]) : DEFAULT_PERIODS
     const slots = (row?.slots as Slot[] | null) ?? []
     return {
       periods,
-      slots: slots as unknown as Slot[],
+      slots,
       classes: (classRes.data ?? []) as { id: string; name: string }[],
     }
   },
