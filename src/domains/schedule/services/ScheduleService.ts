@@ -65,6 +65,7 @@ export const ScheduleService = {
 
     try {
       const { object } = await generateObject({
+        // gemini-2.5-flash: 2026-06-20'de canlı v1beta/models listesinden seçildi (vision + stabil)
         model: google('gemini-2.5-flash'),
         schema: z.object({
           cells: z.array(z.object({ day: z.number(), period: z.number(), class: z.string() })),
