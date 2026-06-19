@@ -15,7 +15,7 @@ export const DEFAULT_PERIODS: Period[] = [
   { no: 8, start: '15:00', end: '15:35' },
 ]
 
-const TIME_RE = /^\d{2}:\d{2}$/
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 // "HH:MM" sıfır dolgulu olduğundan sözlük sırası = kronolojik sıra.
 export function validatePeriods(periods: Period[]): string | null {

@@ -43,6 +43,9 @@ describe('validatePeriods', () => {
     ]
     expect(validatePeriods(bad)).not.toBeNull()
   })
+  it('aralık dışı saati reddeder', () => {
+    expect(validatePeriods([{ no: 1, start: '25:00', end: '25:30' }])).not.toBeNull()
+  })
 })
 
 describe('validateSlots', () => {
@@ -66,6 +69,9 @@ describe('validateSlots', () => {
       { day: 1, period: 1, class_id: 'c2' },
     ]
     expect(validateSlots(dup, P, ids)).not.toBeNull()
+  })
+  it('boş slot dizisini kabul eder', () => {
+    expect(validateSlots([], P, ids)).toBeNull()
   })
 })
 
@@ -92,5 +98,8 @@ describe('formatOzetBody', () => {
       { period: 3, className: '10-B' },
     ])
     expect(body).toBe('1. ders 9-A · 3. ders 10-B')
+  })
+  it('ters sıralı girişi sıralar', () => {
+    expect(formatOzetBody([{ period: 3, className: '10-B' }, { period: 1, className: '9-A' }])).toBe('1. ders 9-A · 3. ders 10-B')
   })
 })
