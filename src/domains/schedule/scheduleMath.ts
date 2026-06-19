@@ -2,17 +2,19 @@ export interface Period { no: number; start: string; end: string } // "HH:MM"
 export interface Slot { day: number; period: number; class_id: string }
 export interface TodayLesson { period: number; start: string; end: string; classId: string }
 
-// Varsayılan zil çizelgesi (08:30 başlangıç varsayımı; öğretmen UI'dan düzenler).
-// Teneffüs/öğle ayrı satır değil — periyot araları boşluktur; öğle = 5.→6. arası büyük boşluk.
+// Varsayılan zil çizelgesi (09:00 başlangıç; öğretmen UI'dan düzenler).
+// Ders 35 dk. İlk teneffüs 10 dk, diğerleri 5 dk. Öğle = 6.→7. arası (13:00–13:40).
+// Teneffüs/öğle ayrı satır değil — periyot araları boşluktur.
 export const DEFAULT_PERIODS: Period[] = [
-  { no: 1, start: '08:30', end: '09:05' },
-  { no: 2, start: '09:15', end: '09:50' },
-  { no: 3, start: '09:55', end: '10:30' },
-  { no: 4, start: '10:35', end: '11:10' },
-  { no: 5, start: '11:15', end: '11:50' },
-  { no: 6, start: '13:40', end: '14:15' },
-  { no: 7, start: '14:20', end: '14:55' },
-  { no: 8, start: '15:00', end: '15:35' },
+  { no: 1, start: '09:00', end: '09:35' },
+  { no: 2, start: '09:45', end: '10:20' },
+  { no: 3, start: '10:25', end: '11:00' },
+  { no: 4, start: '11:05', end: '11:40' },
+  { no: 5, start: '11:45', end: '12:20' },
+  { no: 6, start: '12:25', end: '13:00' },
+  { no: 7, start: '13:40', end: '14:15' },
+  { no: 8, start: '14:20', end: '14:55' },
+  { no: 9, start: '15:00', end: '15:35' },
 ]
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/

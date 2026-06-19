@@ -18,7 +18,7 @@ const P: Period[] = [
 describe('DEFAULT_PERIODS', () => {
   it('geçerli ve artan sıralı', () => {
     expect(validatePeriods(DEFAULT_PERIODS)).toBeNull()
-    expect(DEFAULT_PERIODS.length).toBe(8)
+    expect(DEFAULT_PERIODS.length).toBe(9)
   })
 })
 
