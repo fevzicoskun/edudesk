@@ -24,6 +24,14 @@ const TEST_USERS = {
     email:    process.env.TEST_EMAIL_MUDUR    ?? 'test_mudur@test.example',
     password: process.env.TEST_PASSWORD_MUDUR ?? 'Test1234!',
   },
+  zumre_baskani: {
+    email:    process.env.TEST_EMAIL_ZUMRE_BASKANI    ?? 'test_zumre_baskani@test.example',
+    password: process.env.TEST_PASSWORD_ZUMRE_BASKANI ?? 'Test1234!',
+  },
+  mudur_yardimcisi: {
+    email:    process.env.TEST_EMAIL_MUDUR_YARDIMCISI    ?? 'test_mudur_yardimcisi@test.example',
+    password: process.env.TEST_PASSWORD_MUDUR_YARDIMCISI ?? 'Test1234!',
+  },
 } as const
 
 export default async function globalSetup() {

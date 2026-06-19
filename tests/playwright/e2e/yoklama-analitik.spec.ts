@@ -50,3 +50,27 @@ test.describe('Yoklama Analitik — Müdür', () => {
     await expect(page.getByRole('heading', { name: /Sınıf Yoklama Kapsaması/ })).toBeVisible({ timeout: 10_000 })
   })
 })
+
+test.describe('Yoklama Analitik — Müdür Yardımcısı', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'mudur_yardimcisi.json') })
+
+  test('Kapsama bölümü müdür yardımcısına gösterilir (isMudurOrAbove)', async ({ page }) => {
+    await page.goto('/yoklama/analitik')
+    await expect(page.getByRole('heading', { name: 'Yoklama Analitiği', level: 1 })).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('heading', { name: /Sınıf Yoklama Kapsaması/ })).toBeVisible({ timeout: 10_000 })
+  })
+})
+
+test.describe('Yoklama Analitik — Zümre Başkanı', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'zumre_baskani.json') })
+
+  test('Analitik bölümleri görünür ama kapsama gösterilmez (manager ama müdür+ değil)', async ({ page }) => {
+    await page.goto('/yoklama/analitik')
+    await expect(page.getByRole('heading', { name: 'Yoklama Analitiği', level: 1 })).toBeVisible({ timeout: 10_000 })
+    // Zümre başkanı tüm okul sınıflarını görür → KPI + bölümler render edilir
+    await expect(page.getByText('Toplam özürsüz devamsızlık')).toBeVisible()
+    await expect(page.getByRole('heading', { name: /Kronik Devamsızlar/ })).toBeVisible()
+    // ...ama canSeeCoverage = isMudurOrAbove → kapsama YOK
+    await expect(page.getByRole('heading', { name: /Sınıf Yoklama Kapsaması/ })).toHaveCount(0)
+  })
+})
