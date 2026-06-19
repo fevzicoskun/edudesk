@@ -25,6 +25,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   const [editTimes, setEditTimes] = useState(false)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [ocring, setOcring] = useState(false)
 
   const cellClass = (day: number, period: number) =>
     slots.find(s => s.day === day && s.period === period)?.class_id ?? ''
@@ -42,20 +43,23 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
 
   const fileRef = useRef<HTMLInputElement>(null)
 
-  function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // aynı dosya tekrar seçilebilsin
     if (!file) return
     setMsg(null)
-    const fd = new FormData()
-    fd.append('image', file)
-    startTransition(async () => {
+    setOcring(true)
+    try {
+      const fd = new FormData()
+      fd.append('image', file)
       const res = await ocrSchedule(fd)
       if (res.error) { setMsg({ text: res.error }); return }
       const found = res.slots ?? []
       setSlots(found)
       setMsg({ ok: true, text: `${found.length} ders bulundu. Lütfen kontrol edip kaydedin.` })
-    })
+    } finally {
+      setOcring(false)
+    }
   }
 
   function save() {
@@ -74,13 +78,14 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
           {subject && <p className="text-sm text-gray-500 dark:text-slate-400">{subject}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} className="hidden" />
+          <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} className="hidden" aria-hidden="true" />
           <button
+            type="button"
             onClick={() => fileRef.current?.click()}
-            disabled={pending || classes.length === 0}
+            disabled={ocring || pending || classes.length === 0}
             className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
           >
-            {pending ? 'Okunuyor…' : 'Fotoğraftan doldur'}
+            {ocring ? 'Okunuyor…' : 'Fotoğraftan doldur'}
           </button>
           <button
             onClick={() => setEditTimes(v => !v)}
