@@ -29,6 +29,14 @@ Kolonlar:
 
 `day`: 1=Pazartesi … 5=Cuma (hafta sonu yok).
 
+### Teklik / upsert
+
+Öğretmen başına tek satır garantisi için **`UNIQUE (school_id, teacher_id)`** constraint eklenir.
+Repository `.upsert(row, { onConflict: 'school_id,teacher_id' })` ile yazar (insert/update ayrımı
+DB'ye bırakılır, yarış durumu yok). `teacher_id` nullable; Postgres'te UNIQUE içindeki NULL'lar
+ayrık sayıldığından olası sınıf-bazlı (teacher_id NULL) satırlar bu constraint'i ihlal etmez —
+constraint yalnız teacher satırlarında etkili conflict hedefidir.
+
 ### Varsayılan zil çizelgesi (`DEFAULT_PERIODS`)
 
 Bilinen kısıtlar: dersler 35 dk; ilk teneffüs 10 dk, sonraki teneffüsler 5 dk; öğle arası
@@ -54,15 +62,24 @@ varsayılan **08:30 başlangıç + 8 periyot** alınır ve öğretmen gerekirse 
 
 ## Güvenlik (RLS)
 
-`lesson_schedules` şu an yalnız `mudur`/`mudur_yardimcisi`'ye yazma izni veriyor. Eklenecek
-**öğretmen-self** politikaları (mevcut müdür politikaları korunur, ileride gözetim için):
+`lesson_schedules` şu an yalnız `mudur`/`mudur_yardimcisi`'ye yazma izni veriyor; SELECT ise
+okul geneli (herkes herkesinkini okur). Değişiklikler:
 
-- SELECT: zaten okul geneli (`school_id = current_school_id()`) — değişmez.
-- INSERT/UPDATE/DELETE: `school_id = current_school_id() AND teacher_id = auth.uid()`.
-  `WITH CHECK` ile öğretmen başkası adına satır oluşturamaz/değiştiremez.
+- **SELECT — daraltılır (bilinçli karar):** `school_id = current_school_id() AND
+  (teacher_id = auth.uid() OR <çağıran müdür/MY>)`. Yani öğretmen yalnız **kendi** programını,
+  müdür/MY tümünü okur.
+  - *Gerekçe:* kapsam "öğretmen kendi görsün". En az ayrıcalık ilkesi; şu an başka bir öğretmenin
+    programını gösteren özellik yok. İleride "yerine bakma / boş saat görünürlüğü / gözetim" gelirse
+    bu policy bilinçli olarak genişletilir (program hassas veri değil ama varsayılan dar tutulur).
+  - *Yan etki:* kullanılmayan sınıf-bazlı (teacher_id NULL) satırlar müdür dışı rollere görünmez —
+    bu kullanım zaten yok, kabul edilir.
+- **INSERT/UPDATE/DELETE — öğretmen-self eklenir:** `school_id = current_school_id() AND
+  teacher_id = auth.uid()`. `WITH CHECK` ile öğretmen başkası adına satır oluşturamaz/değiştiremez.
+  Mevcut müdür/MY yazma politikaları korunur (ileride gözetim için).
 
-Migration: `periods` kolonu (`ADD COLUMN IF NOT EXISTS periods JSONB NOT NULL DEFAULT '[]'`)
-+ üç yeni policy. Tek dosya.
+Migration (tek dosya): `periods` kolonu (`ADD COLUMN IF NOT EXISTS periods JSONB NOT NULL
+DEFAULT '[]'`) + `UNIQUE (school_id, teacher_id)` constraint + eski SELECT policy DROP & daraltılmış
+hâliyle yeniden oluştur + üç öğretmen-self yazma policy'si.
 
 ## Katmanlar (CLAUDE.md desenine uygun)
 
@@ -132,7 +149,8 @@ mobile: false, roles: ['ogretmen','zumre_baskani','mudur_yardimcisi'] }`.
 
 ## Teslim sırası (writing-plans aşamasına girdi)
 
-1. Migration: `periods` kolonu + öğretmen-self RLS. `database.types.ts` yenile.
+1. Migration: `periods` kolonu + `UNIQUE (school_id, teacher_id)` + SELECT daraltma + öğretmen-self
+   yazma RLS. `database.types.ts` yenile.
 2. `scheduleMath.ts` + birim testleri (TDD).
 3. Repository + Service + Zod + `saveSchedule` action.
 4. `/ders-programi` sayfası + `DersProgramiClient` ızgara + Sidebar linki.
