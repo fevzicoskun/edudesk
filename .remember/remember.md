@@ -1,13 +1,19 @@
 # Handoff
 
 ## State
-Homework modülü tamamlandı: `sendHomeworkReminderEmails` action (`app/actions/veli-bildirim.ts`) + TDD testleri (`tests/vitest/unit/homework/veli-bildirim.test.ts`) yazıldı, commit `7393b8a`. Toplam 170 unit test, 11 dosya — hepsi yeşil. `tsc --noEmit` temiz. Branch `main`, origin'den 11 commit ileride (push yapılmadı).
+2026-06-19 oturumu (Opus 4.8): kalite denetimi + e2e onarım/genişletme tamamlandı.
+- **623 unit test ✓, 66 e2e test ✓ (8 spec), tsc temiz.** Branch `main`, tüm commit'ler push'landı.
+- Güvenlik advisor denetimi: `assign_user_role` (auth.uid() guard'lı) + `homework_veli_notifications` (service_role-only, deny-all) doğrulandı → güvenli. 36 WARN hepsi bilinçli RLS helper'ları. Tek gerçek kalem `leaked_password_protection` (Pro-gated, ertelendi).
+- E2E regresyon onarıldı: "ilk-kullanım & boş ekranlar" işi (commit 40e56f5) dashboard/çizelge/yoklama'yı öğretmenin sınıfı yoksa boş-durum gösterecek şekilde değiştirmişti → test öğretmeninin sınıfı yoktu → 4 test patlıyordu. `global-setup.ts`'e idempotent seed eklendi (sınıf + teacher_classes + 2 öğrenci).
+- Eskimiş `cizelge.spec.ts` toggle testi gerçek 4-butonlu segmented control'e göre yeniden yazıldı (aktif durum `ring-2` ile doğrulanır).
+- Yeni `yoklama-analitik.spec.ts` (8 test, 4 rol). global-setup TEST_USERS'a `zumre_baskani`+`mudur_yardimcisi` eklendi.
 
 ## Next
-1. **Müdür Komuta Merkezi** — `/yonetim` sayfası yeniden tasarımı; plan `project_mudur_komuta_merkezi.md`'de mevcut, hiç kod yazılmadı.
-2. **git push origin main** — 11 commit birikmiş, kullanıcıdan onay al (feedback_git_push.md: onay sor, direkt push et).
-3. **Market Research karar** — `project_market_research.md`'deki #2 (SaaS+komisyon) vs #4 (yıllık lisans) seçimi hâlâ açık.
+1. **Ödeme/abonelik altyapısı** — bir sonraki büyük hamle. Stripe DEĞİL (TR şirketine açmıyor) → başlangıçta manuel fatura+havale, ileride iyzico. `schools` tablosunda plan/trial_ends_at/suspended_* hazır.
+2. (Opsiyonel) `zumre_baskani`/`mudur_yardimcisi` için daha geniş e2e (şu an yalnız analitik kapsamı test ediliyor).
 
 ## Context
-- `OGRETMEN_PERMS` `homework:update` scope `own` içeriyor — `school` scope gereken testlerde `SCHOOL_HW_PERMS` kullan (factories.ts'e eklenmedi, test içinde tanımlandı).
-- Yoklama SMS/WhatsApp ertelendi; `veli_telefon` alanı DB'de hazır.
+- **E2E auth state'leri artık 4 rol:** ogretmen / mudur / zumre_baskani / mudur_yardimcisi. global-setup hepsini login edip `.auth/*.json` yazıyor. Öğretmene `__PW_TEST__ 9-A` sınıfı + 2 öğrenci seed'li.
+- **Empty-state kapısı:** dashboard/çizelge/yoklama, öğretmenin `teacher_classes` kaydı yoksa bekleme ekranı gösterir (OgretmenDashboard.tsx firstRunState). Manager roller (zumre_baskani+) tüm okul sınıflarını görür.
+- **Analitik RBAC iki eksen:** `isManager` (veri kapsamı) ↔ `canSeeCoverage = isMudurOrAbove` (kapsama bölümü görünürlüğü). Zümre başkanı = manager ama kapsama YOK (ara durum).
+- `leaked_password_protection` Supabase Free plan'de kilitli; Pro'ya geçince Auth→Providers→Email'den 1 tık.
