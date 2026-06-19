@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { ScheduleService } from '@/src/domains/schedule/services/ScheduleService'
 import type { ActionResult } from '@/src/shared/types/index'
+import type { Slot } from '@/src/domains/schedule/scheduleMath'
 
 const periodSchema = z.object({
   no:    z.number().int().min(1).max(12),
@@ -31,4 +32,19 @@ export async function saveSchedule(input: unknown): Promise<ActionResult> {
 
   revalidatePath('/ders-programi')
   return {}
+}
+
+const MAX_BYTES = 8 * 1024 * 1024 // 8MB
+
+export async function ocrSchedule(formData: FormData): Promise<ActionResult<{ slots?: Slot[] }>> {
+  const file = formData.get('image')
+  if (!(file instanceof File)) return { error: 'Görüntü bulunamadı' }
+  if (!file.type.startsWith('image/')) return { error: 'Yalnız görüntü dosyası yüklenebilir' }
+  if (file.size === 0) return { error: 'Boş dosya' }
+  if (file.size > MAX_BYTES) return { error: 'Görüntü çok büyük (en fazla 8MB)' }
+
+  const data = new Uint8Array(await file.arrayBuffer())
+  const res = await ScheduleService.ocrFromImage({ data, mediaType: file.type })
+  if (res.error) return { error: res.error }
+  return { slots: res.slots }
 }
