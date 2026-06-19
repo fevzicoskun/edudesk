@@ -47,12 +47,25 @@ export default async function globalSetup() {
   // Test okulu bir kez bul/oluştur; her iki kullanıcı aynı okulu paylaşır
   const schoolId = await ensureTestSchool(serviceClient)
 
+  let ogretmenId: string | null = null
   for (const [role, creds] of Object.entries(TEST_USERS)) {
     try {
-      await upsertTestUser(serviceClient, creds.email, creds.password, role as keyof typeof TEST_USERS, schoolId)
+      const userId = await upsertTestUser(serviceClient, creds.email, creds.password, role as keyof typeof TEST_USERS, schoolId)
+      if (role === 'ogretmen') ogretmenId = userId
       console.log(`[playwright] ${role} hazır (schoolId: ${schoolId})`)
     } catch (e) {
       console.error(`[playwright] ${role} kullanıcısı hazırlanamadı:`, e)
+    }
+  }
+
+  // E2E fixture: öğretmene atanmış sınıf + öğrenci. Olmadan dashboard "bekleme ekranı",
+  // çizelge/yoklama boş-durum gösterir; dolu-UI testleri (SummaryCard/Risk/toggle/grid) başarısız olur.
+  if (ogretmenId) {
+    try {
+      await seedTeacherClassData(serviceClient, schoolId, ogretmenId)
+      console.log('[playwright] öğretmen sınıf + öğrenci seed edildi')
+    } catch (e) {
+      console.error('[playwright] sınıf/öğrenci seed edilemedi:', e)
     }
   }
 
@@ -156,7 +169,7 @@ async function upsertTestUser(
   password: string,
   role: keyof typeof TEST_USERS,
   schoolId: string
-) {
+): Promise<string> {
   const { data: { users } } = await client.auth.admin.listUsers({ perPage: 1000 })
   const existing = users?.find(u => u.email === email)
 
@@ -193,5 +206,55 @@ async function upsertTestUser(
     .from('profiles').select('school_id, role').eq('id', userId).single()
   if (!verif?.school_id) {
     throw new Error(`Profil doğrulaması başarısız — school_id yok (${role})`)
+  }
+  return userId
+}
+
+// getEgitimYili() ile aynı mantık (src import'una bağımlı kalmamak için inline).
+function currentEgitimYili(): string {
+  const now = new Date()
+  const y = now.getUTCFullYear()
+  const m = now.getUTCMonth() + 1
+  return m >= 9 ? `${y}-${y + 1}` : `${y - 1}-${y}`
+}
+
+async function seedTeacherClassData(client: SupabaseClient, schoolId: string, teacherId: string) {
+  const CLASS_NAME = '__PW_TEST__ 9-A'
+
+  // Sınıf (idempotent: ad + okul ile bul)
+  let classId: string
+  const { data: existing } = await client
+    .from('classes').select('id').eq('school_id', schoolId).eq('name', CLASS_NAME).is('deleted_at', null).limit(1)
+  if (existing?.length) {
+    classId = existing[0].id
+  } else {
+    const { data: cls, error } = await client
+      .from('classes')
+      .insert({ name: CLASS_NAME, grade: 9, academic_year: currentEgitimYili(), school_id: schoolId })
+      .select('id').single()
+    if (error || !cls) throw new Error(`Test sınıfı oluşturulamadı: ${error?.message}`)
+    classId = cls.id
+  }
+
+  // teacher_classes ataması (dashboard bekleme ekranı kapısı + çizelge grid)
+  const { error: tcErr } = await client
+    .from('teacher_classes')
+    .upsert({ teacher_id: teacherId, class_id: classId }, { ignoreDuplicates: true })
+  if (tcErr) throw new Error(`teacher_classes ataması yapılamadı: ${tcErr.message}`)
+
+  // Öğrenciler (yoklama toggle'ı için en az 1 gerekli; idempotent: ad ile)
+  const wanted = [
+    { full_name: 'PW Test Öğrenci 1', student_number: '101' },
+    { full_name: 'PW Test Öğrenci 2', student_number: '102' },
+  ]
+  const { data: have } = await client
+    .from('students').select('full_name').eq('class_id', classId).is('deleted_at', null)
+  const haveNames = new Set((have ?? []).map(s => s.full_name))
+  const toInsert = wanted
+    .filter(s => !haveNames.has(s.full_name))
+    .map(s => ({ ...s, class_id: classId, school_id: schoolId }))
+  if (toInsert.length) {
+    const { error: stuErr } = await client.from('students').insert(toInsert)
+    if (stuErr) throw new Error(`Test öğrencileri oluşturulamadı: ${stuErr.message}`)
   }
 }

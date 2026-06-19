@@ -15,18 +15,18 @@ test.describe('Yoklama Çizelgesi', () => {
     ).toBeVisible({ timeout: 10_000 })
   })
 
-  test('yoklama sayfasında 4 durumlu toggle çalışır', async ({ page }) => {
+  test('yoklama sayfasında 4 durumlu segmented control çalışır', async ({ page }) => {
     await page.goto('/yoklama')
     await expect(page).not.toHaveURL(/login/)
-    const firstToggle = page.locator('ul button').first()
-    await expect(firstToggle).toBeVisible({ timeout: 10_000 })
-    // Mevcut → Devamsız → Geç → Özürlü → Mevcut
-    await firstToggle.click()
-    await firstToggle.click()
-    await firstToggle.click()
-    await expect(firstToggle).toHaveText('Özürlü')
-    await firstToggle.click()
-    await expect(firstToggle).toHaveText('Mevcut')
+    // Öğrenci başına 4 ayrı durum butonu (Mevcut/Devamsız/Geç/Özürlü). Aktif olan `ring-2` ile işaretlenir.
+    const firstRow = page.locator('ul li').first()
+    const absent = firstRow.getByRole('button', { name: 'Devamsız' })
+    await expect(absent).toBeVisible({ timeout: 10_000 })
+    await absent.click()
+    await expect(absent).toHaveClass(/ring-2/)
+    const present = firstRow.getByRole('button', { name: 'Mevcut' })
+    await present.click()
+    await expect(present).toHaveClass(/ring-2/)
   })
 
   test('yoklama sayfasından çizelgeye geçiş linki çalışır', async ({ page }) => {
