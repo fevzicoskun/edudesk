@@ -82,7 +82,7 @@ export const ScheduleService = {
       const slots = parseOcrResult(object.cells, list)
       return { slots }
     } catch (e) {
-      logger.error({ event: 'ocr_inference_failed', userId: ability.userId, err: (e as Error).message }, 'OCR çıkarımı başarısız')
+      logger.error({ event: 'ocr_inference_failed', userId: ability.userId, err: e instanceof Error ? e.message : String(e) }, 'OCR çıkarımı başarısız')
       return { error: 'Görüntü okunamadı, ızgarayı elle doldurabilirsiniz' }
     }
   },
