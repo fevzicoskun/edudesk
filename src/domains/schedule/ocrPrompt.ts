@@ -5,7 +5,7 @@ export interface OcrCell { day: number; period: number; class: string }
 
 // "9 / A" ≡ "9-A" ≡ "9a" — küçük harf, harf-dışı/rakam-dışı ayraçları sök.
 export function normalizeClassName(name: string): string {
-  return String(name ?? '').toLowerCase().replace(/[^a-z0-9çğıöşü]/gi, '')
+  return String(name ?? '').toLowerCase().replace(/[^a-z0-9çğıöşü]/g, '')
 }
 
 const DAY_NAMES = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma']

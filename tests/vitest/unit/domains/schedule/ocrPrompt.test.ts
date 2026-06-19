@@ -21,6 +21,9 @@ describe('buildOcrPrompt', () => {
     expect(p).toContain('10-B')
     expect(p).toMatch(/1.*5|Pazartesi|day/i) // gün aralığı tarifi
   })
+  it('saat/zil çizelgesi çıkarmayı yasaklar', () => {
+    expect(buildOcrPrompt(['9-A'])).toMatch(/saat|zil/i)
+  })
 })
 
 describe('parseOcrResult', () => {
