@@ -1187,6 +1187,7 @@ export type Database = {
           file_url: string | null
           id: string
           period_count: number
+          periods: Json
           schedule_type: string
           school_id: string
           slots: Json
@@ -1203,6 +1204,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           period_count?: number
+          periods?: Json
           schedule_type?: string
           school_id: string
           slots?: Json
@@ -1219,6 +1221,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           period_count?: number
+          periods?: Json
           schedule_type?: string
           school_id?: string
           slots?: Json
@@ -2979,9 +2982,9 @@ export type Database = {
       count_absences_by_student: {
         Args: { p_school_id: string; p_since: string }
         Returns: {
+          excused: number
           student_id: string
           unexcused: number
-          excused: number
         }[]
       }
       current_school_id: { Args: never; Returns: string }
@@ -3049,9 +3052,9 @@ export type Database = {
       school_teacher_activity: {
         Args: { p_school_id: string; p_since: string }
         Returns: {
-          teacher_id: string
-          has_homework: boolean
           has_attendance: boolean
+          has_homework: boolean
+          teacher_id: string
         }[]
       }
       soft_delete: {
