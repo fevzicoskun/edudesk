@@ -13,7 +13,7 @@
 - OCR yalnız **`slots`** çıkarır; **`periods` (zil saatleri) OCR'a dahil DEĞİL** (faz 1 `DEFAULT_PERIODS` + öğretmen düzenler).
 - Girdi görüntüsü ve ham OCR metni **saklanmaz/persist edilmez** (`file_url/file_name` boş kalır; loglara görüntü içeriği yazılmaz).
 - Sınıf eşleştirme **yalnız normalize edilmiş isim → class_id**; eşleşme yoksa hücre **boş** kalır. Asla `class_id` uydurulmaz/tahmin edilmez.
-- Model ID **ezberden/bellekten YAZILMAZ.** Impl sırasında canlı listeden çözülür: `curl -s https://ai-gateway.vercel.sh/v1/models | jq -r '[.data[] | select(.id|startswith("google/")) | .id] | reverse | .[]'` → en güncel `*-flash`.
+- **SAĞLAYICI GÜNCELLENDİ (2026-06-20):** Vercel AI Gateway free kredi için kart istediğinden **doğrudan Google Gemini**'ye geçildi. Sağlayıcı `@ai-sdk/google`, env `GOOGLE_GENERATIVE_AI_API_KEY`, model **`google('gemini-2.5-flash')`** (canlı `v1beta/models` listesinden seçildi, vision + stabil). Aşağıdaki Task 1/Task 3'ün AI Gateway/`AI_GATEWAY_API_KEY` ifadeleri bu kararla geçersiz — uygulanan değerler burada.
 - Son kapı faz 1: `saveSchedule` → Zod + `validateSlots` + cross-tenant kontrolü. OCR bunları bypass etmez.
 - Yetki/çok-kiracılılık: sınıf listesi yalnız çağıranın `school_id`'sine göre çekilir (`requireAbility()`, faz 1 deseni).
 - Kod konvansiyonları (CLAUDE.md): `repositories → services → actions`; `deleted_at IS NULL` filtresi; `revalidatePath` mutasyondan sonra (OCR mutasyon değil → revalidate yok).

@@ -68,16 +68,18 @@ Sonuç `slots` faz 1 `validateSlots`'tan **geçecek** biçimde üretilir; geçme
 
 ## Model / sağlayıcı
 
-- **Vercel AI Gateway** üzerinden **Gemini Flash** (vision). Tek `AI_GATEWAY_API_KEY`, tek `ai` paketi.
-- AI SDK `generateText` ile `messages` içinde bir `text` ve bir `image` part gönderilir;
-  yapılandırılmış çıktı için `generateObject` + Zod şema (slot dizisi) tercih edilir
-  (parse güvenliği). Kesin API impl sırasında `node_modules/ai/docs/`'tan doğrulanır.
-- **Model ID kuralı (HATA ÖNLEME):** Model ID'si bellekten/ezberden YAZILMAYACAK. Impl sırasında
-  `curl -s https://ai-gateway.vercel.sh/v1/models | jq -r '[.data[] | select(.id|startswith("google/")) | .id] | reverse | .[]'`
-  ile canlı liste alınır ve **en güncel flash** sürümü seçilir.
-- Bağımlılık: yalnız `ai` paketi eklenir (AI Gateway provider built-in; ayrı `@ai-sdk/google` gerekmez).
-- Env: `AI_GATEWAY_API_KEY` (`.env.local` + Vercel proje env). Anahtar yoksa OCR butonu çağrısı
-  net hata döndürür (sayfa çökmez).
+> **Güncelleme (2026-06-20):** Başlangıçta Vercel AI Gateway planlanmıştı; ancak AI Gateway
+> free kredileri açmak için bile kredi kartı zorunlu kılıyor. Kart gerektirmemek için
+> **doğrudan Google Gemini** (Google AI Studio ücretsiz tier) sağlayıcısına geçildi.
+
+- **Doğrudan Google Gemini** (vision): `@ai-sdk/google` provider + `ai` paketi.
+- Model: **`google('gemini-2.5-flash')`** — canlı model listesinden seçildi
+  (`GET https://generativelanguage.googleapis.com/v1beta/models`), stabil ve vision destekli.
+- AI SDK `generateObject` + Zod şema (slot dizisi) ile yapılandırılmış çıktı; `messages` içinde
+  bir `text` ve bir `image` part. Kesin API impl sırasında `node_modules/ai/docs/`'tan doğrulanır.
+- Bağımlılık: `ai` + `@ai-sdk/google`.
+- Env: `GOOGLE_GENERATIVE_AI_API_KEY` (`.env.local`; provider bunu otomatik okur). Anahtar yoksa
+  OCR çağrısı net hata döndürür (sayfa çökmez).
 
 ## Katmanlar (faz 1 yapısına ekleme)
 
