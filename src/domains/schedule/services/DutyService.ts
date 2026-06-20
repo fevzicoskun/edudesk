@@ -3,7 +3,10 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { DutyRepository } from '../repositories/DutyRepository'
 import { validateDuty, type DutyInput } from '../dutyMath'
 
-export type Duty = DutyInput
+// Kayıtlı nöbet = girdi alanları + DB id'si (silme/anahtar için).
+export interface Duty extends DutyInput {
+  id: string
+}
 
 export interface SchoolDutyRow {
   teacher_id: string
@@ -15,25 +18,24 @@ export interface SchoolDutyRow {
 }
 
 export const DutyService = {
-  // Çıktı: öğretmenin nöbet kaydı (yoksa null).
-  async getMyDuty(): Promise<Duty | null> {
+  // Çıktı: öğretmenin tüm nöbet kayıtları (yoksa boş dizi).
+  async getMyDuties(): Promise<Duty[]> {
     const ability = await requireAbility()
-    const { data, error } = await DutyRepository.getByTeacher(ability.userId, ability.schoolId)
+    const { data, error } = await DutyRepository.listByTeacher(ability.userId, ability.schoolId)
     if (error) {
-      // Okuma hatasını yutma — "kayıt yok" ile "okunamadı" karışmasın.
       logger.error(
         { event: 'duty_read_failed', userId: ability.userId, err: error.message },
         'Nöbet bilgisi okuma hatası',
       )
-      return null
+      return []
     }
-    if (!data) return null
-    return {
-      day_of_week: data.day_of_week,
-      time_range: data.time_range,
-      location: data.location,
-      notes: data.notes,
-    }
+    return (data ?? []).map(d => ({
+      id: d.id,
+      day_of_week: d.day_of_week,
+      time_range: d.time_range,
+      location: d.location,
+      notes: d.notes,
+    }))
   },
 
   // Müdür/MY: okuldaki tüm nöbet kayıtları (öğretmen adıyla). RLS erişimi zorlar.
@@ -50,14 +52,14 @@ export const DutyService = {
     return data
   },
 
-  // Girdi: doğrulanmış nöbet alanları. Çıktı: { error? }.
-  async saveMyDuty(input: DutyInput): Promise<{ error?: string }> {
+  // Girdi: doğrulanmış nöbet alanları. Çıktı: eklenen nöbet (id'li) veya { error }.
+  async addMyDuty(input: DutyInput): Promise<{ error?: string; duty?: Duty }> {
     const ability = await requireAbility()
 
     const vErr = validateDuty(input)
     if (vErr) return { error: vErr }
 
-    const { error } = await DutyRepository.upsert({
+    const { data, error } = await DutyRepository.insert({
       teacher_id: ability.userId,
       school_id: ability.schoolId,
       day_of_week: input.day_of_week,
@@ -65,12 +67,34 @@ export const DutyService = {
       location: input.location.trim(),
       notes: input.notes?.trim() ? input.notes.trim() : null,
     })
-    if (error) {
+    if (error || !data) {
       logger.error(
-        { event: 'duty_save_failed', userId: ability.userId, err: error.message },
-        'Nöbet bilgisi kaydetme hatası',
+        { event: 'duty_add_failed', userId: ability.userId, err: error?.message },
+        'Nöbet ekleme hatası',
       )
       return { error: 'Nöbet bilgisi kaydedilemedi' }
+    }
+    return {
+      duty: {
+        id: data.id,
+        day_of_week: data.day_of_week,
+        time_range: data.time_range,
+        location: data.location,
+        notes: data.notes,
+      },
+    }
+  },
+
+  // Tek nöbet sil (id ile). RLS başkasının satırını silmeyi engeller.
+  async deleteMyDuty(id: string): Promise<{ error?: string }> {
+    const ability = await requireAbility()
+    const { error } = await DutyRepository.deleteById(id, ability.userId)
+    if (error) {
+      logger.error(
+        { event: 'duty_delete_failed', userId: ability.userId, err: error.message },
+        'Nöbet silme hatası',
+      )
+      return { error: 'Nöbet silinemedi' }
     }
     return {}
   },

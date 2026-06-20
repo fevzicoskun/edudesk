@@ -17,9 +17,9 @@ export default async function DersProgramiPage() {
   const isYonetici = isMudurOrAbove(profile.role)
 
   // Müdür/MY ek olarak okul nöbet çizelgesini görür (RLS müdür/MY'ye izinli).
-  const [{ periods, slots, classes }, duty, schoolDuties] = await Promise.all([
+  const [{ periods, slots, classes }, duties, schoolDuties] = await Promise.all([
     ScheduleService.getMySchedule(),
-    DutyService.getMyDuty(),
+    DutyService.getMyDuties(),
     isYonetici ? DutyService.listSchoolDuties() : Promise.resolve([]),
   ])
 
@@ -32,7 +32,7 @@ export default async function DersProgramiPage() {
         subject={profile.subject ?? ''}
         teacherName={profile.full_name ?? ''}
       />
-      <NobetKarti initialDuty={duty} />
+      <NobetKarti initialDuties={duties} />
       {isYonetici && <NobetCizelgesi rows={schoolDuties} />}
     </div>
   )

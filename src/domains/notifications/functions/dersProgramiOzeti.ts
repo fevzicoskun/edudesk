@@ -25,13 +25,26 @@ export const dersProgramiOzetiFn = inngest.createFunction(
       const { data: classes } = await db.from('classes').select('id, name').is('deleted_at', null)
       const nameById = new Map((classes ?? []).map(c => [c.id as string, c.name as string]))
 
-      // Bugün nöbetçi olan öğretmenler (RLS bypass — tüm okullar). Ders programından bağımsız.
+      // Bugün nöbetçi olan öğretmenler (RLS bypass — tüm okullar). Bir öğretmenin birden fazla nöbeti olabilir.
       const { data: dutyRows } = await db
         .from('teacher_duties')
         .select('teacher_id, school_id, day_of_week, time_range, location, notes')
         .eq('day_of_week', today)
-      const dutyByTeacher = new Map((dutyRows ?? []).map(d => [d.teacher_id as string, d]))
+      const dutiesByTeacher = new Map<string, typeof dutyRows>()
+      for (const d of dutyRows ?? []) {
+        const tid = d.teacher_id as string
+        const list = dutiesByTeacher.get(tid) ?? []
+        list.push(d)
+        dutiesByTeacher.set(tid, list)
+      }
       const handledTeachers = new Set<string>()
+
+      // Öğretmenin bugünkü tüm nöbet satırlarını tek metne çevir (her nöbet ayrı satır).
+      const dutyLinesFor = (tid: string): string[] =>
+        (dutiesByTeacher.get(tid) ?? [])
+          .map(d => formatDutyReminder(d as unknown as DutyInput, today))
+          .filter((x): x is string => x !== null)
+          .map(line => `🔔 ${line}`)
 
       const notifs: { user_id: string; school_id: string; title: string; body: string }[] = []
       const pushes: Promise<unknown>[] = []
@@ -39,27 +52,27 @@ export const dersProgramiOzetiFn = inngest.createFunction(
       for (const r of rows) {
         const teacherId = r.teacher_id as string
         const lessons = todaysLessons((r.slots ?? []) as unknown as Slot[], (r.periods ?? []) as unknown as Period[], today)
-        const duty = dutyByTeacher.get(teacherId)
-        const dutyLine = duty ? formatDutyReminder(duty as unknown as DutyInput, today) : null
-        if (duty) handledTeachers.add(teacherId)
-        if (!lessons.length && !dutyLine) continue // ne ders ne nöbet → bildirim yok
+        const dutyLines = dutyLinesFor(teacherId)
+        if (dutiesByTeacher.has(teacherId)) handledTeachers.add(teacherId)
+        if (!lessons.length && !dutyLines.length) continue // ne ders ne nöbet → bildirim yok
 
         const dersBody = lessons.length
           ? formatOzetBody(lessons.map(l => ({ period: l.period, className: nameById.get(l.classId) ?? '?' })))
           : ''
-        const body = [dersBody, dutyLine ? `🔔 ${dutyLine}` : ''].filter(Boolean).join('\n')
+        const body = [dersBody, ...dutyLines].filter(Boolean).join('\n')
         const title = lessons.length ? 'Bugünün dersleri' : 'Bugün nöbettesin'
         notifs.push({ user_id: teacherId, school_id: r.school_id as string, title, body })
         pushes.push(sendPushToUser(teacherId, { title, body, url: '/ders-programi' }))
       }
 
       // Ders programı satırı OLMAYAN ama bugün nöbetçi olan öğretmenler de bildirim alsın.
-      for (const [teacherId, duty] of dutyByTeacher) {
+      for (const [teacherId, list] of dutiesByTeacher) {
         if (handledTeachers.has(teacherId)) continue
-        const dutyLine = formatDutyReminder(duty as unknown as DutyInput, today)
-        if (!dutyLine) continue
-        const body = `🔔 ${dutyLine}`
-        notifs.push({ user_id: teacherId, school_id: duty.school_id as string, title: 'Bugün nöbettesin', body })
+        const dutyLines = dutyLinesFor(teacherId)
+        if (!dutyLines.length) continue
+        const body = dutyLines.join('\n')
+        const schoolId = (list?.[0]?.school_id ?? '') as string
+        notifs.push({ user_id: teacherId, school_id: schoolId, title: 'Bugün nöbettesin', body })
         pushes.push(sendPushToUser(teacherId, { title: 'Bugün nöbettesin', body, url: '/ders-programi' }))
       }
 

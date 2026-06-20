@@ -25,27 +25,37 @@ const TONE: Record<Tone, string> = {
 
 const DUTY_DAYS: Record<number, string> = { 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma' }
 
-// Öğretmenin kendi nöbet bilgisi şeridi. Bugün nöbet günüyse vurgulanır.
-function NobetBanner({ duty, todayDow }: {
-  duty: { day_of_week: number; time_range: string; location: string; notes?: string | null }
-  todayDow: number
-}) {
-  const bugun = duty.day_of_week === todayDow
+type DutyLite = { day_of_week: number; time_range: string; location: string; notes?: string | null }
+
+// Öğretmenin nöbet şeridi. Bugün nöbeti varsa amber + "BUGÜN"; yoksa tüm nöbetler nötr listelenir.
+function NobetBanner({ duties, todayDow }: { duties: DutyLite[]; todayDow: number }) {
+  const bugunkuler = duties.filter(d => d.day_of_week === todayDow)
+  const bugun = bugunkuler.length > 0
+  // Bugün nöbet varsa yalnızca bugünküleri öne çıkar; yoksa tüm nöbetleri göster.
+  const goster = bugun ? bugunkuler : duties
+  const sirali = [...goster].sort((a, b) => a.day_of_week - b.day_of_week)
+
   return (
     <Link
       href="/ders-programi"
-      className={`flex items-center gap-2 flex-wrap rounded-xl border px-4 py-3 mb-4 text-sm transition-opacity hover:opacity-80 ${
+      className={`flex items-start gap-2 flex-wrap rounded-xl border px-4 py-3 mb-4 text-sm transition-opacity hover:opacity-80 ${
         bugun
           ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
           : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700'
       }`}
     >
       <span aria-hidden>🔔</span>
-      <span className="font-semibold">Nöbet:</span>
-      <span>{DUTY_DAYS[duty.day_of_week] ?? '—'} · {duty.time_range} · {duty.location}</span>
-      {duty.notes && <span className="text-xs opacity-80">({duty.notes})</span>}
+      <span className="font-semibold whitespace-nowrap">{bugun ? 'Bugün nöbet:' : 'Nöbetlerin:'}</span>
+      <span className="flex flex-col gap-0.5">
+        {sirali.map((d, i) => (
+          <span key={i}>
+            {DUTY_DAYS[d.day_of_week] ?? '—'} · {d.time_range} · {d.location}
+            {d.notes ? <span className="text-xs opacity-80"> ({d.notes})</span> : null}
+          </span>
+        ))}
+      </span>
       {bugun && (
-        <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">BUGÜN</span>
+        <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white whitespace-nowrap">BUGÜN</span>
       )}
     </Link>
   )
@@ -70,9 +80,9 @@ export default async function OgretmenDashboard() {
 
   void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
-  const [metrics, duty] = await Promise.all([
+  const [metrics, duties] = await Promise.all([
     TeacherDashboardService.getDashboardMetrics(user.id),
-    DutyService.getMyDuty(),
+    DutyService.getMyDuties(),
   ])
 
   const today = new Date()
@@ -120,7 +130,7 @@ export default async function OgretmenDashboard() {
       </div>
 
       {/* Nöbet şeridi (kayıtlıysa) */}
-      {duty && <NobetBanner duty={duty} todayDow={today.getDay()} />}
+      {duties.length > 0 && <NobetBanner duties={duties} todayDow={today.getDay()} />}
 
       {/* Hızlı Aksiyonlar */}
       <HizliAksiyonlar
