@@ -7,6 +7,7 @@ import BugunYoklamaWidget from './BugunYoklamaWidget'
 import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
+import NobetCizelgesi from './NobetCizelgesi'
 
 export const revalidate = 60
 
@@ -71,6 +72,11 @@ export default async function YonetimPage() {
           <BugunYoklamaWidget />
         </Suspense>
       </div>
+
+      {/* Okul nöbet çizelgesi */}
+      <Suspense fallback={<CardSkeleton />}>
+        <NobetCizelgesi />
+      </Suspense>
 
       {/* Hızlı erişim */}
       <div>
