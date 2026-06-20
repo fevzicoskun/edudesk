@@ -44,8 +44,8 @@ export default function NobetKarti({ initialDuties }: { initialDuties: Duty[] })
         toast(res.error ?? 'Nöbet eklenemedi', 'error')
         return
       }
-      // Sunucudan dönen gerçek id'li nöbeti listeye ekle (silme bu id ile çalışır).
-      setDuties(prev => [...prev, res.duty!])
+      // Sunucudan dönen gerçek id'li nöbeti ekle, gün sırasını koru (server order'ını taklit et).
+      setDuties(prev => [...prev, res.duty!].sort((a, b) => a.day_of_week - b.day_of_week))
       setTimeRange('')
       setLocation('')
       setNotes('')
@@ -89,7 +89,8 @@ export default function NobetKarti({ initialDuties }: { initialDuties: Duty[] })
               <button
                 onClick={() => remove(d.id)}
                 disabled={pending && deletingId === d.id}
-                className="ml-auto text-xs text-red-600 hover:text-red-700 disabled:opacity-50"
+                aria-label={`${DAY_LABEL[d.day_of_week] ?? ''} nöbetini sil`}
+                className="ml-auto text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg px-3 py-2 -my-1 disabled:opacity-50"
               >
                 {pending && deletingId === d.id ? 'Siliniyor…' : 'Sil'}
               </button>
