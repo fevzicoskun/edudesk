@@ -10,6 +10,7 @@ import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 import { DutyService } from '@/src/domains/schedule/services/DutyService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
+import BugunProgramWidget from './BugunProgramWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
 import { createClient } from '@/src/infrastructure/supabase/server'
@@ -128,6 +129,11 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Bugünkü ders programı şeridi (program kuruluysa kendini gösterir) */}
+      <Suspense fallback={null}>
+        <BugunProgramWidget />
+      </Suspense>
 
       {/* Nöbet şeridi (kayıtlıysa) */}
       {duties.length > 0 && <NobetBanner duties={duties} todayDow={today.getDay()} />}
