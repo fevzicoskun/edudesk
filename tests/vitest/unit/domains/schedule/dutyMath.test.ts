@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { validateDuty, type DutyInput } from '@/src/domains/schedule/dutyMath'
+import { validateDuty, formatDutyReminder, type DutyInput } from '@/src/domains/schedule/dutyMath'
 
 // Geçerli temel girdi — her test bunun bir alanını bozar.
 const VALID: DutyInput = {
@@ -49,5 +49,33 @@ describe('validateDuty', () => {
 
   it('notes tam 200 karakter kabul edilir (sınır dahil)', () => {
     expect(validateDuty({ ...VALID, notes: 'n'.repeat(200) })).toBeNull()
+  })
+})
+
+describe('formatDutyReminder', () => {
+  it('nöbet bugünse formatlı satır döner', () => {
+    const r = formatDutyReminder(VALID, 1) // VALID.day_of_week = 1 (Pazartesi)
+    expect(r).not.toBeNull()
+    expect(r).toContain('08:00–08:40')
+    expect(r).toContain('Zemin kat koridoru')
+  })
+
+  it('nöbet başka günse null döner', () => {
+    expect(formatDutyReminder(VALID, 3)).toBeNull()
+  })
+
+  it('duty null ise null döner', () => {
+    expect(formatDutyReminder(null, 1)).toBeNull()
+  })
+
+  it('notes varsa satıra eklenir', () => {
+    const r = formatDutyReminder({ ...VALID, notes: 'Kapı yanı' }, 1)
+    expect(r).toContain('Kapı yanı')
+  })
+
+  it('notes yoksa satır yine de geçerli (yer/saat içerir)', () => {
+    const r = formatDutyReminder({ ...VALID, notes: null }, 1)
+    expect(r).not.toBeNull()
+    expect(r).toContain('Zemin kat koridoru')
   })
 })

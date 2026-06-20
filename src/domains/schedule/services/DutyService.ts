@@ -5,6 +5,15 @@ import { validateDuty, type DutyInput } from '../dutyMath'
 
 export type Duty = DutyInput
 
+export interface SchoolDutyRow {
+  teacher_id: string
+  teacherName: string
+  day_of_week: number
+  time_range: string
+  location: string
+  notes: string | null
+}
+
 export const DutyService = {
   // Çıktı: öğretmenin nöbet kaydı (yoksa null).
   async getMyDuty(): Promise<Duty | null> {
@@ -25,6 +34,20 @@ export const DutyService = {
       location: data.location,
       notes: data.notes,
     }
+  },
+
+  // Müdür/MY: okuldaki tüm nöbet kayıtları (öğretmen adıyla). RLS erişimi zorlar.
+  async listSchoolDuties(): Promise<SchoolDutyRow[]> {
+    const ability = await requireAbility()
+    const { data, error } = await DutyRepository.listSchoolDuties(ability.schoolId)
+    if (error) {
+      logger.error(
+        { event: 'duty_list_failed', userId: ability.userId, err: error.message },
+        'Okul nöbet listesi okuma hatası',
+      )
+      return []
+    }
+    return data
   },
 
   // Girdi: doğrulanmış nöbet alanları. Çıktı: { error? }.

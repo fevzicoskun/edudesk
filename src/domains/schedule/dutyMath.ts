@@ -31,3 +31,12 @@ export function validateDuty(input: DutyInput): string | null {
 
   return null
 }
+
+// Girdi: nöbet kaydı (yoksa null) + bugünün gün no'su (1=Pzt..5=Cuma).
+// Çıktı: bugün nöbet günüyse bildirim satırı, değilse/yoksa null.
+export function formatDutyReminder(duty: DutyInput | null, todayDow: number): string | null {
+  if (!duty || duty.day_of_week !== todayDow) return null
+  const base = `Bugün nöbettesin: ${duty.time_range} · ${duty.location}`
+  const note = duty.notes?.trim()
+  return note ? `${base} (${note})` : base
+}

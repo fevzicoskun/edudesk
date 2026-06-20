@@ -5,6 +5,7 @@ import { ScheduleService } from '@/src/domains/schedule/services/ScheduleService
 import { DutyService } from '@/src/domains/schedule/services/DutyService'
 import DersProgramiClient from './DersProgramiClient'
 import NobetKarti from './NobetKarti'
+import NobetCizelgesi from './NobetCizelgesi'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,9 +14,13 @@ export default async function DersProgramiPage() {
   if (!profile?.school_id) redirect('/login')
   if (!(isTeachingRole(profile.role) || isMudurOrAbove(profile.role))) redirect('/anasayfa')
 
-  const [{ periods, slots, classes }, duty] = await Promise.all([
+  const isYonetici = isMudurOrAbove(profile.role)
+
+  // Müdür/MY ek olarak okul nöbet çizelgesini görür (RLS müdür/MY'ye izinli).
+  const [{ periods, slots, classes }, duty, schoolDuties] = await Promise.all([
     ScheduleService.getMySchedule(),
     DutyService.getMyDuty(),
+    isYonetici ? DutyService.listSchoolDuties() : Promise.resolve([]),
   ])
 
   return (
@@ -28,6 +33,7 @@ export default async function DersProgramiPage() {
         teacherName={profile.full_name ?? ''}
       />
       <NobetKarti initialDuty={duty} />
+      {isYonetici && <NobetCizelgesi rows={schoolDuties} />}
     </div>
   )
 }

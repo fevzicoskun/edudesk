@@ -13,6 +13,35 @@ export const DutyRepository = {
       .maybeSingle()
   },
 
+  // Müdür/MY: okuldaki tüm nöbetler + öğretmen adı. RLS müdür/MY'ye tüm okul SELECT verir;
+  // öğretmen çağırırsa RLS yalnız kendi satırını döndürür (güvenli ama UI'da role guard'lı).
+  // teacher_id → auth.users FK olduğu için PostgREST embed edemez; profiles ayrı sorguyla map'lenir.
+  async listSchoolDuties(schoolId: string) {
+    const db = await createClient()
+    const { data: duties, error } = await db
+      .from('teacher_duties')
+      .select('teacher_id, day_of_week, time_range, location, notes')
+      .eq('school_id', schoolId)
+      .order('day_of_week')
+    if (error || !duties?.length) return { data: [], error }
+
+    const ids = [...new Set(duties.map(d => d.teacher_id))]
+    const { data: profs } = await db.from('profiles').select('id, full_name').in('id', ids)
+    const nameById = new Map((profs ?? []).map(p => [p.id as string, p.full_name as string | null]))
+
+    return {
+      data: duties.map(d => ({
+        teacher_id: d.teacher_id,
+        teacherName: nameById.get(d.teacher_id) ?? '—',
+        day_of_week: d.day_of_week,
+        time_range: d.time_range,
+        location: d.location,
+        notes: d.notes,
+      })),
+      error: null,
+    }
+  },
+
   async upsert(row: {
     teacher_id: string
     school_id: string

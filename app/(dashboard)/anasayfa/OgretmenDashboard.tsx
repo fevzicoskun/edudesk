@@ -8,6 +8,7 @@ import { getGreeting } from '@/src/shared/utils'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
 import OdevTamamlanmaWidget from './OdevTamamlanmaWidget'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
+import { DutyService } from '@/src/domains/schedule/services/DutyService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
@@ -20,6 +21,34 @@ const TONE: Record<Tone, string> = {
   blue:   'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
   orange: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800',
   rose:   'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800',
+}
+
+const DUTY_DAYS: Record<number, string> = { 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma' }
+
+// Öğretmenin kendi nöbet bilgisi şeridi. Bugün nöbet günüyse vurgulanır.
+function NobetBanner({ duty, todayDow }: {
+  duty: { day_of_week: number; time_range: string; location: string; notes?: string | null }
+  todayDow: number
+}) {
+  const bugun = duty.day_of_week === todayDow
+  return (
+    <Link
+      href="/ders-programi"
+      className={`flex items-center gap-2 flex-wrap rounded-xl border px-4 py-3 mb-4 text-sm transition-opacity hover:opacity-80 ${
+        bugun
+          ? 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
+          : 'bg-gray-50 text-gray-700 border-gray-200 dark:bg-slate-800/50 dark:text-slate-300 dark:border-slate-700'
+      }`}
+    >
+      <span aria-hidden>🔔</span>
+      <span className="font-semibold">Nöbet:</span>
+      <span>{DUTY_DAYS[duty.day_of_week] ?? '—'} · {duty.time_range} · {duty.location}</span>
+      {duty.notes && <span className="text-xs opacity-80">({duty.notes})</span>}
+      {bugun && (
+        <span className="ml-auto rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">BUGÜN</span>
+      )}
+    </Link>
+  )
 }
 
 function SummaryCard({ label, value, tone, href }: { label: string; value: number; tone: Tone; href?: string }) {
@@ -41,7 +70,10 @@ export default async function OgretmenDashboard() {
 
   void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
-  const metrics = await TeacherDashboardService.getDashboardMetrics(user.id)
+  const [metrics, duty] = await Promise.all([
+    TeacherDashboardService.getDashboardMetrics(user.id),
+    DutyService.getMyDuty(),
+  ])
 
   const today = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -86,6 +118,9 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Nöbet şeridi (kayıtlıysa) */}
+      {duty && <NobetBanner duty={duty} todayDow={today.getDay()} />}
 
       {/* Hızlı Aksiyonlar */}
       <HizliAksiyonlar
