@@ -3033,6 +3033,7 @@ export type Database = {
       }
       current_school_id: { Args: never; Returns: string }
       delete_school: { Args: { p_school_id: string }; Returns: undefined }
+      email_is_teacher: { Args: { p_email: string }; Returns: boolean }
       find_school_by_slug: {
         Args: { p_slug: string }
         Returns: {

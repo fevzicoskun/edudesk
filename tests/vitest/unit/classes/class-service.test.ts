@@ -302,24 +302,55 @@ describe('ClassService.updateVeliContact()', () => {
     expect(createClient).not.toHaveBeenCalled()
   })
 
-  it('yetkili kullanıcı → supabase update çağrılır, school_id filtresi uygulanır', async () => {
-    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentUpdate() as never)
+  // email_is_teacher RPC + students update için mock supabase.
+  function makeVeliDb({ clash }: { clash: boolean }) {
+    const studentsChain: Record<string, unknown> = {}
+    studentsChain.then  = (r: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(r)
+    studentsChain.catch = () => Promise.resolve({ error: null })
+    for (const m of ['update','eq']) studentsChain[m] = vi.fn().mockReturnValue(studentsChain)
 
-    const chain: Record<string, unknown> = {}
-    chain.then  = (r: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(r)
-    chain.catch = () => Promise.resolve({ error: null })
-    for (const m of ['update','eq','from']) chain[m] = vi.fn().mockReturnValue(chain)
-    const db = { from: vi.fn().mockReturnValue(chain) }
+    const rpc = vi.fn().mockResolvedValue({ data: clash, error: null })
+    const db = { from: vi.fn().mockReturnValue(studentsChain), rpc }
+    return { db, studentsChain, rpc }
+  }
+
+  it('yetkili kullanıcı + çakışma yok → email_is_teacher kontrol edilir, update çağrılır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentUpdate() as never)
+    const { db, studentsChain, rpc } = makeVeliDb({ clash: false })
     vi.mocked(createClient).mockResolvedValue(db as never)
 
     const result = await ClassService.updateVeliContact('stu-1', { email: 'a@b.com', telefon: null, ad: 'Veli' })
 
     expect(result).toEqual({})
+    expect(rpc).toHaveBeenCalledWith('email_is_teacher', { p_email: 'a@b.com' })
     expect(db.from).toHaveBeenCalledWith('students')
-    expect(chain.update).toHaveBeenCalledWith(
+    expect(studentsChain.update).toHaveBeenCalledWith(
       expect.objectContaining({ veli_email: 'a@b.com' })
     )
-    expect(chain.eq).toHaveBeenCalledWith('id', 'stu-1')
-    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
+    expect(studentsChain.eq).toHaveBeenCalledWith('id', 'stu-1')
+    expect(studentsChain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
+  })
+
+  it('e-posta bir öğretmene aitse → hata döner, students update ÇAĞRILMAZ', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentUpdate() as never)
+    const { db, studentsChain } = makeVeliDb({ clash: true })
+    vi.mocked(createClient).mockResolvedValue(db as never)
+
+    const result = await ClassService.updateVeliContact('stu-1', { email: 'ogretmen@okul.com', telefon: null, ad: 'Veli' })
+
+    expect(result.error).toMatch(/öğretmene ait/)
+    expect(studentsChain.update).not.toHaveBeenCalled()
+  })
+
+  it('e-posta yoksa (null) → çakışma kontrolü atlanır, update yapılır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentUpdate() as never)
+    const { db, rpc, studentsChain } = makeVeliDb({ clash: false })
+    vi.mocked(createClient).mockResolvedValue(db as never)
+
+    const result = await ClassService.updateVeliContact('stu-1', { email: null, telefon: '555', ad: 'Veli' })
+
+    expect(result).toEqual({})
+    expect(rpc).not.toHaveBeenCalled() // email yok → RPC hiç çağrılmaz
+    expect(studentsChain.update).toHaveBeenCalled()
   })
 })

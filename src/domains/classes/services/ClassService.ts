@@ -106,6 +106,16 @@ export const ClassService = {
     const ability  = await requireAbility()
     guard(ability, P.STUDENTS.UPDATE)
     const supabase = await createClient()
+
+    // Güvenlik: veli e-postası okuldaki bir öğretmenin e-postasıyla çakışamaz (kimlik karışması).
+    // Öğretmen e-postaları auth.users'ta → RLS'li client erişemez; email_is_teacher RPC
+    // (SECURITY DEFINER) yalnız boolean döner ve current_school_id() ile kendi okuluyla sınırlı.
+    if (data.email) {
+      const { data: isTeacher, error: clashErr } = await supabase.rpc('email_is_teacher', { p_email: data.email })
+      if (clashErr) return { error: 'E-posta doğrulanamadı, tekrar deneyin.' }
+      if (isTeacher) return { error: 'Bu e-posta bir öğretmene ait. Veli için farklı bir e-posta girin.' }
+    }
+
     const { error } = await supabase
       .from('students')
       .update({ veli_email: data.email, veli_telefon: data.telefon, veli_ad: data.ad })

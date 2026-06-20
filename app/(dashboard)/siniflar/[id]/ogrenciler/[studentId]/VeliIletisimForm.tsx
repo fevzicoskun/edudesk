@@ -15,7 +15,9 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
   const [state, action, pending] = useActionState(
     async (_prev: { ok: boolean; error?: string } | null, formData: FormData) => {
       try {
-        await updateVeliContact(studentId, classId, formData)
+        const result = await updateVeliContact(studentId, classId, formData)
+        // Action { error } döndürür (throw etmez) — çakışma/doğrulama hatasını burada yakala.
+        if (result?.error) return { ok: false, error: result.error }
         return { ok: true }
       } catch (e) {
         console.error('[VeliIletisimForm]', e)
