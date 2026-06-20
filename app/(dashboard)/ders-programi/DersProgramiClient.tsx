@@ -1,17 +1,36 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { saveSchedule } from '@/app/actions/schedule'
 import { parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextItem } from '@/src/domains/schedule/parseSchedulePdf'
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 
 const DAYS = [
-  { n: 1, label: 'Pazartesi' },
-  { n: 2, label: 'Salı' },
-  { n: 3, label: 'Çarşamba' },
-  { n: 4, label: 'Perşembe' },
-  { n: 5, label: 'Cuma' },
+  { n: 1, label: 'Pazartesi', short: 'Pzt' },
+  { n: 2, label: 'Salı', short: 'Sal' },
+  { n: 3, label: 'Çarşamba', short: 'Çar' },
+  { n: 4, label: 'Perşembe', short: 'Per' },
+  { n: 5, label: 'Cuma', short: 'Cum' },
 ]
+
+// Signature: each class keeps one consistent color across the whole grid, like a
+// printed timetable. Full literal strings so Tailwind's JIT can see them.
+const PALETTE = [
+  'bg-blue-50 text-blue-700 ring-blue-200/70 dark:bg-blue-500/15 dark:text-blue-200 dark:ring-blue-400/20',
+  'bg-emerald-50 text-emerald-700 ring-emerald-200/70 dark:bg-emerald-500/15 dark:text-emerald-200 dark:ring-emerald-400/20',
+  'bg-amber-50 text-amber-700 ring-amber-200/70 dark:bg-amber-500/15 dark:text-amber-200 dark:ring-amber-400/20',
+  'bg-violet-50 text-violet-700 ring-violet-200/70 dark:bg-violet-500/15 dark:text-violet-200 dark:ring-violet-400/20',
+  'bg-rose-50 text-rose-700 ring-rose-200/70 dark:bg-rose-500/15 dark:text-rose-200 dark:ring-rose-400/20',
+  'bg-cyan-50 text-cyan-700 ring-cyan-200/70 dark:bg-cyan-500/15 dark:text-cyan-200 dark:ring-cyan-400/20',
+  'bg-fuchsia-50 text-fuchsia-700 ring-fuchsia-200/70 dark:bg-fuchsia-500/15 dark:text-fuchsia-200 dark:ring-fuchsia-400/20',
+  'bg-teal-50 text-teal-700 ring-teal-200/70 dark:bg-teal-500/15 dark:text-teal-200 dark:ring-teal-400/20',
+]
+
+function classColor(key: string): string {
+  let h = 0
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
+  return PALETTE[h % PALETTE.length]
+}
 
 type Props = {
   initialPeriods: Period[]
@@ -24,13 +43,16 @@ type Props = {
 export default function DersProgramiClient({ initialPeriods, initialSlots, classes, subject, teacherName }: Props) {
   const [periods, setPeriods] = useState<Period[]>(initialPeriods)
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
-  const [editTimes, setEditTimes] = useState(false)
+  const [editing, setEditing] = useState(false)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
   const [importing, setImporting] = useState(false)
   // İsim otomatik eşleşmezse: kullanıcıya sayfa seçtirmek için tüm sayfaların verisi + başlıkları
   const [pageChoices, setPageChoices] = useState<{ pages: PdfTextItem[][]; titles: string[] } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const classNameById = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes])
+  const todayN = new Date().getDay() // 0=Paz … 6=Cmt; DAYS.n 1..5 ile eşleşir
 
   function applyPage(items: PdfTextItem[], title: string) {
     const found = parseSchedulePdf(items, classes)
@@ -40,6 +62,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
     }
     setSlots(found)
     setPageChoices(null)
+    setEditing(true) // kullanıcı içe aktarılanı kontrol edip kaydetsin
     setMsg({ ok: true, text: `${title} — ${found.length} ders saati bulundu. Kontrol edip kaydedin.` })
   }
 
@@ -103,16 +126,31 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
     setMsg(null)
     startTransition(async () => {
       const res = await saveSchedule({ periods, slots })
-      setMsg(res.error ? { text: res.error } : { ok: true, text: 'Kaydedildi' })
+      if (res.error) {
+        setMsg({ text: res.error })
+      } else {
+        setMsg({ ok: true, text: 'Ders programın kaydedildi.' })
+        setEditing(false)
+      }
     })
   }
 
+  const btnOutline =
+    'text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50 transition-colors'
+  const btnPrimary =
+    'text-sm px-4 py-1.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors'
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
+      {/* Başlık + eylemler */}
+      <div className="flex items-start justify-between gap-3 flex-wrap mb-5">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ders Programım</h1>
-          {subject && <p className="text-sm text-gray-500 dark:text-slate-400">{subject}</p>}
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-100">Ders Programım</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {subject && <span>{subject}</span>}
+            {subject && <span className="mx-1.5 text-gray-300 dark:text-slate-600">·</span>}
+            {slots.length > 0 ? `haftada ${slots.length} ders saati` : 'henüz ders eklenmedi'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf} className="hidden" aria-hidden="true" tabIndex={-1} />
@@ -120,28 +158,35 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={importing || pending || classes.length === 0}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
+            className={btnOutline}
           >
             {importing ? 'Okunuyor…' : 'PDF\'ten doldur'}
           </button>
-          <button
-            onClick={() => setEditTimes(v => !v)}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
-          >
-            {editTimes ? 'Saatleri gizle' : 'Zil saatlerini düzenle'}
-          </button>
-          <button
-            onClick={save}
-            disabled={pending}
-            className="text-sm px-4 py-1.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50"
-          >
-            {pending ? 'Kaydediliyor…' : 'Kaydet'}
-          </button>
+          {editing ? (
+            <>
+              <button type="button" onClick={() => setEditing(false)} disabled={pending} className={btnOutline}>
+                Görüntüle
+              </button>
+              <button type="button" onClick={save} disabled={pending} className={btnPrimary}>
+                {pending ? 'Kaydediliyor…' : 'Kaydet'}
+              </button>
+            </>
+          ) : (
+            <button type="button" onClick={() => setEditing(true)} disabled={classes.length === 0} className={btnPrimary}>
+              Düzenle
+            </button>
+          )}
         </div>
       </div>
 
       {msg && (
-        <p className={`mb-3 text-sm ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        <p
+          className={`mb-4 text-sm rounded-lg px-3 py-2 ${
+            msg.ok
+              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
+              : 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300'
+          }`}
+        >
           {msg.text}
         </p>
       )}
@@ -154,7 +199,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                 key={i}
                 type="button"
                 onClick={() => applyPage(pageChoices.pages[i], t)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800"
+                className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors"
               >
                 {t}
               </button>
@@ -163,47 +208,102 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Çizelge */}
+      <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <table className="w-full border-collapse text-sm">
           <thead>
-            <tr>
-              <th className="p-2 text-left text-gray-500 dark:text-slate-400 font-medium w-28">Ders</th>
-              {DAYS.map(d => (
-                <th key={d.n} className="p-2 text-left text-gray-700 dark:text-slate-200 font-semibold min-w-[120px]">{d.label}</th>
-              ))}
+            <tr className="bg-gray-50/80 dark:bg-slate-800/40">
+              <th className="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-slate-500 w-24 border-b border-gray-200 dark:border-slate-800">
+                Saat
+              </th>
+              {DAYS.map(d => {
+                const isToday = d.n === todayN
+                return (
+                  <th
+                    key={d.n}
+                    className={`px-3 py-3 text-center font-semibold border-b border-l border-gray-200 dark:border-slate-800 min-w-[120px] ${
+                      isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-slate-200'
+                    }`}
+                  >
+                    <span className="hidden sm:inline">{d.label}</span>
+                    <span className="sm:hidden">{d.short}</span>
+                    {isToday && (
+                      <span className="ml-1.5 align-middle inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-600 text-white">
+                        bugün
+                      </span>
+                    )}
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody>
             {periods.map(p => (
-              <tr key={p.no} className="border-t border-gray-100 dark:border-slate-800">
-                <td className="p-2 align-top">
-                  <div className="font-semibold text-gray-800 dark:text-slate-200">{p.no}. ders</div>
-                  {editTimes ? (
-                    <div className="flex items-center gap-1 mt-1">
-                      <input type="time" value={p.start} onChange={e => setPeriodTime(p.no, 'start', e.target.value)}
-                        className="w-[72px] text-xs border rounded px-1 py-0.5 dark:bg-slate-800 dark:border-slate-600" />
+              <tr key={p.no} className="border-t border-gray-100 dark:border-slate-800/70">
+                {/* Saat rayı */}
+                <td className="px-3 py-2 align-middle text-center bg-gray-50/50 dark:bg-slate-800/20 border-r border-gray-100 dark:border-slate-800">
+                  <div className="text-base font-bold text-gray-700 dark:text-slate-300 leading-none">{p.no}</div>
+                  {editing ? (
+                    <div className="flex items-center justify-center gap-1 mt-1.5">
+                      <input
+                        type="time"
+                        value={p.start}
+                        onChange={e => setPeriodTime(p.no, 'start', e.target.value)}
+                        className="w-[68px] text-xs border rounded px-1 py-0.5 dark:bg-slate-800 dark:border-slate-600"
+                      />
                       <span className="text-gray-400">–</span>
-                      <input type="time" value={p.end} onChange={e => setPeriodTime(p.no, 'end', e.target.value)}
-                        className="w-[72px] text-xs border rounded px-1 py-0.5 dark:bg-slate-800 dark:border-slate-600" />
+                      <input
+                        type="time"
+                        value={p.end}
+                        onChange={e => setPeriodTime(p.no, 'end', e.target.value)}
+                        className="w-[68px] text-xs border rounded px-1 py-0.5 dark:bg-slate-800 dark:border-slate-600"
+                      />
                     </div>
                   ) : (
-                    <div className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{p.start}–{p.end}</div>
+                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-1 tabular-nums">
+                      {p.start}–{p.end}
+                    </div>
                   )}
                 </td>
-                {DAYS.map(d => (
-                  <td key={d.n} className="p-1 align-top">
-                    <select
-                      value={cellClass(d.n, p.no)}
-                      onChange={e => setCell(d.n, p.no, e.target.value)}
-                      className="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200"
+
+                {DAYS.map(d => {
+                  const id = cellClass(d.n, p.no)
+                  const isToday = d.n === todayN
+                  return (
+                    <td
+                      key={d.n}
+                      className={`px-1.5 py-1.5 align-middle border-l border-gray-100 dark:border-slate-800/70 ${
+                        isToday && !editing ? 'bg-blue-50/40 dark:bg-blue-500/[0.04]' : ''
+                      }`}
                     >
-                      <option value="">—</option>
-                      {classes.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </td>
-                ))}
+                      {editing ? (
+                        <select
+                          value={id}
+                          onChange={e => setCell(d.n, p.no, e.target.value)}
+                          aria-label={`${d.label} ${p.no}. ders`}
+                          className="w-full text-sm border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-2 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">—</option>
+                          {classes.map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : id ? (
+                        <div
+                          className={`flex items-center justify-center min-h-[44px] rounded-lg px-2 py-1.5 text-center font-semibold ring-1 ${classColor(
+                            classNameById.get(id) ?? id,
+                          )}`}
+                        >
+                          {classNameById.get(id) ?? '—'}
+                        </div>
+                      ) : (
+                        <div className="min-h-[44px]" aria-hidden="true" />
+                      )}
+                    </td>
+                  )
+                })}
               </tr>
             ))}
           </tbody>
