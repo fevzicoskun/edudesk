@@ -17,7 +17,6 @@ export default async function ProfilPage() {
       email={user.email ?? ''}
       role={profile?.role ?? 'ogretmen'}
       avatarUrl={profile?.avatar_url ?? null}
-      userId={user.id}
     />
   )
 }

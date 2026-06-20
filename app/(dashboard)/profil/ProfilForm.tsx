@@ -15,7 +15,6 @@ export default function ProfilForm({
   email,
   role,
   avatarUrl,
-  userId,
 }: {
   defaultFullName: string
   defaultSubject: string
@@ -23,7 +22,6 @@ export default function ProfilForm({
   email: string
   role: string
   avatarUrl: string | null
-  userId: string
 }) {
   const [state, action, pending] = useActionState(
     async (_prev: typeof initialState, formData: FormData) => {
@@ -38,7 +36,7 @@ export default function ProfilForm({
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto">
       <div className="mb-6 flex items-center gap-4">
-        <AvatarUpload name={defaultFullName || email} initialUrl={avatarUrl} userId={userId} />
+        <AvatarUpload name={defaultFullName || email} initialUrl={avatarUrl} />
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 truncate">
             {defaultFullName || 'Profilim'}

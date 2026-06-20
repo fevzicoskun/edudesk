@@ -5,14 +5,24 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
 
-// Client dosyayı kendi {userId}/ klasörüne yükler, sonra yolu buraya gönderir.
-// Sunucu yolun kullanıcıya ait olduğunu doğrular ve public URL'i profile yazar.
-export async function updateAvatar(path: string): Promise<{ error?: string; url?: string }> {
+// Upload sunucuda yapılır: sunucu client'ı oturumu cookie'den alır (auth.uid() garanti),
+// path user.id'den türetilir → storage owner-folder RLS check'i kesin geçer.
+// Küçültülmüş webp tarayıcıdan FormData ile gelir (~10-30KB).
+export async function uploadAvatar(formData: FormData): Promise<{ error?: string; url?: string }> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }
-  if (!path.startsWith(`${user.id}/`) || path.includes('..')) return { error: 'Geçersiz dosya yolu' }
+
+  const file = formData.get('file')
+  if (!(file instanceof File) || file.size === 0) return { error: 'Dosya bulunamadı' }
+  if (file.size > 1_000_000) return { error: 'Görsel çok büyük' } // küçültülmüş webp normalde <100KB
 
   const supabase = await createClient()
+  const path = `${user.id}/${Date.now()}.webp`
+  const { error: upErr } = await supabase.storage
+    .from('avatars')
+    .upload(path, file, { contentType: 'image/webp', upsert: true })
+  if (upErr) return { error: upErr.message }
+
   const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
   const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
   if (error) return { error: error.message }

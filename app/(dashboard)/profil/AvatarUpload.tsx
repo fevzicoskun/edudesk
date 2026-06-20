@@ -3,17 +3,14 @@
 import { useRef, useState } from 'react'
 import Avatar from '@/app/components/Avatar'
 import { resizeImage } from '@/src/shared/image/resizeImage'
-import { updateAvatar, removeAvatar } from '@/app/actions/avatar'
-import { createClient } from '@/src/infrastructure/supabase/client'
+import { uploadAvatar, removeAvatar } from '@/app/actions/avatar'
 
 export default function AvatarUpload({
   name,
   initialUrl,
-  userId,
 }: {
   name: string
   initialUrl: string | null
-  userId: string
 }) {
   const [url, setUrl] = useState<string | null>(initialUrl)
   const [busy, setBusy] = useState(false)
@@ -30,13 +27,9 @@ export default function AvatarUpload({
     setBusy(true)
     try {
       const blob = await resizeImage(file)
-      const path = `${userId}/${Date.now()}.webp`
-      const supabase = createClient()
-      const { error: upErr } = await supabase.storage
-        .from('avatars')
-        .upload(path, blob, { contentType: 'image/webp', upsert: true })
-      if (upErr) throw upErr
-      const res = await updateAvatar(path)
+      const fd = new FormData()
+      fd.append('file', blob, 'avatar.webp')
+      const res = await uploadAvatar(fd)
       if (res.error || !res.url) throw new Error(res.error ?? 'Kaydedilemedi')
       setUrl(`${res.url}?t=${Date.now()}`) // cache-bust: yeni foto anında görünsün
     } catch (e) {
