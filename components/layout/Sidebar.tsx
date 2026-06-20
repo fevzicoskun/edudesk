@@ -148,6 +148,9 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
         <div className="flex items-center gap-1">
           <NotificationBell align="right" userId={profile?.id} />
           <ThemeToggle />
+          <Link href="/profil" aria-label="Profilim" className="ml-1">
+            <Avatar name={displayName} size="sm" />
+          </Link>
         </div>
       </header>
 
