@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { saveSchedule } from '@/app/actions/schedule'
-import { parseSchedulePdf } from '@/src/domains/schedule/parseSchedulePdf'
+import { parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextItem } from '@/src/domains/schedule/parseSchedulePdf'
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 
 const DAYS = [
@@ -18,40 +18,62 @@ type Props = {
   initialSlots: Slot[]
   classes: { id: string; name: string }[]
   subject: string
+  teacherName: string
 }
 
-export default function DersProgramiClient({ initialPeriods, initialSlots, classes, subject }: Props) {
+export default function DersProgramiClient({ initialPeriods, initialSlots, classes, subject, teacherName }: Props) {
   const [periods, setPeriods] = useState<Period[]>(initialPeriods)
   const [slots, setSlots] = useState<Slot[]>(initialSlots)
   const [editTimes, setEditTimes] = useState(false)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
   const [importing, setImporting] = useState(false)
+  // İsim otomatik eşleşmezse: kullanıcıya sayfa seçtirmek için tüm sayfaların verisi + başlıkları
+  const [pageChoices, setPageChoices] = useState<{ pages: PdfTextItem[][]; titles: string[] } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  function applyPage(items: PdfTextItem[], title: string) {
+    const found = parseSchedulePdf(items, classes)
+    if (found.length === 0) {
+      setMsg({ text: `${title || 'Sayfa'}: ders bulunamadı (farklı sayfa ya da taranmış görüntü olabilir). Izgarayı elle doldurabilirsiniz.` })
+      return
+    }
+    setSlots(found)
+    setPageChoices(null)
+    setMsg({ ok: true, text: `${title} — ${found.length} ders saati bulundu. Kontrol edip kaydedin.` })
+  }
 
   async function onPickPdf(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = '' // aynı dosya tekrar seçilebilsin
     if (!file) return
     setMsg(null)
+    setPageChoices(null)
     setImporting(true)
     try {
       // pdfjs yalnız bu butona basınca yüklenir — uygulama bundle'ını şişirmez
       const pdfjs = await import('pdfjs-dist')
       const data = new Uint8Array(await file.arrayBuffer())
       const doc = await pdfjs.getDocument({ data }).promise
-      const page = await doc.getPage(1) // tek-sayfa varsayımı: yalnız 1. sayfa
-      const tc = await page.getTextContent()
-      const items = tc.items
-        .filter((it): it is typeof it & { str: string; transform: number[]; width: number } => 'str' in it)
-        .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5], width: it.width }))
-      const found = parseSchedulePdf(items, classes)
-      if (found.length === 0) {
-        setMsg({ text: 'PDF okundu ama ders bulunamadı (taranmış görüntü ya da farklı bir sayfa olabilir). Izgarayı elle doldurabilirsiniz.' })
-        return
+      // Her sayfanın metin koordinatlarını çıkar (tüm-okul PDF'inde her öğretmen 1 sayfa)
+      const pages: PdfTextItem[][] = []
+      for (let i = 1; i <= doc.numPages; i++) {
+        const tc = await (await doc.getPage(i)).getTextContent()
+        pages.push(
+          tc.items
+            .filter((it): it is typeof it & { str: string; transform: number[]; width: number } => 'str' in it)
+            .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5], width: it.width })),
+        )
       }
-      setSlots(found)
-      setMsg({ ok: true, text: `${found.length} ders saati bulundu. Kontrol edip kaydedin.` })
+      const titles = pages.map(extractPageTitle)
+      const idx = findTeacherPageIndex(titles, teacherName)
+      if (idx >= 0) {
+        applyPage(pages[idx], titles[idx])
+      } else {
+        // Otomatik eşleşmedi → kullanıcı kendi sayfasını seçsin
+        setPageChoices({ pages, titles })
+        setMsg({ text: `Adın ("${teacherName}") PDF'te otomatik bulunamadı. Aşağıdan kendi sayfanı seç:` })
+      }
     } catch {
       setMsg({ text: 'PDF okunamadı, ızgarayı elle doldurabilirsiniz.' })
     } finally {
@@ -118,6 +140,23 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
         <p className={`mb-3 text-sm ${msg.ok ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
           {msg.text}
         </p>
+      )}
+
+      {pageChoices && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {pageChoices.titles.map((t, i) =>
+            t ? (
+              <button
+                key={i}
+                type="button"
+                onClick={() => applyPage(pageChoices.pages[i], t)}
+                className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-blue-50 dark:hover:bg-slate-800"
+              >
+                {t}
+              </button>
+            ) : null,
+          )}
+        </div>
       )}
 
       <div className="overflow-x-auto">

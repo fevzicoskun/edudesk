@@ -14,15 +14,18 @@ ASC PDF'i metin katmanlıdır: her yazının gerçek (x, y) konumu ve genişliğ
 
 ## Mimari
 
-Parse **tarayıcıda** yapılır (sunucuya PDF gitmez):
+Parse **tarayıcıda** yapılır (sunucuya PDF gitmez). PDF tüm-okuldur (her öğretmen 1 sayfa); öğretmenin kendi sayfası **adıyla** bulunur:
 ```
-"PDF'ten doldur" → tek-sayfa .pdf seç
-  → lazy import('pdfjs-dist'), sayfa 1 textContent
-  → parseSchedulePdf(items, classes) → Slot[]
+"PDF'ten doldur" → tüm-okul .pdf seç
+  → lazy import('pdfjs-dist'), HER sayfanın textContent'i
+  → her sayfanın başlığı = extractPageTitle (en üst satır = öğretmen adı)
+  → findTeacherPageIndex(titles, profile.full_name) → eşleşen sayfa
+     ├─ bulundu → parseSchedulePdf(o sayfa, classes) → Slot[]
+     └─ bulunamadı → sayfa başlıkları liste olarak gösterilir, öğretmen seçer
   → setSlots(...) ızgaraya dolar (kaydedilmez)
   → öğretmen kontrol → "Kaydet" (mevcut saveSchedule)
 ```
-Sunucu tarafı yok, gizli anahtar yok (vision OCR'dan farkı bu), yeni server action yok.
+Sunucu tarafı yok, gizli anahtar yok (vision OCR'dan farkı bu), yeni server action yok. (Tek-sayfa PDF de çalışır: numPages=1, başlık eşleşir.)
 
 ## Bileşenler
 
@@ -37,20 +40,22 @@ Sunucu tarafı yok, gizli anahtar yok (vision OCR'dan farkı bu), yeni server ac
 - **Yardımcı:** `normalizeClassName` (küçük harf, harf/rakam dışı ayraçları sök — eski ocrPrompt'tan).
 - **Çıktı:** `Slot[]` (`{ day, period, class_id }`).
 
+- `extractPageTitle(items)`: en üst satır (max y, pdfjs alt-köken) = öğretmen adı.
+- `findTeacherPageIndex(titles, fullName)`: tr-locale kelime kümesi eşleştirme (büyük/küçük + göbek adı toleranslı), yoksa -1.
+
 ### `app/(dashboard)/ders-programi/DersProgramiClient.tsx`
-- `.pdf` kabul eden gizli file input + "PDF'ten doldur" butonu.
-- Handler: `import('pdfjs-dist')` (lazy), `getDocument`, sayfa 1, `getTextContent()`, item'ları `{str, x, y, width}`'e indir, `parseSchedulePdf` çağır, `setSlots`, mesaj: "N ders bulundu. Kontrol edip kaydedin."
+- `.pdf` kabul eden gizli file input + "PDF'ten doldur" butonu. Yeni prop: `teacherName` (= `profile.full_name`).
+- Handler: `import('pdfjs-dist')` (lazy), tüm sayfaların `getTextContent()`'i → `{str,x,y,width}`; başlıklar → `findTeacherPageIndex`. Eşleşirse `applyPage` (parse + setSlots + mesaj "Ad — N ders bulundu"). Eşleşmezse sayfa başlıklarını buton listesi olarak göster; tıklayınca `applyPage`.
 
 ## Test
 `parseSchedulePdf.test.ts` — POC'tan türetilen **gerçek** FEVZİ COŞKUN item fixture'ı; beklenen 22-saatlik Slot listesi assert edilir. normalizeClassName ve edge case'ler (eşleşmeyen sınıf, boş girdi) için ayrı testler.
 
 ## Hata yönetimi
 - Metin katmanı yok / boş (taranmış PDF): item'lar boş → parser `[]` döner; UI "PDF metin içermiyor, ızgarayı elle doldurun".
-- Hiç sınıf eşleşmedi: `[]` ama ham sınıf vardı → UI "Program okundu ama dersler okul sınıflarınızla eşleşmedi".
-- PDF >1 sayfa: yalnız 1. sayfa işlenir.
+- Seçilen sayfada ders yok / eşleşmedi: `applyPage` boş slot → "Sayfa: ders bulunamadı".
+- İsim otomatik bulunamadı: hata değil → sayfa seçim listesi gösterilir.
 - `import('pdfjs-dist')` / parse hatası: try/catch → "PDF okunamadı, ızgarayı elle doldurabilirsiniz".
 
 ## Kapsam dışı (YAGNI)
 - Zil saatlerini PDF'ten okuma (DEFAULT_PERIODS zaten okula uygun).
 - Sunucu tarafı parse, dosya yükleme/saklama.
-- Çok-sayfa (tüm okul) PDF + öğretmen-adı eşleştirme/sayfa seçimi — kullanıcı tek-sayfa yükleyecek.

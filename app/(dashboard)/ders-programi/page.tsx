@@ -19,6 +19,7 @@ export default async function DersProgramiPage() {
       initialSlots={slots}
       classes={classes}
       subject={profile.subject ?? ''}
+      teacherName={profile.full_name ?? ''}
     />
   )
 }

@@ -8,6 +8,43 @@ export function normalizeClassName(name: string): string {
   return String(name ?? '').toLowerCase().replace(/[^a-z0-9çğıöşü]/g, '')
 }
 
+// Türkçe isim → kelime kümesi: tr-locale küçük harf, harf-dışı temizlenmiş ad/soyad parçaları.
+function nameWords(s: string): string[] {
+  return String(s ?? '')
+    .toLocaleLowerCase('tr')
+    .split(/\s+/)
+    .map(w => w.replace(/[^a-zçğıöşü]/g, ''))
+    .filter(Boolean)
+}
+
+// Sayfanın en üst satırındaki metin = öğretmen adı (PDF başlığı). pdfjs alt-köken: en büyük y en üsttedir.
+export function extractPageTitle(items: PdfTextItem[]): string {
+  if (items.length === 0) return ''
+  const maxY = Math.max(...items.map(i => i.y))
+  return items
+    .filter(i => Math.abs(i.y - maxY) < 5)
+    .sort((a, b) => a.x - b.x)
+    .map(i => i.str)
+    .join(' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Öğretmen adına karşılık gelen sayfa index'i. Tüm ad/soyad kelimeleri başlıkta geçmeli;
+// kelime sayısı da eşitse "tam" sayılır (göbek adı farkı tolere edilir). Yoksa -1.
+export function findTeacherPageIndex(titles: string[], fullName: string): number {
+  const target = nameWords(fullName)
+  if (target.length === 0) return -1
+  let exact = -1, partial = -1
+  titles.forEach((t, i) => {
+    const w = nameWords(t)
+    if (!target.every(tw => w.includes(tw))) return
+    if (w.length === target.length) { if (exact === -1) exact = i }
+    else if (partial === -1) partial = i
+  })
+  return exact !== -1 ? exact : partial
+}
+
 const DAY_NO: Record<string, number> = { Pa: 1, Sa: 2, Ça: 3, Pe: 4, Cu: 5 }
 const CLASS_RE = /^\d{1,2}[A-Za-zÇĞİÖŞÜçğıöşü]$/
 const cx = (it: PdfTextItem) => it.x + it.width / 2

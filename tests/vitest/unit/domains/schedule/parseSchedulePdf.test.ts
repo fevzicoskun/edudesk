@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { normalizeClassName, parseSchedulePdf, type PdfTextItem } from '@/src/domains/schedule/parseSchedulePdf'
+import { normalizeClassName, parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextItem } from '@/src/domains/schedule/parseSchedulePdf'
 
 // FEVZİ COŞKUN sayfasından GERÇEK pdfjs koordinatları (transform[4]=x, transform[5]=y, width).
 // pdfjs y ekseni alt-köken (büyük y = üst). Period başlıkları en üstte (y≈507), günler solda.
@@ -81,6 +81,38 @@ describe('normalizeClassName', () => {
   it('ayraç ve büyük/küçük harf farkını yok sayar', () => {
     expect(normalizeClassName('9B')).toBe(normalizeClassName('9/B'))
     expect(normalizeClassName('10 A')).toBe(normalizeClassName('10-a'))
+  })
+})
+
+describe('extractPageTitle', () => {
+  it('en üstteki satırı (öğretmen adı) döndürür', () => {
+    const items: PdfTextItem[] = [
+      { str: 'DENİZLİ - ÖZEL DENİZLİ BAHÇEŞEHİR KOLEJİ', x: 17.0, y: 526.0, width: 294.0 },
+      { str: 'FEVZİ COŞKUN', x: 293.9, y: 539.1, width: 254.5 },
+      { str: '1', x: 129.8, y: 507.5, width: 8.8 },
+    ]
+    expect(extractPageTitle(items)).toBe('FEVZİ COŞKUN')
+  })
+  it('aynı satırdaki parçaları soldan sağa birleştirir', () => {
+    const items: PdfTextItem[] = [
+      { str: 'FEVZİ', x: 293.9, y: 539.1, width: 80 },
+      { str: 'COŞKUN', x: 400.0, y: 539.1, width: 100 },
+    ]
+    expect(extractPageTitle(items)).toBe('FEVZİ COŞKUN')
+  })
+})
+
+describe('findTeacherPageIndex', () => {
+  const titles = ['YASEMİN ÖZDANIŞMAN', 'KUDRET CAN', 'HÜSEYİN ÜNAL', 'FEVZİ COŞKUN']
+  it('Türkçe büyük/küçük harf farkını yok sayarak eşleştirir', () => {
+    expect(findTeacherPageIndex(titles, 'Fevzi Coşkun')).toBe(3)
+    expect(findTeacherPageIndex(titles, 'yasemin özdanışman')).toBe(0)
+  })
+  it('eşleşme yoksa -1 döner', () => {
+    expect(findTeacherPageIndex(titles, 'Olmayan Öğretmen')).toBe(-1)
+  })
+  it('göbek adı farkını tolere eder (içerme)', () => {
+    expect(findTeacherPageIndex(['FEVZİ MEHMET COŞKUN'], 'Fevzi Coşkun')).toBe(0)
   })
 })
 
