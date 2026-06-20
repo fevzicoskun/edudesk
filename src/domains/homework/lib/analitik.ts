@@ -211,6 +211,91 @@ export function computeKpiCards(
   return { totalHomeworks, avgCompletionPct, riskyStudentCount, pendingReviewCount }
 }
 
+// --- Başarı Haritası (sınıf × hafta heatmap) ---
+export type HeatLevel = 'high' | 'mid' | 'low'
+export type HeatCell = { pct: number; level: HeatLevel }
+export type HeatRow = { classId: string; className: string; cells: (HeatCell | null)[] }
+export type ClassWeekHeatmap = { weeks: string[]; rows: HeatRow[] }
+
+// Girdi: tamamlanma yüzdesi (0-100). Çıktı: renk/ikon seviyesi.
+export function heatLevel(pct: number): HeatLevel {
+  if (pct >= 75) return 'high'
+  if (pct >= 50) return 'mid'
+  return 'low'
+}
+
+// Girdi: ödevler + gönderiler + öğrenciler + sınıflar (id/ad).
+// Çıktı: sınıf satırları × hafta sütunları; her hücre o sınıfın o haftaki tamamlanma %'si
+// (yapildi / (slot - mazeretli)), o hafta ödevi yoksa null. En fazla son 8 hafta.
+export function computeClassWeekHeatmap(
+  homeworks: AnalitikHomework[],
+  submissions: AnalitikSubmission[],
+  students: AnalitikStudent[],
+  classes: { id: string; name: string }[],
+): ClassWeekHeatmap {
+  const studentsByClass = new Map<string, number>()
+  for (const s of students) {
+    studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
+  }
+
+  // Her ödeve hafta anahtarı ekle (due_date'i olmayanlar atlanır).
+  const datedHws = homeworks
+    .filter(h => h.due_date !== null)
+    .map(h => ({
+      ...h,
+      weekKey: startOfWeek(parseISO(h.due_date as string), { weekStartsOn: 1 }).toISOString().slice(0, 10),
+    }))
+
+  const weeks = [...new Set(datedHws.map(h => h.weekKey))].sort((a, b) => a.localeCompare(b)).slice(-8)
+  const weekSet = new Set(weeks)
+  if (weeks.length === 0) return { weeks: [], rows: [] }
+
+  // submission'ları ödev bazında topla (tek geçiş).
+  const subsByHw = new Map<string, { yapildi: number; mazeretli: number }>()
+  for (const s of submissions) {
+    const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0 }
+    if (s.status === 'yapildi') cur.yapildi++
+    else if (s.status === 'mazeretli') cur.mazeretli++
+    subsByHw.set(s.homework_id, cur)
+  }
+
+  // (classId|weekKey) → o gruptaki ödevler
+  const cellHws = new Map<string, typeof datedHws>()
+  for (const h of datedHws) {
+    if (!weekSet.has(h.weekKey)) continue
+    const key = `${h.class_id}|${h.weekKey}`
+    const list = cellHws.get(key) ?? []
+    list.push(h)
+    cellHws.set(key, list)
+  }
+
+  const rows: HeatRow[] = []
+  for (const cls of classes) {
+    // Bu sınıfın gösterilen haftalar içinde hiç ödevi yoksa satırı atla.
+    const hasAny = weeks.some(w => cellHws.has(`${cls.id}|${w}`))
+    if (!hasAny) continue
+
+    const studentCount = studentsByClass.get(cls.id) ?? 0
+    const cells = weeks.map((w): HeatCell | null => {
+      const list = cellHws.get(`${cls.id}|${w}`)
+      if (!list || list.length === 0) return null
+      const totalSlots = list.length * studentCount
+      let yapildi = 0
+      let mazeretli = 0
+      for (const h of list) {
+        const c = subsByHw.get(h.id)
+        if (c) { yapildi += c.yapildi; mazeretli += c.mazeretli }
+      }
+      const eligible = totalSlots - mazeretli
+      const pct = eligible <= 0 ? 0 : Math.round((yapildi / eligible) * 100)
+      return { pct, level: heatLevel(pct) }
+    })
+    rows.push({ classId: cls.id, className: cls.name, cells })
+  }
+
+  return { weeks, rows }
+}
+
 export type TeacherStat = {
   teacher_id: string
   full_name: string

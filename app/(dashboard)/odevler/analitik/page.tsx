@@ -8,6 +8,7 @@ import {
   computeRiskyStudents,
   computeClassStats,
   computeWeeklyTrend,
+  computeClassWeekHeatmap,
   computeTeacherStats,
   type AnalitikHomework,
   type AnalitikSubmission,
@@ -15,6 +16,7 @@ import {
   type TeacherStat,
 } from '@/src/domains/homework/lib/analitik'
 import AnalitikOzet from './AnalitikOzet'
+import BasariHeatmap from './BasariHeatmap'
 import SinifDetay from './SinifDetay'
 import OgrenciSicil from './OgrenciSicil'
 import OgretmenKarsilastirma from './OgretmenKarsilastirma'
@@ -87,6 +89,7 @@ export default async function AnalitikPage() {
   const riskyStudents = computeRiskyStudents(students, homeworks, submissions)
   const kpi           = computeKpiCards(homeworks, submissions, students, riskyStudents.length)
   const weeklyTrend   = computeWeeklyTrend(homeworks, submissions, students)
+  const heatmap       = computeClassWeekHeatmap(homeworks, submissions, students, activeClasses)
 
   const classStats = activeClasses.map(c => {
     const studentCount = students.filter(s => s.class_id === c.id).length
@@ -106,6 +109,7 @@ export default async function AnalitikPage() {
           </Link>
         </div>
         <AnalitikOzet kpi={kpi} />
+        <BasariHeatmap data={heatmap} />
         <SinifDetay classStats={classStats} weeklyTrend={weeklyTrend} />
         <OgrenciSicil riskyStudents={riskyStudents} />
         {isManager && <OgretmenKarsilastirma stats={teacherStats} />}
