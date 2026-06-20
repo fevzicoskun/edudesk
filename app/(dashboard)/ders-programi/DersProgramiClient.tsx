@@ -1,7 +1,7 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
-import { saveSchedule, ocrSchedule } from '@/app/actions/schedule'
+import { useState, useTransition } from 'react'
+import { saveSchedule } from '@/app/actions/schedule'
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 
 const DAYS = [
@@ -25,7 +25,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   const [editTimes, setEditTimes] = useState(false)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
-  const [ocring, setOcring] = useState(false)
 
   const cellClass = (day: number, period: number) =>
     slots.find(s => s.day === day && s.period === period)?.class_id ?? ''
@@ -39,27 +38,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
 
   function setPeriodTime(no: number, field: 'start' | 'end', value: string) {
     setPeriods(prev => prev.map(p => (p.no === no ? { ...p, [field]: value } : p)))
-  }
-
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    e.target.value = '' // aynı dosya tekrar seçilebilsin
-    if (!file) return
-    setMsg(null)
-    setOcring(true)
-    try {
-      const fd = new FormData()
-      fd.append('image', file)
-      const res = await ocrSchedule(fd)
-      if (res.error) { setMsg({ text: res.error }); return }
-      const found = res.slots ?? []
-      setSlots(found)
-      setMsg({ ok: true, text: `${found.length} ders bulundu. Lütfen kontrol edip kaydedin.` })
-    } finally {
-      setOcring(false)
-    }
   }
 
   function save() {
@@ -78,15 +56,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
           {subject && <p className="text-sm text-gray-500 dark:text-slate-400">{subject}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <input ref={fileRef} type="file" accept="image/*" onChange={onPickImage} className="hidden" aria-hidden="true" />
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={ocring || pending || classes.length === 0}
-            className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
-          >
-            {ocring ? 'Okunuyor…' : 'Fotoğraftan doldur'}
-          </button>
           <button
             onClick={() => setEditTimes(v => !v)}
             className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
