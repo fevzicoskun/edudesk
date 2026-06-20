@@ -53,6 +53,9 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
     try {
       // pdfjs yalnız bu butona basınca yüklenir — uygulama bundle'ını şişirmez
       const pdfjs = await import('pdfjs-dist')
+      // v6'da worker zorunlu; worker public/'ten same-origin yüklenir (bundler'dan bağımsız)
+      // ponytail: pdfjs sürümü güncellenirse public/pdf.worker.min.mjs'i de yenile
+      pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs'
       const data = new Uint8Array(await file.arrayBuffer())
       const doc = await pdfjs.getDocument({ data }).promise
       // Her sayfanın metin koordinatlarını çıkar (tüm-okul PDF'inde her öğretmen 1 sayfa)
@@ -74,7 +77,8 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
         setPageChoices({ pages, titles })
         setMsg({ text: `Adın ("${teacherName}") PDF'te otomatik bulunamadı. Aşağıdan kendi sayfanı seç:` })
       }
-    } catch {
+    } catch (err) {
+      console.error('PDF okuma hatası:', err)
       setMsg({ text: 'PDF okunamadı, ızgarayı elle doldurabilirsiniz.' })
     } finally {
       setImporting(false)
