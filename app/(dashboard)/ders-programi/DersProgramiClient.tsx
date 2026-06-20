@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { saveSchedule } from '@/app/actions/schedule'
+import { parseSchedulePdf } from '@/src/domains/schedule/parseSchedulePdf'
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 
 const DAYS = [
@@ -25,6 +26,38 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   const [editTimes, setEditTimes] = useState(false)
   const [msg, setMsg] = useState<{ ok?: boolean; text: string } | null>(null)
   const [pending, startTransition] = useTransition()
+  const [importing, setImporting] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function onPickPdf(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = '' // aynı dosya tekrar seçilebilsin
+    if (!file) return
+    setMsg(null)
+    setImporting(true)
+    try {
+      // pdfjs yalnız bu butona basınca yüklenir — uygulama bundle'ını şişirmez
+      const pdfjs = await import('pdfjs-dist')
+      const data = new Uint8Array(await file.arrayBuffer())
+      const doc = await pdfjs.getDocument({ data }).promise
+      const page = await doc.getPage(1) // tek-sayfa varsayımı: yalnız 1. sayfa
+      const tc = await page.getTextContent()
+      const items = tc.items
+        .filter((it): it is typeof it & { str: string; transform: number[]; width: number } => 'str' in it)
+        .map(it => ({ str: it.str, x: it.transform[4], y: it.transform[5], width: it.width }))
+      const found = parseSchedulePdf(items, classes)
+      if (found.length === 0) {
+        setMsg({ text: 'PDF okundu ama ders bulunamadı (taranmış görüntü ya da farklı bir sayfa olabilir). Izgarayı elle doldurabilirsiniz.' })
+        return
+      }
+      setSlots(found)
+      setMsg({ ok: true, text: `${found.length} ders saati bulundu. Kontrol edip kaydedin.` })
+    } catch {
+      setMsg({ text: 'PDF okunamadı, ızgarayı elle doldurabilirsiniz.' })
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const cellClass = (day: number, period: number) =>
     slots.find(s => s.day === day && s.period === period)?.class_id ?? ''
@@ -56,6 +89,15 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
           {subject && <p className="text-sm text-gray-500 dark:text-slate-400">{subject}</p>}
         </div>
         <div className="flex items-center gap-2">
+          <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf} className="hidden" aria-hidden="true" tabIndex={-1} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing || pending || classes.length === 0}
+            className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 disabled:opacity-50"
+          >
+            {importing ? 'Okunuyor…' : 'PDF\'ten doldur'}
+          </button>
           <button
             onClick={() => setEditTimes(v => !v)}
             className="text-sm px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
