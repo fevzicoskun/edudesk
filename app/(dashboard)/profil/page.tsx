@@ -16,6 +16,8 @@ export default async function ProfilPage() {
       schoolName={profile?.schools?.name ?? null}
       email={user.email ?? ''}
       role={profile?.role ?? 'ogretmen'}
+      avatarUrl={profile?.avatar_url ?? null}
+      userId={user.id}
     />
   )
 }

@@ -31,8 +31,20 @@ const SIZES = {
   lg: 'w-16 h-16 text-xl',
 }
 
-export default function Avatar({ name, size = 'md' }: { name: string; size?: keyof typeof SIZES }) {
+export default function Avatar({
+  name,
+  size = 'md',
+  src,
+}: {
+  name: string
+  size?: keyof typeof SIZES
+  src?: string | null
+}) {
   const label = name.trim() || '?'
+  if (src) {
+    // eslint-disable-next-line @next/next/no-img-element -- avatar; küçük, Storage public URL, next/image domain config gereksiz
+    return <img src={src} alt={label} title={label} className={`rounded-full object-cover shrink-0 ${SIZES[size]}`} />
+  }
   return (
     <span
       title={label}

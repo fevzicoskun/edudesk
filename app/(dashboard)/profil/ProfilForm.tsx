@@ -4,7 +4,7 @@ import { useActionState } from 'react'
 import { updateProfile } from '@/src/domains/users/actions'
 import { logout } from '@/src/domains/auth/actions'
 import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
-import Avatar from '@/app/components/Avatar'
+import AvatarUpload from './AvatarUpload'
 
 const initialState = { error: undefined as string | undefined, success: false }
 
@@ -14,12 +14,16 @@ export default function ProfilForm({
   schoolName,
   email,
   role,
+  avatarUrl,
+  userId,
 }: {
   defaultFullName: string
   defaultSubject: string
   schoolName: string | null
   email: string
   role: string
+  avatarUrl: string | null
+  userId: string
 }) {
   const [state, action, pending] = useActionState(
     async (_prev: typeof initialState, formData: FormData) => {
@@ -34,7 +38,7 @@ export default function ProfilForm({
   return (
     <div className="p-4 md:p-6 max-w-lg mx-auto">
       <div className="mb-6 flex items-center gap-4">
-        <Avatar name={defaultFullName || email} size="lg" />
+        <AvatarUpload name={defaultFullName || email} initialUrl={avatarUrl} userId={userId} />
         <div className="min-w-0">
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 truncate">
             {defaultFullName || 'Profilim'}

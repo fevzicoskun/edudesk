@@ -14,7 +14,7 @@ import NotificationBell from '@/components/NotificationBell'
 import EduDeskLogo from '@/components/EduDeskLogo'
 import Avatar from '@/app/components/Avatar'
 
-type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'>
+type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'> & { avatar_url?: string | null }
 
 function formatName(raw: string): string {
   return raw
@@ -149,7 +149,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           <NotificationBell align="right" userId={profile?.id} />
           <ThemeToggle />
           <Link href="/profil" aria-label="Profilim" className="ml-1">
-            <Avatar name={displayName} size="sm" />
+            <Avatar name={displayName} size="sm" src={profile?.avatar_url} />
           </Link>
         </div>
       </header>
@@ -199,7 +199,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           {/* Daraltılmışken yalnız avatar görünür */}
           {collapsed && (
             <div className="flex justify-center pb-1" title={displayName}>
-              <Avatar name={displayName} />
+              <Avatar name={displayName} src={profile?.avatar_url} />
             </div>
           )}
           {/* Collapse toggle */}
@@ -217,7 +217,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           {/* User info */}
           {!collapsed && (
             <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center gap-2.5">
-              <Avatar name={displayName} />
+              <Avatar name={displayName} src={profile?.avatar_url} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>

@@ -59,7 +59,7 @@ function makeAbility(perms = OGRETMEN_PERMS) {
 
 const PRIVILEGED_PROFILE = {
   id: TEACHER_ID, full_name: 'Test User', subject: null,
-  role: 'mudur_yardimcisi', school_id: SCHOOL_ID, schools: null,
+  role: 'mudur_yardimcisi', school_id: SCHOOL_ID, avatar_url: null, schools: null,
 } as const
 
 beforeEach(() => {
