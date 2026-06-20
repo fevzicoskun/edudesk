@@ -1,13 +1,14 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentUser } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
 
-// Upload sunucuda yapılır: sunucu client'ı oturumu cookie'den alır (auth.uid() garanti),
-// path user.id'den türetilir → storage owner-folder RLS check'i kesin geçer.
-// Küçültülmüş webp tarayıcıdan FormData ile gelir (~10-30KB).
+// Kimlik getCurrentUser ile doğrulanır; tüm depolama/DB işlemleri user.id ile kapsanır
+// (kullanıcı yalnız kendi {uid}/ klasörüne yazar, yalnız kendi profilini günceller).
+// Service client kullanılır: storage RLS'inin auth-context'ine bağımlı değiliz —
+// path zaten sunucuda authenticated user.id'den türetiliyor.
 export async function uploadAvatar(formData: FormData): Promise<{ error?: string; url?: string }> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }
@@ -16,11 +17,12 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
   if (!(file instanceof File) || file.size === 0) return { error: 'Dosya bulunamadı' }
   if (file.size > 1_000_000) return { error: 'Görsel çok büyük' } // küçültülmüş webp normalde <100KB
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const path = `${user.id}/${Date.now()}.webp`
+  const bytes = new Uint8Array(await file.arrayBuffer())
   const { error: upErr } = await supabase.storage
     .from('avatars')
-    .upload(path, file, { contentType: 'image/webp', upsert: true })
+    .upload(path, bytes, { contentType: 'image/webp', upsert: true })
   if (upErr) return { error: upErr.message }
 
   const url = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl
@@ -36,7 +38,7 @@ export async function removeAvatar(): Promise<{ error?: string }> {
   const user = await getCurrentUser()
   if (!user) return { error: 'Giriş gerekli' }
 
-  const supabase = await createClient()
+  const supabase = createServiceClient()
   const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
   const current = prof?.avatar_url as string | null | undefined
 
