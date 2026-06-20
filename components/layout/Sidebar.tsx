@@ -12,6 +12,7 @@ import MobileNavDrawer from '@/components/layout/MobileNavDrawer'
 import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
 import EduDeskLogo from '@/components/EduDeskLogo'
+import Avatar from '@/app/components/Avatar'
 
 type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'>
 
@@ -192,6 +193,12 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
 
         {/* Toggle + user + logout */}
         <div className="p-2 border-t border-gray-200 dark:border-slate-700 space-y-1">
+          {/* Daraltılmışken yalnız avatar görünür */}
+          {collapsed && (
+            <div className="flex justify-center pb-1" title={displayName}>
+              <Avatar name={displayName} />
+            </div>
+          )}
           {/* Collapse toggle */}
           <button
             onClick={toggleCollapsed}
@@ -206,22 +213,25 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
 
           {/* User info */}
           {!collapsed && (
-            <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-800">
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>
-                {isYoneticiUser && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
-                    isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
-                             : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                  }`}>
-                    {isMudur ? (role === 'mudur' ? 'Müdür' : 'Müd.Yrd.') : 'Başkan'}
-                  </span>
+            <div className="px-3 py-2 rounded-lg bg-gray-50 dark:bg-slate-800 flex items-center gap-2.5">
+              <Avatar name={displayName} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate flex-1">{displayName}</p>
+                  {isYoneticiUser && (
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${
+                      isMudur ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300'
+                               : 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+                    }`}>
+                      {isMudur ? (role === 'mudur' ? 'Müdür' : 'Müd.Yrd.') : 'Başkan'}
+                    </span>
+                  )}
+                </div>
+                {profile?.subject && (
+                  <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
                 )}
+                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
               </div>
-              {profile?.subject && (
-                <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
-              )}
-              <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
             </div>
           )}
 
