@@ -108,7 +108,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div>
       <div className="flex items-center justify-between mb-4 gap-2 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ders Programım</h1>

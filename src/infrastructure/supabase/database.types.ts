@@ -2339,6 +2339,50 @@ export type Database = {
           },
         ]
       }
+      teacher_duties: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          id: string
+          location: string
+          notes: string | null
+          school_id: string
+          teacher_id: string
+          time_range: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          id?: string
+          location: string
+          notes?: string | null
+          school_id: string
+          teacher_id: string
+          time_range: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          id?: string
+          location?: string
+          notes?: string | null
+          school_id?: string
+          teacher_id?: string
+          time_range?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_duties_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_notes: {
         Row: {
           content: string
