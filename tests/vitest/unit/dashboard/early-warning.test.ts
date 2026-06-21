@@ -92,3 +92,28 @@ describe('computeEarlyWarnings — zaman sapması', () => {
     expect(computeEarlyWarnings(flatAbs, flatAct, flatCov, [], NOW2)).toEqual([])
   })
 })
+
+import type { ClassAbsence } from '@/src/domains/dashboard/lib/trendMath'
+
+const cls = (classId: string, rate: number, total = 100): ClassAbsence =>
+  ({ classId, name: classId, grade: 9, rate, absent: Math.round(rate * total), total })
+
+describe('computeEarlyWarnings — sınıf bozulması', () => {
+  it('okul ort.×1.5 üstü ve ≥%10 sınıfı işaretler', () => {
+    const classes = [cls('9-A', 0.10), cls('9-B', 0.10), cls('9-C', 0.30)]
+    const ws = computeEarlyWarnings(flatAbs, flatAct, flatCov, classes, NOW2)
+    const s = ws.filter(w => w.metric === 'sinif')
+    expect(s.map(w => w.classId)).toContain('9-C')
+    expect(s.map(w => w.classId)).not.toContain('9-A')
+  })
+  it('%10 mutlak tabanın altı küçük örneklemi işaretlemez', () => {
+    const classes = [cls('9-A', 0.02), cls('9-B', 0.02), cls('9-C', 0.06)]
+    const ws = computeEarlyWarnings(flatAbs, flatAct, flatCov, classes, NOW2)
+    expect(ws.filter(w => w.metric === 'sinif')).toHaveLength(0)
+  })
+  it('en kötü 3 sınıfla sınırlar', () => {
+    const classes = [cls('A', 0.5), cls('B', 0.5), cls('C', 0.5), cls('D', 0.5), cls('E', 0.01)]
+    const ws = computeEarlyWarnings(flatAbs, flatAct, flatCov, classes, NOW2)
+    expect(ws.filter(w => w.metric === 'sinif').length).toBeLessThanOrEqual(3)
+  })
+})

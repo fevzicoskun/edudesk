@@ -34,10 +34,13 @@ export function selectTrendWindow(
   return { last: last.rate, baselineMean, baselineCount: baseline.length }
 }
 
-const ABSENCE_RISE  = 0.03
-const COVERAGE_DROP = 0.10
-const ACTIVITY_DROP = 0.15
-const SEVERITY_X    = 2
+const ABSENCE_RISE    = 0.03
+const COVERAGE_DROP   = 0.10
+const ACTIVITY_DROP   = 0.15
+const SEVERITY_X      = 2
+const CLASS_MULTIPLIER = 1.5
+const CLASS_FLOOR      = 0.10
+const CLASS_MAX        = 3
 
 const pct = (x: number) => Math.round(x * 100)
 
@@ -49,7 +52,7 @@ export function computeEarlyWarnings(
   absence: AbsenceTrendPoint[],
   activity: ActivityTrendPoint[],
   coverage: CoverageTrendPoint[],
-  _classAbsence: ClassAbsence[],
+  classAbsence: ClassAbsence[],
   now: Date = new Date(),
 ): EarlyWarning[] {
   const out: EarlyWarning[] = []
@@ -83,6 +86,23 @@ export function computeEarlyWarnings(
       title: 'Öğretmen aktivitesi düşüyor',
       detail: `Son hafta %${pct(t.last)} · dönem ort. %${pct(t.baselineMean)} (−${pct(d)} puan)`,
     })
+  }
+
+  // 4) Sınıf-bazlı bozulma (sınıf vs okul ortalaması, anlık)
+  const totAbsent = classAbsence.reduce((s, c) => s + c.absent, 0)
+  const totRows   = classAbsence.reduce((s, c) => s + c.total, 0)
+  const schoolRate = totRows > 0 ? totAbsent / totRows : 0
+  if (schoolRate > 0) {
+    classAbsence
+      .filter(c => c.rate >= schoolRate * CLASS_MULTIPLIER && c.rate >= CLASS_FLOOR)
+      .sort((x, y) => y.rate - x.rate)
+      .slice(0, CLASS_MAX)
+      .forEach(c => out.push({
+        id: `class-${c.classId}`, metric: 'sinif', classId: c.classId,
+        severity: c.rate >= schoolRate * CLASS_MULTIPLIER * SEVERITY_X ? 'yuksek' : 'dikkat',
+        title: `${c.name} devamsızlığı yüksek`,
+        detail: `Sınıf %${pct(c.rate)} · okul ort. %${pct(schoolRate)}`,
+      }))
   }
 
   const order = { yuksek: 0, dikkat: 1 } as const
