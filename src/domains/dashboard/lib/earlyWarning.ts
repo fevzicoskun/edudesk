@@ -34,6 +34,13 @@ export function selectTrendWindow(
   return { last: last.rate, baselineMean, baselineCount: baseline.length }
 }
 
+// Devamsızlık (real hafta göstergesi) için yeterli baz var mı — "veri birikiyor"
+// kararını selectTrendWindow ile AYNI kaynaktan türetir (yarım hafta dışlaması tutarlı).
+export function hasEnoughBaseline(absence: AbsenceTrendPoint[], now: Date = new Date()): boolean {
+  const realWeeks = new Set(absence.filter(p => p.total > 0).map(p => p.weekStart))
+  return selectTrendWindow(absence, realWeeks, now) !== null
+}
+
 const ABSENCE_RISE    = 0.03
 const COVERAGE_DROP   = 0.10
 const ACTIVITY_DROP   = 0.15

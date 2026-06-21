@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { selectTrendWindow, computeEarlyWarnings } from '@/src/domains/dashboard/lib/earlyWarning'
+import { selectTrendWindow, computeEarlyWarnings, hasEnoughBaseline } from '@/src/domains/dashboard/lib/earlyWarning'
 import type { AbsenceTrendPoint, ActivityTrendPoint, CoverageTrendPoint } from '@/src/domains/dashboard/lib/trendMath'
 
 const real = new Set(['2026-05-04', '2026-05-11', '2026-05-18', '2026-05-25'])
@@ -115,5 +115,19 @@ describe('computeEarlyWarnings — sınıf bozulması', () => {
     const classes = [cls('A', 0.5), cls('B', 0.5), cls('C', 0.5), cls('D', 0.5), cls('E', 0.01)]
     const ws = computeEarlyWarnings(flatAbs, flatAct, flatCov, classes, NOW2)
     expect(ws.filter(w => w.metric === 'sinif').length).toBeLessThanOrEqual(3)
+  })
+})
+
+describe('hasEnoughBaseline', () => {
+  it('içinde bulunulan hafta dahil 3 dolu hafta ama yalnız 2 tam hafta → false', () => {
+    const a: AbsenceTrendPoint[] = [
+      { weekStart: '2026-05-18', label: '', rate: 0.1, absent: 1, total: 10 },
+      { weekStart: '2026-05-25', label: '', rate: 0.1, absent: 1, total: 10 },
+      { weekStart: '2026-06-01', label: '', rate: 0.1, absent: 1, total: 10 }, // içinde bulunulan hafta
+    ]
+    expect(hasEnoughBaseline(a, NOW2)).toBe(false)
+  })
+  it('3 tam hafta → true', () => {
+    expect(hasEnoughBaseline(abs([0.05, 0.05, 0.05, 0.05]), NOW2)).toBe(true)
   })
 })

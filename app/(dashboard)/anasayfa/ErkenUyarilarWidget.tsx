@@ -6,7 +6,7 @@ import { getAttendanceTrendRows, getHomeworkTrendRows, getTrendClasses } from '@
 import {
   computeAbsenceTrend, computeActivityTrend, computeCoverageTrend, computeClassAbsence,
 } from '@/src/domains/dashboard/lib/trendMath'
-import { computeEarlyWarnings } from '@/src/domains/dashboard/lib/earlyWarning'
+import { computeEarlyWarnings, hasEnoughBaseline } from '@/src/domains/dashboard/lib/earlyWarning'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function ErkenUyarilarWidget() {
@@ -28,8 +28,8 @@ export default async function ErkenUyarilarWidget() {
 
   const warnings = computeEarlyWarnings(absence, activity, coverage, classAbs, now)
 
-  const cw = absence.filter(p => p.total > 0)
-  const yetersiz = cw.length < 3
+  // "veri birikiyor" kararı pencere mantığıyla aynı kaynaktan (yarım hafta dışlaması tutarlı)
+  const yetersiz = !hasEnoughBaseline(absence, now)
 
   return (
     <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
