@@ -12,6 +12,7 @@ export default function robots(): MetadataRoute.Robots {
       disallow: [
         '/api/',
         '/veli/',
+        '/platform',
         '/anasayfa',
         '/yoklama',
         '/odevler',

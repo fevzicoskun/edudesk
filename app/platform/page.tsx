@@ -11,6 +11,9 @@ const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secon
   cancelled: { label: 'Kapalı',    variant: 'outline' },
 }
 
+// Süper-admin paneli (platform_admins). Arama motorlarından gizli.
+export const metadata = { title: 'Platform Yönetimi', robots: { index: false, follow: false } }
+
 export default async function PlatformPage() {
   const supabase = createServiceClient()
   const { data: schools } = await supabase
