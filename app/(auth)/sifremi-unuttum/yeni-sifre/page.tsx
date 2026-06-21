@@ -1,6 +1,8 @@
 import EduDeskLogo from '@/components/EduDeskLogo'
 import NewPasswordForm from './NewPasswordForm'
 
+export const metadata = { title: 'Yeni Şifre' }
+
 export default function NewPasswordPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col justify-center items-center px-6 py-12">

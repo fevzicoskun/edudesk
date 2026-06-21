@@ -1,6 +1,8 @@
 import EduDeskLogo from '@/components/EduDeskLogo'
 import ForgotPasswordForm from './ForgotPasswordForm'
 
+export const metadata = { title: 'Şifremi Unuttum' }
+
 export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col justify-center items-center px-6 py-12">

@@ -1,6 +1,8 @@
 import RegisterForm from './RegisterForm'
 import EduDeskLogo from '@/components/EduDeskLogo'
 
+export const metadata = { title: 'Kayıt Ol' }
+
 export default function KayitPage() {
   return (
     <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col justify-center items-center px-6 py-12">

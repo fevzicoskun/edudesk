@@ -1,6 +1,8 @@
 import LoginForm from './LoginForm'
 import EduDeskLogo from '@/components/EduDeskLogo'
 
+export const metadata = { title: 'Giriş Yap' }
+
 export default async function LoginPage({
   searchParams,
 }: {
