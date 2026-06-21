@@ -14,7 +14,7 @@ export type EarlyWarning = {
 
 const MIN_BASELINE_WEEKS = 2
 
-function currentWeekStart(now: Date): string {
+export function currentWeekStart(now: Date): string {
   return format(startOfWeek(now, { weekStartsOn: 1 }), 'yyyy-MM-dd')
 }
 
