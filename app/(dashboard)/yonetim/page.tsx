@@ -8,6 +8,7 @@ import UyariBandi from './UyariBandi'
 import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
 import NobetCizelgesi from './NobetCizelgesi'
+import KarneIndirButton from './KarneIndirButton'
 
 export const revalidate = 60
 export const metadata = { title: 'Okul Durumu' }
@@ -47,11 +48,14 @@ export default async function YonetimPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
 
       {/* Başlık */}
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Durumu</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Okul Durumu</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {profile.full_name ?? ''} · {format(new Date(), 'd MMMM yyyy, EEEE')}
+          </p>
+        </div>
+        <KarneIndirButton />
       </div>
 
       {/* Kademe kartları */}
