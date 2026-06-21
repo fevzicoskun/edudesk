@@ -11,6 +11,7 @@ import { getGreeting }        from '@/src/shared/utils'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
 import { KurulumWidget } from './IlkAdimlarWidget'
+import MudurTrendWidget from './MudurTrendWidget'
 
 export const revalidate = 60
 
@@ -39,8 +40,6 @@ function DashboardSkeleton() {
 async function MudurWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-
-      {/* Başlık */}
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
           {getGreeting(fullName)}
@@ -52,22 +51,19 @@ async function MudurWidgets({ fullName, classCount }: { fullName: string; classC
 
       {firstRunState('mudur', classCount) === 'setup' && <KurulumWidget />}
 
-      {/* Alert + Stat kartları */}
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
         <MYStatsWidget />
       </Suspense>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MYSolSutunWidget />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <WidgetErrorBoundary label="Öğretmen aktivitesi">
-            <MudurOgretmenAktivite />
-          </WidgetErrorBoundary>
-        </Suspense>
-      </div>
+      <Suspense fallback={<WidgetSkeleton tall />}>
+        <MYSolSutunWidget />
+      </Suspense>
 
+      <Suspense fallback={<><WidgetSkeleton tall /><WidgetSkeleton tall /></>}>
+        <WidgetErrorBoundary label="Okul trendleri">
+          <MudurTrendWidget />
+        </WidgetErrorBoundary>
+      </Suspense>
     </div>
   )
 }
@@ -88,10 +84,16 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
         <MYStatsWidget />
       </Suspense>
 
-      <Suspense fallback={<WidgetSkeleton tall />}>
-        <MYSolSutunWidget />
-      </Suspense>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <MYSolSutunWidget />
+        </Suspense>
+        <Suspense fallback={<WidgetSkeleton tall />}>
+          <WidgetErrorBoundary label="Öğretmen aktivitesi">
+            <MudurOgretmenAktivite />
+          </WidgetErrorBoundary>
+        </Suspense>
+      </div>
     </div>
   )
 }
