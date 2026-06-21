@@ -12,6 +12,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
 import { KurulumWidget } from './IlkAdimlarWidget'
 import MudurTrendWidget from './MudurTrendWidget'
+import ErkenUyarilarWidget from './ErkenUyarilarWidget'
 
 export const revalidate = 60
 
@@ -94,6 +95,12 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
           </WidgetErrorBoundary>
         </Suspense>
       </div>
+
+      <Suspense fallback={<WidgetSkeleton tall />}>
+        <WidgetErrorBoundary label="Erken uyarılar">
+          <ErkenUyarilarWidget />
+        </WidgetErrorBoundary>
+      </Suspense>
     </div>
   )
 }
