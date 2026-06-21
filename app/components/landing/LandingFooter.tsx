@@ -21,7 +21,7 @@ export default function LandingFooter() {
         >
           📱 WhatsApp&apos;tan Bilgi Al
         </a>
-        <div className="mt-12 flex justify-center gap-6 text-sm text-stone-500">
+        <div className="mt-12 flex justify-center gap-6 text-sm text-stone-400">
           <Link href="/gizlilik" className="hover:text-stone-300 transition-colors">
             Gizlilik Politikası
           </Link>
@@ -29,7 +29,7 @@ export default function LandingFooter() {
             Kullanım Koşulları
           </Link>
         </div>
-        <p className="mt-6 text-xs text-stone-600">© 2026 EduDesk. Tüm hakları saklıdır.</p>
+        <p className="mt-6 text-xs text-stone-400">© 2026 EduDesk. Tüm hakları saklıdır.</p>
       </div>
     </footer>
   )
