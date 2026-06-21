@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { isMudurOrAbove } from '@/src/shared/types'
+import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
 import { ActivityReportRepository } from '@/src/domains/dashboard/repositories/ActivityReportRepository'
 import {
   buildTeacherStats,
@@ -32,8 +32,11 @@ export default async function OgretmenAktivitePage() {
     ActivityReportRepository.getLogs(profile.school_id, since),
   ])
 
-  const teachers = (teacherData ?? []) as TeacherRow[]
-  const logs     = (logData     ?? []) as LogRow[]
+  // Rapor "Öğretmen Aktivitesi" — yalnız öğretmen rolleri (müdür/MY yönetici,
+  // bu listede gereksiz). Anasayfa "Öğretmen Aktivitesi" kartıyla tutarlı.
+  const teachers = ((teacherData ?? []) as TeacherRow[]).filter(t => isTeachingRole(t.role))
+  const allowedIds = new Set(teachers.map(t => t.id))
+  const logs = ((logData ?? []) as LogRow[]).filter(l => allowedIds.has(l.teacher_id))
 
   const stats   = buildTeacherStats(teachers, logs)
   const summary = computeSummary(teachers, logs)
