@@ -58,6 +58,10 @@ app/(dashboard)/anasayfa/charts/TrendChart.tsx   # YENİ: 'use client', recharts
 - **Performans:** Aktivite oranını 8+ hafta için ayrı sorgularla çekmek yerine
   tek SQL'de haftalık gruplayan bir RPC: `school_weekly_metrics`. Mevcut
   `school_teacher_activity` RPC'si örnek alınır.
+  > **Plan güncellemesi (2026-06-21):** RPC'den vazgeçildi. Bir okul-yıl ≈ 8K
+  > attendance satırı (`getAbsentYearRows` limiti 15K içinde) — ham satırı çekip
+  > JS'de haftalık bucket'lamak yeterli, migration gerektirmez ve saf fonksiyon
+  > olarak DB'siz test edilebilir. Bkz. plan Task 1–2.
 - **Yerleştirme:** `MudurTrendWidget`, `app/(dashboard)/anasayfa/page.tsx`
   içindeki `MudurWidgets`'a eklenir. Aynı düzenlemede `MudurOgretmenAktivite`
   `MudurWidgets`'tan kaldırılıp `MYWidgets`'a eklenir.
