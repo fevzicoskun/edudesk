@@ -33,6 +33,21 @@ type HomeworkRel = { id: string; title: string; subject: string; due_date: strin
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string; studentId: string }> }) {
+  const { studentId } = await params
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) return { title: 'Öğrenci' }
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('students')
+    .select('full_name')
+    .eq('id', studentId)
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+    .single()
+  return { title: data?.full_name ?? 'Öğrenci' }
+}
+
 export default async function OgrenciDetayPage({
   params,
 }: {

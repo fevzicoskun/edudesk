@@ -5,6 +5,8 @@ import { isTeachingRole } from '@/src/shared/types'
 import Link from 'next/link'
 import OdevDuzenleForm from './OdevDuzenleForm'
 
+export const metadata = { title: 'Ödev Düzenle' }
+
 export default async function OdevDuzenle({
   params,
 }: {

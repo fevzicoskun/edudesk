@@ -8,6 +8,20 @@ import MatrisClient from './MatrisClient'
 
 type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 
+export async function generateMetadata({ params }: { params: Promise<{ classId: string }> }) {
+  const { classId } = await params
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) return { title: 'Ödev Matrisi' }
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('classes')
+    .select('name')
+    .eq('id', classId)
+    .eq('school_id', profile.school_id)
+    .single()
+  return { title: data?.name ? `${data.name} · Ödev Matrisi` : 'Ödev Matrisi' }
+}
+
 export default async function SinifMatrisPage({
   params,
 }: {

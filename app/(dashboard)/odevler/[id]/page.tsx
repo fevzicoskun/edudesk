@@ -32,6 +32,21 @@ function StatusBoardSkeleton() {
   )
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id) return { title: 'Ödev' }
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('homeworks')
+    .select('title')
+    .eq('id', id)
+    .eq('school_id', profile.school_id)
+    .is('deleted_at', null)
+    .single()
+  return { title: data?.title ?? 'Ödev' }
+}
+
 export default async function OdevDetayPage({
   params,
   searchParams,
