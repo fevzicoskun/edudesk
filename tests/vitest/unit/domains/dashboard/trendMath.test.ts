@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   weekKeysBetween, computeAbsenceTrend, computeActivityTrend,
-  computeClassAbsence, filledWeekCount,
+  computeClassAbsence, computeCoverageTrend, filledWeekCount,
 } from '@/src/domains/dashboard/lib/trendMath'
 
 describe('weekKeysBetween', () => {
@@ -83,6 +83,36 @@ describe('computeClassAbsence', () => {
   it('omits classes with no attendance rows', () => {
     const out = computeClassAbsence([], [{ id: 'c1', name: '9-A', grade: 9 }])
     expect(out).toEqual([])
+  })
+})
+
+describe('computeCoverageTrend', () => {
+  // 3 sınıf; beklenen = sınıf × hafta içi gün (Pzt–Cum)
+  const classCount = 3
+  it('tam haftada beklenen = sınıf × 5, alınan distinct (sınıf,gün)', () => {
+    const rows = [
+      { date: '2026-05-04', class_id: 'c1' }, // Pzt
+      { date: '2026-05-04', class_id: 'c2' },
+      { date: '2026-05-05', class_id: 'c1' }, // aynı sınıf farklı gün → ayrı sayılır
+      { date: '2026-05-04', class_id: 'c1' }, // tekrar → distinct, bir kez
+    ]
+    const [pt] = computeCoverageTrend(rows, classCount, '2026-05-04', new Date('2026-05-10T12:00:00'))
+    expect(pt.recorded).toBe(3)        // (c1,4), (c2,4), (c1,5)
+    expect(pt.expected).toBe(15)       // 3 sınıf × 5 gün
+    expect(pt.rate).toBeCloseTo(3 / 15)
+  })
+  it('güncel kısmi haftada beklenen, bugüne kadarki hafta içi günlerle sınırlı', () => {
+    // hafta başı Pzt 2026-05-04, "bugün" Salı 2026-05-05 → 2 hafta içi günü
+    const [pt] = computeCoverageTrend(
+      [{ date: '2026-05-04', class_id: 'c1' }],
+      classCount, '2026-05-04', new Date('2026-05-05T12:00:00'),
+    )
+    expect(pt.expected).toBe(6)        // 3 sınıf × 2 gün
+    expect(pt.recorded).toBe(1)
+  })
+  it('hiç sınıf yoksa rate 0 (sıfıra bölme yok)', () => {
+    const [pt] = computeCoverageTrend([], 0, '2026-05-04', new Date('2026-05-08T12:00:00'))
+    expect(pt.rate).toBe(0)
   })
 })
 

@@ -4,6 +4,7 @@ import { startOfWeek, addDays, parseISO, format } from '@/src/shared/date'
 export type AbsenceTrendPoint = { weekStart: string; label: string; rate: number; absent: number; total: number }
 export type ActivityTrendPoint = { weekStart: string; label: string; rate: number; active: number; total: number }
 export type ClassAbsence = { classId: string; name: string; grade: number; rate: number; absent: number; total: number }
+export type CoverageTrendPoint = { weekStart: string; label: string; rate: number; recorded: number; expected: number }
 
 function isoWeekStart(dateStr: string): string {
   return format(startOfWeek(parseISO(dateStr), { weekStartsOn: 1 }), 'yyyy-MM-dd')
@@ -83,6 +84,46 @@ export function computeClassAbsence(
       return { classId: c.id, name: c.name, grade: c.grade, absent: a, total: t, rate: a / t }
     })
     .sort((x, y) => y.rate - x.rate)
+}
+
+/** [start, end] aralığındaki hafta içi (Pzt–Cum) gün sayısı. */
+function weekdaysInRange(start: Date, end: Date): number {
+  let n = 0
+  let cur = start
+  while (cur.getTime() <= end.getTime()) {
+    const dow = cur.getDay() // 0 Paz .. 6 Cmt
+    if (dow >= 1 && dow <= 5) n++
+    cur = addDays(cur, 1)
+  }
+  return n
+}
+
+/**
+ * Yoklama kapsama trendi (haftalık): alınan (sınıf, gün) yoklamalarının
+ * beklenene oranı. Beklenen = sınıf sayısı × o haftanın bugüne kadarki hafta
+ * içi günü. Akademik takvim yok → tatiller hafta içi sayılır (bilinen tavan).
+ */
+export function computeCoverageTrend(
+  rows: { date: string; class_id: string }[],
+  classCount: number, startISO: string, end: Date,
+): CoverageTrendPoint[] {
+  const seen = new Map<string, Set<string>>()
+  for (const r of rows) {
+    const wk = isoWeekStart(r.date)
+    if (!seen.has(wk)) seen.set(wk, new Set())
+    seen.get(wk)!.add(`${r.class_id}|${r.date}`)
+  }
+  return weekKeysBetween(startISO, end).map(wk => {
+    const weekStartDate = parseISO(wk)
+    const weekEnd = addDays(weekStartDate, 6)
+    const rangeEnd = weekEnd.getTime() < end.getTime() ? weekEnd : end
+    const expected = classCount * weekdaysInRange(weekStartDate, rangeEnd)
+    const recorded = seen.get(wk)?.size ?? 0
+    return {
+      weekStart: wk, label: weekLabel(wk), recorded, expected,
+      rate: expected === 0 ? 0 : recorded / expected,
+    }
+  })
 }
 
 export function filledWeekCount(points: { total: number }[]): number {

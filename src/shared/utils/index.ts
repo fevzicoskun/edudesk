@@ -32,6 +32,16 @@ export function schoolYearStart(): string {
   return `${month >= 9 ? year : year - 1}-09-01`
 }
 
+// Güncel dönem başı (Türk eğitim takvimi, Europe/Istanbul): 1. dönem Eyl,
+// 2. dönem Şub. Ocak hâlâ 1. dönem; yaz aylarında (Tem–Ağu) biten 2. dönemi gösterir.
+export function donemBasi(now: Date = new Date()): string {
+  const iso = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
+  const [y, m] = iso.split('-').map(Number)
+  if (m >= 9) return `${y}-09-01`      // Eyl–Ara: 1. dönem
+  if (m === 1) return `${y - 1}-09-01` // Ocak: 1. dönem devam
+  return `${y}-02-01`                  // Şub–Ağu: 2. dönem
+}
+
 export function getGreeting(fullName: string): string {
   const hour = parseInt(
     new Intl.DateTimeFormat('tr-TR', { timeZone: 'Europe/Istanbul', hour: 'numeric', hour12: false }).format(new Date()),
