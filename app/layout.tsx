@@ -5,6 +5,7 @@ import InstallBanner from '@/app/components/InstallBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://myedudesk.com.tr'),
   title: { default: 'EduDesk', template: '%s · EduDesk' },
   description: 'Öğretmen yönetim paneli',
   manifest: '/manifest.json',
