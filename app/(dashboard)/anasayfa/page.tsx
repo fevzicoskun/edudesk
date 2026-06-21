@@ -96,6 +96,8 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
   )
 }
 
+export const metadata = { title: 'Anasayfa' }
+
 export default async function AnasayfaPage() {
   const profile = await getCurrentProfile()
   if (!profile) redirect('/login')

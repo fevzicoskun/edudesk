@@ -3,6 +3,9 @@ export const revalidate = 300
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import ProfilForm from './ProfilForm'
+
+export const metadata = { title: 'Profil' }
+
 export default async function ProfilPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')

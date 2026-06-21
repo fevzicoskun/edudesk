@@ -10,6 +10,8 @@ import { AttendanceRepository } from '@/src/domains/attendance/repositories/Atte
 import type { AbsenceCount } from '@/src/domains/attendance/types'
 import YoklamaClient from './YoklamaClient'
 
+export const metadata = { title: 'Yoklama' }
+
 export default async function YoklamaPage({ searchParams }: { searchParams: Promise<{ sinif?: string }> }) {
   const { sinif } = await searchParams
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])

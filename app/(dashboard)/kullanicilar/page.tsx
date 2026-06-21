@@ -9,6 +9,8 @@ import SchoolCodeCard from './SchoolCodeCard'
 
 export const revalidate = 60
 
+export const metadata = { title: 'Kullanıcılar' }
+
 export default async function KullanicilarPage() {
   const profile = await getCurrentProfile()
   if (!profile || !isMudurOrAbove(profile.role)) redirect('/anasayfa')

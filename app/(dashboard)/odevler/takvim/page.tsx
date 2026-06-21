@@ -7,6 +7,8 @@ import HomeworkCalendar from './HomeworkCalendar'
 
 export const revalidate = 60
 
+export const metadata = { title: 'Ödev Takvimi' }
+
 export default async function OdevTakvimPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile?.school_id) redirect('/login')

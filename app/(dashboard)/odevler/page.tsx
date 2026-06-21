@@ -14,6 +14,8 @@ import type { FilterParams } from './types'
 
 export const revalidate = 30
 
+export const metadata = { title: 'Ödevler' }
+
 export default async function OdevlerPage({
   searchParams,
 }: {

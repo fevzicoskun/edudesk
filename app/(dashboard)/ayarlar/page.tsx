@@ -10,6 +10,8 @@ import PasswordForm from './PasswordForm'
 import KaynakYonetimi from './KaynakYonetimi'
 import OkulBilgileri from './OkulBilgileri'
 
+export const metadata = { title: 'Ayarlar' }
+
 export default async function AyarlarPage() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile) redirect('/login')

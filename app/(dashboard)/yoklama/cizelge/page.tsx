@@ -6,6 +6,8 @@ import EmptyState from '@/app/components/EmptyState'
 import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import CizelgeClient from './CizelgeClient'
 
+export const metadata = { title: 'Yoklama Çizelgesi' }
+
 export default async function CizelgePage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')

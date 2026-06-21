@@ -7,6 +7,8 @@ import OgrencilerClient from './OgrencilerClient'
 
 export const revalidate = 60
 
+export const metadata = { title: 'Öğrenciler' }
+
 export default async function OgrencilerPage() {
   const profile = await getCurrentProfile()
   if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')

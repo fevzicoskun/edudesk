@@ -23,6 +23,8 @@ import OgretmenKarsilastirma from './OgretmenKarsilastirma'
 
 export const revalidate = 30
 
+export const metadata = { title: 'Ödev Analitiği' }
+
 export default async function AnalitikPage() {
   const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
   if (!profile?.school_id || !user) redirect('/login')

@@ -17,6 +17,8 @@ import { formatDistanceToNow, parseISO } from '@/src/shared/date'
 
 export const revalidate = 0
 
+export const metadata = { title: 'Öğretmen Aktivitesi' }
+
 export default async function OgretmenAktivitePage() {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !isMudurOrAbove(profile.role)) {

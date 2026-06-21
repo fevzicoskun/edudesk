@@ -26,6 +26,8 @@ export const revalidate = 30
 const NO_MATCH = '00000000-0000-0000-0000-000000000000'
 const istanbulISO = (d: Date) => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
 
+export const metadata = { title: 'Yoklama Analitiği' }
+
 export default async function YoklamaAnalitikPage() {
   const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
   if (!profile?.school_id || !user) redirect('/login')

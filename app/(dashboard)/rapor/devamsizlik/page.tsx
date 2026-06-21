@@ -21,6 +21,8 @@ const RISK_LABEL = {
   takip:   'Takipte',
 } as const
 
+export const metadata = { title: 'Devamsızlık Raporu' }
+
 export default async function DevamsizlikRaporuPage() {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !MUDUR_ROLLER.includes(profile.role)) {

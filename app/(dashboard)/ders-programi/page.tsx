@@ -8,6 +8,8 @@ import NobetKarti from './NobetKarti'
 
 export const dynamic = 'force-dynamic'
 
+export const metadata = { title: 'Ders Programım' }
+
 export default async function DersProgramiPage() {
   const profile = await getCurrentProfile()
   if (!profile?.school_id) redirect('/login')

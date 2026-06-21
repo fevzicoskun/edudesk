@@ -10,6 +10,7 @@ import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
 import NobetCizelgesi from './NobetCizelgesi'
 
 export const revalidate = 60
+export const metadata = { title: 'Okul Durumu' }
 
 function CardSkeleton({ tall }: { tall?: boolean }) {
   return (

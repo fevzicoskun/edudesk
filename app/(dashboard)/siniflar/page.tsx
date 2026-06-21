@@ -8,6 +8,8 @@ import { getEgitimYili } from '@/src/shared/utils'
 import EmptyState from '@/app/components/EmptyState'
 import SinifArama from './SinifArama'
 
+export const metadata = { title: 'Sınıflarım' }
+
 export default async function SiniflarPage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')

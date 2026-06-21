@@ -5,7 +5,7 @@ import InstallBanner from '@/app/components/InstallBanner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'EduDesk',
+  title: { default: 'EduDesk', template: '%s · EduDesk' },
   description: 'Öğretmen yönetim paneli',
   manifest: '/manifest.json',
   appleWebApp: {
