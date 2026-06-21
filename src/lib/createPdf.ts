@@ -1,7 +1,7 @@
 'use client'
 
 import type JsPDF from 'jspdf'
-import type { jsPDF as JsPDFType } from 'jspdf'
+import type { jsPDFOptions } from 'jspdf'
 
 export type PdfDoc = InstanceType<typeof JsPDF> & { lastAutoTable?: { finalY?: number } }
 
@@ -18,7 +18,7 @@ async function toBase64(url: string): Promise<string> {
 }
 
 export async function createDoc(
-  options?: ConstructorParameters<typeof JsPDFType>[0],
+  options?: jsPDFOptions,
 ): Promise<PdfDoc> {
   const { default: JsPDF } = await import('jspdf')
 

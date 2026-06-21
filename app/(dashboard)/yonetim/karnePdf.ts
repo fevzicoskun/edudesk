@@ -13,9 +13,7 @@ const METRIC_LABEL = {
 export async function buildKarnePdf(data: KarneData): Promise<void> {
   // autotable dinamik import — MatrisClient deseni (bundle'a girmez)
   const { default: autoTable } = await import('jspdf-autotable')
-  // jsPDF constructor overload tipi TS'de string olarak çözümlendiğinden unknown cast gerekli
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const doc = await createDoc({ unit: 'pt', format: 'a4' } as any)
+  const doc = await createDoc({ unit: 'pt', format: 'a4' })
   const pct = (n: number) => (n > 0 ? `%${n}` : '—')
 
   // Başlık
