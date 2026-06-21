@@ -57,6 +57,14 @@ describe('computeActivityTrend', () => {
     const pts = computeActivityTrend([], [], 0, '2026-05-04', new Date('2026-05-04T12:00:00'))
     expect(pts[0].rate).toBe(0)
   })
+  it('buckets attendance and homework into their own weeks', () => {
+    const att = [{ date: '2026-05-04', teacher_id: 't1' }]       // week of 2026-05-04
+    const hw = [{ assigned_date: '2026-05-11', teacher_id: 't2' }] // week of 2026-05-11
+    const pts = computeActivityTrend(att, hw, 2, '2026-05-04', new Date('2026-05-11T12:00:00'))
+    expect(pts).toHaveLength(2)
+    expect(pts[0]).toMatchObject({ active: 1, total: 2, rate: 0.5 }) // only t1
+    expect(pts[1]).toMatchObject({ active: 1, total: 2, rate: 0.5 }) // only t2
+  })
 })
 
 describe('computeClassAbsence', () => {

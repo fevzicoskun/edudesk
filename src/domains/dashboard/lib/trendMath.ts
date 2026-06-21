@@ -14,7 +14,7 @@ export function weekKeysBetween(startISO: string, end: Date): string[] {
   let cur = startOfWeek(parseISO(startISO), { weekStartsOn: 1 })
   const last = startOfWeek(end, { weekStartsOn: 1 })
   const out: string[] = []
-  while (cur <= last) {
+  while (cur.getTime() <= last.getTime()) {
     out.push(format(cur, 'yyyy-MM-dd'))
     cur = addDays(cur, 7)
   }
