@@ -24,7 +24,7 @@ export default async function StatusBoardLoader({
 }: Props) {
   const supabase = await createClient()
 
-  const [studentsResult, subsResult, otherHwRes, weekLoadResult] = await Promise.all([
+  const [studentsResult, subsResult, cumulativeRes, weekLoadResult] = await Promise.all([
     supabase
       .from('students')
       .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
@@ -37,43 +37,27 @@ export default async function StatusBoardLoader({
       .select('student_id, status, note')
       .eq('homework_id', homeworkId)
       .eq('school_id', schoolId),
-    supabase
-      .from('homeworks')
-      .select('id')
-      .eq('class_id', classId)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .eq('is_template', false)
-      .neq('id', homeworkId)
-      .limit(200),
+    // Sınıfın diğer ödevlerindeki kümülatif yük — öğrenci başına kaçırılan +
+    // toplam ödev sayısı DB'de agregat (eski ham .limit(12000) yerine).
+    supabase.rpc('get_class_cumulative_load', {
+      p_class_id: classId,
+      p_school_id: schoolId,
+      p_exclude_homework: homeworkId,
+    }),
     dueDate
       ? getClassWeekLoad([classId], dueDate)
       : Promise.resolve([] as ClassWeekLoad[]),
   ])
 
   const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
-  const otherHomeworkIds = otherHwRes.data?.map(h => h.id) ?? []
-
-  const cumulativeResult = otherHomeworkIds.length > 0
-    ? await supabase
-        .from('homework_submissions')
-        .select('student_id, status, homework_id')
-        .in('homework_id', otherHomeworkIds)
-        .limit(12000)
-    : { data: [] as { student_id: string; status: string; homework_id: string }[] }
 
   const students = studentsResult.data ?? []
   const subs     = subsResult.data ?? []
   const subMap   = new Map(subs.map(s => [s.student_id, s]))
 
-  const cumulativeSubs     = cumulativeResult.data ?? []
-  const totalHomeworkCount = new Set(cumulativeSubs.map(s => s.homework_id)).size
-  const missedByStudent    = new Map<string, number>()
-  for (const s of cumulativeSubs) {
-    if (s.status === 'yapilmadi' || s.status === 'eksik') {
-      missedByStudent.set(s.student_id, (missedByStudent.get(s.student_id) ?? 0) + 1)
-    }
-  }
+  const cumulativeRows     = cumulativeRes.data ?? []
+  const totalHomeworkCount = Number(cumulativeRows[0]?.total_homeworks ?? 0)
+  const missedByStudent    = new Map(cumulativeRows.map(r => [r.student_id, Number(r.missed)]))
 
   const items: StatusItem[] = students
     .map(student => {

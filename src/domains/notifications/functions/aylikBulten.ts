@@ -65,14 +65,14 @@ export const aylikBultenFn = inngest.createFunction(
           { count: studentCount },
           { count: teacherCount },
           { data: classes },
-          { data: attendance },
+          { data: attendanceRates },
           { data: submissions },
           { data: meetings },
         ] = await Promise.all([
           db.from('students').select('id', { count: 'exact', head: true }).eq('school_id', sid).is('deleted_at', null),
           db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
-          db.from('attendance').select('class_id, status').eq('school_id', sid).gte('date', monthStart).lte('date', monthEnd).limit(50000),
+          db.rpc('get_class_attendance_rates', { p_school_id: sid, p_start: monthStart, p_end: monthEnd }),
           db.from('homework_submissions').select('status').eq('school_id', sid).gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
           db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
         ])
@@ -80,21 +80,14 @@ export const aylikBultenFn = inngest.createFunction(
         // Tamamlanan ödev sayısı
         const completedHomeworks = (submissions ?? []).filter(s => s.status === 'yapildi').length
 
-        // En iyi yoklama sınıfı
-        const classPresentMap = new Map<string, { present: number; total: number }>()
-        for (const rec of attendance ?? []) {
-          if (!classPresentMap.has(rec.class_id)) classPresentMap.set(rec.class_id, { present: 0, total: 0 })
-          const entry = classPresentMap.get(rec.class_id)!
-          entry.total++
-          if (rec.status === 'present') entry.present++
-        }
-
+        // En iyi yoklama sınıfı — sınıf başına present/total DB'den agregat gelir
         const classNameMap = new Map((classes ?? []).map(c => [c.id, c.name]))
         let bestClass = '—'
         let bestRate  = -1
-        for (const [classId, { present, total }] of classPresentMap) {
-          const rate = total > 0 ? present / total : 0
-          if (rate > bestRate) { bestRate = rate; bestClass = classNameMap.get(classId) ?? '—' }
+        for (const r of attendanceRates ?? []) {
+          const total = Number(r.total)
+          const rate  = total > 0 ? Number(r.present) / total : 0
+          if (rate > bestRate) { bestRate = rate; bestClass = classNameMap.get(r.class_id) ?? '—' }
         }
 
         return {

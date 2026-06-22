@@ -3051,6 +3051,22 @@ export type Database = {
           covered_days: number
         }[]
       }
+      get_class_attendance_rates: {
+        Args: { p_school_id: string; p_start: string; p_end: string }
+        Returns: {
+          class_id: string
+          present: number
+          total: number
+        }[]
+      }
+      get_class_cumulative_load: {
+        Args: { p_class_id: string; p_school_id: string; p_exclude_homework: string }
+        Returns: {
+          student_id: string
+          missed: number
+          total_homeworks: number
+        }[]
+      }
       get_first_unread_announcement: {
         Args: { p_school_id: string; p_user_id: string; p_user_role: string }
         Returns: Database["public"]["CompositeTypes"]["unread_announcement_row"][]
