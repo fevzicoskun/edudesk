@@ -5,10 +5,10 @@ import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema } from '@/src/domains/homework/validators'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
+import { HomeworkRepository } from '@/src/domains/homework/repositories/HomeworkRepository'
 import type { HomeworkTemplate, ActionResult } from '@/src/shared/types'
 import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { turkeyDate } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
@@ -256,24 +256,17 @@ export async function getClassWeekLoad(
   if (!validIds.length) return []
   if (!/^\d{4}-\d{2}-\d{2}$/.test(weekOf)) return []
 
-  const [user, profile, supabase] = await Promise.all([
+  const [user, profile] = await Promise.all([
     getCurrentUser(),
     getCurrentProfile(),
-    createClient(),
   ])
   if (!user || !profile?.school_id) return []
 
   const { start, end } = weekRange(weekOf)
 
-  const { data, error } = await supabase
-    .from('homeworks')
-    .select('subject, due_date, class_id, teacher_id, teacher:profiles(full_name), classes(id, name)')
-    .eq('school_id', profile.school_id)
-    .in('class_id', validIds)
-    .eq('is_template', false)
-    .is('deleted_at', null)
-    .gte('due_date', start)
-    .lte('due_date', end)
+  const { data, error } = await HomeworkRepository.findWeekLoadRows(
+    profile.school_id, validIds, start, end,
+  )
 
   if (error || !data) return []
 

@@ -169,6 +169,20 @@ export const HomeworkRepository = {
       .eq('id', homeworkId).eq('school_id', schoolId)
   },
 
+  // Haftalık ödev yükü için ham satırlar — saf hesaplama lib/week-load.buildClassWeekLoad'da yapılır
+  async findWeekLoadRows(schoolId: string, classIds: string[], start: string, end: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('homeworks')
+      .select('subject, due_date, class_id, teacher_id, teacher:profiles(full_name), classes(id, name)')
+      .eq('school_id', schoolId)
+      .in('class_id', classIds)
+      .eq('is_template', false)
+      .is('deleted_at', null)
+      .gte('due_date', start)
+      .lte('due_date', end)
+  },
+
   async findTemplatesByClass(classId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase
