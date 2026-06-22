@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 const VALID_EVENT_TYPES = ['page_view', 'section_view', 'session_end'] as const
 const VALID_SECTIONS    = ['odevler', 'devamsizlik', 'notlar'] as const
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       ? Math.min(Math.max(0, Math.round(duration_sec)), 7200)
       : null
 
-  await supabase.from('veli_portal_events').insert({
+  const { error } = await supabase.from('veli_portal_events').insert({
     token_jti:    result.payload.jti,
     student_id:   result.payload.id,
     school_id:    schoolId,
@@ -74,6 +75,13 @@ export async function POST(req: NextRequest) {
     section:      event_type === 'section_view' ? (section as string) : null,
     duration_sec: durationSec,
   })
+
+  if (error) {
+    logger.warn(
+      { event: 'veli_event_insert_failed', err: error.message },
+      'Veli portal eventi kaydedilemedi'
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }

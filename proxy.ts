@@ -2,11 +2,31 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 // ─── Public paths ─────────────────────────────────────────────
-const PUBLIC_PATHS = ['/', '/login', '/kayit', '/veli', '/yoklama-yazdir', '/onboarding', '/api/inngest', '/gizlilik', '/kullanim-kosullari', '/sifremi-unuttum', '/auth/callback']
+const PUBLIC_PATHS = [
+  '/', '/login', '/kayit', '/veli', '/yoklama-yazdir', '/onboarding', '/offline',
+  '/gizlilik', '/kullanim-kosullari', '/sifremi-unuttum', '/auth/callback',
+  // Public API — kendi imza/token doğrulamasına sahip, auth redirect'ten muaf
+  '/api/inngest',      // Inngest signing key ile doğrular
+  '/api/health',       // Health check — auth'suz erişilmeli (uptime monitörü)
+  '/api/ready',        // Readiness probe
+  '/api/live',         // Liveness probe
+  '/api/unsubscribe',  // E-posta linki — HMAC imza doğrular
+  '/api/veli/event',   // Veli portalı — public token doğrular (/api/ olduğu için /veli prefix'i kapsamaz)
+]
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(p + '/'))
 }
+
+// IP rate-limit'ten muaf API path'leri:
+// - health/ready/live: probe'lar sıfır-bağımlılık olmalı (Redis down ise fail-closed 429 atmamalı)
+// - inngest: kendi signing'ine sahip + fan-out'ta 30/dk/IP limitini aşar
+const RATE_LIMIT_EXEMPT_API_PATHS = new Set([
+  '/api/health',
+  '/api/ready',
+  '/api/live',
+  '/api/inngest',
+])
 
 // ─── Nonce ───────────────────────────────────────────────────
 function generateNonce(): string {
@@ -152,7 +172,7 @@ export async function proxy(request: NextRequest) {
       return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
     }
   }
-  if (pathname.startsWith('/api/') && pathname !== '/api/health' && pathname !== '/api/ready') {
+  if (pathname.startsWith('/api/') && !RATE_LIMIT_EXEMPT_API_PATHS.has(pathname)) {
     if (!(await checkRateLimit(`api:${ip}`, 30, 60_000, true))) {
       return new NextResponse('Çok fazla istek.', { status: 429 })
     }
