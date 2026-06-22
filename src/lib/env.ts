@@ -1,6 +1,8 @@
 import 'server-only'
 import { z } from 'zod'
 
+const isProd = process.env.NODE_ENV === 'production'
+
 const schema = z.object({
   // ── Supabase (zorunlu) ────────────────────────────────────────────────────
   NEXT_PUBLIC_SUPABASE_URL:             z.string().url('NEXT_PUBLIC_SUPABASE_URL geçerli bir URL olmalı'),
@@ -27,7 +29,11 @@ const schema = z.object({
   RATE_LIMIT_FAIL_MODE: z.enum(['open', 'closed']).default('closed'),
 
   // ── Unsubscribe token signing ─────────────────────────────────────────────
-  UNSUBSCRIBE_SECRET: z.string().default(''),
+  // Production'da zorunlu: eksikse /api/unsubscribe runtime'da throw eder (graceful fallback yok).
+  // Dev/test'te opsiyonel.
+  UNSUBSCRIBE_SECRET: isProd
+    ? z.string().min(32, 'UNSUBSCRIBE_SECRET production\'da zorunlu (min 32 karakter)')
+    : z.string().default(''),
 })
 
 const parsed = schema.safeParse(process.env)

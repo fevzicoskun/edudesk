@@ -74,7 +74,7 @@ export async function sendPushToSchool(schoolId: string, payload: PushPayload): 
 
   if (!subs?.length) return
 
-  await Promise.allSettled(
+  const results = await Promise.allSettled(
     subs.map((sub: Subscription) =>
       webpush.sendNotification(
         { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
@@ -82,4 +82,18 @@ export async function sendPushToSchool(schoolId: string, payload: PushPayload): 
       )
     )
   )
+
+  // Süresi dolmuş veya geçersiz subscription'ları temizle (sendPushToUser ile tutarlı)
+  const expired = results
+    .map((r, i) => (r.status === 'rejected' ? subs[i] : null))
+    .filter(Boolean) as Subscription[]
+
+  if (expired.length) {
+    logger.warn({ event: 'push_expired', count: expired.length, school_id: schoolId }, 'Geçersiz push subscription temizleniyor')
+    await supabase
+      .from('push_subscriptions')
+      .delete()
+      .eq('school_id', schoolId)
+      .in('endpoint', expired.map(s => s.endpoint))
+  }
 }

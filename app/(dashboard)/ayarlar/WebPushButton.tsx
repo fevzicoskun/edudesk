@@ -12,6 +12,11 @@ export default function WebPushButton() {
       setState('unsupported')
       return
     }
+    // VAPID public key tanımlı değilse subscribe edilemez — butonu hiç gösterme
+    if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+      setState('unsupported')
+      return
+    }
     if (Notification.permission === 'denied') { setState('denied'); return }
 
     navigator.serviceWorker.getRegistration('/sw.js')
