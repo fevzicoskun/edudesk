@@ -17,10 +17,8 @@
     "quality": "node scripts/quality.mjs"
   },
   "dependencies": {
-    "@sentry/nextjs": "^10.53.1",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.105.3",
-    "@types/nodemailer": "^8.0.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.38.0",
     "class-variance-authority": "^0.7.1",
@@ -32,7 +30,6 @@
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.16.0",
     "next": "^16.2.7",
-    "nodemailer": "^8.0.7",
     "pdfjs-dist": "^6.0.227",
     "pino": "^10.3.1",
     "radix-ui": "^1.4.3",
