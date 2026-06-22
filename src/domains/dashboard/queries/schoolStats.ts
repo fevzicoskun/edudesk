@@ -4,16 +4,13 @@ import { logger } from '@/src/infrastructure/observability/logger'
 
 // Her iki widget de bu iki sorguyu çekiyor — cache() ile request içi dedup sağlanır
 
-export const getAbsentYearRows = cache(async (schoolId: string, yearStart: string) => {
+// Öğrenci başına ağırlıklı devamsızlık skoru (absent=1, late=0.5), DB-tarafı agregat.
+// Eski ham-satır + limit(15000) yaklaşımı eşiği aşan okulda risk sayısını/listesini
+// sessizce kırpıyordu; RPC öğrenci başına tek satır döner, cap yok.
+export const getAbsenceScores = cache(async (schoolId: string, yearStart: string) => {
   const db = await createClient()
-  const { data, error } = await db
-    .from('attendance')
-    .select('student_id, status')
-    .eq('school_id', schoolId)
-    .in('status', ['absent', 'late'])
-    .gte('date', yearStart)
-    .limit(15000)
-  if (error) logger.error({ event: 'db_query_failed', query: 'getAbsentYearRows', school_id: schoolId, message: error.message }, 'Devamsızlık sorgusu başarısız')
+  const { data, error } = await db.rpc('get_school_absence_scores', { p_school_id: schoolId, p_year_start: yearStart })
+  if (error) logger.error({ event: 'db_query_failed', query: 'get_school_absence_scores', school_id: schoolId, message: error.message }, 'Devamsızlık skor sorgusu başarısız')
   return data ?? []
 })
 

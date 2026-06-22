@@ -4,7 +4,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import { subDays, todayLocalISO } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
-import { getAbsentYearRows, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { getAbsenceScores, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -33,12 +33,12 @@ export default async function MYStatsWidget() {
   const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [teachers, classesRes, studentsRes, todayAttRes, absentYearRows, sessionRows] = await Promise.all([
+  const [teachers, classesRes, studentsRes, todayAttRes, absenceScores, sessionRows] = await Promise.all([
     getSchoolTeachers(school_id),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
-    getAbsentYearRows(school_id, yearStart),
+    getAbsenceScores(school_id, yearStart),
     getSessionRows(school_id),
   ])
 
@@ -49,12 +49,7 @@ export default async function MYStatsWidget() {
   const classesWithAtt = new Set(todayAtt.map(a => a.class_id))
   const todayAbsent    = todayAtt.filter(a => a.status === 'absent').length
 
-  const absenceMap = new Map<string, number>()
-  for (const a of absentYearRows) {
-    const inc = a.status === 'absent' ? 1 : 0.5
-    absenceMap.set(a.student_id, (absenceMap.get(a.student_id) ?? 0) + inc)
-  }
-  const riskCount = [...absenceMap.values()].filter(n => n >= ATTENDANCE_WARN_DAYS).length
+  const riskCount = absenceScores.filter(r => r.absences >= ATTENDANCE_WARN_DAYS).length
 
   const lastSeenMap = new Map<string, string>()
   for (const s of sessionRows) {

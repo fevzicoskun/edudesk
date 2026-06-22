@@ -3061,6 +3061,13 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_school_absence_scores: {
+        Args: { p_school_id: string; p_year_start: string }
+        Returns: {
+          student_id: string
+          absences: number
+        }[]
+      }
       get_school_activity_weekly: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
