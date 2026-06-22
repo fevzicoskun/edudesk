@@ -1,30 +1,12 @@
 import Link from 'next/link'
 import { requireSchoolId } from '@/src/shared/auth'
-import { donemBasi } from '@/src/shared/utils'
-import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
-import { getAttendanceTrendRows, getHomeworkTrendRows, getTrendClasses } from '@/src/domains/dashboard/queries/schoolTrends'
-import {
-  computeAbsenceTrend, computeActivityTrend, computeCoverageTrend, computeClassAbsence,
-} from '@/src/domains/dashboard/lib/trendMath'
+import { getSchoolTrends } from '@/src/domains/dashboard/queries/schoolTrends'
 import { computeEarlyWarnings, hasEnoughBaseline } from '@/src/domains/dashboard/lib/earlyWarning'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function ErkenUyarilarWidget() {
   const school_id = await requireSchoolId()
-  const donemStart = donemBasi()
-  const now = new Date()
-
-  const [attRows, hwRows, classes, teachers] = await Promise.all([
-    getAttendanceTrendRows(school_id, donemStart),
-    getHomeworkTrendRows(school_id, donemStart),
-    getTrendClasses(school_id),
-    getSchoolTeachers(school_id),
-  ])
-
-  const absence  = computeAbsenceTrend(attRows, donemStart, now)
-  const activity = computeActivityTrend(attRows, hwRows, teachers.length, donemStart, now)
-  const coverage = computeCoverageTrend(attRows, classes.length, donemStart, now)
-  const classAbs = computeClassAbsence(attRows, classes)
+  const { absence, activity, coverage, classAbs, now } = await getSchoolTrends(school_id)
 
   const warnings = computeEarlyWarnings(absence, activity, coverage, classAbs, now)
 

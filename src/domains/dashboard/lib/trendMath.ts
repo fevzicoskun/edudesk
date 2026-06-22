@@ -6,9 +6,11 @@ export type ActivityTrendPoint = { weekStart: string; label: string; rate: numbe
 export type ClassAbsence = { classId: string; name: string; grade: number; rate: number; absent: number; total: number }
 export type CoverageTrendPoint = { weekStart: string; label: string; rate: number; recorded: number; expected: number }
 
-function isoWeekStart(dateStr: string): string {
-  return format(startOfWeek(parseISO(dateStr), { weekStartsOn: 1 }), 'yyyy-MM-dd')
-}
+// DB-tarafı RPC çıktı satırları (get_school_* fonksiyonları). Hafta (Pzt) ve sınıf
+// grenine indirgenmiş agregatlar — ham yoklama satırı değil.
+export type AttendanceWeekRow = { week_start: string; total: number; absent: number; recorded: number }
+export type ActivityWeekRow = { week_start: string; active: number }
+export type ClassAbsenceRow = { class_id: string; total: number; absent: number }
 
 /** Pazartesi-başlı hafta anahtarları; start ve end'in haftaları dahil. */
 export function weekKeysBetween(startISO: string, end: Date): string[] {
@@ -27,38 +29,23 @@ function weekLabel(weekStartISO: string): string {
 }
 
 export function computeAbsenceTrend(
-  rows: { date: string; status: string }[], startISO: string, end: Date,
+  rows: { week_start: string; total: number; absent: number }[], startISO: string, end: Date,
 ): AbsenceTrendPoint[] {
-  const absent = new Map<string, number>()
-  const total = new Map<string, number>()
-  for (const r of rows) {
-    const wk = isoWeekStart(r.date)
-    total.set(wk, (total.get(wk) ?? 0) + 1)
-    if (r.status === 'absent') absent.set(wk, (absent.get(wk) ?? 0) + 1)
-  }
+  const byWeek = new Map(rows.map(r => [r.week_start, r]))
   return weekKeysBetween(startISO, end).map(wk => {
-    const t = total.get(wk) ?? 0
-    const a = absent.get(wk) ?? 0
+    const r = byWeek.get(wk)
+    const t = r?.total ?? 0
+    const a = r?.absent ?? 0
     return { weekStart: wk, label: weekLabel(wk), absent: a, total: t, rate: t === 0 ? 0 : a / t }
   })
 }
 
 export function computeActivityTrend(
-  att: { date: string; teacher_id: string | null }[],
-  hw: { assigned_date: string; teacher_id: string | null }[],
-  totalTeachers: number, startISO: string, end: Date,
+  rows: ActivityWeekRow[], totalTeachers: number, startISO: string, end: Date,
 ): ActivityTrendPoint[] {
-  const byWeek = new Map<string, Set<string>>()
-  const add = (dateStr: string, tid: string | null) => {
-    if (!tid) return
-    const wk = isoWeekStart(dateStr)
-    if (!byWeek.has(wk)) byWeek.set(wk, new Set())
-    byWeek.get(wk)!.add(tid)
-  }
-  for (const r of att) add(r.date, r.teacher_id)
-  for (const r of hw) add(r.assigned_date, r.teacher_id)
+  const byWeek = new Map(rows.map(r => [r.week_start, r.active]))
   return weekKeysBetween(startISO, end).map(wk => {
-    const active = byWeek.get(wk)?.size ?? 0
+    const active = byWeek.get(wk) ?? 0
     return {
       weekStart: wk, label: weekLabel(wk), active, total: totalTeachers,
       rate: totalTeachers === 0 ? 0 : active / totalTeachers,
@@ -67,21 +54,15 @@ export function computeActivityTrend(
 }
 
 export function computeClassAbsence(
-  rows: { class_id: string; status: string }[],
+  rows: ClassAbsenceRow[],
   classes: { id: string; name: string; grade: number }[],
 ): ClassAbsence[] {
-  const absent = new Map<string, number>()
-  const total = new Map<string, number>()
-  for (const r of rows) {
-    total.set(r.class_id, (total.get(r.class_id) ?? 0) + 1)
-    if (r.status === 'absent') absent.set(r.class_id, (absent.get(r.class_id) ?? 0) + 1)
-  }
+  const byClass = new Map(rows.map(r => [r.class_id, r]))
   return classes
-    .filter(c => (total.get(c.id) ?? 0) > 0)
+    .filter(c => (byClass.get(c.id)?.total ?? 0) > 0)
     .map(c => {
-      const t = total.get(c.id)!
-      const a = absent.get(c.id) ?? 0
-      return { classId: c.id, name: c.name, grade: c.grade, absent: a, total: t, rate: a / t }
+      const r = byClass.get(c.id)!
+      return { classId: c.id, name: c.name, grade: c.grade, absent: r.absent, total: r.total, rate: r.absent / r.total }
     })
     .sort((x, y) => y.rate - x.rate)
 }
@@ -102,23 +83,19 @@ function weekdaysInRange(start: Date, end: Date): number {
  * Yoklama kapsama trendi (haftalık): alınan (sınıf, gün) yoklamalarının
  * beklenene oranı. Beklenen = sınıf sayısı × o haftanın bugüne kadarki hafta
  * içi günü. Akademik takvim yok → tatiller hafta içi sayılır (bilinen tavan).
+ * `recorded` distinct (sınıf,gün) sayısı RPC'den hazır gelir.
  */
 export function computeCoverageTrend(
-  rows: { date: string; class_id: string }[],
+  rows: { week_start: string; recorded: number }[],
   classCount: number, startISO: string, end: Date,
 ): CoverageTrendPoint[] {
-  const seen = new Map<string, Set<string>>()
-  for (const r of rows) {
-    const wk = isoWeekStart(r.date)
-    if (!seen.has(wk)) seen.set(wk, new Set())
-    seen.get(wk)!.add(`${r.class_id}|${r.date}`)
-  }
+  const byWeek = new Map(rows.map(r => [r.week_start, r.recorded]))
   return weekKeysBetween(startISO, end).map(wk => {
     const weekStartDate = parseISO(wk)
     const weekEnd = addDays(weekStartDate, 6)
     const rangeEnd = weekEnd.getTime() < end.getTime() ? weekEnd : end
     const expected = classCount * weekdaysInRange(weekStartDate, rangeEnd)
-    const recorded = seen.get(wk)?.size ?? 0
+    const recorded = byWeek.get(wk) ?? 0
     return {
       weekStart: wk, label: weekLabel(wk), recorded, expected,
       rate: expected === 0 ? 0 : recorded / expected,

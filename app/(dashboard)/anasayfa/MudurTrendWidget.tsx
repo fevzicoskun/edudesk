@@ -1,10 +1,8 @@
 // app/(dashboard)/anasayfa/MudurTrendWidget.tsx
 import Link from 'next/link'
 import { requireSchoolId } from '@/src/shared/auth'
-import { donemBasi } from '@/src/shared/utils'
-import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
-import { getAttendanceTrendRows, getHomeworkTrendRows, getTrendClasses } from '@/src/domains/dashboard/queries/schoolTrends'
-import { computeAbsenceTrend, computeActivityTrend, computeClassAbsence, computeCoverageTrend, filledWeekCount } from '@/src/domains/dashboard/lib/trendMath'
+import { getSchoolTrends } from '@/src/domains/dashboard/queries/schoolTrends'
+import { filledWeekCount } from '@/src/domains/dashboard/lib/trendMath'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import TrendChart from './charts/TrendChart'
 
@@ -25,20 +23,8 @@ function BirikiyorCard({ title, weeks }: { title: string; weeks: number }) {
 
 export default async function MudurTrendWidget() {
   const school_id = await requireSchoolId()
-  const donemStart = donemBasi()
-  const now = new Date()
+  const { absence: absenceTrend, activity: activityTrend, coverage: coverageTrend, classAbs: classAbsence } = await getSchoolTrends(school_id)
 
-  const [attRows, hwRows, classes, teachers] = await Promise.all([
-    getAttendanceTrendRows(school_id, donemStart),
-    getHomeworkTrendRows(school_id, donemStart),
-    getTrendClasses(school_id),
-    getSchoolTeachers(school_id),
-  ])
-
-  const absenceTrend = computeAbsenceTrend(attRows, donemStart, now)
-  const activityTrend = computeActivityTrend(attRows, hwRows, teachers.length, donemStart, now)
-  const coverageTrend = computeCoverageTrend(attRows, classes.length, donemStart, now)
-  const classAbsence = computeClassAbsence(attRows, classes)
   const enoughAbsence = filledWeekCount(absenceTrend) >= MIN_WEEKS
   const enoughActivity = filledWeekCount(activityTrend) >= MIN_WEEKS
   const enoughCoverage = coverageTrend.filter(p => p.expected > 0).length >= MIN_WEEKS

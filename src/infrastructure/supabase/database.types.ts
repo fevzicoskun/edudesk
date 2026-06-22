@@ -3061,6 +3061,30 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_school_activity_weekly: {
+        Args: { p_school_id: string; p_year_start: string }
+        Returns: {
+          week_start: string
+          active: number
+        }[]
+      }
+      get_school_attendance_trend: {
+        Args: { p_school_id: string; p_year_start: string }
+        Returns: {
+          week_start: string
+          total: number
+          absent: number
+          recorded: number
+        }[]
+      }
+      get_school_class_absence: {
+        Args: { p_school_id: string; p_year_start: string }
+        Returns: {
+          class_id: string
+          total: number
+          absent: number
+        }[]
+      }
       get_user_permissions: {
         Args: { p_school_id?: string; p_user_id: string }
         Returns: {
