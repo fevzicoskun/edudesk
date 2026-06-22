@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/src/infrastructure/observability/logger'
+
+// Public endpoint: durum + latency döner. Ham hata detayı public gövdeye konmaz —
+// gerçek sebep (timeout/HTTP kodu/exception) sunucu loglarında tutulur.
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +16,7 @@ export async function GET() {
 
   let dbStatus: 'ok' | 'error' = 'error'
   let dbLatencyMs: number | null = null
-  let dbError: string | undefined
+  let dbError: string | undefined // sadece loglama için — public gövdeye konmaz
 
   if (supabaseUrl && anonKey) {
     const dbStart = Date.now()
@@ -35,6 +39,13 @@ export async function GET() {
   const healthy    = dbStatus === 'ok'
   const durationMs = Date.now() - begin
 
+  if (!healthy) {
+    logger.warn(
+      { event: 'health_degraded', db_status: dbStatus, db_latency_ms: dbLatencyMs, db_error: dbError },
+      'Health check degraded'
+    )
+  }
+
   const body = {
     status:      healthy ? 'healthy' : 'degraded',
     instance_age_ms: Date.now() - INSTANCE_START,
@@ -43,7 +54,6 @@ export async function GET() {
       db: {
         status:     dbStatus,
         latency_ms: dbLatencyMs,
-        ...(dbError ? { error: dbError } : {}),
       },
     },
   }
