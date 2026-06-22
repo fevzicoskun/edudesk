@@ -1,5 +1,19 @@
 # Internal API Mimarisi
 
+> ⚠️ **DURUM: PLANLANAN MİMARİ — HENÜZ KULLANIMDA DEĞİL (2026-06-23)**
+>
+> Bu belge `/api/internal/*` standardını tarifler ancak **şu an hiçbir route bu zarfı kullanmıyor.**
+> Yardımcı katman (`src/infrastructure/api/{middleware,validation,response}.ts`) mevcut ve hazır,
+> fakat `app/api/internal/*` altında route yok ve `withInternalAuth`/`apiOk`/`parseBody`
+> hiçbir endpoint tarafından çağrılmıyor.
+>
+> **Gerçekte canlı olan API route'ları** (`app/api/` altında):
+> `/api/export`, `/api/health`, `/api/ready`, `/api/live`, `/api/inngest`,
+> `/api/push/subscribe`, `/api/rapor/devamsizlik`, `/api/unsubscribe`, `/api/veli/event`
+>
+> Yeni heavy endpoint eklerken bu standardı uygulamak için aşağıdaki bölümleri rehber al;
+> mevcut endpoint'leri buraya taşımak ayrı bir refactor işidir.
+
 `/api/internal/*` — heavy operasyonlar için standartlaştırılmış sunucu katmanı.
 
 ---
