@@ -1,3 +1,8 @@
+> ⚠️ **DEPRECATED (2026-06-22):** Bu plan (vision/Gemini OCR) **uygulanmadı, bırakıldı.**
+> Görüntüde ±1 ızgara kayması (oryantasyon) çözülemedi. Yerine deterministik PDF
+> parsing geçti — bkz. `src/domains/schedule/parseSchedulePdf.ts` (canlı, test edili).
+> Bu doküman yalnız tarihsel kayıt olarak duruyor.
+
 # Ders Programı OCR (Faz 2) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

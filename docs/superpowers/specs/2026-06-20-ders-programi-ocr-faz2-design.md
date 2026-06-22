@@ -1,3 +1,8 @@
+> ⚠️ **DEPRECATED (2026-06-22):** Bu vision/Gemini OCR yaklaşımı **uygulanmadı, bırakıldı.**
+> Görüntüde ±1 ızgara kayması (oryantasyon) çözülemedi. Yerine deterministik PDF
+> parsing geçti — bkz. `src/domains/schedule/parseSchedulePdf.ts` (canlı, test edili).
+> Bu doküman yalnız tarihsel kayıt olarak duruyor.
+
 # Ders Programım — OCR Faz 2 Tasarım (2026-06-20)
 
 ## Amaç ve kapsam
