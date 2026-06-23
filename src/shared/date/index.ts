@@ -51,3 +51,10 @@ export {
 export function todayLocalISO(): string {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
+
+/** Türkiye saatine göre bugünün haftagünü: 1=Pazartesi … 7=Pazar (Cmt/Paz = hafta sonu).
+ *  Intl ile doğrudan çözülür; UTC sunucuda gece yarısı kayması olmaz. */
+export function todayWeekdayTR(): number {
+  const wd = new Intl.DateTimeFormat('en-US', { timeZone: 'Europe/Istanbul', weekday: 'short' }).format(new Date())
+  return ({ Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 } as Record<string, number>)[wd] ?? 0
+}
