@@ -55,7 +55,7 @@ export default async function MudurOgretmenAktivite() {
             <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
               Öğretmen Aktivitesi
             </CardTitle>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{periodLabel}</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">{periodLabel}</p>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {isWeekend && (
@@ -72,8 +72,8 @@ export default async function MudurOgretmenAktivite() {
         </div>
         {/* Kolon başlıkları */}
         <div className="flex items-center justify-end gap-4 mt-2 pr-1">
-          <span className="text-[10px] font-medium text-gray-400 dark:text-slate-500 w-12 text-center">Ödev</span>
-          <span className="text-[10px] font-medium text-gray-400 dark:text-slate-500 w-14 text-center">Yoklama</span>
+          <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-12 text-center">Ödev</span>
+          <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-14 text-center">Yoklama</span>
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -82,20 +82,20 @@ export default async function MudurOgretmenAktivite() {
             <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{t.full_name}</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{t.subject ?? '—'}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{t.subject ?? '—'}</p>
               </div>
               <div className="flex items-center gap-4 shrink-0">
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-12 text-center ${
                   t.hasHomework
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                    : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'
+                    : 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400'
                 }`}>
                   {t.hasHomework ? 'Girdi' : 'Girmedi'}
                 </span>
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-14 text-center ${
                   t.hasAttendance
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
-                    : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'
+                    : 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400'
                 }`}>
                   {t.hasAttendance ? 'Aldı' : 'Almadı'}
                 </span>
@@ -103,7 +103,7 @@ export default async function MudurOgretmenAktivite() {
             </li>
           ))}
           {rows.length === 0 && (
-            <li className="px-4 py-6 text-center text-sm text-gray-400 dark:text-slate-500">
+            <li className="px-4 py-6 text-center text-sm text-gray-500 dark:text-slate-400">
               Henüz öğretmen yok.
             </li>
           )}

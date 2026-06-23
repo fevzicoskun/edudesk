@@ -7,7 +7,7 @@ export default function SinifTrend({ classStats, trend }: { classStats: ClassAbs
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-4">
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Sınıf Karşılaştırma</h2>
       {classStats.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-slate-500">Veri yok.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Veri yok.</p>
       ) : (
         <ul className="space-y-2 mb-5">
           {classStats.map(c => (
@@ -27,7 +27,7 @@ export default function SinifTrend({ classStats, trend }: { classStats: ClassAbs
         {trend.map(t => (
           <div key={t.weekStart} className="flex-1 flex flex-col items-center justify-end gap-1" title={`${t.weekStart}: %${t.rate}`}>
             <div className="w-full rounded-t bg-blue-400 dark:bg-blue-500" style={{ height: `${Math.max(4, Math.round((t.rate / maxRate) * 100))}%` }} />
-            <span className="text-[10px] text-gray-400 dark:text-slate-500">%{t.rate}</span>
+            <span className="text-[10px] text-gray-500 dark:text-slate-400">%{t.rate}</span>
           </div>
         ))}
       </div>

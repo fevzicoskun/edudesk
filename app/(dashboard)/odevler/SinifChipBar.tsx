@@ -12,7 +12,7 @@ export default function SinifChipBar({ classes, activeByClass, pendingByClass }:
     <div className="mt-4 mb-1">
       <Link
         href="/odevler/analitik"
-        className="inline-flex items-center gap-1 text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+        className="inline-flex items-center gap-1 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
         title="Sınıf × hafta başarı ısı haritasını gör"
       >
         Başarı Haritası
@@ -41,7 +41,7 @@ export default function SinifChipBar({ classes, activeByClass, pendingByClass }:
               )}
               {cls.name}
               {activeCount > 0 && (
-                <span className="text-[11px] font-semibold text-gray-400 dark:text-slate-500">{activeCount}</span>
+                <span className="text-[11px] font-semibold text-gray-500 dark:text-slate-400">{activeCount}</span>
               )}
             </Link>
           )

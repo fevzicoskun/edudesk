@@ -48,7 +48,7 @@ export default function ForgotPasswordForm() {
         {isPending ? 'Gönderiliyor...' : 'Sıfırlama Bağlantısı Gönder'}
       </button>
 
-      <p className="text-center text-xs text-gray-400 dark:text-slate-500 pt-1">
+      <p className="text-center text-xs text-gray-500 dark:text-slate-400 pt-1">
         <a href="/login" className="text-blue-600 hover:underline font-medium">← Girişe dön</a>
       </p>
     </form>

@@ -37,13 +37,13 @@ export default async function AylikDevamsizlikWidget() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Bu Ay Devamsızlık</h2>
-          <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+          <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
             {format(new Date(`${monthStart}T00:00:00`), 'd MMM')} – {format(new Date(`${todayStr}T00:00:00`), 'd MMM')}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {total > 0 && (
-            <span className="text-xs text-gray-400 dark:text-slate-500">Toplam: {total}</span>
+            <span className="text-xs text-gray-500 dark:text-slate-400">Toplam: {total}</span>
           )}
           <Link
             href="/yonetim/devamsizlar"

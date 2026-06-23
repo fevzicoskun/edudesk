@@ -39,7 +39,7 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
     <section id="kaynaklar" className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-5 space-y-4">
       <div>
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Kaynak / Kitap Listesi</h2>
-        <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
           Ödev verirken seçebileceğiniz kaynakları tanımlayın. Hangi kitabı ne zaman kullandığınız takip edilir.
         </p>
       </div>
@@ -51,7 +51,7 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
             <div className="min-w-0">
               <span className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate block">{s.name}</span>
               {s.subject && (
-                <span className="text-xs text-gray-400 dark:text-slate-500">{s.subject}</span>
+                <span className="text-xs text-gray-500 dark:text-slate-400">{s.subject}</span>
               )}
             </div>
             <button
@@ -66,7 +66,7 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
           </li>
         ))}
         {optimistic.length === 0 && (
-          <li className="px-3 py-4 text-center text-sm text-gray-400 dark:text-slate-500">
+          <li className="px-3 py-4 text-center text-sm text-gray-500 dark:text-slate-400">
             Henüz kaynak eklenmedi.
           </li>
         )}

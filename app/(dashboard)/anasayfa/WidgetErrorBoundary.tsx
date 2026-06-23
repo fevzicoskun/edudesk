@@ -21,7 +21,7 @@ export default class WidgetErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 text-center text-sm text-gray-400 dark:text-slate-500">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 text-center text-sm text-gray-500 dark:text-slate-400">
           {this.props.label ?? 'Widget'} yüklenemedi.
         </div>
       )

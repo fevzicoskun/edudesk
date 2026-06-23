@@ -102,7 +102,7 @@ export default async function BugunYoklamaWidget() {
 
       {missingClasses.length > 0 && (
         <div>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Yoklama girilmemiş sınıflar</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Yoklama girilmemiş sınıflar</p>
           <div className="flex flex-wrap gap-1.5">
             {missingClasses.map(c => (
               <Link
@@ -129,7 +129,7 @@ export default async function BugunYoklamaWidget() {
 
       {takerByClass.size > 0 && (
         <div className="mt-4">
-          <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Alınan yoklamalar</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Alınan yoklamalar</p>
           <div className="flex flex-wrap gap-1.5">
             {classes.filter(c => takerByClass.has(c.id)).map(c => {
               const t = takerByClass.get(c.id)!
@@ -146,7 +146,7 @@ export default async function BugunYoklamaWidget() {
 
       {atRisk.length > 0 && (
         <div className="mt-4">
-          <p className="text-xs text-gray-400 dark:text-slate-500 mb-2">Devamsızlık sınırına yaklaşanlar (özürsüz ≥ {ATTENDANCE_WARN_DAYS} gün)</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Devamsızlık sınırına yaklaşanlar (özürsüz ≥ {ATTENDANCE_WARN_DAYS} gün)</p>
           <ul className="space-y-1">
             {atRisk.map(([id, c]) => (
               <li key={id} className="flex items-center justify-between text-xs">

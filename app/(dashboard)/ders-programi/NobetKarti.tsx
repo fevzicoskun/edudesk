@@ -85,7 +85,7 @@ export default function NobetKarti({ initialDuties }: { initialDuties: Duty[] })
             >
               <span className="text-sm font-medium text-gray-800 dark:text-slate-200">{DAY_LABEL[d.day_of_week] ?? '—'}</span>
               <span className="text-sm text-gray-500 dark:text-slate-400">{d.time_range} · {d.location}</span>
-              {d.notes && <span className="text-xs text-gray-400 dark:text-slate-500">({d.notes})</span>}
+              {d.notes && <span className="text-xs text-gray-500 dark:text-slate-400">({d.notes})</span>}
               <button
                 onClick={() => remove(d.id)}
                 disabled={pending && deletingId === d.id}
@@ -148,7 +148,7 @@ export default function NobetKarti({ initialDuties }: { initialDuties: Duty[] })
             rows={2}
             className="mt-1 w-full text-sm border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200"
           />
-          <span className="text-xs text-gray-400 dark:text-slate-500">{notes.length}/{MAX_NOTES}</span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">{notes.length}/{MAX_NOTES}</span>
         </label>
 
         <div className="mt-3 flex justify-end">

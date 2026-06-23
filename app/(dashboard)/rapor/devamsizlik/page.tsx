@@ -105,12 +105,12 @@ export default async function DevamsizlikRaporuPage() {
                   <td className="px-4 py-3">
                     <p className="font-medium text-gray-900 dark:text-slate-100">{r.fullName}</p>
                     {r.studentNo && (
-                      <p className="text-xs text-gray-400 dark:text-slate-500">No: {r.studentNo}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400">No: {r.studentNo}</p>
                     )}
                   </td>
                   <td className="px-4 py-3 text-gray-600 dark:text-slate-300">{r.className}</td>
                   <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{r.unexcused}g</td>
-                  <td className="px-4 py-3 text-gray-400 dark:text-slate-500">{r.excused}g</td>
+                  <td className="px-4 py-3 text-gray-500 dark:text-slate-400">{r.excused}g</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${RISK_BADGE[r.risk]}`}>
                       {RISK_LABEL[r.risk]}

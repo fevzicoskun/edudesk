@@ -58,7 +58,7 @@ export default function MentorAtamaKarti({
           {msg.text}
         </p>
       )}
-      <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-2">
+      <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-2">
         Rehber öğretmen, sınıf öğrencileri için görüşme/gözlem raporu yazabilir; günlük yoklama hatırlatması da bu kişiye gider.
       </p>
     </div>

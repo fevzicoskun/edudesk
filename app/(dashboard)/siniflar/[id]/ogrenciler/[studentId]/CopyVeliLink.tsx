@@ -79,7 +79,7 @@ export default function CopyVeliLink({
   }
 
   if (loading) {
-    return <span className="text-xs text-gray-400 dark:text-slate-500">Yükleniyor…</span>
+    return <span className="text-xs text-gray-500 dark:text-slate-400">Yükleniyor…</span>
   }
 
   // Tokens excluding the fresh one (fresh is shown separately with copy button)
@@ -90,7 +90,7 @@ export default function CopyVeliLink({
       {/* Newly generated token — shows URL + copy */}
       {fresh && (
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-xs text-gray-400 dark:text-slate-500 font-mono truncate max-w-[160px] hidden sm:inline">
+          <span className="text-xs text-gray-500 dark:text-slate-400 font-mono truncate max-w-[160px] hidden sm:inline">
             {fresh.url.replace(/^https?:\/\/[^/]+/, '…')}
           </span>
           <button
@@ -132,7 +132,7 @@ export default function CopyVeliLink({
       {/* Older active tokens — only revoke, URL no longer available */}
       {oldTokens.map(t => (
         <div key={t.jti} className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] text-gray-400 dark:text-slate-500 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
+          <span className="text-[11px] text-gray-500 dark:text-slate-400 bg-gray-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">
             {timeLeft(t.expires_at)}
           </span>
           <RevokeButton jti={t.jti} isRevoking={revokingJti === t.jti} onRevoke={handleRevoke} />

@@ -66,13 +66,13 @@ export default async function OgretmenAktivitePage() {
         </div>
         <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 text-center">
           <p className="text-3xl font-bold text-gray-700 dark:text-slate-300">{summary.passiveCount}</p>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Pasif</p>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Pasif</p>
         </div>
       </div>
 
       {/* Öğretmen özet tablosu */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide mb-2">
+        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">
           Öğretmen Özeti
         </p>
         {stats.length === 0 ? (
@@ -99,7 +99,7 @@ export default async function OgretmenAktivitePage() {
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.yoklamaCount}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.odevCount}</td>
                     <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{s.totalCount}</td>
-                    <td className="px-4 py-3 text-gray-400 dark:text-slate-500 text-xs">
+                    <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">
                       {s.lastActivity
                         ? formatDistanceToNow(parseISO(s.lastActivity), { addSuffix: true })
                         : '—'}
@@ -114,7 +114,7 @@ export default async function OgretmenAktivitePage() {
 
       {/* Aktivite zaman akışı */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide mb-2">
+        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">
           Aktivite Akışı
         </p>
         {logs.length === 0 ? (
@@ -140,7 +140,7 @@ export default async function OgretmenAktivitePage() {
                       {' · '}{actionLabel(log.action)}{detail}
                     </span>
                   </div>
-                  <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">
+                  <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">
                     {formatDistanceToNow(parseISO(log.created_at), { addSuffix: true })}
                   </span>
                 </div>

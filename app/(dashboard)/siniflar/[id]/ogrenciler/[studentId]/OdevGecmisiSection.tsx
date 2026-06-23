@@ -19,7 +19,7 @@ export default function OdevGecmisiSection({ submissions }: { submissions: Submi
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Ödev Geçmişi</h2>
       {submissions.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-10">Henüz ödev kaydı yok.</p>
+        <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-10">Henüz ödev kaydı yok.</p>
       ) : (
         <div className="space-y-2">
           {submissions.map((s) => (

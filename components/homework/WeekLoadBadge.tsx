@@ -57,12 +57,12 @@ export function WeekLoadPopover({ load }: { load: ClassWeekLoad }) {
       <div className="space-y-1.5">
         {load.items.map((item, i) => (
           <div key={i} className="flex items-start gap-2">
-            <span className={`shrink-0 mt-0.5 text-[10px] font-bold ${item.isOwn ? 'text-blue-500' : 'text-gray-400 dark:text-slate-500'}`}>
+            <span className={`shrink-0 mt-0.5 text-[10px] font-bold ${item.isOwn ? 'text-blue-500' : 'text-gray-500 dark:text-slate-400'}`}>
               {item.isOwn ? '★' : '·'}
             </span>
             <div className="min-w-0">
               <p className="text-xs text-gray-800 dark:text-slate-200 leading-snug truncate">{item.subject}</p>
-              <p className="text-[11px] text-gray-400 dark:text-slate-500">
+              <p className="text-[11px] text-gray-500 dark:text-slate-400">
                 {dayLabel(item.dueDate)}
                 {!item.isOwn && ` · ${item.teacherName}`}
               </p>

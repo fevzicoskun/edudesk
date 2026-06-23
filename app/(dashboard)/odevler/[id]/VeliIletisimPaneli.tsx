@@ -79,7 +79,7 @@ export default function VeliIletisimPaneli({
   if (missingTotal === 0) {
     return (
       <div className="mt-8 print:hidden">
-        <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-4">
+        <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
           Teslim etmemiş öğrenci yok — veli bildirimi gerekmiyor.
         </p>
       </div>
@@ -116,7 +116,7 @@ export default function VeliIletisimPaneli({
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-sm text-gray-400 dark:text-slate-500 py-2">Bu filtreye uyan öğrenci yok.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 py-2">Bu filtreye uyan öğrenci yok.</p>
       ) : (
         <>
           {withEmail.length > 0 && (
@@ -148,7 +148,7 @@ export default function VeliIletisimPaneli({
                 <span className="text-sm text-gray-800 dark:text-slate-200 truncate min-w-0">
                   {o.student_number ? `${o.student_number} — ` : ''}{o.full_name}
                   {o.veli_ad && (
-                    <span className="text-xs text-gray-400 dark:text-slate-500 ml-1.5">({o.veli_ad})</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400 ml-1.5">({o.veli_ad})</span>
                   )}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">

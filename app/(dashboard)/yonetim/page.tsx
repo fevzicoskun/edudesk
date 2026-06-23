@@ -85,7 +85,7 @@ export default async function YonetimPage() {
 
       {/* Hızlı erişim */}
       <div>
-        <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wide mb-2">
+        <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">
           Hızlı Erişim
         </p>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">

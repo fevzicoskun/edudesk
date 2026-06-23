@@ -162,7 +162,7 @@ export default function QuickAddDrawer() {
             </p>
             <div className="flex flex-wrap gap-2">
               {sortedClasses.length === 0 && (
-                <p className="text-sm text-gray-400 dark:text-slate-500">Yükleniyor...</p>
+                <p className="text-sm text-gray-500 dark:text-slate-400">Yükleniyor...</p>
               )}
               {sortedClasses.map(c => (
                 <button
@@ -200,7 +200,7 @@ export default function QuickAddDrawer() {
                     className="text-left px-3 py-2 rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
                   >
                     <p className="text-sm font-medium text-gray-800 dark:text-slate-200">{t.title}</p>
-                    <p className="text-xs text-gray-400 dark:text-slate-500">{t.subject}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400">{t.subject}</p>
                   </button>
                 ))}
               </div>
@@ -235,7 +235,7 @@ export default function QuickAddDrawer() {
           <div>
             <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
               Açıklama{' '}
-              <span className="font-normal text-gray-400 dark:text-slate-500 normal-case tracking-normal">(opsiyonel)</span>
+              <span className="font-normal text-gray-500 dark:text-slate-400 normal-case tracking-normal">(opsiyonel)</span>
             </label>
             <textarea
               value={description}

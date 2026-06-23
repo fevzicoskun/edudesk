@@ -85,7 +85,7 @@ export default function StudentHomeworkProfileModal({
                 <p className="font-semibold text-gray-900 dark:text-slate-100 text-base leading-tight">
                   {profile.student.full_name}
                   {profile.student.student_number && (
-                    <span className="ml-2 text-xs font-normal text-gray-400 dark:text-slate-500">
+                    <span className="ml-2 text-xs font-normal text-gray-500 dark:text-slate-400">
                       No: {profile.student.student_number}
                     </span>
                   )}
@@ -101,7 +101,7 @@ export default function StudentHomeworkProfileModal({
                     }`}>
                       ● {weekLoad.count} ödev
                     </span>
-                    <span className="text-xs text-gray-400 dark:text-slate-500">bu hafta</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400">bu hafta</span>
                   </div>
                 )}
                 {(profile.student.veli_ad || profile.student.veli_telefon) && (
@@ -194,7 +194,7 @@ export default function StudentHomeworkProfileModal({
                 ].map(({ label, value, cls }) => (
                   <div key={label} className="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 text-center border border-gray-100 dark:border-slate-700">
                     <p className={`text-2xl font-bold leading-none ${cls}`}>{value}</p>
-                    <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">{label}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">{label}</p>
                   </div>
                 ))}
               </div>
@@ -215,12 +215,12 @@ export default function StudentHomeworkProfileModal({
 
               {/* Ödev listesi */}
               {profile.homeworks.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-4">
+                <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-4">
                   Bu sınıfa henüz ödev atanmamış.
                 </p>
               ) : (
                 <div className="space-y-1.5">
-                  <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                  <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                     Tüm dönem ödevleri
                   </p>
                   {profile.homeworks.map(hw => (
@@ -233,9 +233,9 @@ export default function StudentHomeworkProfileModal({
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 dark:text-slate-200 truncate">{hw.title}</p>
-                        <p className="text-xs text-gray-400 dark:text-slate-500">{hw.subject}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{hw.subject}</p>
                       </div>
-                      <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">
+                      <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">
                         {formatDate(hw.due_date)}
                       </span>
                     </div>

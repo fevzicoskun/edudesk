@@ -56,7 +56,7 @@ export default function LoginForm() {
         {isPending ? 'Giriş yapılıyor...' : 'Giriş Yap'}
       </button>
 
-      <p className="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
+      <p className="text-xs text-gray-500 dark:text-slate-400 text-center pt-1">
         Okulunuz için EduDesk?{' '}
         <a href="/kayit" className="text-blue-600 hover:underline font-medium">Bilgi alın</a>
       </p>

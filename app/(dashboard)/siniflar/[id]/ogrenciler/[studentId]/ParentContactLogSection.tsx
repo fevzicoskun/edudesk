@@ -147,7 +147,7 @@ export default function ParentContactLogSection({
       </div>
 
       {logs.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-6">Henüz kayıt yok.</p>
+        <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-6">Henüz kayıt yok.</p>
       ) : (
         <div className="space-y-2">
           {logs.map(log => (
@@ -161,7 +161,7 @@ export default function ParentContactLogSection({
                     {format(parseISO(log.contacted_at), 'd MMM yyyy')}
                   </span>
                   {log.teacher_id === currentUserId && (
-                    <span className="text-[10px] text-gray-400 dark:text-slate-500">Sen</span>
+                    <span className="text-[10px] text-gray-500 dark:text-slate-400">Sen</span>
                   )}
                 </div>
                 {log.teacher_id === currentUserId && (

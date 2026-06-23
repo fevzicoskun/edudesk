@@ -72,7 +72,7 @@ export default function RehberlikRaporlariSection({
       )}
 
       {reports.length === 0 ? (
-        <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">Henüz rehberlik kaydı yok.</p>
+        <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-8">Henüz rehberlik kaydı yok.</p>
       ) : (
         <div className="space-y-2">
           {reports.map((r) => (
@@ -90,7 +90,7 @@ export default function RehberlikRaporlariSection({
                   </button>
                 )}
               </div>
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                 {(() => { try { return format(parseISO(r.report_date), 'd MMM yyyy') } catch { return r.report_date } })()}
               </p>
             </div>

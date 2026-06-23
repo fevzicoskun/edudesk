@@ -87,22 +87,22 @@ export default async function MYStatsWidget() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className={`rounded-xl border p-4 ${statColor(classesWithAtt.size >= classCount && classCount > 0, false)}`}>
           <p className="text-3xl font-bold leading-none">
-            {classesWithAtt.size}<span className="text-base font-medium opacity-60">/{classCount}</span>
+            {classesWithAtt.size}<span className="text-base font-medium opacity-90">/{classCount}</span>
           </p>
           <p className="text-sm font-medium mt-1.5">Yoklama Alınan Sınıf</p>
-          <p className="text-[11px] opacity-70 mt-0.5">bugün</p>
+          <p className="text-[11px] opacity-90 mt-0.5">bugün</p>
         </div>
-        <Link href="/yonetim/devamsizlar" className={`rounded-xl border p-4 block hover:opacity-80 transition-opacity ${statColor(todayAbsent === 0, todayAbsent >= 5)}`}>
+        <Link href="/yonetim/devamsizlar" className={`rounded-xl border p-4 block hover:opacity-90 transition-opacity ${statColor(todayAbsent === 0, todayAbsent >= 5)}`}>
           <p className="text-3xl font-bold leading-none">{todayAbsent}</p>
           <p className="text-sm font-medium mt-1.5">Devamsız Öğrenci</p>
-          <p className="text-[11px] opacity-70 mt-0.5">bugün · {totalStudents} toplam · tıkla →</p>
+          <p className="text-[11px] opacity-90 mt-0.5">bugün · {totalStudents} toplam · tıkla →</p>
         </Link>
         <div className={`rounded-xl border p-4 ${statColor(inactiveCount === 0, false)}`}>
           <p className="text-3xl font-bold leading-none">
-            {activeCount}<span className="text-base font-medium opacity-60">/{teachers.length}</span>
+            {activeCount}<span className="text-base font-medium opacity-90">/{teachers.length}</span>
           </p>
           <p className="text-sm font-medium mt-1.5">Aktif Öğretmen</p>
-          <p className="text-[11px] opacity-70 mt-0.5">son 2 hafta içinde giriş</p>
+          <p className="text-[11px] opacity-90 mt-0.5">son 2 hafta içinde giriş</p>
         </div>
       </div>
     </>

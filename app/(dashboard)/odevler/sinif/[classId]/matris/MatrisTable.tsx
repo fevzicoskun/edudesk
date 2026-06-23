@@ -31,7 +31,7 @@ export default function MatrisTable({ sortedStudents, homeworks, subMap, statsMa
                     <div className="text-[10px] font-bold text-gray-700 dark:text-slate-300 leading-tight truncate max-w-[56px]">
                       {hw.subject ?? '—'}
                     </div>
-                    <div className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">
                       {dueDateFmt(hw.due_date)}
                     </div>
                   </Link>
@@ -50,7 +50,7 @@ export default function MatrisTable({ sortedStudents, homeworks, subMap, statsMa
                   <td className={`sticky left-0 z-10 border-r border-b border-gray-200 dark:border-slate-700 px-3 py-2 font-medium text-gray-800 dark:text-slate-200 ${si % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50/70 dark:bg-slate-800/80'}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       {student.student_number && (
-                        <span className="text-[10px] text-gray-400 dark:text-slate-500 shrink-0 w-6 text-right">{student.student_number}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-slate-400 shrink-0 w-6 text-right">{student.student_number}</span>
                       )}
                       <span className="truncate max-w-[130px]">{student.full_name}</span>
                     </div>
@@ -79,7 +79,7 @@ export default function MatrisTable({ sortedStudents, homeworks, subMap, statsMa
                       <span className={`font-bold ${completionColor(pct)}`}>%{pct}</span>
                     )}
                     {eligible > 0 && (
-                      <div className="text-[10px] text-gray-400 dark:text-slate-500">{done}/{eligible}</div>
+                      <div className="text-[10px] text-gray-500 dark:text-slate-400">{done}/{eligible}</div>
                     )}
                   </td>
                 </tr>
@@ -116,7 +116,7 @@ export default function MatrisTable({ sortedStudents, homeworks, subMap, statsMa
             {STATUS_LABEL[s]}
           </span>
         ))}
-        <span className="flex items-center gap-1.5 text-[11px] text-gray-400 dark:text-slate-500">
+        <span className="flex items-center gap-1.5 text-[11px] text-gray-500 dark:text-slate-400">
           <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-gray-50 dark:bg-slate-700/40 text-gray-300 dark:text-slate-600">·</span>
           Girilmedi
         </span>

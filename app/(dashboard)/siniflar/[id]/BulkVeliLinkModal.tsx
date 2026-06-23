@@ -67,7 +67,7 @@ export default function BulkVeliLinkModal({ classId }: Props) {
           {isPending ? (
             <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-8">Linkler oluşturuluyor…</p>
           ) : results.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-slate-500 text-center py-8">Öğrenci bulunamadı.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400 text-center py-8">Öğrenci bulunamadı.</p>
           ) : (
             <div className="space-y-2">
               {results.map(r => (

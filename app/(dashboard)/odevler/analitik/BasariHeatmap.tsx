@@ -54,11 +54,11 @@ export default function BasariHeatmap({ data }: { data: ClassWeekHeatmap }) {
         <table className="border-separate border-spacing-1">
           <thead>
             <tr>
-              <th className="text-left text-[11px] font-medium text-gray-400 dark:text-slate-500 pr-2 sticky left-0 bg-white dark:bg-slate-800">
+              <th className="text-left text-[11px] font-medium text-gray-500 dark:text-slate-400 pr-2 sticky left-0 bg-white dark:bg-slate-800">
                 Sınıf
               </th>
               {data.weeks.map(w => (
-                <th key={w} className="text-[10px] font-medium text-gray-400 dark:text-slate-500 px-1 min-w-[40px] text-center">
+                <th key={w} className="text-[10px] font-medium text-gray-500 dark:text-slate-400 px-1 min-w-[40px] text-center">
                   {haftaEtiketi(w)}
                 </th>
               ))}

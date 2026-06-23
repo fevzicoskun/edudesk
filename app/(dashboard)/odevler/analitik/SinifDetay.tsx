@@ -31,7 +31,7 @@ export default function SinifDetay({
 
       {classStats.length === 0 ? (
         <div className="bg-white dark:bg-slate-800 border border-gray-100 dark:border-slate-700 rounded-xl px-4 py-8 text-center">
-          <p className="text-sm text-gray-400 dark:text-slate-500">Henüz ödev atanmamış.</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Henüz ödev atanmamış.</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -48,7 +48,7 @@ export default function SinifDetay({
               <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                 <div className={`h-full rounded-full transition-all ${barColor(cls.completionPct)}`} style={{ width: `${cls.completionPct}%` }} />
               </div>
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-1.5">
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">
                 {cls.totalHomeworks} ödev · {cls.studentCount} öğrenci
               </p>
             </Link>
@@ -72,7 +72,7 @@ export default function SinifDetay({
                       style={{ height: `${Math.max(3, (pct / 100) * 60)}px` }}
                     />
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-slate-500 truncate w-full text-center">
+                  <span className="text-[10px] text-gray-500 dark:text-slate-400 truncate w-full text-center">
                     {format(parseISO(weekKey), 'd MMM')}
                   </span>
                 </div>

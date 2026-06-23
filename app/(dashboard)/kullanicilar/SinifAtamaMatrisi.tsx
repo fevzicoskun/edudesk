@@ -70,10 +70,10 @@ export default function SinifAtamaMatrisi({
   }
 
   if (teachers.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-slate-500 py-4">Atanabilir öğretmen yok.</p>
+    return <p className="text-sm text-gray-500 dark:text-slate-400 py-4">Atanabilir öğretmen yok.</p>
   }
   if (classes.length === 0) {
-    return <p className="text-sm text-gray-400 dark:text-slate-500 py-4">Henüz sınıf oluşturulmamış.</p>
+    return <p className="text-sm text-gray-500 dark:text-slate-400 py-4">Henüz sınıf oluşturulmamış.</p>
   }
 
   return (
@@ -98,7 +98,7 @@ export default function SinifAtamaMatrisi({
               <tr key={t.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/40">
                 <td className="sticky left-0 z-10 bg-white dark:bg-slate-800 px-3 py-1.5 text-gray-800 dark:text-slate-200 whitespace-nowrap">
                   {t.full_name}
-                  {t.subject && <span className="text-gray-400 dark:text-slate-500 text-xs ml-1.5">{t.subject}</span>}
+                  {t.subject && <span className="text-gray-500 dark:text-slate-400 text-xs ml-1.5">{t.subject}</span>}
                 </td>
                 {classes.map(c => {
                   const checked = has(t.id, c.id)
@@ -143,7 +143,7 @@ export default function SinifAtamaMatrisi({
             Vazgeç
           </button>
         )}
-        <span className="text-xs text-gray-400 dark:text-slate-500 ml-auto">
+        <span className="text-xs text-gray-500 dark:text-slate-400 ml-auto">
           {changes.length > 0 ? `${changes.length} değişiklik bekliyor` : 'Değişiklik yok'}
         </span>
       </div>

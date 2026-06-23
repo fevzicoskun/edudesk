@@ -26,7 +26,7 @@ export default async function LoginPage({
           <LoginForm />
         </div>
 
-        <p className="text-xs text-gray-400 dark:text-slate-500 text-center mt-6">
+        <p className="text-xs text-gray-500 dark:text-slate-400 text-center mt-6">
           Hesabınız yok mu?{' '}
           <a href="/kayit" className="text-blue-600 hover:underline font-medium">
             Bilgi alın
@@ -35,14 +35,14 @@ export default async function LoginPage({
 
         <footer className="mt-8 text-center">
           <div className="flex justify-center gap-4">
-            <a href="/gizlilik" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+            <a href="/gizlilik" target="_blank" className="text-xs text-gray-500 dark:text-slate-400 hover:underline">
               Gizlilik Politikası
             </a>
-            <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+            <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-500 dark:text-slate-400 hover:underline">
               Kullanım Koşulları
             </a>
           </div>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+          <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
             © 2026 EduDesk ·{' '}
             <a href="mailto:info@myedudesk.com.tr" className="hover:underline">
               info@myedudesk.com.tr

@@ -16,10 +16,10 @@ export default function KayitPage() {
         </div>
 
         <div className="flex justify-center gap-4 mt-4">
-          <a href="/gizlilik" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+          <a href="/gizlilik" target="_blank" className="text-xs text-gray-500 dark:text-slate-400 hover:underline">
             Gizlilik Politikası
           </a>
-          <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-400 dark:text-slate-500 hover:underline">
+          <a href="/kullanim-kosullari" target="_blank" className="text-xs text-gray-500 dark:text-slate-400 hover:underline">
             Kullanım Koşulları
           </a>
         </div>

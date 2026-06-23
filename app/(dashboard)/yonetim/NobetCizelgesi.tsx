@@ -49,7 +49,7 @@ export default async function NobetCizelgesi() {
                     <li key={`${r.teacher_id}-${i}`} className="rounded-lg border border-gray-100 dark:border-slate-800 px-2 py-1.5">
                       <p className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">{r.teacherName}</p>
                       <p className="text-xs text-gray-500 dark:text-slate-400">{r.time_range} · {r.location}</p>
-                      {r.notes && <p className="text-[11px] text-gray-400 dark:text-slate-500 truncate">{r.notes}</p>}
+                      {r.notes && <p className="text-[11px] text-gray-500 dark:text-slate-400 truncate">{r.notes}</p>}
                     </li>
                   ))}
                 </ul>

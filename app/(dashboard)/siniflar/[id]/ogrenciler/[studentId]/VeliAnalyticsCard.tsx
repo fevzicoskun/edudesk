@@ -18,7 +18,7 @@ export default async function VeliAnalyticsCard({ studentId, schoolId }: Props) 
     return (
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Veli Portal Aktivitesi</h2>
-        <p className="text-sm text-gray-400 dark:text-slate-500">Veli henüz portalı açmamış.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">Veli henüz portalı açmamış.</p>
       </div>
     )
   }
@@ -34,17 +34,17 @@ export default async function VeliAnalyticsCard({ studentId, schoolId }: Props) 
       <div className="grid grid-cols-3 gap-3 mb-3">
         <div className="text-center">
           <p className="text-xl font-bold text-gray-900 dark:text-slate-100">{analytics.totalViews}</p>
-          <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Ziyaret</p>
+          <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Ziyaret</p>
         </div>
         <div className="text-center">
           <p className="text-xl font-bold text-gray-900 dark:text-slate-100">
             {durationMin > 0 ? `~${durationMin}` : '<1'}
           </p>
-          <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Dakika</p>
+          <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Dakika</p>
         </div>
         <div className="text-center">
           <p className="text-xs font-semibold text-gray-700 dark:text-slate-300">{lastViewed ?? '—'}</p>
-          <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">Son Ziyaret</p>
+          <p className="text-[10px] text-gray-500 dark:text-slate-400 mt-0.5">Son Ziyaret</p>
         </div>
       </div>
       <div className="flex flex-wrap gap-1.5">

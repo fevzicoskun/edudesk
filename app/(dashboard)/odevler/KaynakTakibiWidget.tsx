@@ -36,7 +36,7 @@ export default async function KaynakTakibiWidget() {
         </div>
         <Link
           href="/ayarlar#kaynaklar"
-          className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
+          className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-300 transition-colors"
         >
           Yönet →
         </Link>
@@ -53,12 +53,12 @@ export default async function KaynakTakibiWidget() {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">{s.name}</p>
                 {s.subject && (
-                  <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{s.subject}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate">{s.subject}</p>
                 )}
               </div>
               <div className="flex items-center gap-3 shrink-0 ml-3">
                 {s.thisMonth > 0 && (
-                  <span className="text-[11px] text-gray-400 dark:text-slate-500">
+                  <span className="text-[11px] text-gray-500 dark:text-slate-400">
                     Bu ay: {s.thisMonth}
                   </span>
                 )}

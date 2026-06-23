@@ -19,14 +19,14 @@ export default async function ErkenUyarilarWidget() {
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Erken Uyarılar
         </CardTitle>
-        <p className="text-xs text-gray-400 dark:text-slate-500">
+        <p className="text-xs text-gray-500 dark:text-slate-400">
           Son tamamlanan hafta · dönem ortalamasına göre
         </p>
       </CardHeader>
       <CardContent className="pt-2 pb-4">
         {warnings.length === 0 ? (
           yetersiz ? (
-            <p className="text-sm text-gray-400 dark:text-slate-500 py-2">
+            <p className="text-sm text-gray-500 dark:text-slate-400 py-2">
               Trend uyarıları için veri birikiyor.
             </p>
           ) : (

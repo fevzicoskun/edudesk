@@ -162,7 +162,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           {!collapsed && (
             <div className="min-w-0">
               <EduDeskLogo size="md" />
-              <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{getEgitimYili()}</p>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()}</p>
             </div>
           )}
           <div className={`flex items-center gap-1 ${collapsed ? 'w-full justify-center flex-col' : 'shrink-0'}`}>
@@ -206,7 +206,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           <button
             onClick={toggleCollapsed}
             title={collapsed ? 'Menüyü genişlet' : 'Menüyü daralt'}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-600 dark:hover:text-slate-300 transition-colors ${collapsed ? 'justify-center' : ''}`}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-600 dark:hover:text-slate-300 transition-colors ${collapsed ? 'justify-center' : ''}`}
           >
             <svg className={`w-4 h-4 shrink-0 transition-transform duration-200 ${collapsed ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
@@ -231,9 +231,9 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                   )}
                 </div>
                 {profile?.subject && (
-                  <p className="text-xs text-gray-400 dark:text-slate-500 truncate mt-0.5">{profile.subject}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 truncate mt-0.5">{profile.subject}</p>
                 )}
-                <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{roleLabel}</p>
+                <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">{roleLabel}</p>
               </div>
             </div>
           )}
@@ -274,7 +274,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                     key={href}
                     href={href}
                     className={`flex-1 h-16 flex flex-col items-center justify-center gap-0.5 text-xs font-medium transition-colors ${
-                      active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 dark:text-slate-500'
+                      active ? 'text-blue-600 dark:text-blue-400' : 'text-gray-500 dark:text-slate-400'
                     }`}
                   >
                     {icon}

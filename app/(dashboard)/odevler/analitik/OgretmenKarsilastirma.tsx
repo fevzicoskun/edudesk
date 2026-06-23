@@ -36,7 +36,7 @@ export default function OgretmenKarsilastirma({ stats }: { stats: TeacherStat[] 
                   {s.riskyStudentCount > 0 ? (
                     <span className="text-red-600 dark:text-red-400 font-semibold">{s.riskyStudentCount}</span>
                   ) : (
-                    <span className="text-gray-400 dark:text-slate-500">—</span>
+                    <span className="text-gray-500 dark:text-slate-400">—</span>
                   )}
                 </td>
               </tr>

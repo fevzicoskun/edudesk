@@ -44,10 +44,10 @@ export default async function MYSolSutunWidget() {
       <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Devamsızlık Riski</h2>
-          <span className="text-[11px] text-gray-400 dark:text-slate-500">yıl içi &middot; {ATTENDANCE_WARN_DAYS}+ devamsız</span>
+          <span className="text-[11px] text-gray-500 dark:text-slate-400">yıl içi &middot; {ATTENDANCE_WARN_DAYS}+ devamsız</span>
         </div>
         {riskStudents.length === 0 ? (
-          <p className="px-4 py-7 text-center text-sm text-gray-400 dark:text-slate-500">Riskli öğrenci yok.</p>
+          <p className="px-4 py-7 text-center text-sm text-gray-500 dark:text-slate-400">Riskli öğrenci yok.</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
             {riskStudents.map(s => {
@@ -58,9 +58,9 @@ export default async function MYSolSutunWidget() {
                   <span className={`w-2 h-2 rounded-full shrink-0 ${danger ? 'bg-red-500' : 'bg-amber-400'}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-gray-900 dark:text-slate-100 truncate">{s.full_name}</p>
-                    <p className="text-[11px] text-gray-400 dark:text-slate-500">{cls?.name ?? '—'}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400">{cls?.name ?? '—'}</p>
                   </div>
-                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${danger ? 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400'}`}>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${danger ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400'}`}>
                     {s.absences} gün
                   </span>
                 </li>
@@ -76,7 +76,7 @@ export default async function MYSolSutunWidget() {
           <Link href="/kullanicilar" className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Yönet →</Link>
         </div>
         {teachers.length === 0 ? (
-          <p className="px-4 py-7 text-center text-sm text-gray-400 dark:text-slate-500">Henüz öğretmen yok.</p>
+          <p className="px-4 py-7 text-center text-sm text-gray-500 dark:text-slate-400">Henüz öğretmen yok.</p>
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
             {teachers.slice(0, 12).map(t => {
@@ -87,12 +87,12 @@ export default async function MYSolSutunWidget() {
                   <span className={`w-2 h-2 rounded-full shrink-0 ${inactive ? 'bg-red-400' : 'bg-emerald-500'}`} />
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-gray-900 dark:text-slate-100 truncate">{t.full_name}</p>
-                    <p className="text-[11px] text-gray-400 dark:text-slate-500">
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400">
                       {t.subject ?? '—'}
                       {lastSeen && <> · {new Date(lastSeen).toLocaleDateString('tr-TR')}</>}
                     </p>
                   </div>
-                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${inactive ? 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
+                  <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${inactive ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>
                     {inactive ? 'Pasif' : 'Aktif'}
                   </span>
                 </li>

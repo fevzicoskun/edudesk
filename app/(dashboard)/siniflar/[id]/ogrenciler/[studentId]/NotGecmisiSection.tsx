@@ -42,13 +42,13 @@ export default function NotGecmisiSection({ grades }: { grades: GradeRow[] }) {
                     {g.score != null ? (
                       <span className={`font-bold ${pct != null && pct >= 0.7 ? 'text-green-600 dark:text-green-400' : pct != null && pct >= 0.5 ? 'text-yellow-600 dark:text-yellow-400' : 'text-red-600 dark:text-red-400'}`}>
                         {g.score}
-                        <span className="text-xs font-normal text-gray-400 dark:text-slate-500"> / {g.grade_columns.max_score}</span>
+                        <span className="text-xs font-normal text-gray-500 dark:text-slate-400"> / {g.grade_columns.max_score}</span>
                       </span>
                     ) : (
-                      <span className="text-gray-400 dark:text-slate-500">—</span>
+                      <span className="text-gray-500 dark:text-slate-400">—</span>
                     )}
                   </td>
-                  <td className="py-2 text-right text-xs text-gray-400 dark:text-slate-500">
+                  <td className="py-2 text-right text-xs text-gray-500 dark:text-slate-400">
                     {g.grade_columns.exam_date ? format(parseISO(g.grade_columns.exam_date), 'd MMM yyyy') : '—'}
                   </td>
                 </tr>

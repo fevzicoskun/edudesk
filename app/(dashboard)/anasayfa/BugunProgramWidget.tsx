@@ -33,7 +33,7 @@ export default async function BugunProgramWidget() {
               key={l.period}
               className={`rounded-lg ring-1 px-3 py-2 min-w-[96px] ${classColor(nameById.get(l.classId) ?? l.classId)}`}
             >
-              <div className="text-[11px] opacity-70 tabular-nums">
+              <div className="text-[11px] opacity-90 tabular-nums">
                 {l.period}. ders · {l.start}
               </div>
               <div className="font-semibold leading-tight">{nameById.get(l.classId) ?? '—'}</div>

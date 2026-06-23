@@ -225,8 +225,8 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
       {/* Sınıf + Tarih */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex flex-wrap gap-3 items-end">
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
-          <select value={classId} onChange={handleClassChange} className={inputCls}>
+          <label htmlFor="yoklama-sinif" className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Sınıf</label>
+          <select id="yoklama-sinif" value={classId} onChange={handleClassChange} className={inputCls}>
             {(() => {
               const mine   = new Set(myClassIds ?? [])
               const my     = classes.filter(c => mine.has(c.id))
@@ -252,8 +252,9 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
           </select>
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Tarih</label>
+          <label htmlFor="yoklama-tarih" className="block text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Tarih</label>
           <input
+            id="yoklama-tarih"
             type="date"
             value={date}
             onChange={handleDateChange}

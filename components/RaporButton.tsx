@@ -124,7 +124,7 @@ export default function RaporButton({ classes = [] }: { classes?: ClassOption[] 
             {/* Rapor türü listesi */}
             {!selected && (
               <div className="py-1.5">
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">Excel Rapor</p>
+                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">Excel Rapor</p>
                 {REPORT_TYPES.map(r => (
                   <button
                     key={r.value}

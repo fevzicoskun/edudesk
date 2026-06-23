@@ -152,7 +152,7 @@ export default async function OgrenciDetayPage({
           {/* Risk skoru */}
           <div className="flex flex-col items-center justify-center text-center">
             <span className={`text-xs font-bold px-3 py-1.5 rounded-full border mb-1 ${riskColor}`}>{riskLabel}</span>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500">Genel Durum</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400">Genel Durum</p>
           </div>
           {/* Ödev tamamlanma */}
           <div>
@@ -166,7 +166,7 @@ export default async function OgrenciDetayPage({
                 style={{ width: `${Math.round(completionRate * 100)}%` }}
               />
             </div>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">{totalSubmissions} ödev kaydı</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">{totalSubmissions} ödev kaydı</p>
           </div>
           {/* Devamsızlık */}
           <div>
@@ -180,7 +180,7 @@ export default async function OgrenciDetayPage({
                 style={{ width: `${absentPct}%` }}
               />
             </div>
-            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-1">MEB sınırı {ATTENDANCE_LIMIT_DAYS} gün</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">MEB sınırı {ATTENDANCE_LIMIT_DAYS} gün</p>
           </div>
         </div>
       </div>
@@ -235,7 +235,7 @@ export default async function OgrenciDetayPage({
                 </button>
               </form>
               {notes.length === 0 ? (
-                <p className="text-center text-gray-400 dark:text-slate-500 text-sm py-8">Henüz not yok.</p>
+                <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-8">Henüz not yok.</p>
               ) : (
                 <div className="space-y-2">
                   {notes.map((n) => (
@@ -246,7 +246,7 @@ export default async function OgrenciDetayPage({
                           <button type="submit" className="text-xs text-red-400 hover:text-red-600 font-medium transition-colors">Sil</button>
                         </form>
                       </div>
-                      <p className="text-xs text-gray-400 dark:text-slate-500 mt-2">
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-2">
                         {format(parseISO(n.created_at), 'd MMM yyyy HH:mm')}
                       </p>
                     </div>
@@ -269,7 +269,7 @@ export default async function OgrenciDetayPage({
         ) : isManager ? (
           <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mt-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Rehberlik Görüşmeleri</h2>
-            <p className="text-sm text-gray-400 dark:text-slate-500">
+            <p className="text-sm text-gray-500 dark:text-slate-400">
               Bu sınıfa henüz rehber öğretmen atanmadı. Sınıf sayfasından atayabilirsiniz.
             </p>
           </section>

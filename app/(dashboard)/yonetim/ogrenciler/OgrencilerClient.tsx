@@ -43,7 +43,7 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
     <div className="space-y-4">
       {/* Arama */}
       <div className="relative">
-        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-slate-500 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <input
@@ -66,21 +66,21 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
       </div>
 
       {/* Özet */}
-      <p className="text-xs text-gray-400 dark:text-slate-500">
+      <p className="text-xs text-gray-500 dark:text-slate-400">
         {query ? `${totalVisible} sonuç · ` : ''}{totalAll} öğrenci · {classes.length} sınıf
       </p>
 
       {/* Sınıf grupları */}
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-gray-200 dark:border-slate-700 p-8 text-center">
-          <p className="text-sm text-gray-400 dark:text-slate-500">Sonuç bulunamadı</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Sonuç bulunamadı</p>
         </div>
       ) : (
         filtered.map(cls => (
           <div key={cls.id} className="rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
             <div className="px-4 py-2.5 bg-gray-50 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
               <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">{cls.name}</span>
-              <span className="text-xs text-gray-400 dark:text-slate-500">{cls.students.length} öğrenci</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">{cls.students.length} öğrenci</span>
             </div>
             <ul className="divide-y divide-gray-100 dark:divide-slate-800">
               {cls.students.map(s => (
@@ -98,7 +98,7 @@ export default function OgrencilerClient({ classes }: { classes: ClassGroup[] })
                       <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.full_name}</p>
                     </div>
                     {s.student_number && (
-                      <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">#{s.student_number}</span>
+                      <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">#{s.student_number}</span>
                     )}
                     <svg className="w-4 h-4 text-gray-300 dark:text-slate-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />

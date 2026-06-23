@@ -160,7 +160,7 @@ export default function KullaniciFiltreli({
         {hasFilter && (
           <button
             onClick={() => { setSearch(''); setSubject(''); setRole('') }}
-            className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+            className="text-xs text-gray-500 dark:text-slate-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
           >
             Temizle
           </button>
@@ -183,7 +183,7 @@ export default function KullaniciFiltreli({
             <tbody className="divide-y divide-gray-100 dark:divide-slate-700">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+                  <td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-500 dark:text-slate-400">
                     Sonuç bulunamadı.
                   </td>
                 </tr>
@@ -220,7 +220,7 @@ export default function KullaniciFiltreli({
                         <div>
                           <p className="text-xs font-medium text-gray-900 dark:text-slate-100">{stats.count} giriş · {totalHours} saat</p>
                           {stats.lastSeen && (
-                            <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">
+                            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
                               Son: {new Date(stats.lastSeen).toLocaleDateString('tr-TR')}
                             </p>
                           )}
@@ -248,7 +248,7 @@ export default function KullaniciFiltreli({
         </div>
       </div>
 
-      <p className="text-xs text-gray-400 dark:text-slate-500">
+      <p className="text-xs text-gray-500 dark:text-slate-400">
         {filtered.length} / {users.length} kullanıcı gösteriliyor
       </p>
       </>

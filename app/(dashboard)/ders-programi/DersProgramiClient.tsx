@@ -195,7 +195,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-50/80 dark:bg-slate-800/40">
-              <th className="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-gray-400 dark:text-slate-500 w-24 border-b border-gray-200 dark:border-slate-800">
+              <th className="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400 w-24 border-b border-gray-200 dark:border-slate-800">
                 Saat
               </th>
               {DAYS.map(d => {
@@ -242,7 +242,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                       />
                     </div>
                   ) : (
-                    <div className="text-[11px] text-gray-400 dark:text-slate-500 mt-1 tabular-nums">
+                    <div className="text-[11px] text-gray-500 dark:text-slate-400 mt-1 tabular-nums">
                       {p.start}–{p.end}
                     </div>
                   )}

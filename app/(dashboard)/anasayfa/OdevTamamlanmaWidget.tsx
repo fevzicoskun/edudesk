@@ -69,7 +69,7 @@ export default function OdevTamamlanmaWidget({ data }: { data: OdevTamamlanmaIte
         <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Ödev Tamamlanma Oranları
         </CardTitle>
-        <p className="text-xs text-gray-400 dark:text-slate-500">{subtitle}</p>
+        <p className="text-xs text-gray-500 dark:text-slate-400">{subtitle}</p>
       </CardHeader>
 
       {classes.length > 1 && (
@@ -89,7 +89,7 @@ export default function OdevTamamlanmaWidget({ data }: { data: OdevTamamlanmaIte
 
       <CardContent className="pt-2 pb-4">
         {filteredData.length === 0 ? (
-          <div className="h-40 flex items-center justify-center text-sm text-gray-400 dark:text-slate-500">
+          <div className="h-40 flex items-center justify-center text-sm text-gray-500 dark:text-slate-400">
             Geçmiş ödev bulunamadı.
           </div>
         ) : (

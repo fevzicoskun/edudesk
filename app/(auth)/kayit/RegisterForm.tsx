@@ -127,7 +127,7 @@ export default function RegisterForm() {
         {isPending ? 'Gönderiliyor...' : 'Başvuruyu Gönder'}
       </button>
 
-      <p className="text-xs text-gray-400 dark:text-slate-500 text-center pt-1">
+      <p className="text-xs text-gray-500 dark:text-slate-400 text-center pt-1">
         Zaten hesabın var mı?{' '}
         <Link href="/login" className="text-blue-600 hover:underline font-medium">Giriş Yap</Link>
       </p>

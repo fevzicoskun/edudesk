@@ -41,10 +41,10 @@ export default function CalendarEventCard({
             {hw.title}
           </p>
           {hw.subject && (
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">{hw.subject}</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{hw.subject}</p>
           )}
           {completionInfo && completionInfo.total > 0 && (
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
               %{Math.round((completionInfo.yapildi / completionInfo.total) * 100)} tamamlandı
               ({completionInfo.yapildi}/{completionInfo.total})
             </p>

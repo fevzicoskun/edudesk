@@ -29,7 +29,7 @@ export default function PaginationBar({
 
   return (
     <div className="flex items-center justify-between mt-6 px-1">
-      <span className="text-xs text-gray-400 dark:text-slate-500">
+      <span className="text-xs text-gray-500 dark:text-slate-400">
         Toplam {totalCount} ödev · Sayfa {page}/{totalPages}
       </span>
       <div className="flex items-center gap-2">

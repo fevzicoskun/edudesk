@@ -99,7 +99,7 @@ export default async function DevamsizlarPage() {
                           {row.students?.full_name ?? '—'}
                         </p>
                         {row.students?.student_number && (
-                          <p className="text-xs text-gray-400 dark:text-slate-500">No: {row.students.student_number}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">No: {row.students.student_number}</p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

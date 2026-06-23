@@ -35,7 +35,7 @@ export default function OgrenciSicil({ riskyStudents }: { riskyStudents: RiskySt
               <div>
                 <p className="text-sm font-medium text-gray-900 dark:text-slate-100">{s.full_name}</p>
                 {s.student_number && (
-                  <p className="text-xs text-gray-400 dark:text-slate-500 mt-0.5">No: {s.student_number}</p>
+                  <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">No: {s.student_number}</p>
                 )}
               </div>
               <span className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ${

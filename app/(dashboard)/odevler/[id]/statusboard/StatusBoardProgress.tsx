@@ -58,7 +58,7 @@ export default function StatusBoardProgress({
         {unrecordedCount > 0 && (
           <span className="flex items-center gap-1 text-xs">
             <span className="w-2 h-2 rounded-full bg-gray-200 dark:bg-slate-600" />
-            <span className="text-gray-400 dark:text-slate-500">Girilmedi: <strong>{unrecordedCount}</strong></span>
+            <span className="text-gray-500 dark:text-slate-400">Girilmedi: <strong>{unrecordedCount}</strong></span>
           </span>
         )}
       </div>

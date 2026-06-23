@@ -147,7 +147,7 @@ export default function CizelgeClient({ classes, yearCounts }: { classes: ClassI
                       className={`px-1 py-1.5 font-medium tabular-nums text-center leading-tight ${
                         isToday
                           ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-t'
-                          : 'text-gray-400 dark:text-slate-500'
+                          : 'text-gray-500 dark:text-slate-400'
                       }`}
                     >
                       <div className="text-[9px] font-normal opacity-70">{DAY_ABBR[dow]}</div>

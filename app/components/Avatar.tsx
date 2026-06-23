@@ -1,14 +1,15 @@
 // Baş-harf avatarı: isimden deterministik renkli daire. Foto yükleme yok (Storage
 // gerektirir) — baş harfler perceived value'nun çoğunu sıfır altyapıyla verir.
+// -600 tonları: beyaz baş harfle daha okunaklı (parlak -500 tonları AA'yı zorluyordu)
 const AVATAR_BG = [
-  'bg-blue-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-violet-500',
-  'bg-rose-500',
-  'bg-cyan-600',
-  'bg-fuchsia-500',
-  'bg-teal-500',
+  'bg-blue-600',
+  'bg-emerald-600',
+  'bg-amber-600',
+  'bg-violet-600',
+  'bg-rose-600',
+  'bg-cyan-700',
+  'bg-fuchsia-600',
+  'bg-teal-600',
 ]
 
 function initials(name: string): string {

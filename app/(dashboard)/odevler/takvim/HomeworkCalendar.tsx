@@ -125,7 +125,7 @@ export default function HomeworkCalendar({
               {MONTHS[month]} {year}
             </p>
             {monthHwCount > 0 && (
-              <p className="text-[11px] text-gray-400 dark:text-slate-500 mt-0.5">{monthHwCount} ödev</p>
+              <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">{monthHwCount} ödev</p>
             )}
           </div>
 
@@ -142,7 +142,7 @@ export default function HomeworkCalendar({
         {/* Gün başlıkları */}
         <div className="grid grid-cols-7 px-2 pt-3 pb-1">
           {DAYS.map((d, i) => (
-            <div key={d} className={`text-center text-[11px] font-semibold pb-1 ${i >= 5 ? 'text-gray-300 dark:text-slate-600' : 'text-gray-400 dark:text-slate-500'}`}>
+            <div key={d} className={`text-center text-[11px] font-semibold pb-1 ${i >= 5 ? 'text-gray-300 dark:text-slate-600' : 'text-gray-500 dark:text-slate-400'}`}>
               {d}
             </div>
           ))}
@@ -203,7 +203,7 @@ export default function HomeworkCalendar({
                     </div>
                   ))}
                   {overflowN > 0 && (
-                    <div className="text-[10px] text-gray-400 dark:text-slate-500 px-1">
+                    <div className="text-[10px] text-gray-500 dark:text-slate-400 px-1">
                       +{overflowN} daha
                     </div>
                   )}
@@ -245,7 +245,7 @@ export default function HomeworkCalendar({
             <div className="flex-1">
               {selectedHws.length === 0 ? (
                 <div className="px-4 py-6 text-center">
-                  <p className="text-sm text-gray-400 dark:text-slate-500">Bu gün ödev yok.</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400">Bu gün ödev yok.</p>
                 </div>
               ) : (
                 <ul className="divide-y divide-gray-50 dark:divide-slate-700/60">
@@ -277,7 +277,7 @@ export default function HomeworkCalendar({
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <p className="text-sm text-gray-400 dark:text-slate-500">Günü seçin</p>
+              <p className="text-sm text-gray-500 dark:text-slate-400">Günü seçin</p>
             </div>
           </div>
         )}

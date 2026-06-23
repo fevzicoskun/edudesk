@@ -197,7 +197,7 @@ export default async function OgretmenDashboard() {
             <header className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Yaklaşan Ödevler</h2>
               <div className="flex items-center gap-3">
-                <Link href="/odevler/takvim" className="text-xs text-gray-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                <Link href="/odevler/takvim" className="text-xs text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                   Takvim →
                 </Link>
                 <Link href="/odevler" className="text-xs text-blue-600 font-medium hover:underline">Tümü →</Link>

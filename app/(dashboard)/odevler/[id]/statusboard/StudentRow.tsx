@@ -79,7 +79,7 @@ export default function StudentRow({
           </button>
           <div className="flex items-center gap-2 mt-0.5">
             {item.student_number && (
-              <span className="text-xs text-gray-400 dark:text-slate-500">No: {item.student_number}</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400">No: {item.student_number}</span>
             )}
             {totalHomeworks > 0 && item.missedCount > 0 && (
               <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
@@ -109,7 +109,7 @@ export default function StudentRow({
             className={`flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-8 md:w-8 rounded-lg border transition-colors ${
               historyOpenId === item.student_id
                 ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300 dark:hover:border-slate-500'
+                : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300 dark:hover:border-slate-500'
             }`}
           >
             {historyLoadingIds.has(item.student_id) ? (
@@ -131,7 +131,7 @@ export default function StudentRow({
                 ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                 : hasNote
                   ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                  : 'border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500 hover:border-gray-300'
+                  : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
             }`}
           >
             {noteSaved ? '✓ Kaydedildi' : hasNote ? 'Not ✓' : '+ Not'}
@@ -205,14 +205,14 @@ export default function StudentRow({
       {historyOpenId === item.student_id && (
         <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-700">
           {historyLoadingIds.has(item.student_id) ? (
-            <p className="text-xs text-gray-400 dark:text-slate-500">Yükleniyor…</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Yükleniyor…</p>
           ) : (historyMap[item.student_id] ?? []).length === 0 ? (
-            <p className="text-xs text-gray-400 dark:text-slate-500">Henüz değişiklik kaydı yok.</p>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Henüz değişiklik kaydı yok.</p>
           ) : (
             <div className="space-y-1.5">
               {(historyMap[item.student_id] ?? []).map((log, idx) => (
                 <div key={`${log.changed_at}_${idx}`} className="flex items-baseline gap-2 text-xs">
-                  <span className="text-gray-400 dark:text-slate-500 shrink-0 tabular-nums">
+                  <span className="text-gray-500 dark:text-slate-400 shrink-0 tabular-nums">
                     {relativeTime(log.changed_at)}
                   </span>
                   <span className="min-w-0 text-gray-600 dark:text-slate-300">

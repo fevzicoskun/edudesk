@@ -88,7 +88,7 @@ export default function YoklamaStudentPanel({
               return (
                 <li key={s.id} className="px-4 py-2.5">
                   <div className="flex items-center gap-1 min-w-0 mb-2">
-                    <span className="text-gray-400 dark:text-slate-500 mr-2 tabular-nums shrink-0 text-sm">{i + 1}.</span>
+                    <span className="text-gray-500 dark:text-slate-400 mr-2 tabular-nums shrink-0 text-sm">{i + 1}.</span>
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="font-medium text-gray-900 dark:text-slate-100 truncate text-sm">{s.full_name}</span>
                       {(() => {
@@ -109,7 +109,7 @@ export default function YoklamaStudentPanel({
                         )
                       })()}
                     </div>
-                    {s.student_number && <span className="ml-1.5 text-xs text-gray-400 shrink-0">#{s.student_number}</span>}
+                    {s.student_number && <span className="ml-1.5 text-xs text-gray-500 dark:text-slate-400 shrink-0">#{s.student_number}</span>}
                   </div>
                   <div className="grid grid-cols-4 gap-1.5">
                     {(['present', 'absent', 'late', 'excused'] as AttendanceStatus[]).map(opt => (
@@ -121,7 +121,7 @@ export default function YoklamaStudentPanel({
                         className={`min-h-[44px] px-2 py-2 rounded-xl text-xs font-semibold ring-inset transition-colors flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed ${
                           status === opt
                             ? `${STATUS_COLORS[opt]} ring-2`
-                            : 'bg-gray-50 text-gray-400 ring-1 ring-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:ring-slate-600 hover:ring-gray-300 dark:hover:ring-slate-500'
+                            : 'bg-gray-50 text-gray-500 ring-1 ring-gray-200 dark:bg-slate-700/50 dark:text-slate-400 dark:ring-slate-600 hover:ring-gray-300 dark:hover:ring-slate-500'
                         }`}
                       >
                         <span className="md:hidden">{STATUS_SHORT[opt]}</span>

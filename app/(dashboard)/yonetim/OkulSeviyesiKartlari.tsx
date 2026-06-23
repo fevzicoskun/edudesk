@@ -25,7 +25,7 @@ const LEVEL_STYLE = {
     bg:    'bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700',
     label: 'text-gray-500 dark:text-slate-400',
     value: 'text-gray-700 dark:text-slate-300',
-    sub:   'text-gray-400 dark:text-slate-500',
+    sub:   'text-gray-500 dark:text-slate-400',
   },
 }
 

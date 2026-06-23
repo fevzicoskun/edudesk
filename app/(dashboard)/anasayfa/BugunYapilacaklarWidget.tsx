@@ -30,7 +30,7 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
         {/* Yoklama Durumu */}
         {yoklamaDurumu.length > 0 && (
           <div className="px-4 py-3">
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">Yoklama</p>
+            <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Yoklama</p>
             <ul className="space-y-1.5">
               {yoklamaDurumu.map(c => (
                 <li key={c.classId}>
@@ -53,7 +53,7 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
         {/* Bugün Son Gün Ödevler */}
         {todayHomeworks.length > 0 && (
           <div className="px-4 py-3">
-            <p className="text-[10px] font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">Bugün Son Gün</p>
+            <p className="text-[10px] font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Bugün Son Gün</p>
             <ul className="space-y-1.5">
               {todayHomeworks.map(hw => (
                 <li key={hw.id}>
@@ -63,7 +63,7 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                     <span className="text-sm text-gray-800 dark:text-slate-200 truncate">{hw.title}</span>
-                    <span className="text-xs text-gray-400 dark:text-slate-500 shrink-0">{hw.classes?.name ?? ''}</span>
+                    <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">{hw.classes?.name ?? ''}</span>
                   </Link>
                 </li>
               ))}
@@ -90,12 +90,12 @@ export default function BugunYapilacaklarWidget({ yoklamaDurumu, todayHomeworks,
         {/* Her şey tamam */}
         {allDone && (
           <div className="px-4 py-4 text-center">
-            <p className="text-sm text-gray-400 dark:text-slate-500">Bugün için bekleyen işlem yok.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Bugün için bekleyen işlem yok.</p>
           </div>
         )}
         {noClasses && (
           <div className="px-4 py-4 text-center">
-            <p className="text-sm text-gray-400 dark:text-slate-500">Henüz sınıf atanmamış.</p>
+            <p className="text-sm text-gray-500 dark:text-slate-400">Henüz sınıf atanmamış.</p>
           </div>
         )}
       </div>

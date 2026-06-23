@@ -243,7 +243,7 @@ export default function HomeworkForm({
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-slate-300">Şablon olarak kaydet</p>
-                <p className="text-xs text-gray-400 dark:text-slate-500">Ödev listesinde görünmez, tekrar kullanmak için şablonlardan seçilir</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">Ödev listesinde görünmez, tekrar kullanmak için şablonlardan seçilir</p>
               </div>
             </label>
           )}
