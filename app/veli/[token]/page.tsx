@@ -68,6 +68,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
     .from('students')
     .select('id, full_name, student_number, classes(name, grade)')
     .eq('id', studentId)
+    .is('deleted_at', null) // service-role RLS'i bypass eder → silinen öğrenci velisine gösterilmemeli
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
 
   const schoolFilter = tokenSchoolId
