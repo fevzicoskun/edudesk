@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import type { Task } from '@/src/domains/tasks/services/TaskService'
 import { createTask, completeTask, snoozeTask, deleteTask } from '@/app/actions/tasks'
+import { format, parseISO } from '@/src/shared/date'
 
 export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
   const [tasks, setTasks] = useState<Task[]>(initial)
@@ -23,26 +24,44 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
   }
 
   function complete(id: string) {
+    const idx = tasks.findIndex(t => t.id === id)
+    if (idx === -1) return
+    const removed = tasks[idx]
     setTasks(prev => prev.filter(t => t.id !== id)) // optimistik
     startTransition(async () => {
       const res = await completeTask(id)
-      if (res.error) setErr(res.error)
+      if (res.error) {
+        setErr(res.error)
+        setTasks(prev => { const next = [...prev]; next.splice(idx, 0, removed); return next })
+      }
     })
   }
 
   function snooze(id: string, option: 'tomorrow' | 'nextWeek') {
+    const idx = tasks.findIndex(t => t.id === id)
+    if (idx === -1) return
+    const removed = tasks[idx]
     setTasks(prev => prev.filter(t => t.id !== id)) // ertelenince bugünden düşer
     startTransition(async () => {
       const res = await snoozeTask({ id, option })
-      if (res.error) setErr(res.error)
+      if (res.error) {
+        setErr(res.error)
+        setTasks(prev => { const next = [...prev]; next.splice(idx, 0, removed); return next })
+      }
     })
   }
 
   function remove(id: string) {
+    const idx = tasks.findIndex(t => t.id === id)
+    if (idx === -1) return
+    const removed = tasks[idx]
     setTasks(prev => prev.filter(t => t.id !== id))
     startTransition(async () => {
       const res = await deleteTask(id)
-      if (res.error) setErr(res.error)
+      if (res.error) {
+        setErr(res.error)
+        setTasks(prev => { const next = [...prev]; next.splice(idx, 0, removed); return next })
+      }
     })
   }
 
@@ -92,14 +111,14 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-gray-800 dark:text-slate-200 truncate">{t.title}</p>
                 {t.due_date && (
-                  <p className={`text-[11px] ${t.overdue ? 'text-red-500 font-semibold' : 'text-gray-500 dark:text-slate-400'}`}>
-                    {t.overdue ? 'Gecikti · ' : ''}{t.due_date}
+                  <p className={`text-[11px] ${t.overdue ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-gray-500 dark:text-slate-400'}`}>
+                    {t.overdue ? 'Gecikti · ' : ''}{format(parseISO(t.due_date), 'd MMM')}
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <button type="button" onClick={() => snooze(t.id, 'tomorrow')} className="text-[11px] text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 px-1.5 py-0.5 rounded transition-colors">Yarın</button>
-                <button type="button" onClick={() => snooze(t.id, 'nextWeek')} className="text-[11px] text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 px-1.5 py-0.5 rounded transition-colors">+7g</button>
+                <button type="button" onClick={() => snooze(t.id, 'tomorrow')} aria-label="Yarına ertele" className="text-[11px] text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 px-1.5 py-0.5 rounded transition-colors">Yarın</button>
+                <button type="button" onClick={() => snooze(t.id, 'nextWeek')} aria-label="Gelecek haftaya ertele" className="text-[11px] text-gray-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 px-1.5 py-0.5 rounded transition-colors">+7g</button>
                 <button type="button" onClick={() => remove(t.id)} aria-label="Sil" className="text-[11px] text-gray-400 hover:text-red-500 px-1.5 py-0.5 rounded transition-colors">Sil</button>
               </div>
             </li>
