@@ -13,6 +13,8 @@ import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import BugunProgramWidget from './BugunProgramWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
+import Yapilacaklarim from './Yapilacaklarim'
+import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState, type Role } from '@/src/domains/dashboard/lib/firstRun'
 import { BeklemeWidget } from './IlkAdimlarWidget'
@@ -81,9 +83,10 @@ export default async function OgretmenDashboard() {
 
   void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
-  const [metrics, duties] = await Promise.all([
+  const [metrics, duties, myTasks] = await Promise.all([
     TeacherDashboardService.getDashboardMetrics(user.id),
     DutyService.getMyDuties(),
+    TaskService.getMyActiveTasks(),
   ])
 
   const today = new Date()
@@ -144,6 +147,9 @@ export default async function OgretmenDashboard() {
         bugunHwSayisi={todayHws.length}
         yoklamaLocked={yoklamaLocked}
       />
+
+      {/* Yapılacaklarım — kişisel aksiyon katmanı */}
+      <Yapilacaklarim initial={myTasks} />
 
       {/* Gecikmiş Ödev Uyarısı */}
       <Suspense fallback={null}>
