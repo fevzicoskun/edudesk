@@ -6,6 +6,8 @@ import {
 describe('taskMath', () => {
   it('todayStr yerel YYYY-MM-DD üretir', () => {
     expect(todayStr(new Date(2026, 5, 24))).toBe('2026-06-24') // ay 0-index
+    expect(todayStr(new Date(2026, 0, 5))).toBe('2026-01-05') // Ocak, gün 5
+    expect(todayStr(new Date(2026, 5, 3))).toBe('2026-06-03') // gün 3
   })
 
   it('snoozeDate yarın ve gelecek hafta', () => {
@@ -32,6 +34,7 @@ describe('taskMath', () => {
 
   it('validateTaskTitle: boş ve 200+ reddedilir', () => {
     expect(validateTaskTitle('   ')).not.toBeNull()
+    expect(validateTaskTitle('a'.repeat(200))).toBeNull()
     expect(validateTaskTitle('a'.repeat(201))).not.toBeNull()
     expect(validateTaskTitle('Velileri ara')).toBeNull()
   })
