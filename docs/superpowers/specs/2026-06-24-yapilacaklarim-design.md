@@ -29,14 +29,17 @@ yapmak) bilinçli olarak kapsam dışı.
 
 ## Veri modeli — tek tablo `tasks`
 
-`user_notes` desenini izler: sahip-özel, `school_id` yok (FK'ler tenant'ı zaten
-sabitliyor; `user_notes` precedent'i kişisel tabloların `school_id` atladığını
-gösteriyor).
+`teacher_duties` desenini izler: sahip-özel + `school_id` ile tenant izolasyonu,
+RLS `current_school_id()` helper'ı kullanır. (Spec'in ilk taslağı `user_notes`
+gibi `school_id`'siz öneriyordu; ancak kod tabanının baskın deseni ve RLS
+helper'ı `school_id` bekliyor — RLS sınırında tutarlılık/doğruluk için dahil
+edildi.)
 
 ```sql
 CREATE TABLE tasks (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  school_id     UUID NOT NULL REFERENCES schools(id)     ON DELETE CASCADE,
+  user_id       UUID NOT NULL REFERENCES auth.users(id)  ON DELETE CASCADE,
   title         TEXT NOT NULL,
   student_id    UUID REFERENCES students(id) ON DELETE SET NULL,
   class_id      UUID REFERENCES classes(id)  ON DELETE SET NULL,
@@ -49,8 +52,10 @@ CREATE TABLE tasks (
 CREATE INDEX idx_tasks_user_open ON tasks(user_id) WHERE done_at IS NULL;
 
 ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
+-- Sahip-özel: yalnız kendi satırları (teacher_duties insert/update/delete deseni).
 CREATE POLICY "tasks_own" ON tasks FOR ALL TO authenticated
-  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+  USING (school_id = current_school_id() AND user_id = auth.uid())
+  WITH CHECK (school_id = current_school_id() AND user_id = auth.uid());
 ```
 
 ### Türetilen durum (kolon yok)
