@@ -11,6 +11,8 @@ import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
 import NotGecmisiSection from './NotGecmisiSection'
+import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
+import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import DevamsizlikPaneli from './DevamsizlikPaneli'
 import RehberlikRaporlariSection from './RehberlikRaporlariSection'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
@@ -78,6 +80,8 @@ export default async function OgrenciDetayPage({
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
+
+  const studentTasks = await TaskService.getStudentTasks(studentId)
 
   const cls = classResult.data
   const student = studentResult.data
@@ -277,6 +281,8 @@ export default async function OgrenciDetayPage({
       )}
 
       <NotGecmisiSection grades={grades} />
+
+      <OgrenciHatirlaticilar initial={studentTasks} studentId={studentId} classId={classId} />
 
       <VeliAnalyticsCard studentId={studentId} schoolId={schoolId} />
 
