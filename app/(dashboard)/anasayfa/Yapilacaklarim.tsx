@@ -27,6 +27,7 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
     const idx = tasks.findIndex(t => t.id === id)
     if (idx === -1) return
     const removed = tasks[idx]
+    setErr(null)
     setTasks(prev => prev.filter(t => t.id !== id)) // optimistik
     startTransition(async () => {
       const res = await completeTask(id)
@@ -41,6 +42,7 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
     const idx = tasks.findIndex(t => t.id === id)
     if (idx === -1) return
     const removed = tasks[idx]
+    setErr(null)
     setTasks(prev => prev.filter(t => t.id !== id)) // ertelenince bugünden düşer
     startTransition(async () => {
       const res = await snoozeTask({ id, option })
@@ -55,6 +57,7 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
     const idx = tasks.findIndex(t => t.id === id)
     if (idx === -1) return
     const removed = tasks[idx]
+    setErr(null)
     setTasks(prev => prev.filter(t => t.id !== id))
     startTransition(async () => {
       const res = await deleteTask(id)

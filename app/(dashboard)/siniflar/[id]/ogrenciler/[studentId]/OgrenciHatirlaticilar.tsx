@@ -32,6 +32,7 @@ export default function OgrenciHatirlaticilar({
     const idx = tasks.findIndex(t => t.id === id)
     if (idx === -1) return
     const removed = tasks[idx]
+    setErr(null)
     setTasks(prev => prev.filter(t => t.id !== id))
     startTransition(async () => {
       const res = await completeTask(id)
@@ -48,6 +49,7 @@ export default function OgrenciHatirlaticilar({
     const idx = tasks.findIndex(t => t.id === id)
     if (idx === -1) return
     const removed = tasks[idx]
+    setErr(null)
     setTasks(prev => prev.filter(t => t.id !== id))
     startTransition(async () => {
       const res = await deleteTask(id)
