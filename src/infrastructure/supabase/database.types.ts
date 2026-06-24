@@ -2263,6 +2263,88 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          done_at: string | null
+          due_date: string | null
+          id: string
+          school_id: string
+          snoozed_until: string | null
+          student_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          school_id: string
+          snoozed_until?: string | null
+          student_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          school_id?: string
+          snoozed_until?: string | null
+          student_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "active_classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "tasks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_activity_log: {
         Row: {
           action: string
@@ -2383,6 +2465,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "schools"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_duties_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
           },
         ]
       }
@@ -3052,7 +3141,7 @@ export type Database = {
         }[]
       }
       get_class_attendance_rates: {
-        Args: { p_school_id: string; p_start: string; p_end: string }
+        Args: { p_end: string; p_school_id: string; p_start: string }
         Returns: {
           class_id: string
           present: number
@@ -3060,10 +3149,14 @@ export type Database = {
         }[]
       }
       get_class_cumulative_load: {
-        Args: { p_class_id: string; p_school_id: string; p_exclude_homework: string }
+        Args: {
+          p_class_id: string
+          p_exclude_homework: string
+          p_school_id: string
+        }
         Returns: {
-          student_id: string
           missed: number
+          student_id: string
           total_homeworks: number
         }[]
       }
@@ -3080,32 +3173,32 @@ export type Database = {
       get_school_absence_scores: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
-          student_id: string
           absences: number
+          student_id: string
         }[]
       }
       get_school_activity_weekly: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
-          week_start: string
           active: number
+          week_start: string
         }[]
       }
       get_school_attendance_trend: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
-          week_start: string
-          total: number
           absent: number
           recorded: number
+          total: number
+          week_start: string
         }[]
       }
       get_school_class_absence: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
+          absent: number
           class_id: string
           total: number
-          absent: number
         }[]
       }
       get_user_permissions: {
