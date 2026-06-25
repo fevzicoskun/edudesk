@@ -58,9 +58,9 @@ export default function RandevularClient({
     return freePeriods(slots, periods, weekdayFromDate(date), bookedPeriods)
   }, [date, slots, periods, bookedPeriods])
 
-  const today = new Date().toISOString().slice(0, 10)
-  const upcoming = meetings.filter(m => m.meet_date >= today && m.status !== 'iptal')
-  const past = meetings.filter(m => m.meet_date < today || m.status === 'iptal')
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  const upcoming = useMemo(() => meetings.filter(m => m.meet_date >= today && m.status !== 'iptal'), [meetings, today])
+  const past = useMemo(() => meetings.filter(m => m.meet_date < today || m.status === 'iptal'), [meetings, today])
 
   function resetForm() {
     setDate(''); setPeriod(''); setStudentId(''); setNote(''); setErr(null)

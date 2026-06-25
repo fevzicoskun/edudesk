@@ -40,17 +40,23 @@ export const MeetingRepository = {
     return db.from('parent_meetings').insert(row).select('id').single()
   },
 
-  async updateStatus(id: string, teacherId: string, status: MeetingStatus) {
+  async updateStatus(id: string, teacherId: string, schoolId: string, status: MeetingStatus) {
     const db = await createClient()
     return db
       .from('parent_meetings')
       .update({ status })
       .eq('id', id)
       .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
   },
 
-  async deleteById(id: string, teacherId: string) {
+  async deleteById(id: string, teacherId: string, schoolId: string) {
     const db = await createClient()
-    return db.from('parent_meetings').delete().eq('id', id).eq('teacher_id', teacherId)
+    return db
+      .from('parent_meetings')
+      .delete()
+      .eq('id', id)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
   },
 }

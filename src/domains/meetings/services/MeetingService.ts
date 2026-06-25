@@ -95,7 +95,7 @@ export const MeetingService = {
 
   async updateStatus(id: string, status: MeetingStatus): Promise<{ error?: string }> {
     const ability = await requireAbility()
-    const { error } = await MeetingRepository.updateStatus(id, ability.userId, status)
+    const { error } = await MeetingRepository.updateStatus(id, ability.userId, ability.schoolId, status)
     if (error) {
       logger.error({ event: 'meeting_status_failed', userId: ability.userId, err: error.message }, 'Randevu durum güncelleme hatası')
       return { error: 'Randevu güncellenemedi' }
@@ -105,7 +105,7 @@ export const MeetingService = {
 
   async remove(id: string): Promise<{ error?: string }> {
     const ability = await requireAbility()
-    const { error } = await MeetingRepository.deleteById(id, ability.userId)
+    const { error } = await MeetingRepository.deleteById(id, ability.userId, ability.schoolId)
     if (error) {
       logger.error({ event: 'meeting_delete_failed', userId: ability.userId, err: error.message }, 'Randevu silme hatası')
       return { error: 'Randevu silinemedi' }
