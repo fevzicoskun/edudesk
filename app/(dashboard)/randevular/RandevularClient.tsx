@@ -104,7 +104,7 @@ export default function RandevularClient({
         {m.status === 'planlandi' && (
           <>
             <button onClick={() => changeStatus(m.id, 'yapildi')} className="text-green-600 hover:underline">Yapıldı</button>
-            <button onClick={() => changeStatus(m.id, 'iptal')} className="text-gray-500 hover:underline">İptal</button>
+            <button onClick={() => changeStatus(m.id, 'iptal')} className="text-gray-500 dark:text-slate-400 hover:underline">İptal</button>
           </>
         )}
         <button onClick={() => remove(m.id)} className="text-red-600 hover:underline">Sil</button>
