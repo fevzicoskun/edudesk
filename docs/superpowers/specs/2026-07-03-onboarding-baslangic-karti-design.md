@@ -49,18 +49,26 @@ katılan öğretmen de karttan faydalanır.
 
 | Adım | ✓ koşulu (count > 0) | Link |
 |---|---|---|
-| Sınıflarını seç | `teacher_classes.teacher_id = user` | `/siniflar` |
+| Sınıfların atandı | `teacher_classes.teacher_id = user` | `/siniflar` |
 | Ders programını gir | `lesson_schedules.teacher_id = user` | `/ders-programi` |
 | İlk yoklamanı al | `attendance.teacher_id = user` | `/yoklama` |
 | İlk ödevini ver | `homeworks.teacher_id = user` | `/odevler/yeni` |
 
 Adımlar sıralı **görünür** ama zorlamasız — kullanıcı istediğine tıklar.
 
+**Plan-aşaması düzeltmesi:** öğretmen self-servis sınıf seçemez
+(`teacher_classes` insert'i yalnız yönetici atama matrisinde). 0 sınıflı
+öğretmen zaten `BeklemeWidget` görür (dashboard render edilmez) → 1. adım
+kart göründüğünde daima ✓; ilerleme hissi için listede tutulur.
+
 ### Rol eşlemesi
 
-- `mudur` → müdür kartı
-- `ogretmen`, `zumre_baskani`, `mudur_yardimcisi` → öğretmen kartı
-  (ara roller de ders veriyor; `isTeachingRole` mevcut helper)
+- `mudur` → müdür kartı (mevcut `KurulumWidget`'ın yerine; davet ✓ olduysa
+  ama okul 0-sınıfsa `KurulumWidget` fallback olarak kalır)
+- `ogretmen`, `zumre_baskani` → öğretmen kartı
+- `mudur_yardimcisi` → kart yok (**plan-aşaması düzeltmesi:** MY,
+  `OgretmenDashboard`'a değil `MYWidgets`'a düşer ve orada mevcut
+  `KurulumWidget` çalışır; dokunulmaz)
 - `admin` → kart yok
 
 ## Mimari
@@ -93,10 +101,11 @@ yerine kartı küçültmek/gizlemek tercih edilir. Hata `logger.error` ile logla
 
 ## Test
 
-- **Birim (`setupMath`):** rol → adım listesi eşlemesi; 30-gün penceresi
-  (sınır: tam 30. gün); "tümü ✓ → kart yok"; tek eksik adım → kart var.
-- **Servis:** mock repo ile müdür/öğretmen/admin yolları + count hatasında
-  fail-quiet davranışı.
+- **Birim (`setupMath`):** 30-gün penceresi (sınır: tam 30. gün + bozuk
+  tarih); adım listesi inşası; "tümü ✓ → kart yok"; tek eksik adım → kart var.
+- **Servis:** ayrı test yok — projede repo-mock service test kalıbı
+  bulunmuyor (TaskService/MeetingService de yalnız math katmanını test
+  ediyor); mantık `setupMath`'te yoğunlaştırıldı, servis ince orkestrasyon.
 - **E2e:** mevcut seed'ler veri içerdiğinden kart görünmez → mevcut 67 e2e
   kırılmaz. Yeni e2e eklenmez (taze-hesap seed'i maliyetli; birim+servis
   kapsaması yeterli). Karar implementasyon planında yeniden değerlendirilebilir.
