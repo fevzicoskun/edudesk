@@ -16,6 +16,10 @@ test.describe('Yoklama Çizelgesi', () => {
   })
 
   test('yoklama sayfasında 4 durumlu segmented control çalışır', async ({ page }) => {
+    // Yoklama TR 10:30'da öğretmene kilitlenir (YOKLAMA_LOCK_HOUR) — test akşam
+    // koşarsa butonlar meşru olarak disabled olur. Saati TR-bugün 08:00'e sabitle.
+    const trToday = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
+    await page.clock.install({ time: new Date(`${trToday}T08:00:00+03:00`) })
     await page.goto('/yoklama')
     await expect(page).not.toHaveURL(/login/)
     // Öğrenci başına 4 ayrı durum butonu (Mevcut/Devamsız/Geç/Özürlü). Aktif olan `ring-2` ile işaretlenir.
