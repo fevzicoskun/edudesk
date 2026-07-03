@@ -11,21 +11,20 @@ export interface TaskRow {
   done_at: string | null
 }
 
-function toStr(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
+// Proje konvansiyonu: tarihler Europe/Istanbul'a göre (Vercel UTC'de gece kayması olmasın).
+// sv-SE locale'i doğrudan YYYY-MM-DD üretir (bkz. src/shared/date todayLocalISO).
+const TR_DATE = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' })
 
-// Bugünün yerel tarihi (UTC offset hatası olmadan).
+// Bugünün Türkiye tarihi.
 export function todayStr(d: Date = new Date()): string {
-  return toStr(d)
+  return TR_DATE.format(d)
 }
 
-// Erteleme hedef tarihi: yarın (+1) veya gelecek hafta (+7).
+// Erteleme hedef tarihi: yarın (+1) veya gelecek hafta (+7), Türkiye gününe göre.
 export function snoozeDate(base: Date, option: 'tomorrow' | 'nextWeek'): string {
-  const d = new Date(base)
-  d.setDate(d.getDate() + (option === 'tomorrow' ? 1 : 7))
-  return toStr(d)
+  const [y, m, day] = TR_DATE.format(base).split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, day + (option === 'tomorrow' ? 1 : 7)))
+    .toISOString().slice(0, 10)
 }
 
 // Bugün görünür mü: açık VE (ertelenmemiş ya da erteleme günü gelmiş).

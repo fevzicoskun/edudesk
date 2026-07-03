@@ -16,6 +16,14 @@ describe('taskMath', () => {
     expect(snoozeDate(base, 'nextWeek')).toBe('2026-07-01')
   })
 
+  it('UTC gece penceresinde Türkiye gününü kullanır (Vercel UTC regresyonu)', () => {
+    // 24 Haz 22:30 UTC = 25 Haz 01:30 TR → "bugün" 25'i olmalı, 24'ü değil.
+    const nightUTC = new Date('2026-06-24T22:30:00Z')
+    expect(todayStr(nightUTC)).toBe('2026-06-25')
+    expect(snoozeDate(nightUTC, 'tomorrow')).toBe('2026-06-26')
+    expect(snoozeDate(nightUTC, 'nextWeek')).toBe('2026-07-02')
+  })
+
   it('isVisibleToday: tamamlanan görünmez', () => {
     expect(isVisibleToday({ done_at: '2026-06-24T10:00:00Z', snoozed_until: null }, '2026-06-24')).toBe(false)
   })

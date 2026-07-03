@@ -7,6 +7,7 @@ import type { Meeting, StudentOption } from '@/src/domains/meetings/services/Mee
 import type { MeetingStatus } from '@/src/domains/meetings/parentMeetingMath'
 import { freePeriods, weekdayFromDate } from '@/src/domains/meetings/parentMeetingMath'
 import { createMeeting, setMeetingStatus, deleteMeeting } from '@/app/actions/meetings'
+import { todayLocalISO } from '@/src/shared/date'
 
 const STATUS_LABEL: Record<MeetingStatus, string> = {
   planlandi: 'Planlandı',
@@ -58,7 +59,8 @@ export default function RandevularClient({
     return freePeriods(slots, periods, weekdayFromDate(date), bookedPeriods)
   }, [date, slots, periods, bookedPeriods])
 
-  const today = useMemo(() => new Date().toISOString().slice(0, 10), [])
+  // toISOString UTC döner; TR gece 00–03 arası "bugün" kayar → Europe/Istanbul helper'ı.
+  const today = useMemo(() => todayLocalISO(), [])
   const upcoming = useMemo(() => meetings.filter(m => m.meet_date >= today && m.status !== 'iptal'), [meetings, today])
   const past = useMemo(() => meetings.filter(m => m.meet_date < today || m.status === 'iptal'), [meetings, today])
 
