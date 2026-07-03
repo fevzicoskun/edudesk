@@ -11,6 +11,8 @@ import { getGreeting }        from '@/src/shared/utils'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
 import { KurulumWidget } from './IlkAdimlarWidget'
+import BaslangicKartiMudur from './BaslangicKartiMudur'
+import { SetupService } from '@/src/domains/onboarding/services/SetupService'
 import MudurTrendWidget from './MudurTrendWidget'
 import ErkenUyarilarWidget from './ErkenUyarilarWidget'
 
@@ -39,6 +41,8 @@ function DashboardSkeleton() {
 }
 
 async function MudurWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
+  const setup = await SetupService.getSetupStatus()
+
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div>
@@ -50,7 +54,9 @@ async function MudurWidgets({ fullName, classCount }: { fullName: string; classC
         </p>
       </div>
 
-      {firstRunState('mudur', classCount) === 'setup' && <KurulumWidget />}
+      {setup?.kind === 'mudur'
+        ? <BaslangicKartiMudur code={setup.code} />
+        : firstRunState('mudur', classCount) === 'setup' && <KurulumWidget />}
 
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
         <MYStatsWidget />
