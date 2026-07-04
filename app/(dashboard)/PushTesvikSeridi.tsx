@@ -37,14 +37,16 @@ export default function PushTesvikSeridi() {
     await subscribe()
     setBusy(false)
     setJustEnabled(true)
+    // ✓ onayı kısa yaşasın — client-side nav'da oturum boyu asılı kalmasın (toast deseni)
+    setTimeout(() => setJustEnabled(false), 5000)
   }
 
   if (snoozed !== false) return null
 
-  // Başarı: bu oturumda abone olundu → kısa onay (yenilemede tamamen kaybolur)
+  // Başarı: bu oturumda abone olundu → kısa onay (5 sn sonra kaybolur)
   if (justEnabled && state === 'subscribed') {
     return (
-      <div className="px-4 pt-4 md:px-6 max-w-6xl mx-auto">
+      <div className="px-4 pt-4 md:px-6 max-w-6xl mx-auto print:hidden">
         <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 rounded-xl px-4 py-3 text-sm text-emerald-700 dark:text-emerald-400">
           Bildirimler açıldı ✓ — sabah özetin artık telefonuna gelecek.
         </div>
@@ -56,7 +58,7 @@ export default function PushTesvikSeridi() {
   if (state !== 'unsubscribed' && !busy) return null
 
   return (
-    <div className="px-4 pt-4 md:px-6 max-w-6xl mx-auto">
+    <div className="px-4 pt-4 md:px-6 max-w-6xl mx-auto print:hidden">
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 flex flex-wrap items-center gap-3">
         <span aria-hidden>🔔</span>
         <span className="text-sm text-gray-700 dark:text-slate-300 flex-1 min-w-48">
