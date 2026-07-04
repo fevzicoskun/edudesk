@@ -40,7 +40,7 @@ export default defineConfig({
   globalSetup: './tests/playwright/setup/global-setup.ts',
 
   webServer: {
-    command: 'next dev --turbopack',  // turbopack: soğuk derleme ~5s vs webpack ~30-90s
+    command: 'next dev --webpack',    // turbopack bu Next sürümünde asılıp çöküyordu (2026-07-04, 52 test timeout) — npm run dev ile aynı mod
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,                 // sunucu hazır olana kadar max 2 dak

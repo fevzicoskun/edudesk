@@ -54,6 +54,7 @@ push.bat
 # Playwright auth state (JWT tokens — never commit)
 tests/playwright/.auth/
 playwright-report/
+test-results/
 
 .vercel
 test-emails.mjs
