@@ -15,11 +15,22 @@ test.describe('Yoklama Çizelgesi', () => {
     ).toBeVisible({ timeout: 10_000 })
   })
 
+  test('yoklama sayfasından çizelgeye geçiş linki çalışır', async ({ page }) => {
+    await page.goto('/yoklama')
+    await expect(page).not.toHaveURL(/login/)
+    await page.getByRole('link', { name: /Çizelge/ }).click()
+    await page.waitForURL(url => url.pathname === '/yoklama/cizelge', { timeout: 10_000 })
+    await expect(page.getByRole('heading', { name: 'Yoklama Çizelgesi' })).toBeVisible()
+  })
+})
+
+test.describe('Yoklama segmented control', () => {
+  // Müdür rolüyle koşar: canEditAfterLock=true → 10:30 TR saat kilidi hiç devreye girmez.
+  // (Öğretmen + page.clock.install denemesi saat-bağımlıydı: kilit SSR'da gerçek saatle
+  // hesaplanıp buton disabled basılıyor, client-side clock mock'u bunu geri açamıyor.)
+  test.use({ storageState: path.join(AUTH_DIR, 'mudur.json') })
+
   test('yoklama sayfasında 4 durumlu segmented control çalışır', async ({ page }) => {
-    // Yoklama TR 10:30'da öğretmene kilitlenir (YOKLAMA_LOCK_HOUR) — test akşam
-    // koşarsa butonlar meşru olarak disabled olur. Saati TR-bugün 08:00'e sabitle.
-    const trToday = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
-    await page.clock.install({ time: new Date(`${trToday}T08:00:00+03:00`) })
     await page.goto('/yoklama')
     await expect(page).not.toHaveURL(/login/)
     // Öğrenci başına 4 ayrı durum butonu (Mevcut/Devamsız/Geç/Özürlü). Aktif olan `ring-2` ile işaretlenir.
@@ -31,13 +42,5 @@ test.describe('Yoklama Çizelgesi', () => {
     const present = firstRow.getByRole('button', { name: 'Mevcut' })
     await present.click()
     await expect(present).toHaveClass(/ring-2/)
-  })
-
-  test('yoklama sayfasından çizelgeye geçiş linki çalışır', async ({ page }) => {
-    await page.goto('/yoklama')
-    await expect(page).not.toHaveURL(/login/)
-    await page.getByRole('link', { name: /Çizelge/ }).click()
-    await page.waitForURL(url => url.pathname === '/yoklama/cizelge', { timeout: 10_000 })
-    await expect(page.getByRole('heading', { name: 'Yoklama Çizelgesi' })).toBeVisible()
   })
 })
