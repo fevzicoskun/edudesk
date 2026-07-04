@@ -35,7 +35,8 @@ Başlık kuralı (kesin): ders varsa **"Bugünün dersleri"**; yoksa nöbet vars
 - Hiçbir bölüm dolu değilse bildirim gitmez (mevcut davranış).
 - Bildirim URL'i `/ders-programi` → **`/anasayfa`** olur (özet artık tek konuya bağlı değil).
 - Yalnız `status='planlandi'` randevular listelenir.
-- "Dün" = önceki okul günü: Pazartesi → Cuma (`previousSchoolDay`). Cron zaten `1-5` günlerde çalışır.
+- "Dün" = önceki okul günü: Pazartesi → Cuma (`previousSchoolDayGap`: Pzt→3 gün, diğerleri→1 gün geri). Cron zaten `1-5` günlerde çalışır.
+- **Tatil koruması:** bir okulda dün okul genelinde HİÇ yoklama alınmadıysa (0 kayıt) o gün tatil varsayılır → o okulun öğretmenlerine eksik-yoklama bölümü hiç gösterilmez (yanlış alarm engeli; trendMath "real hafta" desenine paralel).
 
 ## Mimari
 
