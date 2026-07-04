@@ -22,6 +22,9 @@ import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/consta
 import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
 import VeliGorusmeleriSection, { type MeetingRow } from './VeliGorusmeleriSection'
 import { MeetingRepository } from '@/src/domains/meetings/repositories/MeetingRepository'
+import ZamanCizelgesiSection from './ZamanCizelgesiSection'
+import { buildStudentTimeline } from '@/src/domains/classes/lib/timelineMath'
+import { donemBasi } from '@/src/shared/utils'
 
 export const revalidate = 60
 
@@ -141,6 +144,24 @@ export default async function OgrenciDetayPage({
   const mentorReports = canSeeMentorReports && cls.mentor_teacher_id
     ? await MentorService.getMentorReportsByStudent(studentId)
     : []
+
+  // Öğrenci 360: zaman çizelgesi — sayfanın zaten çektiği verilerden derlenir.
+  const timelineEvents = buildStudentTimeline({
+    attendance: attendanceRecords,
+    submissions: submissions.map(su => ({
+      status: su.status, dueDate: su.homeworks?.due_date ?? null, title: su.homeworks?.title ?? null,
+    })),
+    grades: grades.map(g => ({
+      examDate: g.grade_columns.exam_date, title: g.grade_columns.title,
+      score: g.score, maxScore: g.grade_columns.max_score,
+    })),
+    meetings: meetingsRes.error ? [] : meetingsRows.map(m => ({
+      date: m.meet_date, status: m.status, teacherName: teacherNames[m.teacher_id] ?? 'Öğretmen',
+    })),
+    mentorReports: mentorReports.map((r: { report_date: string }) => ({ date: r.report_date })),
+    contactLogs: (contactLogsRes.data ?? []).map(c => ({ date: c.contacted_at, method: c.contact_method })),
+    studentNotes: notes.map(n => ({ date: n.created_at, body: n.body })),
+  }, donemBasi())
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -311,6 +332,8 @@ export default async function OgrenciDetayPage({
         classId={classId}
         currentUserId={currentProfile.id}
       />
+
+      <ZamanCizelgesiSection events={timelineEvents} />
 
     </div>
   )
