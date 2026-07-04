@@ -18,6 +18,8 @@ import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState, type Role } from '@/src/domains/dashboard/lib/firstRun'
 import { BeklemeWidget } from './IlkAdimlarWidget'
+import BaslangicKartiOgretmen from './BaslangicKartiOgretmen'
+import { SetupService } from '@/src/domains/onboarding/services/SetupService'
 
 type Tone = 'blue' | 'orange' | 'rose'
 const TONE: Record<Tone, string> = {
@@ -123,6 +125,7 @@ export default async function OgretmenDashboard() {
   const upcomingHws = metrics.homeworks
     .filter(h => h.due_date > todayStr && h.due_date <= next7Str)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
+  const setup = await SetupService.getSetupStatus()
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -132,6 +135,9 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
+
+      {/* Başlangıç kartı — ilk 30 gün + eksik kurulum adımı varsa */}
+      {setup?.kind === 'ogretmen' && <BaslangicKartiOgretmen steps={setup.steps} />}
 
       {/* Bugünkü ders programı şeridi (program kuruluysa kendini gösterir) */}
       <Suspense fallback={null}>
