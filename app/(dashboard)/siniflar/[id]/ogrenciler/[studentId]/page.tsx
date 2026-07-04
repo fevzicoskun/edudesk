@@ -20,6 +20,8 @@ import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
+import VeliGorusmeleriSection, { type MeetingRow } from './VeliGorusmeleriSection'
+import { MeetingRepository } from '@/src/domains/meetings/repositories/MeetingRepository'
 
 export const revalidate = 60
 
@@ -82,6 +84,17 @@ export default async function OgrenciDetayPage({
   if (!classResult.data || !studentResult.data) notFound()
 
   const studentTasks = await TaskService.getStudentTasks(studentId)
+
+  // Öğrenci 360: veli görüşmeleri (RLS görünürlüğü kırpar) + öğretmen adları.
+  const meetingsRes = await MeetingRepository.listByStudent(studentId, schoolId)
+  const meetingsRows = (meetingsRes.data ?? []) as MeetingRow[]
+  const meetingTeacherIds = [...new Set(meetingsRows.map(m => m.teacher_id))]
+  const teacherNames: Record<string, string> = {}
+  if (meetingTeacherIds.length) {
+    const { data: teacherProfiles } = await supabase
+      .from('profiles').select('id, full_name').in('id', meetingTeacherIds)
+    for (const p of teacherProfiles ?? []) teacherNames[p.id as string] = p.full_name as string
+  }
 
   const cls = classResult.data
   const student = studentResult.data
@@ -279,6 +292,12 @@ export default async function OgrenciDetayPage({
           </section>
         ) : null
       )}
+
+      <VeliGorusmeleriSection
+        meetings={meetingsRows}
+        teacherNames={teacherNames}
+        hasError={!!meetingsRes.error}
+      />
 
       <NotGecmisiSection grades={grades} />
 

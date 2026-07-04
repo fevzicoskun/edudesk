@@ -59,4 +59,18 @@ export const MeetingRepository = {
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
   },
+
+  // Öğrenci 360: bir öğrencinin görüşmeleri. Görünürlüğü RLS kırpar
+  // (öğretmen kendi satırları, müdür/MY okul geneli — 20260704120000 migration).
+  async listByStudent(studentId: string, schoolId: string) {
+    const db = await createClient()
+    return db
+      .from('parent_meetings')
+      .select('id, meet_date, period, status, note, teacher_id')
+      .eq('student_id', studentId)
+      .eq('school_id', schoolId)
+      .order('meet_date', { ascending: false })
+      .order('period', { ascending: false })
+      .limit(100)
+  },
 }
