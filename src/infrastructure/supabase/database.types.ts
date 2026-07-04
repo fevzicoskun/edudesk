@@ -1965,6 +1965,71 @@ export type Database = {
           },
         ]
       }
+      school_events: {
+        Row: {
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          deleted_by: string | null
+          event_date: string
+          id: string
+          note: string | null
+          school_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_date: string
+          id?: string
+          note?: string | null
+          school_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          event_date?: string
+          id?: string
+          note?: string | null
+          school_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_events_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_events_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_events_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_events_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       school_meetings: {
         Row: {
           attendees: string | null
@@ -3295,6 +3360,7 @@ export type Database = {
         Returns: boolean
       }
       is_mudur_in_school: { Args: never; Returns: boolean }
+      is_mudur_or_my: { Args: never; Returns: boolean }
       is_school_member: { Args: { p_school_id: string }; Returns: boolean }
       is_yonetici_in_school: { Args: never; Returns: boolean }
       is_zumre_baskani: { Args: never; Returns: boolean }
