@@ -6,6 +6,7 @@ import { ToastProvider } from '@/components/Toast'
 import QuickAddDrawer from '@/components/homework/QuickAddDrawer'
 import CommandPalette from '@/components/CommandPalette'
 import { isTeachingRole } from '@/src/shared/types'
+import PushTesvikSeridi from './PushTesvikSeridi'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -31,7 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <div className="print:hidden">
             <TopBar userId={profile?.id} />
           </div>
-          <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0">{children}</main>
+          <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0"><PushTesvikSeridi />{children}</main>
         </div>
       </div>
       <div className="print:hidden">
