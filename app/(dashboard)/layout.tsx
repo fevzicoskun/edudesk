@@ -7,6 +7,7 @@ import QuickAddDrawer from '@/components/homework/QuickAddDrawer'
 import CommandPalette from '@/components/CommandPalette'
 import { isTeachingRole } from '@/src/shared/types'
 import PushTesvikSeridi from './PushTesvikSeridi'
+import UsageTracker from './UsageTracker'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -24,6 +25,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <ToastProvider>
+      <UsageTracker />
       <div className="flex h-full bg-gray-50 dark:bg-slate-950">
         <div className="print:hidden">
           <Sidebar profile={profile} email={user.email ?? ''} />
