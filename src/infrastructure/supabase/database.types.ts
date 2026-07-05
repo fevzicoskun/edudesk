@@ -619,6 +619,54 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          message: string
+          page_path: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          message: string
+          page_path: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          message?: string
+          page_path?: string
+          role?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feedback_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       grade_columns: {
         Row: {
           class_id: string
@@ -2615,6 +2663,48 @@ export type Database = {
           },
         ]
       }
+      usage_daily: {
+        Row: {
+          count: number
+          day: string
+          feature: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          day: string
+          feature: string
+          role: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          day?: string
+          feature?: string
+          role?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       user_notes: {
         Row: {
           content: string
@@ -3231,6 +3321,57 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_active_users: {
+        Row: {
+          school_id: string | null
+          school_name: string | null
+          users_30d: number | null
+          users_7d: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      usage_summary: {
+        Row: {
+          feature: string | null
+          school_id: string | null
+          school_name: string | null
+          users_30d: number | null
+          users_7d: number | null
+          views_30d: number | null
+          views_7d: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "usage_daily_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_onboard_user: {
@@ -3359,6 +3500,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      increment_usage: { Args: { p_feature: string }; Returns: undefined }
       is_mudur_in_school: { Args: never; Returns: boolean }
       is_mudur_or_my: { Args: never; Returns: boolean }
       is_school_member: { Args: { p_school_id: string }; Returns: boolean }
