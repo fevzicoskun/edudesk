@@ -1,9 +1,8 @@
 'use server'
 
 import { mailer } from '@/src/lib/mailer'
-import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentUser } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { feedbackSchema } from '@/src/shared/validation'
 import { logger } from '@/src/infrastructure/observability/logger'
 
@@ -17,9 +16,6 @@ export async function sendFeedback(formData: FormData) {
   const user = await getCurrentUser()
   if (!user) return { ok: false, error: 'Giriş yapılmamış.' }
 
-  const profile = await getCurrentProfile()
-  if (!profile?.school_id) return { ok: false, error: 'Profil bulunamadı.' }
-
   const parsed = feedbackSchema.safeParse({
     category:  formData.get('category'),
     message:   formData.get('message'),
@@ -28,31 +24,24 @@ export async function sendFeedback(formData: FormData) {
   if (!parsed.success) return { ok: false, error: 'Mesaj boş veya çok uzun.' }
   const { category, message, page_path } = parsed.data
 
-  // Rate limit: son 60 sn'de 3+ kayıt varsa reddet.
-  // feedback'te SELECT policy yok → sayım service client ile yapılır.
-  const service = createServiceClient()
-  const { count } = await service
-    .from('feedback')
-    .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .gte('created_at', new Date(Date.now() - 60_000).toISOString())
-  if ((count ?? 0) >= 3) {
-    return { ok: false, error: 'Çok sık gönderiyorsun, biraz sonra tekrar dene.' }
-  }
-
-  // Asıl kalıcı kayıt: DB. SELECT policy olmadığından .select() ÇAĞRILMAZ.
+  // Asıl kalıcı kayıt: submit_feedback RPC (SECURITY DEFINER).
+  // Kimlik (school_id/user_id/role) ve 3/60sn rate limit DB'de uygulanır —
+  // doğrudan PostgREST insert'i kapalı (feedback'te INSERT policy yok).
   const supabase = await createClient()
-  const { error } = await supabase.from('feedback').insert({
-    school_id: profile.school_id,
-    user_id:   user.id,
-    role:      profile.role,
-    page_path: page_path || '/',
-    category,
-    message,
+  const { data: result, error } = await supabase.rpc('submit_feedback', {
+    p_category:  category,
+    p_message:   message,
+    p_page_path: page_path,
   })
   if (error) {
     logger.error({ event: 'feedback_insert_failed', err: error.message }, 'Feedback kaydedilemedi')
     return { ok: false, error: 'Kaydedilemedi. Lütfen tekrar dene.' }
+  }
+  if (result === 'rate_limited') {
+    return { ok: false, error: 'Çok sık gönderiyorsun, biraz sonra tekrar dene.' }
+  }
+  if (result !== 'ok') {
+    return { ok: false, error: 'Profil bulunamadı.' }
   }
 
   // Mail best-effort: DB kaydı başarılı olduğu için mail patlasa da ok döner.

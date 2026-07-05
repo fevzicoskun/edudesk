@@ -54,7 +54,11 @@ do update set count = usage_daily.count + 1;
 ```
 
 - `authenticated` rolüne EXECUTE verilir (anon'a verilmez).
-- Profil bulunamazsa sessizce çıkar (`return`) — metrik yazımı hiçbir akışı kırmamalı.
+- Fonksiyon içinde feature whitelist'i (FEATURES listesinin DB kopyası, sertleştirme
+  20260705170000): doğrudan RPC çağrısıyla sahte feature adı metriklere sokulamaz. Yeni
+  dashboard modülü eklenirse `featureMap.ts` ve fonksiyondaki liste BİRLİKTE güncellenir.
+- Profil bulunamazsa veya feature whitelist dışıysa sessizce çıkar (`return`) — metrik
+  yazımı hiçbir akışı kırmamalı.
 - Tabloya doğrudan RLS policy açılmaz: authenticated INSERT/SELECT/UPDATE edemez; okuma yalnızca service-role (/platform).
 
 ### Yakalama — client beacon
@@ -62,7 +66,7 @@ do update set count = usage_daily.count + 1;
 - `app/(dashboard)/` altına küçük bir client component: `UsageTracker.tsx`, dashboard `layout.tsx`'e eklenir.
 - `usePathname()` değişimini izler; route → feature eşlemesi client'ta sabit bir map (örn. `/yoklama/*` → `yoklama`). Map'te olmayan route izlenmez.
 - `navigator.sendBeacon('/api/usage', ...)` ile gönderilir — sayfa geçişini bloklamaz. Cookie'ler same-origin gittiği için `/api/usage` route'u mevcut session'ı görür.
-- `/api/usage` (POST): session'dan kullanıcıyı doğrular, Zod ile `feature` değerini doğrular (bilinen feature listesi enum'u), `increment_usage` RPC'sini çağırır. Oturum yoksa 204 döner (hata üretmez).
+- `/api/usage` (POST): Zod ile `feature` değerini doğrular (bilinen feature listesi enum'u), `increment_usage` RPC'sini çağırır; route her durumda 204 döner. Oturumsuz istek route'a hiç ulaşmaz — proxy /login'e redirect eder (Riskler bölümüne bakın); `sendBeacon` yanıtı umursamadığı için istemci etkilenmez.
 - Aynı sayfada art arda render'larda tekrar saymamak için component son gönderilen feature'ı ref'te tutar; feature değişmeden tekrar göndermez.
 
 ### Bilinen sınırlar (kabul edildi)
@@ -93,11 +97,13 @@ create table feedback (
 
 - Kategoriler mevcut UI'daki gibi: **öneri / istek / şikayet** (spec'in ilk taslağındaki
   oneri/hata/diger yerine — hata bildirimi zaten `error-report.ts` ile otomatik gidiyor).
-- RLS: SELECT/UPDATE/DELETE policy yok — okuma yalnızca service-role (/platform).
-- Yazım kullanıcı session'ı ile; INSERT policy: `user_id = auth.uid()` ve
-  `school_id = current_school_id()` (mevcut helper).
-- Dikkat: SELECT policy olmadığı için `.insert()` sonrası `.select()` ÇAĞRILMAZ (returning satır
-  okuyamaz, sorgu patlar). Insert dönüşü kullanılmaz.
+- RLS: HİÇBİR policy yok (INSERT dahil — sertleştirme 20260705170000) — doğrudan PostgREST
+  yazımı/okuması tamamen kapalı. Okuma yalnızca service-role (/platform).
+- Yazım yalnız `submit_feedback(p_category, p_message, p_page_path)` SECURITY DEFINER RPC'siyle:
+  `school_id`/`user_id`/`role` DB'de `auth.uid()`+profiles'tan türetilir (role spoof imkânsız),
+  3/60sn rate limit DB'de uygulanır (`'rate_limited'` döner). Gerekçe: INSERT policy'li ilk
+  tasarımda doğrudan insert action'daki rate-limit'i atlayıp role alanını sahteleyebiliyordu
+  (dış review bulgusu).
 
 ### Akış — mevcut action genişletilir
 
@@ -108,8 +114,8 @@ katmanı açmaya değmez (tek insert + mail). Değişiklikler:
 2. Önce DB'ye INSERT (kullanıcı session client'ı) — asıl kalıcı kayıt bu.
 3. Mail **best-effort**'a düşer: DB kaydı başarılıysa mail patlasa da `ok: true` döner
    (mevcut davranışta mail tek kanal olduğu için hata dönüyordu; artık değil).
-4. Basit rate-limit: aynı kullanıcıdan son 1 dakikada 3+ kayıt varsa reddet — SELECT policy
-   olmadığından bu kontrol service client ile yapılır (tek count sorgusu). Sınır 1 değil 3:
+4. Basit rate-limit: aynı kullanıcıdan son 1 dakikada 3+ kayıt varsa reddet — kontrol
+   `submit_feedback` RPC'sinin İÇİNDE (DB'de) uygulanır, bypass edilemez. Sınır 1 değil 3:
    spam'i yine keser, e2e tekrar koşularını ve art arda meşru gönderimleri kırmaz.
 
 ### UI — mevcut FeedbackButton'a küçük ek

@@ -3528,6 +3528,10 @@ export type Database = {
           teacher_id: string
         }[]
       }
+      submit_feedback: {
+        Args: { p_category: string; p_message: string; p_page_path: string }
+        Returns: string
+      }
       soft_delete: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
