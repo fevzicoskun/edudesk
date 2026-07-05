@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPublicPath } from '@/src/infrastructure/http/routeAccess'
+import { RATE_LIMIT_EXEMPT_API_PATHS, isPublicPath } from '@/src/infrastructure/http/routeAccess'
 
 describe('isPublicPath', () => {
   it("public route'lara (auth gerektirmeyen) izin verir", () => {
@@ -35,5 +35,15 @@ describe('isPublicPath', () => {
   it("prefix tuzağına düşmez (/loginxyz public değil)", () => {
     expect(isPublicPath('/loginediyorum')).toBe(false)
     expect(isPublicPath('/veliler')).toBe(false)
+  })
+})
+
+describe('usage endpoint erişim kuralları', () => {
+  it('/api/usage genel api rate-limit bucket\'ından muaf', () => {
+    expect(RATE_LIMIT_EXEMPT_API_PATHS.has('/api/usage')).toBe(true)
+  })
+
+  it('/api/usage public path DEĞİL (auth redirect uygulanır)', () => {
+    expect(isPublicPath('/api/usage')).toBe(false)
   })
 })

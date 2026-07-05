@@ -54,6 +54,7 @@ async function getRedisLimiter(): Promise<RateLimiter | null> {
       'onboarding:': new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5,  '60 s'), prefix: 'rl:onboarding' }),
       'login:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '60 s'), prefix: 'rl:login' }),
       'reset:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3,  '60 s'), prefix: 'rl:reset' }),
+      'usage:':      new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(120, '60 s'), prefix: 'rl:usage' }),
       'api:':        new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s'), prefix: 'rl:api' }),
       'public:':     new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(60, '60 s'), prefix: 'rl:public' }),
     }
@@ -144,6 +145,12 @@ export async function proxy(request: NextRequest) {
   if (pathname === '/sifremi-unuttum' && request.method === 'POST') {
     if (!(await checkRateLimit(`reset:${ip}`, 3, 60_000, true))) {
       return new NextResponse('Çok fazla istek. Lütfen bekleyin.', { status: 429 })
+    }
+  }
+  // Usage beacon — okul IP'sinden 120/dk; kritik veri değil, Redis yoksa geçir (fail-open)
+  if (pathname === '/api/usage') {
+    if (!(await checkRateLimit(`usage:${ip}`, 120, 60_000, false))) {
+      return new NextResponse(null, { status: 429 })
     }
   }
   if (pathname.startsWith('/api/') && !RATE_LIMIT_EXEMPT_API_PATHS.has(pathname)) {

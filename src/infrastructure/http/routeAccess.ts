@@ -29,4 +29,5 @@ export const RATE_LIMIT_EXEMPT_API_PATHS = new Set([
   '/api/ready',
   '/api/live',
   '/api/inngest',
+  '/api/usage',  // beacon — okul IP'sinden yoğun gelir; genel 30/dk api bucket'ını boğmasın (kendi limiter'ı var)
 ])
