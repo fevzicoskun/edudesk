@@ -86,6 +86,13 @@ export const veliContactSchema = z.object({
   veli_ad:      z.string().max(120).optional().or(z.literal('')),
 })
 
+// Geri bildirim formu — kategori seti components/FeedbackButton.tsx ile birebir
+export const feedbackSchema = z.object({
+  category:  z.enum(['oneri', 'istek', 'sikayet']),
+  message:   z.string().trim().min(3).max(2000),
+  page_path: z.string().max(200).optional().default(''),
+})
+
 export function parseFormData<T>(schema: z.ZodSchema<T>, formData: FormData): T {
   const raw = Object.fromEntries(formData.entries())
   return schema.parse(raw)

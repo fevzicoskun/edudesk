@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { usePathname } from 'next/navigation'
 import { sendFeedback } from '@/app/actions/feedback'
 
 type Category = 'oneri' | 'istek' | 'sikayet'
@@ -18,6 +19,7 @@ export default function FeedbackButton() {
   const [errorMsg, setErrorMsg] = useState('')
   const [isPending, setIsPending] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const pathname = usePathname()
 
   function handleOpen() { setOpen(true); setStatus('idle') }
   function handleClose() { setOpen(false); setStatus('idle'); setCategory('oneri'); formRef.current?.reset() }
@@ -93,6 +95,7 @@ export default function FeedbackButton() {
                     ))}
                   </div>
                   <input type="hidden" name="category" value={category} />
+                  <input type="hidden" name="page_path" value={pathname ?? ''} />
 
                   {/* Mesaj */}
                   <textarea
