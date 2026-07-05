@@ -3,6 +3,8 @@ import { Badge } from '@/components/ui/badge'
 import NewSchoolModal from './NewSchoolModal'
 import StatusToggle from './StatusToggle'
 import CancelSchoolButton from './CancelSchoolButton'
+import UsageSummary from './UsageSummary'
+import FeedbackList from './FeedbackList'
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active:    { label: 'Aktif',     variant: 'default' },
@@ -96,6 +98,9 @@ export default async function PlatformPage() {
           )
         })}
       </div>
+
+      <UsageSummary />
+      <FeedbackList />
     </div>
   )
 }
