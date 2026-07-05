@@ -72,6 +72,10 @@ do update set count = usage_daily.count + 1;
 
 ## Bölüm 2: Geri Bildirim
 
+> **Keşif (plan aşamasında):** Feedback UI ve action ZATEN VAR — `components/FeedbackButton.tsx`
+> Sidebar'da "Öneri & Destek" olarak yaşıyor, `app/actions/feedback.ts` Resend ile `FEEDBACK_TO`'ya
+> mail atıyor. Bu bölümün işi sıfırdan kurulum değil, **mevcut akışa kalıcı DB kaydı eklemek**.
+
 ### Veri modeli — `feedback`
 
 ```sql
@@ -81,33 +85,37 @@ create table feedback (
   user_id    uuid        not null,
   role       text        not null,
   page_path  text        not null,          -- gönderildiği sayfa, otomatik
-  category   text        not null check (category in ('oneri', 'hata', 'diger')),
+  category   text        not null check (category in ('oneri', 'istek', 'sikayet')),
   message    text        not null check (char_length(message) between 3 and 2000),
   created_at timestamptz not null default now()
 );
 ```
 
+- Kategoriler mevcut UI'daki gibi: **öneri / istek / şikayet** (spec'in ilk taslağındaki
+  oneri/hata/diger yerine — hata bildirimi zaten `error-report.ts` ile otomatik gidiyor).
 - RLS: SELECT/UPDATE/DELETE policy yok — okuma yalnızca service-role (/platform).
-- Yazım server action üzerinden service-role ile değil, kullanıcı session'ı ile yapılır; INSERT policy: `user_id = auth.uid()` ve `school_id` kullanıcının profilindeki okulla eşleşmeli.
-- Dikkat: SELECT policy olmadığı için repo `.insert()` sonrası `.select()` ÇAĞIRMAZ (returning satır okuyamaz, sorgu patlar). Insert dönüşü kullanılmaz.
+- Yazım kullanıcı session'ı ile; INSERT policy: `user_id = auth.uid()` ve
+  `school_id = current_school_id()` (mevcut helper).
+- Dikkat: SELECT policy olmadığı için `.insert()` sonrası `.select()` ÇAĞRILMAZ (returning satır
+  okuyamaz, sorgu patlar). Insert dönüşü kullanılmaz.
 
-### Akış — mevcut katman deseni
+### Akış — mevcut action genişletilir
 
-```
-app/actions/feedback.ts → src/domains/feedback/services/FeedbackService.ts
-                        → src/domains/feedback/repositories/FeedbackRepo.ts
-```
+Mevcut `app/actions/feedback.ts` düz bir action (domain katmanı yok) — öyle kalır, domain
+katmanı açmaya değmez (tek insert + mail). Değişiklikler:
 
-- Action: Zod doğrulama (kategori enum + mesaj uzunluğu) → service.
-- Service: `getAbility()` ile kimlik/okul; her rol feedback gönderebilir (permission kontrolü yok — bilinçli, herkese açık).
-- Basit rate-limit: aynı kullanıcıdan son 1 dakikada kayıt varsa reddet (repo'da tek sorgu) — spam koruması.
+1. Zod doğrulama eklenir (kategori enum + mesaj 3–2000 + page_path max 200).
+2. Önce DB'ye INSERT (kullanıcı session client'ı) — asıl kalıcı kayıt bu.
+3. Mail **best-effort**'a düşer: DB kaydı başarılıysa mail patlasa da `ok: true` döner
+   (mevcut davranışta mail tek kanal olduğu için hata dönüyordu; artık değil).
+4. Basit rate-limit: aynı kullanıcıdan son 1 dakikada 3+ kayıt varsa reddet — SELECT policy
+   olmadığından bu kontrol service client ile yapılır (tek count sorgusu). Sınır 1 değil 3:
+   spam'i yine keser, e2e tekrar koşularını ve art arda meşru gönderimleri kırmaz.
 
-### UI — FeedbackButton
+### UI — mevcut FeedbackButton'a küçük ek
 
-- `app/(dashboard)/FeedbackButton.tsx` (client): layout'a eklenen sabit küçük buton (mevcut PushTesvikSeridi gibi layout seviyesinde).
-- Tıklanınca dialog: kategori seçimi (öneri / hata / diğer) + çok satırlı metin + gönder.
-- `page_path` `usePathname()`'den otomatik dolar, kullanıcı görmez.
-- Başarıda kısa teşekkür mesajı, dialog kapanır.
+- `components/FeedbackButton.tsx`'e `usePathname()` ile hidden `page_path` input'u eklenir.
+- Kategori/dialog/başarı akışı olduğu gibi kalır.
 
 ## Bölüm 3: /platform Görünümü
 
@@ -128,4 +136,4 @@ Aggregate sorguları SQL'de yapılır (service client + `usage_daily` üzerinde 
 ## Riskler
 
 - `SECURITY DEFINER` fonksiyonda `search_path` sabitlenir (`set search_path = public`) — advisor bulgusu önleme.
-- `/api/usage` auth'suz çağrılara 204 döner; public route listesine (proxy.ts kontrolü varsa) eklenmesi gerekir — plan aşamasında doğrulanacak.
+- `/api/usage` public route listesine EKLENMEZ (plan kararı): auth'suz beacon proxy'de /login redirect'i yer, `sendBeacon` sonucu umursamadığı için istemci etkilenmez. Rate limit: genel 30/dk api bucket'ından muaf tutulur (okul IP'sinden yoğun beacon diğer API çağrılarını boğmasın), kendi `usage:` limiter'ı 120/dk fail-open çalışır.
