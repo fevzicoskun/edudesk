@@ -54,7 +54,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const studentIds = classes.flatMap(c => c.students.map(s => s.id))
   const todayISO   = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
 
-  const [absenceCounts, todayRes, takenTodayRes] = await Promise.all([
+  const [absenceCountsRes, todayRes, takenTodayRes] = await Promise.all([
     studentIds.length > 0
       ? AttendanceRepository.getAbsenceCounts(supabase, profile.school_id, schoolYearStart())
       : Promise.resolve({} as Record<string, AbsenceCount>),
@@ -75,6 +75,9 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
           .in('class_id', classes.map(c => c.id))
       : Promise.resolve({ data: [] as { class_id: string }[] }),
   ])
+
+  // Yardımcı rozet verisi: RPC hatasında (null) boş sayıma düş — yoklama girişi engellenmesin.
+  const absenceCounts = absenceCountsRes ?? {}
 
   const takenTodayIds = [...new Set((takenTodayRes.data ?? []).map(r => r.class_id))]
 

@@ -314,6 +314,22 @@ describe('fetchRows("excel_notlar")', () => {
 
     await expect(fetchRows('excel_notlar', {}, SCHOOL_ID)).rejects.toThrow('Notlar sorgu hatası')
   })
+
+  it('notesTeacherId verilirse (scope own) sorgu teacher_id ile filtrelenir', async () => {
+    const qMock = makeQueryMock({ data: [], error: null })
+    vi.mocked(createServiceClient).mockReturnValue({ from: vi.fn(() => qMock) } as never)
+
+    await fetchRows('excel_notlar', {}, SCHOOL_ID, { notesTeacherId: USER_ID })
+    expect(qMock.eq).toHaveBeenCalledWith('teacher_id', USER_ID)
+  })
+
+  it('notesTeacherId verilmezse (scope school) teacher_id filtresi uygulanmaz', async () => {
+    const qMock = makeQueryMock({ data: [], error: null })
+    vi.mocked(createServiceClient).mockReturnValue({ from: vi.fn(() => qMock) } as never)
+
+    await fetchRows('excel_notlar', {}, SCHOOL_ID)
+    expect(qMock.eq).not.toHaveBeenCalledWith('teacher_id', expect.anything())
+  })
 })
 
 // ─────────────────────────────────────────────────────────────

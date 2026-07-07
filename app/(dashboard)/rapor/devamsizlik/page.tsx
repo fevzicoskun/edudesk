@@ -40,6 +40,19 @@ export default async function DevamsizlikRaporuPage() {
       .is('deleted_at', null),
   ])
 
+  // Fail-open koruması: RPC hatasında boş rapor GÖSTERİLMEZ — riskler gizlenmesin.
+  if (counts === null) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4">Devamsızlık Raporu</h1>
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center dark:bg-red-950 dark:border-red-800">
+          <p className="text-red-700 dark:text-red-400 text-sm font-medium">Devamsızlık verileri şu anda yüklenemiyor.</p>
+          <p className="text-red-500 dark:text-red-400 text-xs mt-1">Lütfen sayfayı yenileyin; sorun sürerse yöneticinize bildirin.</p>
+        </div>
+      </div>
+    )
+  }
+
   const students = (studentRows ?? []).map(s => ({
     id:        s.id,
     fullName:  s.full_name,

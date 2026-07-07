@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
-import { format } from '@/src/shared/date'
+import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 import OgretmenDashboard     from './OgretmenDashboard'
 import MudurOgretmenAktivite from './MudurOgretmenAktivite'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
@@ -50,7 +50,7 @@ async function MudurWidgets({ fullName, classCount }: { fullName: string; classC
           {getGreeting(fullName)}
         </h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {format(new Date(), 'd MMMM yyyy, EEEE')}
+          {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 
@@ -81,7 +81,7 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
       <div>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{getGreeting(fullName)}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {format(new Date(), 'd MMMM yyyy, EEEE')}
+          {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
         </p>
       </div>
 

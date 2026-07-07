@@ -30,9 +30,10 @@ export default async function CizelgePage() {
   }))
 
   const allStudentIds = classes.flatMap(c => c.students.map(s => s.id))
-  const yearCounts = allStudentIds.length > 0
+  // RPC hatasında (null) boş sayıma düş — çizelge yardımcı rozet, sayfa engellenmesin.
+  const yearCounts = (allStudentIds.length > 0
     ? await AttendanceRepository.getAbsenceCounts(supabase, profile.school_id, schoolYearStart())
-    : {}
+    : {}) ?? {}
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">

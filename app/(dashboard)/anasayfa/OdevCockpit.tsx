@@ -1,13 +1,14 @@
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
+import { todayLocalISO } from '@/src/shared/date'
 
 export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
   const user = await getCurrentUser()
   if (!user) return null
 
   const supabase = await createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocalISO()
 
   const overdueRes = await supabase
     .from('homeworks')

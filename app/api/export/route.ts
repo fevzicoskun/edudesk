@@ -45,8 +45,12 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // notes/read scope 'own' olan roller (öğretmen) yalnız kendi notlarını export edebilir;
+  // XlsxBuilder service-client (RLS bypass) kullandığı için scope burada uygulanır.
+  const notesTeacherId = ability.scope(P.NOTES.READ) === 'school' ? undefined : ability.userId
+
   try {
-    const rows = await fetchRows(jobType, params, schoolId)
+    const rows = await fetchRows(jobType, params, schoolId, { notesTeacherId })
     const buffer = await buildXlsx(rows, jobType)
     const date = new Date().toISOString().split('T')[0]
     const filename = `${jobType}-${date}.xlsx`

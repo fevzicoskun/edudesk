@@ -63,6 +63,12 @@ export async function generateBulkVeliTokens(classId: string): Promise<BulkToken
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile?.school_id) redirect('/login')
 
+  // UI bu modalı yalnız müdür/MY'ye gösterir — action da aynı kısıtı uygular
+  // (tekil generateVeliToken tüm öğretmenlere açık kalır, tasarım gereği).
+  if (!['mudur', 'mudur_yardimcisi'].includes(profile.role)) {
+    throw new Error('Toplu veli linki yalnızca yöneticiler tarafından oluşturulabilir')
+  }
+
   const supabase = await createClient()
   const { data: students } = await supabase
     .from('students')

@@ -10,13 +10,14 @@ export const AttendanceRepository = {
    * Yıl boyu devamsızlık sayımını sunucu-taraflı (RPC ile) çeker — satırların
    * tamamını çekip JS'te toplamak yerine. countAbsences ile birebir aynı semantik
    * (hafta sonu hariç, absent=1/late=0.5/excused=1). RLS okul kapsamını korur.
-   * Hata durumunda eski davranışı korur: boş map döner (sayfa boş rapor gösterir).
+   * Hata durumunda null döner — çağıran "veri yok" ile "sorgu başarısız"ı ayırt
+   * etmek ZORUNDA (rapor sayfası hata gösterir, yardımcı rozetler boş sayıma düşer).
    */
-  async getAbsenceCounts(db: Client, schoolId: string, since: string): Promise<Record<string, AbsenceCount>> {
+  async getAbsenceCounts(db: Client, schoolId: string, since: string): Promise<Record<string, AbsenceCount> | null> {
     const { data, error } = await db.rpc('count_absences_by_student', { p_school_id: schoolId, p_since: since })
     if (error) {
       logger.error({ event: 'db_query_failed', query: 'count_absences_by_student', school_id: schoolId, message: error.message }, 'Devamsızlık sayım RPC başarısız')
-      return {}
+      return null
     }
     const out: Record<string, AbsenceCount> = {}
     for (const r of data ?? []) {

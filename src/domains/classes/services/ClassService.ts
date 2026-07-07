@@ -23,23 +23,34 @@ export const ClassService = {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.DELETE)
 
-    try {
-      await ClassRepository.softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
-      await ClassRepository.softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
-      await ClassRepository.softDeleteClass(classId, ability.schoolId, ability.userId)
-    } catch (err) {
-      logger.error({ classId, schoolId: ability.schoolId, err }, 'deleteClass cascade hata — kısmi silme durumu olabilir')
-      throw err
+    // Supabase throw etmez, { error } döner — her cascade adımı kontrol edilir,
+    // ilk hatada durulur ki tutarsızlık derinleşmesin.
+    const fail = (step: string, message: string): never => {
+      logger.error({ classId, schoolId: ability.schoolId, step, message }, 'deleteClass cascade hata — kısmi silme durumu olabilir')
+      throw new Error(`Sınıf silinemedi (${step}): ${message}`)
     }
+    const hw = await ClassRepository.softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
+    if (hw.error) fail('homeworks', hw.error.message)
+    const st = await ClassRepository.softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
+    if (st.error) fail('students', st.error.message)
+    const cl = await ClassRepository.softDeleteClass(classId, ability.schoolId, ability.userId)
+    if (cl.error) fail('class', cl.error.message)
   },
 
   async restoreClass(classId: string) {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.CREATE)
 
-    await ClassRepository.restoreClass(classId, ability.schoolId)
-    await ClassRepository.restoreStudentsByClass(classId, ability.schoolId)
-    await ClassRepository.restoreHomeworksByClass(classId, ability.schoolId)
+    const fail = (step: string, message: string): never => {
+      logger.error({ classId, schoolId: ability.schoolId, step, message }, 'restoreClass cascade hata — kısmi geri yükleme durumu olabilir')
+      throw new Error(`Sınıf geri yüklenemedi (${step}): ${message}`)
+    }
+    const cl = await ClassRepository.restoreClass(classId, ability.schoolId)
+    if (cl.error) fail('class', cl.error.message)
+    const st = await ClassRepository.restoreStudentsByClass(classId, ability.schoolId)
+    if (st.error) fail('students', st.error.message)
+    const hw = await ClassRepository.restoreHomeworksByClass(classId, ability.schoolId)
+    if (hw.error) fail('homeworks', hw.error.message)
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {
@@ -49,10 +60,11 @@ export const ClassService = {
     const { data: cls } = await ClassRepository.findClassInSchool(classId, ability.schoolId)
     if (!cls) throw new Error('Sınıf bulunamadı')
 
-    await ClassRepository.insertStudent({
+    const { error } = await ClassRepository.insertStudent({
       class_id: classId, full_name: data.full_name,
       student_number: data.student_number ?? null, school_id: ability.schoolId,
     })
+    if (error) throw new Error(error.message)
   },
 
   async addStudentsBulk(classId: string, students: { full_name: string; student_number: string | null }[]) {
@@ -68,21 +80,24 @@ export const ClassService = {
       .map(s => ({ full_name: s.full_name.trim().slice(0, 120), student_number: s.student_number?.slice(0, 20) ?? null }))
       .filter(s => s.full_name.length >= 2)
 
-    await ClassRepository.insertStudents(valid.map(s => ({ class_id: classId, school_id: ability.schoolId, ...s })))
+    const { error } = await ClassRepository.insertStudents(valid.map(s => ({ class_id: classId, school_id: ability.schoolId, ...s })))
+    if (error) throw new Error(error.message)
   },
 
   async deleteStudent(studentId: string) {
     const ability = await requireAbility()
     guard(ability, P.STUDENTS.DELETE)
 
-    await ClassRepository.softDeleteStudent(studentId, ability.schoolId, ability.userId)
+    const { error } = await ClassRepository.softDeleteStudent(studentId, ability.schoolId, ability.userId)
+    if (error) throw new Error(error.message)
   },
 
   async restoreStudent(studentId: string) {
     const ability = await requireAbility()
     guard(ability, P.STUDENTS.CREATE)
 
-    await ClassRepository.restoreStudent(studentId, ability.schoolId)
+    const { error } = await ClassRepository.restoreStudent(studentId, ability.schoolId)
+    if (error) throw new Error(error.message)
   },
 
   async addStudentNote(studentId: string, data: { body: string }) {
@@ -92,14 +107,16 @@ export const ClassService = {
     const { data: student } = await ClassRepository.findStudentInSchool(studentId, ability.schoolId)
     if (!student) throw new Error('Öğrenci bulunamadı')
 
-    await ClassRepository.insertStudentNote({ teacher_id: ability.userId, student_id: studentId, body: data.body, school_id: ability.schoolId })
+    const { error } = await ClassRepository.insertStudentNote({ teacher_id: ability.userId, student_id: studentId, body: data.body, school_id: ability.schoolId })
+    if (error) throw new Error(error.message)
   },
 
   async deleteStudentNote(noteId: string) {
     const ability = await requireAbility()
     guard(ability, P.NOTES.DELETE)
 
-    await ClassRepository.deleteStudentNote(noteId, ability.userId, ability.schoolId)
+    const { error } = await ClassRepository.deleteStudentNote(noteId, ability.userId, ability.schoolId)
+    if (error) throw new Error(error.message)
   },
 
   async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }): Promise<{ error?: string }> {

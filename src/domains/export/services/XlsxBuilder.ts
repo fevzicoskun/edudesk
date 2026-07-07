@@ -15,11 +15,12 @@ const JOB_LABELS: Record<JobType, string> = {
 export async function fetchRows(
   jobType: JobType,
   params: Record<string, string>,
-  schoolId: string
+  schoolId: string,
+  opts?: { notesTeacherId?: string }
 ): Promise<Record<string, unknown>[]> {
   switch (jobType) {
     case 'excel_odevler':           return fetchOdevler(params, schoolId)
-    case 'excel_notlar':            return fetchNotlar(schoolId)
+    case 'excel_notlar':            return fetchNotlar(schoolId, opts?.notesTeacherId)
     case 'excel_sinif_ogrencileri': return fetchSinifOgrencileri(params, schoolId)
     case 'excel_not_defteri':       throw new Error('Not Defteri export route handler üzerinden çağrılmalı')
     case 'excel_yoklama':           return fetchYoklama(params, schoolId)
@@ -175,14 +176,18 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
   })
 }
 
-async function fetchNotlar(schoolId: string) {
+async function fetchNotlar(schoolId: string, teacherId?: string) {
   const db = createServiceClient()
-  const { data, error } = await db
+  // teacherId verilirse (notes/read scope 'own') yalnız o öğretmenin notları —
+  // service client RLS'i bypass ettiği için scope burada elle uygulanır.
+  let q = db
     .from('student_notes')
     .select('body, created_at, students(full_name, student_number, deleted_at, classes(name))')
     .eq('school_id', schoolId)
     .order('created_at', { ascending: true })
     .limit(5000)
+  if (teacherId) q = q.eq('teacher_id', teacherId)
+  const { data, error } = await q
   if (error) throw new Error(`Notlar sorgu hatası: ${error.message}`)
 
   type StudentRow = { full_name: string; student_number: string | null; deleted_at: string | null; classes: { name: string } | null }

@@ -69,7 +69,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('kısa isimler (< 2 karakter) filtrelenir', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'X',   student_number: null },
@@ -83,7 +83,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('sadece boşluktan oluşan isimler filtrelenir', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: '   ', student_number: null },
@@ -95,7 +95,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('isimler trim edilir', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: '  Mehmet Ali  ', student_number: null },
@@ -107,7 +107,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('isimler 120 karaktere kırpılır', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'A'.repeat(150), student_number: null },
@@ -119,7 +119,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('student_number 20 karaktere kırpılır', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'Ali Veli', student_number: '1'.repeat(30) },
@@ -131,7 +131,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('null student_number null olarak korunur', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'Ali Veli', student_number: null },
@@ -143,7 +143,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('her satıra school_id ve class_id eklenir', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'Test Öğrenci', student_number: '001' },
@@ -156,7 +156,7 @@ describe('ClassService.addStudentsBulk()', () => {
 
   it('100 öğrenci (sınır) kabul edilir', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     const students = Array.from({ length: 100 }, (_, i) => ({
       full_name: `Öğrenci ${i + 1}`, student_number: null,
@@ -224,15 +224,24 @@ describe('ClassService.deleteClass()', () => {
 
   it('yetkili kullanıcı cascade soft-delete yapar', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassDelete() as never)
-    vi.mocked(softDeleteHomeworksByClass).mockResolvedValue(undefined as never)
-    vi.mocked(softDeleteStudentsByClass).mockResolvedValue(undefined as never)
-    vi.mocked(softDeleteClass).mockResolvedValue(undefined as never)
+    vi.mocked(softDeleteHomeworksByClass).mockResolvedValue({ error: null } as never)
+    vi.mocked(softDeleteStudentsByClass).mockResolvedValue({ error: null } as never)
+    vi.mocked(softDeleteClass).mockResolvedValue({ error: null } as never)
 
     await ClassService.deleteClass(CLASS_ID)
 
     expect(softDeleteHomeworksByClass).toHaveBeenCalledOnce()
     expect(softDeleteStudentsByClass).toHaveBeenCalledOnce()
     expect(softDeleteClass).toHaveBeenCalledOnce()
+  })
+
+  it('cascade adımı { error } dönerse → throw, sonraki adımlar çağrılmaz (sessiz yutma yok)', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassDelete() as never)
+    vi.mocked(softDeleteHomeworksByClass).mockResolvedValue({ error: { message: 'RLS reddi' } } as never)
+
+    await expect(ClassService.deleteClass(CLASS_ID)).rejects.toThrow('Sınıf silinemedi')
+    expect(softDeleteStudentsByClass).not.toHaveBeenCalled()
+    expect(softDeleteClass).not.toHaveBeenCalled()
   })
 })
 
@@ -260,7 +269,7 @@ describe('ClassService.addStudent()', () => {
   it('geçerli sınıf + yetki → insertStudent çağrılır', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithStudentCreate() as never)
     vi.mocked(findClassInSchool).mockResolvedValue({ data: { id: CLASS_ID }, error: null } as never)
-    vi.mocked(insertStudent).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudent).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudent(CLASS_ID, { full_name: 'Ali Veli', student_number: '123' })
 

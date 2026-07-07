@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { CalendarService } from '@/src/domains/calendar/services/CalendarService'
 import { parseAyParam, buildMonthCells, toDateStr } from '@/src/domains/calendar/calendarMath'
+import { parseISO, todayLocalISO } from '@/src/shared/date'
 import TakvimClient from './TakvimClient'
 
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,8 @@ export default async function TakvimPage({ searchParams }: { searchParams: Promi
   if (!profile?.school_id) redirect('/login')
 
   const { ay } = await searchParams
-  const today = new Date()
+  // İstanbul günü — UTC sunucuda gece 00:00–03:00 arası ay/gün kayması olmasın
+  const today = parseISO(todayLocalISO())
   const { year, month } = parseAyParam(ay, today)
 
   const { days, canManage } = await CalendarService.getMonth(year, month)

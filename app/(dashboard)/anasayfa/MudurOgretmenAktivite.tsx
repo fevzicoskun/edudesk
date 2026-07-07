@@ -1,15 +1,15 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import { subDays } from '@/src/shared/date'
+import { format, parseISO, subDays, todayLocalISO, todayWeekdayTR } from '@/src/shared/date'
 import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 function getWeekRange(): { from: string; label: string; isWeekend: boolean } {
-  const now = new Date()
-  const dow = now.getDay()
-  const isWeekend = dow === 0 || dow === 6
-  const daysBack = isWeekend ? (dow === 6 ? 6 : 7) : 7
-  const from = subDays(now, daysBack).toISOString().split('T')[0]
+  // İstanbul günü/haftagünü (1=Pzt..7=Paz) — UTC sunucuda gece kayması olmasın
+  const wd = todayWeekdayTR()
+  const isWeekend = wd === 6 || wd === 7
+  const daysBack = isWeekend ? (wd === 6 ? 6 : 7) : 7
+  const from = format(subDays(parseISO(todayLocalISO()), daysBack), 'yyyy-MM-dd')
   return { from, label: isWeekend ? 'Geçen hafta' : 'Son 7 gün', isWeekend }
 }
 

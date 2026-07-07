@@ -27,21 +27,22 @@ vi.mock('@/src/shared/authorization/server', () => ({
 
 vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
   ClassRepository: {
-    softDeleteClass:            vi.fn(),
-    restoreClass:               vi.fn(),
-    softDeleteHomeworksByClass: vi.fn(),
-    restoreHomeworksByClass:    vi.fn(),
-    softDeleteStudentsByClass:  vi.fn(),
-    restoreStudentsByClass:     vi.fn(),
+    // Yazma metodları PostgrestResponse ({ error }) döndürür; servis artık error kontrol ediyor
+    softDeleteClass:            vi.fn().mockResolvedValue({ error: null }),
+    restoreClass:               vi.fn().mockResolvedValue({ error: null }),
+    softDeleteHomeworksByClass: vi.fn().mockResolvedValue({ error: null }),
+    restoreHomeworksByClass:    vi.fn().mockResolvedValue({ error: null }),
+    softDeleteStudentsByClass:  vi.fn().mockResolvedValue({ error: null }),
+    restoreStudentsByClass:     vi.fn().mockResolvedValue({ error: null }),
     findClassInSchool:          vi.fn(),
-    insertStudents:             vi.fn(),
-    insertStudent:              vi.fn(),
-    insertStudentNote:          vi.fn(),
-    softDeleteStudent:          vi.fn(),
-    restoreStudent:             vi.fn(),
-    deleteStudentNote:          vi.fn(),
+    insertStudents:             vi.fn().mockResolvedValue({ error: null }),
+    insertStudent:              vi.fn().mockResolvedValue({ error: null }),
+    insertStudentNote:          vi.fn().mockResolvedValue({ error: null }),
+    softDeleteStudent:          vi.fn().mockResolvedValue({ error: null }),
+    restoreStudent:             vi.fn().mockResolvedValue({ error: null }),
+    deleteStudentNote:          vi.fn().mockResolvedValue({ error: null }),
     findStudentInSchool:        vi.fn(),
-    insertClass:                vi.fn(),
+    insertClass:                vi.fn().mockResolvedValue({ error: null }),
   },
 }))
 

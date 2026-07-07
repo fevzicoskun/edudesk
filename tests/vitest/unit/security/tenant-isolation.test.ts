@@ -30,15 +30,16 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
 
 vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
   ClassRepository: {
+    // Yazma metodları PostgrestResponse ({ error }) döndürür; servis artık error kontrol ediyor
     findClassInSchool:          vi.fn(),
     findStudentInSchool:        vi.fn(),
-    insertStudent:              vi.fn(),
-    insertStudentNote:          vi.fn(),
-    insertClass:                vi.fn(),
-    softDeleteClass:            vi.fn(),
-    softDeleteHomeworksByClass: vi.fn(),
-    softDeleteStudentsByClass:  vi.fn(),
-    insertStudents:             vi.fn(),
+    insertStudent:              vi.fn().mockResolvedValue({ error: null }),
+    insertStudentNote:          vi.fn().mockResolvedValue({ error: null }),
+    insertClass:                vi.fn().mockResolvedValue({ error: null }),
+    softDeleteClass:            vi.fn().mockResolvedValue({ error: null }),
+    softDeleteHomeworksByClass: vi.fn().mockResolvedValue({ error: null }),
+    softDeleteStudentsByClass:  vi.fn().mockResolvedValue({ error: null }),
+    insertStudents:             vi.fn().mockResolvedValue({ error: null }),
   },
 }))
 
@@ -134,7 +135,7 @@ describe('ClassService — tenant isolation', () => {
       { resource: 'students', action: 'create', scope: 'school', source: 'role' },
     ]) as never)
     vi.mocked(findClassInSchool).mockResolvedValue({ data: { id: CLASS_ID }, error: null } as never)
-    vi.mocked(insertStudent).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudent).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudent(CLASS_ID, { full_name: 'Ali Veli', student_number: null })
 
@@ -161,7 +162,7 @@ describe('ClassService — tenant isolation', () => {
       { resource: 'students', action: 'create', scope: 'school', source: 'role' },
     ]) as never)
     vi.mocked(findClassInSchool).mockResolvedValue({ data: { id: CLASS_ID }, error: null } as never)
-    vi.mocked(insertStudents).mockResolvedValue(undefined as never)
+    vi.mocked(insertStudents).mockResolvedValue({ error: null } as never)
 
     await ClassService.addStudentsBulk(CLASS_ID, [
       { full_name: 'Ali Veli', student_number: null },

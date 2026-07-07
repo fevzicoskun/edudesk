@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ScheduleService } from '@/src/domains/schedule/services/ScheduleService'
 import { todaysLessons } from '@/src/domains/schedule/scheduleMath'
+import { todayWeekdayTR } from '@/src/shared/date'
 import { classColor } from '@/src/domains/schedule/classColor'
 
 // Öğretmen anasayfasında "bugün hangi derslerim var" şeridi. Tam haftalık ızgara
@@ -16,7 +17,8 @@ export default async function BugunProgramWidget() {
   if (slots.length === 0) return null // program kurulmamış → dashboard'ı kalabalıklaştırma
 
   const nameById = new Map(classes.map(c => [c.id, c.name]))
-  const lessons = todaysLessons(slots, periods, new Date().getDay())
+  // İstanbul haftagünü (1=Pzt..5=Cum, slot'lar hafta içi) — UTC getDay() gece kayar
+  const lessons = todaysLessons(slots, periods, todayWeekdayTR())
 
   return (
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-4">

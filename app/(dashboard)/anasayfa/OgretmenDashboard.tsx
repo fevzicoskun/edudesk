@@ -2,7 +2,7 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { addDays, format, parseISO } from '@/src/shared/date'
+import { addDays, format, parseISO, todayLocalISO } from '@/src/shared/date'
 import { isYoklamaTimeLocked } from '@/src/shared/constants/attendance'
 import { getGreeting } from '@/src/shared/utils'
 import RiskUyarilariWidget from './RiskUyarilariWidget'
@@ -91,10 +91,12 @@ export default async function OgretmenDashboard() {
     TaskService.getMyActiveTasks(),
   ])
 
-  const today = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
-  const next7Str = addDays(today, 7).toISOString().split('T')[0]
+  // İstanbul günü — UTC sunucuda gece 00:00–03:00 arası gün kayması olmasın.
+  // `today` görüntü/haftagünü içindir (İstanbul tarihinin yerel gece yarısı);
+  // saat-hassas yoklama kilidi anlık zamanı (new Date()) kullanır.
+  const todayStr = todayLocalISO()
+  const today    = parseISO(todayStr)
+  const next7Str = format(addDays(today, 7), 'yyyy-MM-dd')
 
   const greeting = getGreeting(profile.full_name ?? '')
 
@@ -119,7 +121,7 @@ export default async function OgretmenDashboard() {
 
   // Öğretmen 10:30'dan sonra bugünün yoklamasını düzenleyemez; CTA bunu yansıtmalı.
   const canEditAfterLock = ['mudur_yardimcisi', 'mudur', 'admin'].includes(profile.role)
-  const yoklamaLocked = !canEditAfterLock && isYoklamaTimeLocked(today)
+  const yoklamaLocked = !canEditAfterLock && isYoklamaTimeLocked(new Date())
 
   const todayHws = metrics.homeworks.filter(h => h.due_date === todayStr)
   const upcomingHws = metrics.homeworks
