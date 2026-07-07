@@ -59,3 +59,18 @@ Server components call Supabase directly (read-only, no mutations). Mutations go
 - `revalidatePath('/path')` after every mutation, then `redirect()` if needed
 - HTML in emails: always escape user content with an `esc()` function before interpolating
 - Supabase project ID: `agijvfrcudpzsofgfogu`
+
+## Kalıcı Dersler (pahalıya öğrenildi — tekrar etme)
+
+- **Turbopack YASAK** (dev + playwright webServer): bu projede dev sunucusunu çökertiyor. Her zaman webpack modu (`npm run dev` zaten webpack).
+- **Yeni tablo migration'ından sonra DB tiplerini regen et** — yoksa tsc kırılır (`database.types.ts`).
+- **Yeni dashboard modülünde `featureMap.ts` + `increment_usage` DB whitelist'i BİRLİKTE güncellenir** — biri eksikse beacon sessizce düşer.
+- **RLS helper SECURITY DEFINER fn'lerden anon/authenticated EXECUTE ÇEKME** — production'ı kilitler (advisor 0028/0029 bilinçli kabul).
+- **`.limit(BÜYÜK_SAYI)` + JS-tarafı gruplama = sessiz truncation bug'ı** — sayım/agregat Postgres `group by`/RPC'de yapılır.
+- **PostgREST `numeric`'i string döndürür** (bigint/float8 number) — RPC'de `::float8` cast + tüketicide `Number()`.
+- **Saat-bağımlı UI e2e'sinde `page.clock` yetmez** — kilit SSR'da gerçek saatle hesaplanır; yetki-bypass'lı rol kullan.
+- **Responsive ikiz içerik (`hidden md:block`/`md:hidden`) Playwright strict mode'u patlatır** — `{ exact: true }` / `.first()` / kapsamlı locator.
+- **`isPublicPath` `startsWith(p+'/')` mantığı**: `/api/...` route'ları üst path ile kapsanmaz, tek tek `PUBLIC_PATHS`'e eklenir (`src/infrastructure/http/routeAccess.ts`, testli).
+- **Next.js metadata route'ları (robots/sitemap/manifest) `proxy.ts` matcher'ından muaf tutulmalı** — yoksa middleware onları gölgeler (307).
+- **feedback yazımı YALNIZ `submit_feedback` RPC** — INSERT policy bilinçli yok; `.insert().select()` deseni bu tabloda YASAK (SELECT policy yok).
+- Ödeme araştırması sonucu: **Stripe Türkiye'ye kapalı** — abonelik işi iyzico veya manuel havale üzerinden planlanır.
