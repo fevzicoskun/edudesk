@@ -27,13 +27,10 @@ vi.mock('@/src/shared/authorization/server', () => ({
 
 vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
   ClassRepository: {
-    // Yazma metodları PostgrestResponse ({ error }) döndürür; servis artık error kontrol ediyor
-    softDeleteClass:            vi.fn().mockResolvedValue({ error: null }),
-    restoreClass:               vi.fn().mockResolvedValue({ error: null }),
-    softDeleteHomeworksByClass: vi.fn().mockResolvedValue({ error: null }),
-    restoreHomeworksByClass:    vi.fn().mockResolvedValue({ error: null }),
-    softDeleteStudentsByClass:  vi.fn().mockResolvedValue({ error: null }),
-    restoreStudentsByClass:     vi.fn().mockResolvedValue({ error: null }),
+    // Yazma metodları PostgrestResponse ({ error }) döndürür; servis artık error kontrol ediyor.
+    // Sınıf cascade'i tek RPC transaction'ı (soft_delete_class_cascade / restore_class_cascade).
+    softDeleteClassCascade:     vi.fn().mockResolvedValue({ error: null }),
+    restoreClassCascade:        vi.fn().mockResolvedValue({ error: null }),
     findClassInSchool:          vi.fn(),
     insertStudents:             vi.fn().mockResolvedValue({ error: null }),
     insertStudent:              vi.fn().mockResolvedValue({ error: null }),
@@ -88,7 +85,7 @@ beforeEach(() => { vi.clearAllMocks() })
 
 // ─────────────────────────────────────────────────────────────
 describe('ClassService.deleteClass() — cascade soft delete', () => {
-  it('sınıf silinince homeworks ve students önce soft-delete edilir', async () => {
+  it('sınıf silme cascade RPC ile yapılır (homeworks+students+class tek transaction)', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility([
       ...OGRETMEN_PERMS,
       { resource: 'classes', action: 'delete', scope: 'school', source: 'role' },
@@ -96,38 +93,31 @@ describe('ClassService.deleteClass() — cascade soft delete', () => {
 
     await ClassService.deleteClass(CLASS_ID)
 
-    // Cascade sırası: önce bağımlı kayıtlar, sonra sınıf
-    expect(ClassRepository.softDeleteHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-    expect(ClassRepository.softDeleteStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-    expect(ClassRepository.softDeleteClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID, TEACHER_ID)
+    expect(ClassRepository.softDeleteClassCascade).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
+    expect(ClassRepository.softDeleteClassCascade).toHaveBeenCalledOnce()
   })
 
-  it('deleteClass: hard delete fonksiyonu HİÇ çağrılmaz', async () => {
+  it('deleteClass: RPC { error } dönerse throw eder (sessiz yutma yok)', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility([
       ...OGRETMEN_PERMS,
       { resource: 'classes', action: 'delete', scope: 'school', source: 'role' },
     ]) as never)
+    vi.mocked(ClassRepository.softDeleteClassCascade).mockResolvedValue({ error: { message: 'RLS reddi' } } as never)
 
-    await ClassService.deleteClass(CLASS_ID)
-
-    // Sadece soft delete çağrıları yapılmalı
-    expect(ClassRepository.softDeleteClass).toHaveBeenCalledOnce()
-    expect(ClassRepository.softDeleteHomeworksByClass).toHaveBeenCalledOnce()
-    expect(ClassRepository.softDeleteStudentsByClass).toHaveBeenCalledOnce()
+    await expect(ClassService.deleteClass(CLASS_ID)).rejects.toThrow('Sınıf silinemedi')
   })
 
   it('deleteClass: P.CLASSES.DELETE izni yoksa throw eder', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
 
     await expect(ClassService.deleteClass(CLASS_ID)).rejects.toThrow()
-    expect(ClassRepository.softDeleteClass).not.toHaveBeenCalled()
-    expect(ClassRepository.softDeleteHomeworksByClass).not.toHaveBeenCalled()
+    expect(ClassRepository.softDeleteClassCascade).not.toHaveBeenCalled()
   })
 })
 
 // ─────────────────────────────────────────────────────────────
 describe('ClassService.restoreClass() — cascade restore', () => {
-  it('sınıf geri yüklenince students ve homeworks da geri yüklenir', async () => {
+  it('sınıf geri yükleme cascade RPC ile yapılır (class+students+homeworks tek transaction)', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility([
       ...OGRETMEN_PERMS,
       { resource: 'classes', action: 'create', scope: 'school', source: 'role' },
@@ -135,16 +125,14 @@ describe('ClassService.restoreClass() — cascade restore', () => {
 
     await ClassService.restoreClass(CLASS_ID)
 
-    expect(ClassRepository.restoreClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
-    expect(ClassRepository.restoreStudentsByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
-    expect(ClassRepository.restoreHomeworksByClass).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
+    expect(ClassRepository.restoreClassCascade).toHaveBeenCalledWith(CLASS_ID, SCHOOL_ID)
   })
 
   it('restore: P.CLASSES.CREATE izni yoksa throw eder (öğretmen restore edemez)', async () => {
     vi.mocked(requireAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
 
     await expect(ClassService.restoreClass(CLASS_ID)).rejects.toThrow()
-    expect(ClassRepository.restoreClass).not.toHaveBeenCalled()
+    expect(ClassRepository.restoreClassCascade).not.toHaveBeenCalled()
   })
 })
 

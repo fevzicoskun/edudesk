@@ -23,34 +23,23 @@ export const ClassService = {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.DELETE)
 
-    // Supabase throw etmez, { error } döner — her cascade adımı kontrol edilir,
-    // ilk hatada durulur ki tutarsızlık derinleşmesin.
-    const fail = (step: string, message: string): never => {
-      logger.error({ classId, schoolId: ability.schoolId, step, message }, 'deleteClass cascade hata — kısmi silme durumu olabilir')
-      throw new Error(`Sınıf silinemedi (${step}): ${message}`)
+    // Cascade tek RPC transaction'ında — hata durumunda hiçbir şey silinmez (atomik).
+    const { error } = await ClassRepository.softDeleteClassCascade(classId, ability.schoolId)
+    if (error) {
+      logger.error({ classId, schoolId: ability.schoolId, message: error.message }, 'deleteClass cascade RPC hatası')
+      throw new Error(`Sınıf silinemedi: ${error.message}`)
     }
-    const hw = await ClassRepository.softDeleteHomeworksByClass(classId, ability.schoolId, ability.userId)
-    if (hw.error) fail('homeworks', hw.error.message)
-    const st = await ClassRepository.softDeleteStudentsByClass(classId, ability.schoolId, ability.userId)
-    if (st.error) fail('students', st.error.message)
-    const cl = await ClassRepository.softDeleteClass(classId, ability.schoolId, ability.userId)
-    if (cl.error) fail('class', cl.error.message)
   },
 
   async restoreClass(classId: string) {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.CREATE)
 
-    const fail = (step: string, message: string): never => {
-      logger.error({ classId, schoolId: ability.schoolId, step, message }, 'restoreClass cascade hata — kısmi geri yükleme durumu olabilir')
-      throw new Error(`Sınıf geri yüklenemedi (${step}): ${message}`)
+    const { error } = await ClassRepository.restoreClassCascade(classId, ability.schoolId)
+    if (error) {
+      logger.error({ classId, schoolId: ability.schoolId, message: error.message }, 'restoreClass cascade RPC hatası')
+      throw new Error(`Sınıf geri yüklenemedi: ${error.message}`)
     }
-    const cl = await ClassRepository.restoreClass(classId, ability.schoolId)
-    if (cl.error) fail('class', cl.error.message)
-    const st = await ClassRepository.restoreStudentsByClass(classId, ability.schoolId)
-    if (st.error) fail('students', st.error.message)
-    const hw = await ClassRepository.restoreHomeworksByClass(classId, ability.schoolId)
-    if (hw.error) fail('homeworks', hw.error.message)
   },
 
   async addStudent(classId: string, data: { full_name: string; student_number: string | null }) {

@@ -6,46 +6,18 @@ export const ClassRepository = {
     return supabase.from('classes').insert(data)
   },
 
-  async softDeleteClass(classId: string, schoolId: string, deletedBy: string) {
+  /** Sınıf + öğrenci + ödev soft-delete'i TEK transaction'da (RPC). Herhangi bir
+   *  adım hata verirse tamamı geri alınır — kısmi silme imkânsız. security invoker
+   *  olduğundan RLS aynen uygulanır; deleted_by fonksiyon içinde auth.uid(). */
+  async softDeleteClassCascade(classId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('classes')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-      .eq('id', classId).eq('school_id', schoolId)
+    return supabase.rpc('soft_delete_class_cascade', { p_class_id: classId, p_school_id: schoolId })
   },
 
-  async restoreClass(classId: string, schoolId: string) {
+  /** softDeleteClassCascade'in tersi — yine tek transaction. */
+  async restoreClassCascade(classId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('classes')
-      .update({ deleted_at: null, deleted_by: null })
-      .eq('id', classId).eq('school_id', schoolId)
-  },
-
-  async softDeleteHomeworksByClass(classId: string, schoolId: string, deletedBy: string) {
-    const supabase = await createClient()
-    return supabase.from('homeworks')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-      .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
-  },
-
-  async restoreHomeworksByClass(classId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase.from('homeworks')
-      .update({ deleted_at: null, deleted_by: null })
-      .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
-  },
-
-  async softDeleteStudentsByClass(classId: string, schoolId: string, deletedBy: string) {
-    const supabase = await createClient()
-    return supabase.from('students')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-      .eq('class_id', classId).eq('school_id', schoolId).is('deleted_at', null)
-  },
-
-  async restoreStudentsByClass(classId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase.from('students')
-      .update({ deleted_at: null, deleted_by: null })
-      .eq('class_id', classId).eq('school_id', schoolId).not('deleted_at', 'is', null)
+    return supabase.rpc('restore_class_cascade', { p_class_id: classId, p_school_id: schoolId })
   },
 
   async softDeleteStudent(studentId: string, schoolId: string, deletedBy: string) {

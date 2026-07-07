@@ -3516,6 +3516,10 @@ export type Database = {
         }
         Returns: string
       }
+      restore_class_cascade: {
+        Args: { p_class_id: string; p_school_id: string }
+        Returns: undefined
+      }
       restore_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -3534,6 +3538,10 @@ export type Database = {
       }
       soft_delete: {
         Args: { p_id: string; p_table: string }
+        Returns: undefined
+      }
+      soft_delete_class_cascade: {
+        Args: { p_class_id: string; p_school_id: string }
         Returns: undefined
       }
     }

@@ -36,9 +36,8 @@ vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
     insertStudent:              vi.fn().mockResolvedValue({ error: null }),
     insertStudentNote:          vi.fn().mockResolvedValue({ error: null }),
     insertClass:                vi.fn().mockResolvedValue({ error: null }),
-    softDeleteClass:            vi.fn().mockResolvedValue({ error: null }),
-    softDeleteHomeworksByClass: vi.fn().mockResolvedValue({ error: null }),
-    softDeleteStudentsByClass:  vi.fn().mockResolvedValue({ error: null }),
+    softDeleteClassCascade:     vi.fn().mockResolvedValue({ error: null }),
+    restoreClassCascade:        vi.fn().mockResolvedValue({ error: null }),
     insertStudents:             vi.fn().mockResolvedValue({ error: null }),
   },
 }))

@@ -25,7 +25,10 @@ function makeChain(result: unknown = { data: null, error: null }) {
 
 function makeClient(result: unknown = { data: null, error: null }) {
   const chain = makeChain(result)
-  const db = { from: vi.fn().mockReturnValue(chain) }
+  const db = {
+    from: vi.fn().mockReturnValue(chain),
+    rpc:  vi.fn().mockResolvedValue({ data: null, error: null }),
+  }
   return { db, chain }
 }
 
@@ -35,15 +38,15 @@ beforeEach(() => vi.clearAllMocks())
 // Güvenlik açısından en kritik testler: her mutasyon school_id'yi kontrol etmeli.
 
 describe('ClassRepository — tenant izolasyonu', () => {
-  it('softDeleteClass: class_id VE school_id filtresi uygulanır', async () => {
-    const { db, chain } = makeClient()
+  it('softDeleteClassCascade: RPC class_id VE school_id parametreleriyle çağrılır', async () => {
+    const { db } = makeClient()
     ;(createClient as ReturnType<typeof vi.fn>).mockResolvedValue(db)
 
-    await ClassRepository.softDeleteClass(CLASS_ID, SCHOOL_ID, TEACHER_ID)
+    await ClassRepository.softDeleteClassCascade(CLASS_ID, SCHOOL_ID)
 
-    expect(db.from).toHaveBeenCalledWith('classes')
-    expect(chain.eq).toHaveBeenCalledWith('id', CLASS_ID)
-    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
+    expect(db.rpc).toHaveBeenCalledWith('soft_delete_class_cascade', {
+      p_class_id: CLASS_ID, p_school_id: SCHOOL_ID,
+    })
   })
 
   it('softDeleteStudent: student_id VE school_id filtresi uygulanır', async () => {
@@ -55,30 +58,6 @@ describe('ClassRepository — tenant izolasyonu', () => {
     expect(db.from).toHaveBeenCalledWith('students')
     expect(chain.eq).toHaveBeenCalledWith('id', STUDENT_ID)
     expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
-  })
-
-  it('softDeleteHomeworksByClass: class_id VE school_id filtresi + sadece silinmemişler hedeflenir', async () => {
-    const { db, chain } = makeClient()
-    ;(createClient as ReturnType<typeof vi.fn>).mockResolvedValue(db)
-
-    await ClassRepository.softDeleteHomeworksByClass(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-
-    expect(db.from).toHaveBeenCalledWith('homeworks')
-    expect(chain.eq).toHaveBeenCalledWith('class_id', CLASS_ID)
-    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
-    expect(chain.is).toHaveBeenCalledWith('deleted_at', null)
-  })
-
-  it('softDeleteStudentsByClass: class_id VE school_id filtresi + sadece silinmemişler hedeflenir', async () => {
-    const { db, chain } = makeClient()
-    ;(createClient as ReturnType<typeof vi.fn>).mockResolvedValue(db)
-
-    await ClassRepository.softDeleteStudentsByClass(CLASS_ID, SCHOOL_ID, TEACHER_ID)
-
-    expect(db.from).toHaveBeenCalledWith('students')
-    expect(chain.eq).toHaveBeenCalledWith('class_id', CLASS_ID)
-    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
-    expect(chain.is).toHaveBeenCalledWith('deleted_at', null)
   })
 
   it('deleteStudentNote: note_id, teacher_id VE school_id üçlü filtresi uygulanır', async () => {
@@ -130,15 +109,15 @@ describe('ClassRepository — find metotları', () => {
 // Geri yükleme: deleted_at ve deleted_by null'a setlenmeli.
 
 describe('ClassRepository — geri yükleme (restore)', () => {
-  it('restoreClass: deleted_at ve deleted_by null setlenir, school_id filtresi korunur', async () => {
-    const { db, chain } = makeClient()
+  it('restoreClassCascade: RPC class_id VE school_id parametreleriyle çağrılır', async () => {
+    const { db } = makeClient()
     ;(createClient as ReturnType<typeof vi.fn>).mockResolvedValue(db)
 
-    await ClassRepository.restoreClass(CLASS_ID, SCHOOL_ID)
+    await ClassRepository.restoreClassCascade(CLASS_ID, SCHOOL_ID)
 
-    expect(chain.update).toHaveBeenCalledWith({ deleted_at: null, deleted_by: null })
-    expect(chain.eq).toHaveBeenCalledWith('id', CLASS_ID)
-    expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
+    expect(db.rpc).toHaveBeenCalledWith('restore_class_cascade', {
+      p_class_id: CLASS_ID, p_school_id: SCHOOL_ID,
+    })
   })
 
   it('restoreStudent: deleted_at ve deleted_by null setlenir, school_id filtresi korunur', async () => {
@@ -152,15 +131,6 @@ describe('ClassRepository — geri yükleme (restore)', () => {
     expect(chain.eq).toHaveBeenCalledWith('school_id', SCHOOL_ID)
   })
 
-  it('restoreHomeworksByClass: silinmiş olanları (.not deleted_at) hedefler', async () => {
-    const { db, chain } = makeClient()
-    ;(createClient as ReturnType<typeof vi.fn>).mockResolvedValue(db)
-
-    await ClassRepository.restoreHomeworksByClass(CLASS_ID, SCHOOL_ID)
-
-    expect(chain.update).toHaveBeenCalledWith({ deleted_at: null, deleted_by: null })
-    expect(chain.not).toHaveBeenCalledWith('deleted_at', 'is', null)
-  })
 })
 
 // ─── Insert — doğru tablo ve veri ─────────────────────────
