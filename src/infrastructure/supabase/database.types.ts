@@ -2136,8 +2136,60 @@ export type Database = {
           },
         ]
       }
+      school_payments: {
+        Row: {
+          amount_kurus: number
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          paid_at: string
+          period_end: string
+          period_start: string
+          school_id: string
+        }
+        Insert: {
+          amount_kurus: number
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          paid_at: string
+          period_end: string
+          period_start: string
+          school_id: string
+        }
+        Update: {
+          amount_kurus?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          paid_at?: string
+          period_end?: string
+          period_start?: string
+          school_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_payments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "school_payments_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       schools: {
         Row: {
+          access_until: string | null
           created_at: string
           id: string
           name: string
@@ -2149,6 +2201,7 @@ export type Database = {
           trial_ends_at: string | null
         }
         Insert: {
+          access_until?: string | null
           created_at?: string
           id?: string
           name: string
@@ -2160,6 +2213,7 @@ export type Database = {
           trial_ends_at?: string | null
         }
         Update: {
+          access_until?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -3308,6 +3362,7 @@ export type Database = {
       }
       tenant_metrics: {
         Row: {
+          access_until: string | null
           class_count: number | null
           created_at: string | null
           homework_count: number | null
@@ -3532,10 +3587,6 @@ export type Database = {
           teacher_id: string
         }[]
       }
-      submit_feedback: {
-        Args: { p_category: string; p_message: string; p_page_path: string }
-        Returns: string
-      }
       soft_delete: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -3543,6 +3594,10 @@ export type Database = {
       soft_delete_class_cascade: {
         Args: { p_class_id: string; p_school_id: string }
         Returns: undefined
+      }
+      submit_feedback: {
+        Args: { p_category: string; p_message: string; p_page_path: string }
+        Returns: string
       }
     }
     Enums: {
