@@ -20,6 +20,11 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
   const supabase = createServiceClient()
   const path = `${user.id}/${Date.now()}.webp`
   const bytes = new Uint8Array(await file.arrayBuffer())
+
+  // Magic-byte kontrolü: content-type'ı biz dayatıyoruz ama içeriğin gerçekten
+  // WebP olduğunu doğrula (RIFF....WEBP) — public URL'de keyfî içerik barınmasın.
+  const ascii = (i: number, s: string) => s.split('').every((c, j) => bytes[i + j] === c.charCodeAt(0))
+  if (bytes.length < 12 || !ascii(0, 'RIFF') || !ascii(8, 'WEBP')) return { error: 'Geçersiz görsel biçimi' }
   const { error: upErr } = await supabase.storage
     .from('avatars')
     .upload(path, bytes, { contentType: 'image/webp', upsert: true })

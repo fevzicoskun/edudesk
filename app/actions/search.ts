@@ -24,7 +24,9 @@ const STATIC_PAGES: SearchResult[] = [
 ]
 
 export async function globalSearch(query: string): Promise<SearchResult[]> {
-  const q = query.trim()
+  // Server action = public RPC yüzeyi; TS imzası runtime'da tip garanti etmez.
+  if (typeof query !== 'string') return []
+  const q = query.trim().slice(0, 100)
   if (q.length < 2) return []
 
   const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
