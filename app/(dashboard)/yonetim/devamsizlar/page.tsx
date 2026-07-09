@@ -33,13 +33,7 @@ export default async function DevamsizlarPage() {
       .in('status', ['absent', 'late']),
   ])
 
-  type Row = {
-    student_id: string
-    status: string
-    students: { full_name: string; student_number: string | null } | null
-    classes: { name: string; grade: number } | null
-  }
-  const rows = (todayRes.data ?? []) as unknown as Row[]
+  const rows = todayRes.data ?? []
 
   // Bu ay her öğrencinin kaç kez devamsız/geç kaldığı
   const monthlyCount = new Map<string, number>()

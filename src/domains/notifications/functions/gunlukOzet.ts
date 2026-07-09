@@ -6,7 +6,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { todaysLessons, formatOzetBody, type Period, type Slot } from '@/src/domains/schedule/scheduleMath'
-import { formatDutyReminder, type DutyInput } from '@/src/domains/schedule/dutyMath'
+import { formatDutyReminder } from '@/src/domains/schedule/dutyMath'
 import { findMissingClasses } from './yoklamaHatirlatici'
 import { formatGunlukOzet, previousSchoolDayGap, type GunlukOzetInput } from '../gunlukOzetMath'
 
@@ -65,7 +65,7 @@ export const gunlukOzetFn = inngest.createFunction(
       // Bölüm: bugünkü veli randevuları
       const meetingsByTeacher = new Map<string, { period: number; studentName: string; school_id: string }[]>()
       for (const m of meetings.data ?? []) {
-        const student = m.students as unknown as { full_name: string } | null
+        const student = m.students
         const list = meetingsByTeacher.get(m.teacher_id as string) ?? []
         list.push({ period: m.period as number, studentName: student?.full_name ?? '?', school_id: m.school_id as string })
         meetingsByTeacher.set(m.teacher_id as string, list)
@@ -74,7 +74,7 @@ export const gunlukOzetFn = inngest.createFunction(
       // Bölüm: nöbetler
       const dutiesByTeacher = new Map<string, { school_id: string; lines: string[] }>()
       for (const d of duties.data ?? []) {
-        const line = formatDutyReminder(d as unknown as DutyInput, today)
+        const line = formatDutyReminder(d, today)
         if (!line) continue
         const cur = dutiesByTeacher.get(d.teacher_id as string) ?? { school_id: d.school_id as string, lines: [] }
         cur.lines.push(line)

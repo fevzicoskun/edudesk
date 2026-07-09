@@ -21,23 +21,6 @@ export interface StudentOption {
   class_name: string | null
 }
 
-// Supabase join satır şekli (students(...) / classes(...) tek-nesne döner).
-type MeetingRow = {
-  id: string
-  student_id: string
-  meet_date: string
-  period: number
-  status: MeetingStatus
-  note: string | null
-  students: { full_name: string; class_id: string; classes: { name: string } | null } | null
-}
-
-type StudentRow = {
-  id: string
-  full_name: string
-  class_id: string
-  classes: { name: string } | null
-}
 
 export const MeetingService = {
   async getMyMeetings(): Promise<Meeting[]> {
@@ -47,14 +30,14 @@ export const MeetingService = {
       logger.error({ event: 'meeting_list_failed', userId: ability.userId, err: error.message }, 'Randevu listesi okuma hatası')
       return []
     }
-    return ((data ?? []) as unknown as MeetingRow[]).map(r => ({
+    return (data ?? []).map(r => ({
       id: r.id,
       student_id: r.student_id,
       student_name: r.students?.full_name ?? '—',
       class_name: r.students?.classes?.name ?? null,
       meet_date: r.meet_date,
       period: r.period,
-      status: r.status,
+      status: r.status as MeetingStatus,
       note: r.note,
     }))
   },
@@ -66,7 +49,7 @@ export const MeetingService = {
       logger.error({ event: 'meeting_students_failed', userId: ability.userId, err: error.message }, 'Öğrenci seçenekleri okuma hatası')
       return []
     }
-    return ((data ?? []) as unknown as StudentRow[]).map(s => ({
+    return (data ?? []).map(s => ({
       id: s.id,
       full_name: s.full_name,
       class_id: s.class_id,

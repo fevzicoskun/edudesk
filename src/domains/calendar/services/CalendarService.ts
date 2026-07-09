@@ -7,10 +7,6 @@ import { DutyRepository } from '@/src/domains/schedule/repositories/DutyReposito
 import { CalendarRepository } from '../repositories/CalendarRepository'
 import { expandDuties, groupByDay, toDateStr, type CalendarEvent, type DutyInput } from '../calendarMath'
 
-type MeetingRow = { meet_date: string; period: number; students: { full_name: string } | null }
-type HomeworkRow = { title: string; due_date: string | null; classes: { name: string } | null }
-type EventRow = { id: string; title: string; event_date: string; note: string | null }
-
 export const CalendarService = {
   async getMonth(year: number, month: number): Promise<{ days: Record<string, CalendarEvent[]>; canManage: boolean }> {
     const ability = await requireAbility()
@@ -38,7 +34,7 @@ export const CalendarService = {
     const holidays = SCHOOL_YEAR_HOLIDAYS.filter(h => h.date >= from && h.date <= to)
     const holidayDates = new Set(holidays.map(h => h.date))
 
-    const duties = ((dutiesRes.data ?? []) as unknown as DutyInput[])
+    const duties: DutyInput[] = dutiesRes.data ?? []
     const invalid = duties.filter(d => !Number.isInteger(d.day_of_week) || d.day_of_week < 1 || d.day_of_week > 5)
     if (invalid.length) {
       logger.error({ event: 'takvim_invalid_duty_dow', count: invalid.length, userId: ability.userId }, 'Aralık dışı day_of_week nöbet satırı atlandı')
@@ -46,15 +42,15 @@ export const CalendarService = {
 
     const events: CalendarEvent[] = [
       ...holidays.map(h => ({ date: h.date, type: 'tatil' as const, title: h.label })),
-      ...((eventsRes.data ?? []) as unknown as EventRow[]).map(e => ({
+      ...(eventsRes.data ?? []).map(e => ({
         date: e.event_date, type: 'etkinlik' as const, title: e.title, detail: e.note ?? undefined, id: e.id,
       })),
       ...expandDuties(duties, year, month, holidayDates),
-      ...((meetingsRes.data ?? []) as unknown as MeetingRow[]).map(m => ({
+      ...(meetingsRes.data ?? []).map(m => ({
         date: m.meet_date, type: 'randevu' as const,
         title: `Veli görüşmesi — ${m.students?.full_name ?? '—'}`, detail: `${m.period}. ders`,
       })),
-      ...((homeworksRes.data ?? []) as unknown as HomeworkRow[]).flatMap(h =>
+      ...(homeworksRes.data ?? []).flatMap(h =>
         h.due_date
           ? [{ date: h.due_date, type: 'odev' as const, title: `Ödev teslimi — ${h.title}`, detail: h.classes?.name ?? undefined }]
           : []
