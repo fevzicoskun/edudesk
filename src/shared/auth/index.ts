@@ -15,14 +15,14 @@ export const getCurrentProfile = cache(async () => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, subject, role, school_id, avatar_url, created_at, schools(name, slug)')
+    .select('id, full_name, subject, role, school_id, avatar_url, created_at, schools(name, slug, status, access_until)')
     .eq('id', user.id)
     .single()
   return data as Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'> & {
     school_id: string
     avatar_url: string | null
     created_at: string
-    schools: { name: string; slug: string } | null
+    schools: { name: string; slug: string; status: string; access_until: string | null } | null
   } | null
 })
 
