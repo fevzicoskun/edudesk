@@ -8,12 +8,25 @@ import CommandPalette from '@/components/CommandPalette'
 import { isTeachingRole } from '@/src/shared/types'
 import PushTesvikSeridi from './PushTesvikSeridi'
 import UsageTracker from './UsageTracker'
+import { subscriptionState } from '@/src/domains/billing/subscriptionMath'
+import { todayLocalISO } from '@/src/shared/date'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
   const profile = await getCurrentProfile()
+
+  // Abonelik enforcement (fail-open: schools okunamazsa geçir — tahsilat güvenlik sınırı değil).
+  if (profile?.school_id) {
+    if (!profile.schools) {
+      logger.error({ event: 'abonelik_schools_missing', userId: profile.id }, 'Profile schools join boş — enforcement atlandı')
+    } else {
+      const state = subscriptionState(profile.schools, todayLocalISO())
+      if (state === 'expired' || state === 'suspended') redirect('/abonelik-gerekli')
+    }
+  }
 
   // Müdür için onboarding kontrolü — slug artık getCurrentProfile()'dan geliyor, ekstra sorgu yok
   if (profile?.role === 'mudur' && profile.school_id) {
