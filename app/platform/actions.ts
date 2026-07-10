@@ -77,6 +77,81 @@ export async function updateSchoolStatus(schoolId: string, status: 'active' | 't
   revalidatePath('/platform')
 }
 
+const PaymentSchema = z.object({
+  school_id:    z.string().uuid(),
+  amount_tl:    z.coerce.number().positive().max(1_000_000),
+  paid_at:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  period_start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  period_end:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  note:         z.string().max(300).optional().or(z.literal('')),
+}).refine(p => p.period_end >= p.period_start, { message: 'Dönem sonu başlangıçtan önce olamaz' })
+
+export type PaymentRow = {
+  id: string
+  amount_kurus: number
+  paid_at: string
+  period_start: string
+  period_end: string
+  note: string | null
+}
+
+export async function recordPayment(
+  _prev: { error?: string; ok?: boolean } | null,
+  formData: FormData,
+): Promise<{ error?: string; ok?: boolean }> {
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return { error: 'Yetkisiz' }
+
+  const parsed = PaymentSchema.safeParse({
+    school_id:    formData.get('school_id'),
+    amount_tl:    formData.get('amount_tl'),
+    paid_at:      formData.get('paid_at'),
+    period_start: formData.get('period_start'),
+    period_end:   formData.get('period_end'),
+    note:         formData.get('note'),
+  })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz form' }
+  const p = parsed.data
+
+  const user = await getCurrentUser()
+  const { error: insErr } = await supabase.from('school_payments').insert({
+    school_id:    p.school_id,
+    amount_kurus: Math.round(p.amount_tl * 100),
+    paid_at:      p.paid_at,
+    period_start: p.period_start,
+    period_end:   p.period_end,
+    note:         p.note || null,
+    created_by:   user!.id,
+  })
+  if (insErr) return { error: `Kayıt başarısız: ${insErr.message}` }
+
+  // access_until = max(mevcut, period_end). Ayrı adım; başarısızlık admin'e görünür (v1 kabul).
+  // Not: null (süresiz) okula ödeme girilirse okul bilinçli olarak dönemli takibe geçer.
+  const { data: school } = await supabase.from('schools').select('access_until').eq('id', p.school_id).single()
+  if (!school || (school.access_until ?? '') < p.period_end) {
+    const { error: updErr } = await supabase.from('schools').update({ access_until: p.period_end }).eq('id', p.school_id)
+    if (updErr) return { error: `Ödeme kaydedildi ama erişim tarihi güncellenemedi: ${updErr.message}` }
+  }
+
+  revalidatePath('/platform')
+  return { ok: true }
+}
+
+export async function listSchoolPayments(schoolId: string): Promise<{ error?: string; payments?: PaymentRow[] }> {
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return { error: 'Yetkisiz' }
+  if (typeof schoolId !== 'string') return { error: 'Geçersiz istek' }
+
+  const { data, error } = await supabase
+    .from('school_payments')
+    .select('id, amount_kurus, paid_at, period_start, period_end, note')
+    .eq('school_id', schoolId)
+    .order('period_end', { ascending: false })
+    .limit(50)
+  if (error) return { error: error.message }
+  return { payments: data }
+}
+
 export async function cancelSchool(schoolId: string) {
   const supabase = await requirePlatformAdmin()
   if (!supabase) return { error: 'Yetkisiz' }

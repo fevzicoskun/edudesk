@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import NewSchoolModal from './NewSchoolModal'
 import StatusToggle from './StatusToggle'
 import CancelSchoolButton from './CancelSchoolButton'
+import PaymentsModal from './PaymentsModal'
 import UsageSummary from './UsageSummary'
 import FeedbackList from './FeedbackList'
 
@@ -83,12 +84,15 @@ export default async function PlatformPage() {
                     <span>{school.class_count ?? 0} sınıf</span>
                     <span>·</span>
                     <span>{school.homework_count ?? 0} ödev</span>
+                    <span>·</span>
+                    <span>{school.access_until ? `Erişim: ${school.access_until}` : 'Süresiz'}</span>
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
                 {school.status !== 'cancelled' && (
                   <>
+                    <PaymentsModal schoolId={school.school_id!} schoolName={school.school_name ?? ''} />
                     <StatusToggle schoolId={school.school_id!} current={(school.status ?? 'active') as 'active' | 'trial' | 'suspended'} />
                     <CancelSchoolButton schoolId={school.school_id!} schoolName={school.school_name ?? ''} />
                   </>
