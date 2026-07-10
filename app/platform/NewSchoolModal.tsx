@@ -5,6 +5,7 @@ import { createSchool } from './actions'
 
 export default function NewSchoolModal() {
   const [open, setOpen] = useState(false)
+  const [status, setStatus] = useState('trial')
   const [state, action, pending] = useActionState(
     async (prev: { error?: string; ok?: boolean } | null, fd: FormData) => {
       const res = await createSchool(prev, fd)
@@ -50,7 +51,7 @@ export default function NewSchoolModal() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-400 mb-1.5">Durum</label>
-                  <select name="status" defaultValue="trial"
+                  <select name="status" value={status} onChange={e => setStatus(e.target.value)}
                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500">
                     <option value="trial">Trial</option>
                     <option value="active">Active</option>
@@ -58,6 +59,14 @@ export default function NewSchoolModal() {
                   </select>
                 </div>
               </div>
+
+              {status === 'trial' && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-400 mb-1.5">Trial bitişi</label>
+                  <input name="trial_ends" type="date" required
+                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500" />
+                </div>
+              )}
 
               <div className="border-t border-slate-800 pt-4">
                 <p className="text-xs text-slate-500 mb-3">Müdür Daveti <span className="text-slate-600">(opsiyonel)</span></p>

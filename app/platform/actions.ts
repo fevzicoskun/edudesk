@@ -19,7 +19,8 @@ const NewSchoolSchema = z.object({
   status:       z.enum(['active', 'trial', 'suspended']),
   mudur_email:  z.string().email().optional().or(z.literal('')),
   mudur_name:   z.string().min(2).max(80).optional().or(z.literal('')),
-})
+  trial_ends:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal('')),
+}).refine(s => s.status !== 'trial' || !!s.trial_ends, { message: 'Trial için bitiş tarihi zorunlu' })
 
 export async function createSchool(_prev: { error?: string; ok?: boolean } | null, formData: FormData) {
   const supabase = await requirePlatformAdmin()
@@ -31,15 +32,17 @@ export async function createSchool(_prev: { error?: string; ok?: boolean } | nul
     status:      formData.get('status'),
     mudur_email: formData.get('mudur_email') || undefined,
     mudur_name:  formData.get('mudur_name') || undefined,
+    trial_ends:  formData.get('trial_ends') || undefined,
   })
   if (!parsed.success) return { error: parsed.error.issues[0].message }
 
   const { name, slug, status, mudur_email, mudur_name } = parsed.data
 
   // Okul oluştur
+  const trialEnd = status === 'trial' && parsed.data.trial_ends ? parsed.data.trial_ends : null
   const { data: school, error: schoolErr } = await supabase
     .from('schools')
-    .insert({ name, slug, status })
+    .insert({ name, slug, status, trial_ends_at: trialEnd ? `${trialEnd}T23:59:59+03:00` : null, access_until: trialEnd })
     .select('id')
     .single()
 
@@ -72,8 +75,14 @@ export async function createSchool(_prev: { error?: string; ok?: boolean } | nul
 export async function updateSchoolStatus(schoolId: string, status: 'active' | 'trial' | 'suspended') {
   const supabase = await requirePlatformAdmin()
   if (!supabase) return
-
-  await supabase.from('schools').update({ status }).eq('id', schoolId)
+  const patch: { status: string; trial_ends_at?: string; access_until?: string } = { status }
+  if (status === 'trial') {
+    // Panelde tarih sorusu yok — default 30 gün; incelik Ödemeler/SQL ile. ponytail: yeterli.
+    const end = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
+    patch.trial_ends_at = `${end}T23:59:59+03:00`
+    patch.access_until = end
+  }
+  await supabase.from('schools').update(patch).eq('id', schoolId)
   revalidatePath('/platform')
 }
 
