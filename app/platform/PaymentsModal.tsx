@@ -9,12 +9,18 @@ const tl = (kurus: number) =>
 export default function PaymentsModal({ schoolId, schoolName }: { schoolId: string; schoolName: string }) {
   const [open, setOpen] = useState(false)
   const [payments, setPayments] = useState<PaymentRow[] | null>(null)
+  const [listErr, setListErr] = useState<string | null>(null)
   const [state, formAction, pending] = useActionState(recordPayment, null)
 
+  // Dependency `state` NESNESİ: useActionState her dönüşte yeni referans üretir,
+  // ardışık başarılı kayıtlarda da liste tazelenir (state?.ok true→true tetiklemezdi).
   useEffect(() => {
     if (!open) return
-    listSchoolPayments(schoolId).then(r => setPayments(r.payments ?? []))
-  }, [open, schoolId, state?.ok])
+    listSchoolPayments(schoolId).then(r => {
+      setListErr(r.error ?? null)
+      setPayments(r.payments ?? [])
+    })
+  }, [open, schoolId, state])
 
   if (!open) {
     return (
@@ -35,7 +41,9 @@ export default function PaymentsModal({ schoolId, schoolName }: { schoolId: stri
           <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white transition-colors text-xl leading-none">×</button>
         </div>
 
-        {payments === null ? (
+        {listErr ? (
+          <p className="text-sm text-red-400 bg-red-950/50 border border-red-900 rounded-lg px-3 py-2 mb-4">Ödeme listesi alınamadı: {listErr}</p>
+        ) : payments === null ? (
           <p className="text-slate-500 text-sm">Yükleniyor…</p>
         ) : payments.length === 0 ? (
           <p className="text-slate-500 text-sm">Henüz ödeme kaydı yok.</p>
