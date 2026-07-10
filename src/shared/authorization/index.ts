@@ -37,9 +37,10 @@ export type PermissionKey = { readonly resource: Resource; readonly action: Acti
 // ─── Denial reason (audit-friendly) ──────────────────────────────────────────
 
 export type DenialCode =
-  | 'UNAUTHENTICATED'    // kullanıcı giriş yapmamış
-  | 'UNAUTHORIZED'       // izin hiç tanımlı değil
-  | 'INSUFFICIENT_SCOPE' // izin var ama 'own' scope, başkasının kaydına erişilmeye çalışılıyor
+  | 'UNAUTHENTICATED'        // kullanıcı giriş yapmamış
+  | 'UNAUTHORIZED'           // izin hiç tanımlı değil
+  | 'INSUFFICIENT_SCOPE'     // izin var ama 'own' scope, başkasının kaydına erişilmeye çalışılıyor
+  | 'SUBSCRIPTION_EXPIRED'   // okul aboneliği sona ermiş / askıya alınmış
 
 export interface DenialReason {
   readonly code:           DenialCode
@@ -88,8 +89,9 @@ export class AuthorizationError extends Error {
 }
 
 function buildMessage(d: DenialReason): string {
-  if (d.code === 'UNAUTHENTICATED')    return 'Giriş gerekli'
-  if (d.code === 'INSUFFICIENT_SCOPE') return `Yetki yetersiz: ${d.permission} — kendi kaydınız değil`
+  if (d.code === 'UNAUTHENTICATED')        return 'Giriş gerekli'
+  if (d.code === 'SUBSCRIPTION_EXPIRED')   return 'Okul aboneliği sona erdi'
+  if (d.code === 'INSUFFICIENT_SCOPE')     return `Yetki yetersiz: ${d.permission} — kendi kaydınız değil`
   return `Yetki yok: ${d.permission}`
 }
 

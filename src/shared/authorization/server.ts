@@ -8,6 +8,8 @@
 
 import { getCurrentUser, getCurrentProfile, getCurrentPermissions } from '@/src/shared/auth'
 import { securityLog } from '@/src/infrastructure/observability/logger'
+import { subscriptionState } from '@/src/domains/billing/subscriptionMath'
+import { todayLocalISO } from '@/src/shared/date'
 import { createAbility, AuthorizationError, type Ability } from './index'
 
 /**
@@ -35,5 +37,17 @@ export async function requireAbility(): Promise<Ability> {
     })
     throw new AuthorizationError({ code: 'UNAUTHENTICATED', permission: '*' })
   }
+
+  // Abonelik guard'ı: layout redirect'ini soft-nav ile atlayan oturum da yazamasın.
+  // getCurrentProfile cache()'li — aynı istekte ikinci çağrı bedava.
+  const profile = await getCurrentProfile()
+  if (profile?.schools) {
+    const state = subscriptionState(profile.schools, todayLocalISO())
+    if (state === 'expired' || state === 'suspended') {
+      securityLog('auth.subscription_expired_action', { user_id: ability.userId, school_id: ability.schoolId })
+      throw new AuthorizationError({ code: 'SUBSCRIPTION_EXPIRED', permission: '*' })
+    }
+  }
+
   return ability
 }
