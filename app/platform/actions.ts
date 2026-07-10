@@ -75,12 +75,16 @@ export async function createSchool(_prev: { error?: string; ok?: boolean } | nul
 export async function updateSchoolStatus(schoolId: string, status: 'active' | 'trial' | 'suspended') {
   const supabase = await requirePlatformAdmin()
   if (!supabase) return
-  const patch: { status: string; trial_ends_at?: string; access_until?: string } = { status }
+  const patch: { status: string; trial_ends_at?: string | null; access_until?: string } = { status }
   if (status === 'trial') {
     // Panelde tarih sorusu yok — default 30 gün; incelik Ödemeler/SQL ile. ponytail: yeterli.
     const end = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
     patch.trial_ends_at = `${end}T23:59:59+03:00`
     patch.access_until = end
+  } else {
+    // Trial'dan çıkışta bitiş etiketini temizle — /ayarlar'da "Aktif + Trial bitiş" çelişkisi kalmasın.
+    // access_until'a DOKUNMA: erişim yalnız ödeme kaydıyla uzar (spec §1).
+    patch.trial_ends_at = null
   }
   await supabase.from('schools').update(patch).eq('id', schoolId)
   revalidatePath('/platform')
