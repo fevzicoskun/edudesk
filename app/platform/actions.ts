@@ -136,7 +136,10 @@ export async function recordPayment(
     note:         p.note || null,
     created_by:   user!.id,
   })
-  if (insErr) return { error: `Kayıt başarısız: ${insErr.message}` }
+  if (insErr) {
+    if (insErr.code === '23503') return { error: 'Okul bulunamadı' }
+    return { error: `Kayıt başarısız: ${insErr.message}` }
+  }
 
   // access_until = max(mevcut, period_end). Ayrı adım; başarısızlık admin'e görünür (v1 kabul).
   // Not: null (süresiz) okula ödeme girilirse okul bilinçli olarak dönemli takibe geçer.
