@@ -26,9 +26,9 @@ export default async function SinifPlanPage({
   const weekStart = weekStartOf(hafta && ISO_RE.test(hafta) ? hafta : todayLocalISO())
   const { students, error } = await StudyPlanService.getClassWeek(classId, weekStart)
 
-  // Kaynak defterleri: öğrenci başına tek sorgu yerine tüm sınıf için toplu (RLS okul-kapsamlı).
+  // Kaynak defterleri: öğrenci başına tek sorgu yerine tüm sınıf için toplu (RLS + açık filtre, repo kuralı).
   const { data: sourceRows } = await supabase.from('student_sources').select('id, name, subject, student_id')
-    .in('student_id', students.map(s => s.id)).eq('active', true).order('name')
+    .eq('school_id', profile.school_id).in('student_id', students.map(s => s.id)).eq('active', true).order('name')
   const sourcesByStudent = new Map<string, { id: string; name: string; subject: string }[]>()
   for (const s of sourceRows ?? []) {
     const arr = sourcesByStudent.get(s.student_id)
