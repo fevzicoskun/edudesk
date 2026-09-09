@@ -54,7 +54,7 @@ export default async function SinifPlanPage({
       </div>
 
       {error ? (
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">{error}</p>
       ) : students.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-slate-400">Bu sınıfta öğrenci yok.</p>
       ) : (

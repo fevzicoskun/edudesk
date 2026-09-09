@@ -61,8 +61,25 @@ export default function HaftaEditoru({
                   <span className="flex-1 min-w-0 text-sm text-gray-900 dark:text-slate-100">
                     {it.source && <span className="font-medium">{it.source} · </span>}{it.description}
                     {showTeacher && !own && <span className="text-xs text-gray-500 dark:text-slate-400"> — {it.teacher_name}</span>}
-                    {it.note && <span className="block text-xs text-gray-500 dark:text-slate-400">Not: {it.note}</span>}
+                    {!own && it.note && <span className="block text-xs text-gray-500 dark:text-slate-400">Not: {it.note}</span>}
                   </span>
+                  {own && canWrite && (
+                    <input
+                      aria-label="Not"
+                      maxLength={300}
+                      placeholder="Not"
+                      defaultValue={it.note ?? ''}
+                      disabled={pending}
+                      className={`${input} w-40 text-xs`}
+                      onBlur={e => {
+                        const v = e.target.value.trim()
+                        if (v !== (it.note ?? '')) run(() => updatePlanItem({ id: it.id, note: v || null }))
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() }
+                      }}
+                    />
+                  )}
                   {own && canWrite ? (
                     <span className="flex items-center gap-1">
                       {CYCLE.map(s => (

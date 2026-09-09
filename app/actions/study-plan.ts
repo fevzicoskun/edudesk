@@ -3,15 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { StudyPlanService } from '@/src/domains/studyPlan/services/StudyPlanService'
-import { PLAN_STATUSES } from '@/src/domains/studyPlan/planMath'
+import { PLAN_STATUSES, weekStartOf } from '@/src/domains/studyPlan/planMath'
 import type { ActionResult } from '@/src/shared/types'
 
 const ISO = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih')
 const uuid = (msg: string) => z.string().uuid(msg)
+// Boş/whitespace string → null; alan hiç gönderilmemişse (undefined) servis "değiştirme" olarak yorumlar, o yüzden undefined korunur.
+const nullableTrimmed = (max: number, msg: string) =>
+  z.string().trim().max(max, msg).nullable().optional().transform(v => (v === undefined ? undefined : v || null))
 
 const addSchema = z.object({
   studentId:   uuid('Geçersiz öğrenci'),
-  weekStart:   ISO,
+  weekStart:   ISO.transform(weekStartOf),
   planDate:    ISO.nullish(),
   source:      z.string().trim().max(120, 'Kaynak en fazla 120 karakter').nullish(),
   description: z.string().trim().min(1, 'Talimat boş olamaz').max(300, 'Talimat en fazla 300 karakter'),
@@ -19,12 +22,12 @@ const addSchema = z.object({
 const updateSchema = z.object({
   id:          uuid('Geçersiz madde'),
   description: z.string().trim().min(1, 'Talimat boş olamaz').max(300, 'Talimat en fazla 300 karakter').optional(),
-  source:      z.string().trim().max(120, 'Kaynak en fazla 120 karakter').nullable().optional(),
+  source:      nullableTrimmed(120, 'Kaynak en fazla 120 karakter'),
   planDate:    ISO.nullable().optional(),
   status:      z.enum(PLAN_STATUSES as [string, ...string[]]).optional(),
-  note:        z.string().trim().max(300, 'Not en fazla 300 karakter').nullable().optional(),
+  note:        nullableTrimmed(300, 'Not en fazla 300 karakter'),
 })
-const copySchema   = z.object({ studentId: uuid('Geçersiz öğrenci'), weekStart: ISO })
+const copySchema   = z.object({ studentId: uuid('Geçersiz öğrenci'), weekStart: ISO.transform(weekStartOf) })
 const sourceSchema = z.object({ studentId: uuid('Geçersiz öğrenci'), name: z.string().trim().min(1, 'Kaynak adı boş olamaz').max(120, 'Kaynak adı en fazla 120 karakter') })
 const idSchema     = uuid('Geçersiz kimlik')
 
