@@ -18,14 +18,14 @@ const addSchema = z.object({
 })
 const updateSchema = z.object({
   id:          uuid('Geçersiz madde'),
-  description: z.string().trim().min(1, 'Talimat boş olamaz').max(300).optional(),
-  source:      z.string().trim().max(120).nullable().optional(),
+  description: z.string().trim().min(1, 'Talimat boş olamaz').max(300, 'Talimat en fazla 300 karakter').optional(),
+  source:      z.string().trim().max(120, 'Kaynak en fazla 120 karakter').nullable().optional(),
   planDate:    ISO.nullable().optional(),
   status:      z.enum(PLAN_STATUSES as [string, ...string[]]).optional(),
   note:        z.string().trim().max(300, 'Not en fazla 300 karakter').nullable().optional(),
 })
 const copySchema   = z.object({ studentId: uuid('Geçersiz öğrenci'), weekStart: ISO })
-const sourceSchema = z.object({ studentId: uuid('Geçersiz öğrenci'), name: z.string().trim().min(1, 'Kaynak adı boş olamaz').max(120) })
+const sourceSchema = z.object({ studentId: uuid('Geçersiz öğrenci'), name: z.string().trim().min(1, 'Kaynak adı boş olamaz').max(120, 'Kaynak adı en fazla 120 karakter') })
 const idSchema     = uuid('Geçersiz kimlik')
 
 function revalidate() {
