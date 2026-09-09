@@ -44,6 +44,7 @@ export default function HaftaEditoru({
   return (
     <div className="space-y-3" data-hafta-editoru>
       {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {pending && <p aria-live="polite" className="text-xs text-gray-500 dark:text-slate-400">Kaydediliyor…</p>}
 
       {items.length === 0 && (
         <p className="text-sm text-gray-500 dark:text-slate-400">Bu hafta için plan yok.</p>
