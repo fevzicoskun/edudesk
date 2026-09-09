@@ -53,7 +53,7 @@ create index if not exists idx_student_sources_student on public.student_sources
 
 -- updated_at bakımı
 create or replace function public.spi_touch_updated_at() returns trigger
-language plpgsql as $$ begin new.updated_at = now(); return new; end $$;
+language plpgsql set search_path = '' as $$ begin new.updated_at = now(); return new; end $$;
 drop trigger if exists trg_spi_touch on public.study_plan_items;
 create trigger trg_spi_touch before update on public.study_plan_items
   for each row execute function public.spi_touch_updated_at();
