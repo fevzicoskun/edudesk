@@ -64,10 +64,10 @@ export const UserService = {
     if (target.role === 'mudur') return { error: 'Müdür silinemez' }
 
     const canManage = ability.can(P.USERS.MANAGE)
-    // Müdür → sadece mudur_yardimcisi silebilir
+    // Müdür → altındaki tüm rolleri silebilir (mudur_yardimcisi dahil)
     // MY → sadece ogretmen/zumre_baskani silebilir
     const deletableRoles: Role[] = canManage
-      ? ['mudur_yardimcisi']
+      ? ['mudur_yardimcisi', 'ogretmen', 'zumre_baskani']
       : ['ogretmen', 'zumre_baskani']
     if (!deletableRoles.includes(target.role as Role)) {
       return { error: 'Bu kullanıcıyı silemezsiniz' }

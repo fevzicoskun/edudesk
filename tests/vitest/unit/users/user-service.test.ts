@@ -131,9 +131,23 @@ describe('UserService.deleteUser()', () => {
     expect((await UserService.deleteUser(TARGET_ID)).error).toBe('Müdür silinemez')
   })
 
-  it('müdür (canManage) sadece mudur_yardimcisi silebilir, ogretmen silemez', async () => {
+  it('müdür (canManage) ogretmen silebilir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
     vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.deleteAuthUser).mockResolvedValue({ error: null } as never)
+    expect((await UserService.deleteUser(TARGET_ID)).error).toBeUndefined()
+  })
+
+  it('müdür (canManage) zumre_baskani silebilir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('zumre_baskani') as never)
+    vi.mocked(UserRepository.deleteAuthUser).mockResolvedValue({ error: null } as never)
+    expect((await UserService.deleteUser(TARGET_ID)).error).toBeUndefined()
+  })
+
+  it('MY mudur_yardimcisi silemez', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('mudur_yardimcisi') as never)
     expect((await UserService.deleteUser(TARGET_ID)).error).toBe('Bu kullanıcıyı silemezsiniz')
   })
 
