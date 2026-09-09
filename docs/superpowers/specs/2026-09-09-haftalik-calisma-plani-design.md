@@ -93,7 +93,7 @@ daima ability'den. Hata: repo hatası logger + Türkçe mesaj, fail-closed.
    bölümü — bu hafta, derse göre gruplu; kendi maddeleri düzenlenebilir, diğer
    öğretmenlerinki salt-okunur (öğretmen adı ile).
 4. Sınıf sayfasına "Haftalık Plan" linki; `loading.tsx` + `title` mevcut desen.
-5. `featureMap.ts` + DB usage whitelist'e `plan` eklenir (kullanım metriği kuralı).
+5. Kullanım metriği: rota `/siniflar/...` altında olduğundan `featureFromPath` zaten `siniflar` sayar; featureMap/whitelist değişmez.
 
 ## Test
 - Unit (vitest): planMath (hafta sınırı, yıl geçişi, Pazar→Pazartesi, kopyalama,
