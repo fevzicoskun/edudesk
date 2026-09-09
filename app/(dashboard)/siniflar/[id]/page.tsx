@@ -116,7 +116,12 @@ export default async function SinifDetayPage({
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{cls.name}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{students.length} öğrenci · {egitimYili}</p>
         </div>
-        <SinifExportButton classId={id} className={cls.name} />
+        <div className="flex items-center gap-2">
+          <Link href={`/siniflar/${id}/plan`} className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">
+            Haftalık Plan
+          </Link>
+          <SinifExportButton classId={id} className={cls.name} />
+        </div>
       </div>
 
       {canManage && (
