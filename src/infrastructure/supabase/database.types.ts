@@ -2366,6 +2366,54 @@ export type Database = {
           },
         ]
       }
+      student_sources: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          school_id: string
+          student_id: string
+          subject: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          school_id: string
+          student_id: string
+          subject: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          school_id?: string
+          student_id?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_sources_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_sources_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_risk_history: {
         Row: {
           absences: number
@@ -2502,6 +2550,69 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenant_metrics"
             referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      study_plan_items: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          note: string | null
+          plan_date: string | null
+          school_id: string
+          source: string | null
+          status: string
+          student_id: string
+          subject: string
+          teacher_id: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          note?: string | null
+          plan_date?: string | null
+          school_id: string
+          source?: string | null
+          status?: string
+          student_id: string
+          subject: string
+          teacher_id: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          note?: string | null
+          plan_date?: string | null
+          school_id?: string
+          source?: string | null
+          status?: string
+          student_id?: string
+          subject?: string
+          teacher_id?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_plan_items_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_plan_items_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
