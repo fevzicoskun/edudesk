@@ -1,6 +1,6 @@
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { P } from '@/src/shared/permissions'
+import { P, type PermissionKey } from '@/src/shared/permissions'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { StudyPlanRepository } from '../repositories/StudyPlanRepository'
 import { copyWeek, isInWeek, shiftWeek, type PlanStatus } from '../planMath'
@@ -19,7 +19,7 @@ const SINIF_DISI = 'Bu öğrencinin sınıfına atanmış değilsiniz.'
 const KENDI_DEGIL = 'Madde bulunamadı veya size ait değil.'
 
 // Yazma kapısı: izin + öğrencinin sınıfı öğretmene atanmış olmalı (müdür de dahil — v1 bilinçli).
-async function writeGate(studentId: string, perm: typeof P.HOMEWORK.CREATE) {
+async function writeGate(studentId: string, perm: PermissionKey) {
   const ability = await requireAbility()
   if (ability.cannot(perm)) return { error: YETKI_YOK } as const
   const { data, error } = await StudyPlanRepository.studentClassId(studentId, ability.schoolId)
@@ -76,6 +76,7 @@ export const StudyPlanService = {
 
   async getSources(studentId: string): Promise<StudentSource[]> {
     const ability = await requireAbility()
+    if (ability.cannot(P.HOMEWORK.READ)) return []
     const { data, error } = await StudyPlanRepository.listSources(studentId, ability.schoolId)
     if (error) {
       logger.error({ event: 'plan_sources_failed', userId: ability.userId, err: error.message }, 'Kaynak defteri hatası')
@@ -105,6 +106,14 @@ export const StudyPlanService = {
   async removeSource(id: string): Promise<{ error?: string }> {
     const ability = await requireAbility()
     if (ability.cannot(P.HOMEWORK.DELETE)) return { error: YETKI_YOK }
+    const lookup = await StudyPlanRepository.findSourceStudentId(id, ability.schoolId)
+    if (lookup.error) {
+      logger.error({ event: 'plan_source_lookup_failed', userId: ability.userId, err: lookup.error.message }, 'Kaynak sahibi okunamadı')
+      return { error: 'Kaynak silinemedi.' }
+    }
+    if (!lookup.data) return { error: 'Kaynak bulunamadı.' }
+    const gate = await writeGate(lookup.data.student_id, P.HOMEWORK.DELETE)
+    if ('error' in gate) return { error: gate.error }
     const { data, error } = await StudyPlanRepository.deactivateSource(id, ability.schoolId)
     if (error) {
       logger.error({ event: 'plan_source_delete_failed', userId: ability.userId, err: error.message }, 'Kaynak silme hatası')

@@ -64,6 +64,11 @@ export const StudyPlanRepository = {
       .eq('student_id', studentId).eq('school_id', schoolId).eq('active', true).order('name')
   },
 
+  async findSourceStudentId(id: string, schoolId: string) {
+    const db = await createClient()
+    return db.from('student_sources').select('student_id').eq('id', id).eq('school_id', schoolId).eq('active', true).maybeSingle()
+  },
+
   async insertSource(row: { school_id: string; student_id: string; subject: string; name: string; created_by: string }) {
     const db = await createClient()
     return db.from('student_sources').insert(row).select('id').single()

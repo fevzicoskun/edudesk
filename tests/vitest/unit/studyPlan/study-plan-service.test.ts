@@ -15,6 +15,7 @@ vi.mock('@/src/domains/studyPlan/repositories/StudyPlanRepository', () => ({
     listStudentItems:    vi.fn(),
     listSources:         vi.fn(),
     insertSource:        vi.fn(),
+    findSourceStudentId: vi.fn(),
     deactivateSource:    vi.fn(),
     insertItems:         vi.fn(),
     updateItem:          vi.fn(),
@@ -44,6 +45,8 @@ beforeEach(() => {
   vi.mocked(StudyPlanRepository.updateItem).mockResolvedValue({ data: [{ id: 'item-1' }], error: null } as never)
   vi.mocked(StudyPlanRepository.deleteItem).mockResolvedValue({ data: [{ id: 'item-1' }], error: null } as never)
   vi.mocked(StudyPlanRepository.listTeacherItems).mockResolvedValue({ data: [], error: null } as never)
+  vi.mocked(StudyPlanRepository.findSourceStudentId).mockResolvedValue({ data: { student_id: STUDENT }, error: null } as never)
+  vi.mocked(StudyPlanRepository.deactivateSource).mockResolvedValue({ data: [{ id: 'src-1' }], error: null } as never)
 })
 
 describe('StudyPlanService.addItem', () => {
@@ -157,5 +160,25 @@ describe('StudyPlanService okuma', () => {
     expect(await StudyPlanService.canWriteFor(STUDENT)).toBe(true)
     vi.mocked(StudyPlanRepository.isTeacherOfClass).mockResolvedValue(false)
     expect(await StudyPlanService.canWriteFor(STUDENT)).toBe(false)
+  })
+  it('getSources: homework.read izni yoksa boş döner, repo çağrılmaz', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(ability(NO_WRITE.filter(p => p.resource !== 'homework')))
+    const r = await StudyPlanService.getSources(STUDENT)
+    expect(r).toEqual([])
+    expect(StudyPlanRepository.listSources).not.toHaveBeenCalled()
+  })
+})
+
+describe('StudyPlanService.removeSource', () => {
+  it('kaynağın öğrencisi öğretmenin sınıfı dışındaysa reddeder, deactivate çağrılmaz', async () => {
+    vi.mocked(StudyPlanRepository.isTeacherOfClass).mockResolvedValue(false)
+    const r = await StudyPlanService.removeSource('src-1')
+    expect(r.error).toBe('Bu öğrencinin sınıfına atanmış değilsiniz.')
+    expect(StudyPlanRepository.deactivateSource).not.toHaveBeenCalled()
+  })
+  it('mutlu yol: sınıf ataması var → deactivate çağrılır', async () => {
+    const r = await StudyPlanService.removeSource('src-1')
+    expect(r).toEqual({})
+    expect(StudyPlanRepository.deactivateSource).toHaveBeenCalledWith('src-1', SCHOOL)
   })
 })
