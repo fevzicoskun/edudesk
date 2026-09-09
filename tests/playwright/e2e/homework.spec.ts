@@ -34,7 +34,8 @@ test.describe('Ödev listesi', () => {
     const newLink = page.locator('a[href*="/odevler/yeni"]').first()
     if (await newLink.count() > 0) {
       await newLink.click()
-      await expect(page).toHaveURL(/\/odevler\/yeni/)
+      // Dev'de /odevler/yeni soğuk derlemesi 5 sn'lik default'u aşabiliyor
+      await expect(page).toHaveURL(/\/odevler\/yeni/, { timeout: 15_000 })
     }
   })
 })

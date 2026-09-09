@@ -37,8 +37,12 @@ test.describe('Yoklama segmented control', () => {
     const firstRow = page.locator('ul li').first()
     const absent = firstRow.getByRole('button', { name: 'Devamsız' })
     await expect(absent).toBeVisible({ timeout: 10_000 })
-    await absent.click()
-    await expect(absent).toHaveClass(/ring-2/)
+    // Hydration yarışı: buton SSR'da görünür ama React handler sonradan bağlanır —
+    // erken tıklama sessizce kaybolur. Tıkla+doğrula birlikte yeniden denenir.
+    await expect(async () => {
+      await absent.click()
+      await expect(absent).toHaveClass(/ring-2/, { timeout: 1_000 })
+    }).toPass({ timeout: 15_000 })
     const present = firstRow.getByRole('button', { name: 'Mevcut' })
     await present.click()
     await expect(present).toHaveClass(/ring-2/)

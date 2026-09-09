@@ -30,8 +30,11 @@ test.describe('Takvim — müdür', () => {
     await page.goto('/takvim?ay=2026-09')
     await expect(page.getByRole('heading', { name: 'Takvim' })).toBeVisible({ timeout: 10_000 })
 
-    await page.getByRole('button', { name: '+ Etkinlik' }).click()
-    await expect(page.getByRole('heading', { name: 'Yeni Etkinlik' })).toBeVisible()
+    // Hydration yarışı: erken tıklama ölü butona gider — tıkla+doğrula yeniden denenir
+    await expect(async () => {
+      await page.getByRole('button', { name: '+ Etkinlik' }).click()
+      await expect(page.getByRole('heading', { name: 'Yeni Etkinlik' })).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 15_000 })
     const title = `E2E Gezi ${Date.now()}`
     await page.getByLabel('Başlık').fill(title)
     await page.getByLabel('Tarih').fill('2026-09-15')
