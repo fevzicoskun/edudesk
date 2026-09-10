@@ -4,5 +4,8 @@
     "deploymentEnabled": {
       "feat/*": false
     }
-  }
+  },
+  "regions": [
+    "fra1"
+  ]
 }
