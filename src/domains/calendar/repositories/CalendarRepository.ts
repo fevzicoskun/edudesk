@@ -1,28 +1,34 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import type { Database } from '@/src/infrastructure/supabase/database.types'
 
-// Not: createClient (kullanıcı oturumu) → RLS uygular:
-//   parent_meetings: öğretmen kendi satırları, müdür/MY okul geneli (20260704120000).
-//   school_events: SELECT okul üyeleri, yazma müdür/MY (20260705120000).
+export type CalendarDb = SupabaseClient<Database>
+
+// Okuma metodları client'ı parametre alır:
+//   /takvim → createClient (kullanıcı oturumu, RLS uygular):
+//     parent_meetings: öğretmen kendi satırları, müdür/MY okul geneli (20260704120000).
+//     school_events: SELECT okul üyeleri, yazma müdür/MY (20260705120000).
+//   ICS beslemesi → service-role (RLS YOK). Bu yüzden kapsam RLS'e bırakılmaz: her sorgu school_id ile,
+//   yönetici değilse teacherId ile AÇIKÇA filtrelenir (RLS ile aynı sonuç; çerezli yolda savunma katmanı).
 export const CalendarRepository = {
-  // Ay aralığındaki randevular (iptal hariç). Görünürlüğü RLS kırpar.
-  async listMeetings(schoolId: string, from: string, to: string) {
-    const db = await createClient()
-    return db
+  // Aralıktaki randevular (iptal hariç). teacherId verilirse yalnız o öğretmenin.
+  async listMeetings(db: CalendarDb, schoolId: string, from: string, to: string, teacherId: string | null) {
+    let q = db
       .from('parent_meetings')
-      .select('meet_date, period, students(full_name)')
+      .select('id, meet_date, period, students(full_name)')
       .eq('school_id', schoolId)
       .gte('meet_date', from)
       .lte('meet_date', to)
       .neq('status', 'iptal')
-      .limit(1000)
+    if (teacherId) q = q.eq('teacher_id', teacherId)
+    return q.limit(1000)
   },
 
-  // Ay aralığında teslim tarihi olan ödevler. teacherId verilirse yalnız o öğretmenin.
-  async listHomeworks(schoolId: string, from: string, to: string, teacherId: string | null) {
-    const db = await createClient()
+  // Aralıkta teslim tarihi olan ödevler. teacherId verilirse yalnız o öğretmenin.
+  async listHomeworks(db: CalendarDb, schoolId: string, from: string, to: string, teacherId: string | null) {
     let q = db
       .from('homeworks')
-      .select('title, due_date, classes(name)')
+      .select('id, title, due_date, classes(name)')
       .eq('school_id', schoolId)
       .eq('is_template', false)
       .is('deleted_at', null)
@@ -32,9 +38,8 @@ export const CalendarRepository = {
     return q.limit(1000)
   },
 
-  // Ay aralığındaki okul etkinlikleri.
-  async listEvents(schoolId: string, from: string, to: string) {
-    const db = await createClient()
+  // Aralıktaki okul etkinlikleri (okulun tüm üyelerine açık).
+  async listEvents(db: CalendarDb, schoolId: string, from: string, to: string) {
     return db
       .from('school_events')
       .select('id, title, event_date, note')

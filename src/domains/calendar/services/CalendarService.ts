@@ -3,9 +3,11 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { SCHOOL_YEAR_HOLIDAYS } from '@/src/shared/constants/holidays'
+import { createClient } from '@/src/infrastructure/supabase/server'
 import { DutyRepository } from '@/src/domains/schedule/repositories/DutyRepository'
-import { CalendarRepository } from '../repositories/CalendarRepository'
-import { expandDuties, groupByDay, toDateStr, type CalendarEvent, type DutyInput } from '../calendarMath'
+import { CalendarRepository, type CalendarDb } from '../repositories/CalendarRepository'
+import { expandDutiesRange, groupByDay, toDateStr, type CalendarEvent, type DutyInput } from '../calendarMath'
+import type { FeedScope } from '../feedAccess'
 
 export const CalendarService = {
   async getMonth(year: number, month: number): Promise<{ days: Record<string, CalendarEvent[]>; canManage: boolean }> {
@@ -16,18 +18,35 @@ export const CalendarService = {
     const from = toDateStr(year, month, 1)
     const to = toDateStr(year, month, new Date(year, month, 0).getDate())
 
+    const db = await createClient()
+    const events = await CalendarService.collectEvents(
+      db, { userId: ability.userId, schoolId: ability.schoolId, canManage }, from, to,
+    )
+    return { days: groupByDay(events), canManage }
+  },
+
+  /**
+   * Takvimin TEK birleştirme noktası: /takvim (çerezli RLS client) ve ICS beslemesi (service-role) bunu kullanır.
+   * Kapsam `scope`tan gelir ve her sorguya açıkça uygulanır (service-role RLS'i atlar):
+   *   yönetici (müdür/MY) → okul geneli; diğer roller → yalnız kendi nöbet/randevu/ödevi. Tatil + etkinlik herkese.
+   * [from, to] dahil, 'YYYY-MM-DD'.
+   */
+  async collectEvents(db: CalendarDb, scope: FeedScope, from: string, to: string): Promise<CalendarEvent[]> {
+    const { userId, schoolId, canManage } = scope
+    const ownerId = canManage ? null : userId
+
     const [meetingsRes, dutiesRes, homeworksRes, eventsRes] = await Promise.all([
-      CalendarRepository.listMeetings(ability.schoolId, from, to),
+      CalendarRepository.listMeetings(db, schoolId, from, to, ownerId),
       canManage
-        ? DutyRepository.listSchoolDuties(ability.schoolId)
-        : DutyRepository.listByTeacher(ability.userId, ability.schoolId),
-      CalendarRepository.listHomeworks(ability.schoolId, from, to, canManage ? null : ability.userId),
-      CalendarRepository.listEvents(ability.schoolId, from, to),
+        ? DutyRepository.listSchoolDuties(schoolId, db)
+        : DutyRepository.listByTeacher(userId, schoolId, db),
+      CalendarRepository.listHomeworks(db, schoolId, from, to, ownerId),
+      CalendarRepository.listEvents(db, schoolId, from, to),
     ])
 
     for (const [name, res] of [['randevu', meetingsRes], ['nobet', dutiesRes], ['odev', homeworksRes], ['etkinlik', eventsRes]] as const) {
       if (res.error) {
-        logger.error({ event: 'takvim_source_failed', source: name, userId: ability.userId, err: res.error.message }, 'Takvim kaynağı okunamadı')
+        logger.error({ event: 'takvim_source_failed', source: name, userId, err: res.error.message }, 'Takvim kaynağı okunamadı')
       }
     }
 
@@ -37,27 +56,25 @@ export const CalendarService = {
     const duties: DutyInput[] = dutiesRes.data ?? []
     const invalid = duties.filter(d => !Number.isInteger(d.day_of_week) || d.day_of_week < 1 || d.day_of_week > 5)
     if (invalid.length) {
-      logger.error({ event: 'takvim_invalid_duty_dow', count: invalid.length, userId: ability.userId }, 'Aralık dışı day_of_week nöbet satırı atlandı')
+      logger.error({ event: 'takvim_invalid_duty_dow', count: invalid.length, userId }, 'Aralık dışı day_of_week nöbet satırı atlandı')
     }
 
-    const events: CalendarEvent[] = [
+    return [
       ...holidays.map(h => ({ date: h.date, type: 'tatil' as const, title: h.label })),
       ...(eventsRes.data ?? []).map(e => ({
         date: e.event_date, type: 'etkinlik' as const, title: e.title, detail: e.note ?? undefined, id: e.id,
       })),
-      ...expandDuties(duties, year, month, holidayDates),
+      ...expandDutiesRange(duties, from, to, holidayDates),
       ...(meetingsRes.data ?? []).map(m => ({
-        date: m.meet_date, type: 'randevu' as const,
+        date: m.meet_date, type: 'randevu' as const, id: m.id,
         title: `Veli görüşmesi — ${m.students?.full_name ?? '—'}`, detail: `${m.period}. ders`,
       })),
       ...(homeworksRes.data ?? []).flatMap(h =>
         h.due_date
-          ? [{ date: h.due_date, type: 'odev' as const, title: `Ödev teslimi — ${h.title}`, detail: h.classes?.name ?? undefined }]
+          ? [{ date: h.due_date, type: 'odev' as const, id: h.id, title: `Ödev teslimi — ${h.title}`, detail: h.classes?.name ?? undefined }]
           : []
       ),
     ]
-
-    return { days: groupByDay(events), canManage }
   },
 
   async createEvent(input: { title: string; eventDate: string; note: string | null }): Promise<{ error?: string; id?: string }> {
