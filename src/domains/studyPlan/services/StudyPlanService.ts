@@ -12,7 +12,7 @@ export interface PlanItem {
 }
 export interface PlanItemWithTeacher extends PlanItem { teacher_name: string }
 export interface StudentSource { id: string; name: string; subject: string }
-export interface StudentPlanRow { id: string; full_name: string; student_number: string | null; items: PlanItem[] }
+export interface StudentPlanRow { id: string; full_name: string; student_number: string | null; items: PlanItem[]; sources: StudentSource[] }
 
 const YETKI_YOK = 'Bu işlem için yetkiniz yok.'
 const SINIF_DISI = 'Bu öğrencinin sınıfına atanmış değilsiniz.'
@@ -41,17 +41,30 @@ export const StudyPlanService = {
   async getClassWeek(classId: string, weekStart: string): Promise<{ students: StudentPlanRow[]; error?: string }> {
     const ability = await requireAbility()
     if (ability.cannot(P.HOMEWORK.READ)) return { students: [], error: YETKI_YOK }
-    if (!(await StudyPlanRepository.isTeacherOfClass(ability.userId, classId))) return { students: [], error: 'Bu sınıfa atanmış değilsiniz.' }
-    const studentsRes = await StudyPlanRepository.listStudentsOfClass(classId, ability.schoolId)
+    // Her aksiyon sonrası bu yük yeniden render edilir; birbirinden bağımsız sorgular paralel
+    // (öğrenci verisi yalnız sınıf ataması doğrulanırsa döner).
+    const [isTeacher, studentsRes] = await Promise.all([
+      StudyPlanRepository.isTeacherOfClass(ability.userId, classId),
+      StudyPlanRepository.listStudentsOfClass(classId, ability.schoolId),
+    ])
+    if (!isTeacher) return { students: [], error: 'Bu sınıfa atanmış değilsiniz.' }
     if (studentsRes.error) {
       logger.error({ event: 'plan_students_failed', userId: ability.userId, err: studentsRes.error.message }, 'Plan öğrenci listesi hatası')
       return { students: [], error: 'Öğrenciler yüklenemedi.' }
     }
     const students = studentsRes.data ?? []
-    const itemsRes = await StudyPlanRepository.listTeacherItems(ability.userId, ability.schoolId, weekStart, students.map(s => s.id))
+    const ids = students.map(s => s.id)
+    const [itemsRes, sourcesRes] = await Promise.all([
+      StudyPlanRepository.listTeacherItems(ability.userId, ability.schoolId, weekStart, ids),
+      StudyPlanRepository.listSourcesForStudents(ids, ability.schoolId),
+    ])
     if (itemsRes.error) {
       logger.error({ event: 'plan_items_failed', userId: ability.userId, err: itemsRes.error.message }, 'Plan maddeleri hatası')
       return { students: [], error: 'Plan yüklenemedi.' }
+    }
+    // Kaynak defteri yardımcı veri: okunamazsa plan yine gösterilir (öneri listesi boş kalır).
+    if (sourcesRes.error) {
+      logger.error({ event: 'plan_sources_failed', userId: ability.userId, err: sourcesRes.error.message }, 'Kaynak defteri hatası')
     }
     const byStudent = new Map<string, PlanItem[]>()
     for (const raw of itemsRes.data ?? []) {
@@ -59,7 +72,12 @@ export const StudyPlanService = {
       const arr = byStudent.get(it.student_id)
       if (arr) arr.push(it); else byStudent.set(it.student_id, [it])
     }
-    return { students: students.map(s => ({ ...s, items: byStudent.get(s.id) ?? [] })) }
+    const sourcesByStudent = new Map<string, StudentSource[]>()
+    for (const { student_id, ...src } of sourcesRes.data ?? []) {
+      const arr = sourcesByStudent.get(student_id)
+      if (arr) arr.push(src); else sourcesByStudent.set(student_id, [src])
+    }
+    return { students: students.map(s => ({ ...s, items: byStudent.get(s.id) ?? [], sources: sourcesByStudent.get(s.id) ?? [] })) }
   },
 
   async getStudentWeek(studentId: string, weekStart: string): Promise<{ items: PlanItemWithTeacher[]; error?: string }> {

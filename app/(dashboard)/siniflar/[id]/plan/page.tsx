@@ -20,21 +20,13 @@ export default async function SinifPlanPage({
   if (!profile?.school_id) redirect('/login')
 
   const supabase = await createClient()
-  const { data: cls } = await supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', profile.school_id).is('deleted_at', null).single()
-  if (!cls) notFound()
-
   const weekStart = weekStartOf(hafta && ISO_RE.test(hafta) ? hafta : todayLocalISO())
-  const { students, error } = await StudyPlanService.getClassWeek(classId, weekStart)
-
-  // Kaynak defterleri: öğrenci başına tek sorgu yerine tüm sınıf için toplu (RLS + açık filtre, repo kuralı).
-  const { data: sourceRows } = await supabase.from('student_sources').select('id, name, subject, student_id')
-    .eq('school_id', profile.school_id).in('student_id', students.map(s => s.id)).eq('active', true).order('name')
-  const sourcesByStudent = new Map<string, { id: string; name: string; subject: string }[]>()
-  for (const s of sourceRows ?? []) {
-    const arr = sourcesByStudent.get(s.student_id)
-    const row = { id: s.id, name: s.name, subject: s.subject }
-    if (arr) arr.push(row); else sourcesByStudent.set(s.student_id, [row])
-  }
+  // Her plan aksiyonu bu sayfayı yeniden render eder: sınıf başlığı ile plan verisi bağımsız → paralel.
+  const [{ data: cls }, { students, error }] = await Promise.all([
+    supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', profile.school_id).is('deleted_at', null).single(),
+    StudyPlanService.getClassWeek(classId, weekStart),
+  ])
+  if (!cls) notFound()
 
   const nav = (delta: number) => `/siniflar/${classId}/plan?hafta=${shiftWeek(weekStart, delta)}`
 
@@ -75,7 +67,7 @@ export default async function SinifPlanPage({
                   <HaftaEditoru
                     studentId={s.id} weekStart={weekStart}
                     items={s.items.map(i => ({ ...i, teacher_name: profile.full_name }))}
-                    sources={sourcesByStudent.get(s.id) ?? []}
+                    sources={s.sources}
                     currentUserId={profile.id} canWrite
                   />
                 </div>
