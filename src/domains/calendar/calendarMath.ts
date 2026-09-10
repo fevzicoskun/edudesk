@@ -8,7 +8,9 @@ export interface CalendarEvent {
   type: CalendarEventType
   title: string
   detail?: string
-  id?: string // yalnız etkinlik (silme için)
+  id?: string // kaynak kaydın id'si (etkinlik silme + ICS UID). Tatilde yok.
+  start?: string // 'HH:MM' İstanbul yerel — yalnız saati çözülebilen olaylarda (nöbet); yoksa tüm gün
+  end?: string
 }
 
 export interface MonthCell {
@@ -18,6 +20,7 @@ export interface MonthCell {
 }
 
 export interface DutyInput {
+  id?: string
   day_of_week: number // 1=Pazartesi .. 5=Cuma (dutyMath konvansiyonu)
   time_range: string
   location: string
@@ -94,8 +97,45 @@ export function expandDuties(
     for (const duty of valid) {
       if (duty.day_of_week !== dow) continue
       const suffix = duty.teacherName ? ` (${duty.teacherName})` : ''
-      events.push({ date, type: 'nobet', title: `Nöbet — ${duty.location}${suffix}`, detail: duty.time_range })
+      events.push({
+        date, type: 'nobet', title: `Nöbet — ${duty.location}${suffix}`, detail: duty.time_range,
+        ...(duty.id ? { id: duty.id } : {}),
+        ...(parseTimeRange(duty.time_range) ?? {}),
+      })
     }
+  }
+  return events
+}
+
+// Nöbet time_range serbest metin (validateDuty yalnız uzunluk bakar). "08:00–08:40", "8.00 - 8.40" gibi
+// çözülebilen aralık → {start,end}; aksi halde null (olay tüm gün kalır).
+const TIME_RANGE_RE = /^\s*(\d{1,2})[:.](\d{2})\s*[-–—]\s*(\d{1,2})[:.](\d{2})\s*$/
+
+export function parseTimeRange(raw: string): { start: string; end: string } | null {
+  const m = TIME_RANGE_RE.exec(raw ?? '')
+  if (!m) return null
+  const [sh, sm, eh, em] = m.slice(1).map(Number)
+  if (sh > 23 || eh > 23 || sm > 59 || em > 59) return null
+  if (eh * 60 + em <= sh * 60 + sm) return null
+  const hhmm = (h: number, min: number) => `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`
+  return { start: hhmm(sh, sm), end: hhmm(eh, em) }
+}
+
+// Ay sınırlarını aşan [from, to] aralığı (dahil) için nöbet genişletme — expandDuties'i ay ay çağırıp kırpar.
+export function expandDutiesRange(
+  duties: DutyInput[],
+  from: string,
+  to: string,
+  holidayDates: Set<string>
+): CalendarEvent[] {
+  let [year, month] = from.split('-').map(Number)
+  const [toYear, toMonth] = to.split('-').map(Number)
+  const events: CalendarEvent[] = []
+  while (year < toYear || (year === toYear && month <= toMonth)) {
+    for (const e of expandDuties(duties, year, month, holidayDates)) {
+      if (e.date >= from && e.date <= to) events.push(e)
+    }
+    if (month === 12) { year++; month = 1 } else { month++ }
   }
   return events
 }

@@ -15,6 +15,7 @@ describe('isPublicPath', () => {
     expect(isPublicPath('/api/live')).toBe(true)
     expect(isPublicPath('/api/unsubscribe')).toBe(true)
     expect(isPublicPath('/api/veli/event')).toBe(true)
+    expect(isPublicPath('/api/takvim/ics')).toBe(true) // takvim aboneliği — imzalı token doğrular
     expect(isPublicPath('/api/inngest')).toBe(true)
   })
 
@@ -30,6 +31,7 @@ describe('isPublicPath', () => {
     expect(isPublicPath('/api/export')).toBe(false)
     expect(isPublicPath('/api/push/subscribe')).toBe(false)
     expect(isPublicPath('/api/rapor/devamsizlik')).toBe(false)
+    expect(isPublicPath('/api/takvim')).toBe(false)
   })
 
   it("prefix tuzağına düşmez (/loginxyz public değil)", () => {

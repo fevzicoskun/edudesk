@@ -9,6 +9,8 @@ import BildirimTercihleri from '@/app/(dashboard)/profil/BildirimTercihleri'
 import PasswordForm from './PasswordForm'
 import KaynakYonetimi from './KaynakYonetimi'
 import OkulBilgileri from './OkulBilgileri'
+import TakvimAboneligi from './TakvimAboneligi'
+import { CalendarFeedService } from '@/src/domains/calendar/services/CalendarFeedService'
 
 export const metadata = { title: 'Ayarlar' }
 
@@ -17,8 +19,9 @@ export default async function AyarlarPage() {
   if (!user || !profile) redirect('/login')
 
   const supabase = await createClient()
-  const [prefs, sourcesRes] = await Promise.all([
+  const [prefs, feedUrl, sourcesRes] = await Promise.all([
     getNotificationPreferences(),
+    CalendarFeedService.getMyFeedUrl(),
     isTeachingRole(profile.role)
       ? supabase
           .from('homework_sources')
@@ -40,6 +43,7 @@ export default async function AyarlarPage() {
         defaultDays={prefs?.days_before ?? 1}
         defaultEmailOn={prefs?.email_on ?? true}
       />
+      <TakvimAboneligi initialUrl={feedUrl} />
       {isTeachingRole(profile.role) && (
         <KaynakYonetimi initial={sourcesRes.data ?? []} />
       )}
