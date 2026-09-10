@@ -351,3 +351,39 @@ describe('ClassService.updateVeliContact()', () => {
     expect(studentsChain.update).toHaveBeenCalled()
   })
 })
+
+describe('ClassService.createClass()', () => {
+  function makeAbilityWithClassCreate() {
+    return createAbility({
+      userId:      'mudur-unit',
+      schoolId:    SCHOOL_ID,
+      permissions: [{ resource: 'classes', action: 'create', scope: 'school', source: 'role' }],
+    })
+  }
+
+  it('başarılı insert → boş sonuç, okul kimliği ability\'den gelir', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassCreate() as never)
+    vi.mocked(insertClass).mockResolvedValue({ error: null } as never)
+
+    const result = await ClassService.createClass({ name: '9-A', grade: 9 })
+
+    expect(result).toEqual({})
+    expect(vi.mocked(insertClass).mock.calls[0][0]).toMatchObject({ name: '9-A', grade: 9, school_id: SCHOOL_ID })
+  })
+
+  it('unique_violation (23505) → anlaşılır "zaten var" hatası döner, fırlatmaz', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassCreate() as never)
+    vi.mocked(insertClass).mockResolvedValue({ error: { code: '23505', message: 'duplicate key value' } } as never)
+
+    const result = await ClassService.createClass({ name: '9-A', grade: 9 })
+
+    expect(result.error).toMatch(/zaten var/)
+  })
+
+  it('diğer DB hataları → fırlatır (altyapı hatası maskelenmez)', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(makeAbilityWithClassCreate() as never)
+    vi.mocked(insertClass).mockResolvedValue({ error: { code: '42501', message: 'permission denied' } } as never)
+
+    await expect(ClassService.createClass({ name: '9-A', grade: 9 })).rejects.toThrow(/permission denied/)
+  })
+})

@@ -11,15 +11,19 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { logger } from '@/src/infrastructure/observability/logger'
 import type { ActionResult } from '@/src/shared/types'
 
-export async function createClass(formData: FormData) {
+/** useActionState imzası: (öncekiDurum, formData). Hata satır içinde gösterilir;
+ *  fırlatılsaydı error boundary'ye düşüp yanlış alarm e-postası tetiklerdi. */
+export async function createClass(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const parsed = createClassSchema.safeParse({
     name:  formData.get('name'),
     grade: formData.get('grade'),
   })
-  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz form' }
 
-  await ClassService.createClass(parsed.data)
+  const result = await ClassService.createClass(parsed.data)
+  if (result.error) return result
   revalidatePath('/siniflar')
+  return {}
 }
 
 export async function deleteClass(classId: string) {

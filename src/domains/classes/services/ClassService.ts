@@ -6,9 +6,10 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getEgitimYili } from '@/src/shared/utils'
 import { MAX_BULK_STUDENTS } from '@/src/shared/constants/limits'
 import { logger } from '@/src/infrastructure/observability/logger'
+import type { ActionResult } from '@/src/shared/types'
 
 export const ClassService = {
-  async createClass(data: { name: string; grade: number }) {
+  async createClass(data: { name: string; grade: number }): Promise<ActionResult> {
     const ability = await requireAbility()
     guard(ability, P.CLASSES.CREATE)
 
@@ -16,7 +17,10 @@ export const ClassService = {
       name: data.name, grade: data.grade,
       academic_year: getEgitimYili(), school_id: ability.schoolId,
     })
+    // 23505 = unique_violation (classes_school_year_name_uniq) → kullanıcı hatası, altyapı değil.
+    if (error?.code === '23505') return { error: `"${data.name}" adında bir sınıf bu eğitim yılında zaten var` }
     if (error) throw new Error(error.message)
+    return {}
   },
 
   async deleteClass(classId: string) {
