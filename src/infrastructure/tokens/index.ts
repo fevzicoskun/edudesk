@@ -68,10 +68,12 @@ export async function createPublicToken(
   type: TokenType,
   id: string,
   ttlDays = 7,
-  meta?: Record<string, string>
+  meta?: Record<string, string>,
+  /** Sabit jti (ör. haftalık plan bildirimi dedup işareti). Verilmezse rastgele üretilir. */
+  fixedJti?: string
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + ttlDays * 86400
-  const jti = generateJti()
+  const jti = fixedJti ?? generateJti()
   const payload: TokenPayload = { t: type, id, jti, exp, ...(meta ? { m: meta } : {}) }
   const payloadB64 = strToB64url(JSON.stringify(payload))
   const message = `v1.${payloadB64}`
