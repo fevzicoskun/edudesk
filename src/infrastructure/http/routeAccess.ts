@@ -15,6 +15,7 @@ export const PUBLIC_PATHS = [
   '/api/live',         // Liveness probe
   '/api/unsubscribe',  // E-posta linki — HMAC imza doğrular
   '/api/veli/event',   // Veli portalı — public token doğrular (/api/ olduğu için /veli prefix'i kapsamaz)
+  '/api/takvim/ics',   // Takvim aboneliği — takvim uygulaması çerez taşımaz; imzalı kalıcı token + app_metadata anahtarı doğrular
 ]
 
 export function isPublicPath(pathname: string): boolean {
