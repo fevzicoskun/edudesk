@@ -8,6 +8,8 @@ import VeliTracker from './VeliTracker'
 import VeliOzetKart from './VeliOzetKart'
 import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
 import VeliDevamsizlikSection from './VeliDevamsizlikSection'
+import VeliPlanSection from './VeliPlanSection'
+import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
 
 type NoteRow = { id: string; body: string; created_at: string }
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
@@ -73,7 +75,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
   const schoolFilter = tokenSchoolId
   const since90 = new Date(Date.now() - 90 * 86_400_000).toISOString().split('T')[0]
-  const [studentResult, submissionsResult, notesResult, attendanceResult] = await Promise.all([
+  const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  const [studentResult, submissionsResult, notesResult, attendanceResult, planWeeks] = await Promise.all([
     studentQuery.single(),
     (() => {
       let q = supabase
@@ -103,6 +106,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q
     })(),
+    VeliPlanService.getPortalWeeks(studentId, tokenSchoolId, today),
   ])
 
   if (!studentResult.data) notFound()
@@ -122,7 +126,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const missing = submissions.filter(s => s.status === 'yapilmadi' || s.status === 'eksik').length
   const rate = total > 0 ? Math.round((done / total) * 100) : 0
 
-  const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   const upcoming = submissions.filter(s => (s.homeworks?.due_date ?? '') >= today)
   const past = submissions.filter(s => (s.homeworks?.due_date ?? '') < today)
 
@@ -184,6 +187,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         </div>
 
         <VeliOdevlerSection upcoming={upcoming} past={past} today={today} />
+        <VeliPlanSection weeks={planWeeks} />
         <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />
 
         {notes.length > 0 && (
