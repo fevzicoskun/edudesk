@@ -6,7 +6,7 @@
 
 import { logger } from '@/src/infrastructure/observability/logger'
 
-export type TokenType = 'veli' | 'yoklama' | 'tutanak'
+export type TokenType = 'veli' | 'yoklama' | 'tutanak' | 'takvim'
 
 interface TokenPayload {
   t: TokenType
@@ -58,10 +58,18 @@ function b64urlToStr(s: string): string {
   return new TextDecoder().decode(b64urlToUint8(s))
 }
 
-function generateJti(): string {
+/** 128-bit rastgele, URL-güvenli kimlik (jti / abonelik anahtarı). */
+export function generateJti(): string {
   const bytes = new Uint8Array(16)
   crypto.getRandomValues(bytes)
   return abToB64url(bytes.buffer)
+}
+
+async function signPayload(payload: TokenPayload): Promise<string> {
+  const message = `v1.${strToB64url(JSON.stringify(payload))}`
+  const key = await importKey(getSecret())
+  const sigAb = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message))
+  return `${message}.${abToB64url(sigAb)}`
 }
 
 export async function createPublicToken(
@@ -71,15 +79,24 @@ export async function createPublicToken(
   meta?: Record<string, string>
 ): Promise<string> {
   const exp = Math.floor(Date.now() / 1000) + ttlDays * 86400
-  const jti = generateJti()
-  const payload: TokenPayload = { t: type, id, jti, exp, ...(meta ? { m: meta } : {}) }
-  const payloadB64 = strToB64url(JSON.stringify(payload))
-  const message = `v1.${payloadB64}`
+  return signPayload({ t: type, id, jti: generateJti(), exp, ...(meta ? { m: meta } : {}) })
+}
 
-  const key = await importKey(getSecret())
-  const sigAb = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message))
+/** Kalıcı token'ların sabit son kullanma anı (2100-01-01 UTC). */
+export const STABLE_TOKEN_EXP = 4102444800
 
-  return `${message}.${abToB64url(sigAb)}`
+/**
+ * Deterministik kalıcı token: aynı (type, id, jti, meta) → aynı token (HMAC deterministik) → URL sabit kalır.
+ * jti, çağıranın sunucu tarafında sakladığı rastgele anahtardır; iptal = anahtarı değiştirmek.
+ * revoked_tokens KULLANILMAZ: o tablo pg_cron ile 30 günde temizleniyor (7 günlük token'lar için tasarlandı).
+ */
+export async function createStableToken(
+  type: TokenType,
+  id: string,
+  jti: string,
+  meta: Record<string, string>
+): Promise<string> {
+  return signPayload({ t: type, id, jti, exp: STABLE_TOKEN_EXP, m: meta })
 }
 
 export function extractJti(token: string): string | null {
