@@ -14,6 +14,7 @@ vi.mock('@/src/domains/studyPlan/repositories/StudyPlanRepository', () => ({
     listTeacherItems:    vi.fn(),
     listStudentItems:    vi.fn(),
     listSources:         vi.fn(),
+    listSourcesForStudents: vi.fn(),
     insertSource:        vi.fn(),
     findSourceStudentId: vi.fn(),
     deactivateSource:    vi.fn(),
@@ -45,6 +46,7 @@ beforeEach(() => {
   vi.mocked(StudyPlanRepository.updateItem).mockResolvedValue({ data: [{ id: 'item-1' }], error: null } as never)
   vi.mocked(StudyPlanRepository.deleteItem).mockResolvedValue({ data: [{ id: 'item-1' }], error: null } as never)
   vi.mocked(StudyPlanRepository.listTeacherItems).mockResolvedValue({ data: [], error: null } as never)
+  vi.mocked(StudyPlanRepository.listSourcesForStudents).mockResolvedValue({ data: [], error: null } as never)
   vi.mocked(StudyPlanRepository.findSourceStudentId).mockResolvedValue({ data: { student_id: STUDENT }, error: null } as never)
   vi.mocked(StudyPlanRepository.deactivateSource).mockResolvedValue({ data: [{ id: 'src-1' }], error: null } as never)
 })
@@ -148,6 +150,23 @@ describe('StudyPlanService okuma', () => {
     const r2 = await StudyPlanService.getClassWeek(CLASS, '2026-09-07')
     expect(r2.students).toEqual([])
     expect(r2.error).toBe('Bu sınıfa atanmış değilsiniz.')
+  })
+  it('getClassWeek: sorgular seri beklemeden (paralel) başlar; kaynak defteri öğrenciye eşlenir', async () => {
+    // Regresyon: her plan aksiyonu bu yükü yeniden render ediyor; seri await zinciri round-trip başına gecikme ekliyordu.
+    let releaseTeacher!: (v: boolean) => void
+    vi.mocked(StudyPlanRepository.isTeacherOfClass).mockReturnValue(new Promise<boolean>(r => { releaseTeacher = r }))
+    vi.mocked(StudyPlanRepository.listStudentsOfClass).mockResolvedValue({ data: [{ id: 's1', full_name: 'Ali', student_number: '1' }], error: null } as never)
+    let releaseItems!: (v: unknown) => void
+    vi.mocked(StudyPlanRepository.listTeacherItems).mockReturnValue(new Promise(r => { releaseItems = r }) as never)
+    vi.mocked(StudyPlanRepository.listSourcesForStudents).mockResolvedValue({ data: [{ id: 'k1', name: 'Apotemi', subject: 'Matematik', student_id: 's1' }], error: null } as never)
+
+    const pending = StudyPlanService.getClassWeek(CLASS, '2026-09-07')
+    await vi.waitFor(() => expect(StudyPlanRepository.listStudentsOfClass).toHaveBeenCalled())
+    releaseTeacher(true)
+    await vi.waitFor(() => expect(StudyPlanRepository.listSourcesForStudents).toHaveBeenCalledWith(['s1'], SCHOOL))
+    releaseItems({ data: [], error: null })
+    const r = await pending
+    expect(r.students[0].sources).toEqual([{ id: 'k1', name: 'Apotemi', subject: 'Matematik' }])
   })
   it('getStudentWeek: profiles join → teacher_name', async () => {
     vi.mocked(StudyPlanRepository.listStudentItems).mockResolvedValue({ data: [

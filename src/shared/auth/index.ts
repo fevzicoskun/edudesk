@@ -1,15 +1,35 @@
 import { cache } from 'react'
+import { cookies } from 'next/headers'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Profile } from '@/src/shared/types'
 import type { Resource, Action, GrantedPermission } from '@/src/domains/rbac/types'
 
-export const getCurrentUser = cache(async () => {
+/**
+ * İstek-kapsamlı memo. React.cache yalnız RSC render'ında memoize eder; server action'da no-op'tur
+ * (ölçüm: tek requireAbility() → 5× auth.getUser + 3× profiles round-trip). İkinci katman, Next'in
+ * istek başına tekil cookie store nesnesine WeakMap ile bağlanır: istekler arası paylaşım olamaz,
+ * action sonrası render da yeni store (senkronlanmış cookie'ler) ile taze okur.
+ */
+function perRequest<T>(fn: () => Promise<T>): () => Promise<T> {
+  const memo = new WeakMap<object, Promise<T>>()
+  return cache(async () => {
+    const store = await cookies()
+    let p = memo.get(store)
+    if (!p) {
+      p = fn()
+      memo.set(store, p)
+    }
+    return p
+  })
+}
+
+export const getCurrentUser = perRequest(async () => {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   return user
 })
 
-export const getCurrentProfile = cache(async () => {
+export const getCurrentProfile = perRequest(async () => {
   const user = await getCurrentUser()
   if (!user) return null
   const supabase = await createClient()
@@ -32,7 +52,7 @@ export async function requireSchoolId(): Promise<string> {
   return profile.school_id
 }
 
-export const getCurrentPermissions = cache(async (): Promise<GrantedPermission[]> => {
+export const getCurrentPermissions = perRequest(async (): Promise<GrantedPermission[]> => {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
   if (!user || !profile?.school_id) return []
   const { PermissionService } = await import('@/src/domains/rbac/services/PermissionService')
