@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
+import { createClient } from '@supabase/supabase-js'
 
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 test.describe('Sınıf listesi', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
@@ -82,5 +84,33 @@ test.describe('Müdür — sınıf oluşturma', () => {
     await expect(nameInput).toBeVisible({ timeout: 5_000 })
     await nameInput.fill('PW-TEST-9X')
     await expect(nameInput).toHaveValue('PW-TEST-9X')
+  })
+
+  // Seed sınıfı eski eğitim yılında kaldığı için onunla çakıştırılamaz → benzersiz adla
+  // iki kez gönder; ilki oluşur, ikincisi unique index'e (lower(name)) takılır. afterAll temizler.
+  test('aynı adla ikinci sınıf → form altında "zaten var" hatası', async ({ page }) => {
+    const ad = `PW-DUP-${Date.now()}`
+    await page.goto('/siniflar')
+    await expect(page).not.toHaveURL(/login/)
+
+    const gonder = async (isim: string) => {
+      await page.locator('input[name="name"]').first().fill(isim)
+      await page.locator('input[name="grade"]').first().fill('9')
+      await page.getByRole('button', { name: 'Ekle' }).click()
+    }
+    // Hydration yarışı: SSR-görünür buton henüz tıklanabilir olmayabilir → toPass ile tekrar dene.
+    await expect(async () => {
+      await gonder(ad)
+      await expect(page.getByText(ad, { exact: true }).first()).toBeVisible({ timeout: 4_000 })
+    }).toPass({ timeout: 25_000 })
+
+    await expect(async () => {
+      await gonder(ad.toLowerCase())
+      await expect(page.getByRole('alert').filter({ hasText: 'zaten var' })).toBeVisible({ timeout: 4_000 })
+    }).toPass({ timeout: 20_000 })
+  })
+
+  test.afterAll(async () => {
+    await db.from('classes').delete().ilike('name', 'PW-DUP-%')
   })
 })
