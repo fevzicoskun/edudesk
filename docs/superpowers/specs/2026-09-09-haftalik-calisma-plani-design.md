@@ -102,3 +102,40 @@ daima ability'den. Hata: repo hatası logger + Türkçe mesaj, fail-closed.
 - E2E (1 spec `plan.spec.ts`): öğretmen sınıf plan sayfasında madde ekler →
   Öğrenci 360'ta görünür → durum yapıldı → tabloda çubuk güncellenir.
 - Kanıt: tsc temiz, unit sayısı, build exit 0, 75+1 e2e.
+
+## v2 (2026-09-10) — veli portalı + veli bildirimi
+
+### Yapılan
+- **Veli portalı** `app/veli/[token]/VeliPlanSection.tsx`: "Haftalık Çalışma Planı" bölümü —
+  bu hafta + (varsa) gelecek hafta; gün, konu/miktar, ders · kaynak, durum rozeti (v1 sözlüğü), not.
+  Plan yoksa bölüm render edilmez. Salt-okunur. Ödevler ile Devamsızlık arasında.
+- **Veli bildirimi** Inngest cron `plan-veli-notifier` (`TZ=Europe/Istanbul 0 18 * * 0`): gelecek hafta
+  planı olan her öğrencinin velisine **tek** e-posta — "Haftaya çalışma planı hazır" + 7 gün geçerli veli
+  portal linki + abonelikten çıkma linki. Öğe düzeyinde bildirim yok.
+- Saf mantık `src/domains/studyPlan/veliPlanMath.ts` (hafta penceresi, gruplama, hedef seçimi, e-posta
+  metni); servis `VeliPlanService`; service-role `VeliPlanRepository` (yalnız token-doğrulanmış portal ve cron).
+
+### Kararlar
+- **Migration yok, RLS değişikliği yok.** Portal zaten token doğrulama + service-role client ile okuyor;
+  `studentId`/`school_id` token payload'ından gelir.
+- **Kanal:** mevcut veli kanalı e-posta (`students.veli_email`, `veli_email_opt_out = false`, silinmemiş öğrenci).
+- **İdempotensi:** mevcut notifier'lar gibi DB kaydıyla, ama yeni tablo yerine her e-postanın zaten gerektirdiği
+  link kaydı kullanıldı. Link jti'si deterministik `plan-<hafta>-<öğrenci>`; kayıt `veli_tokens`'a gönderimden
+  **önce** yazılır, sonraki çalıştırma `jti like 'plan-<hafta>-%'` olan öğrencileri atlar. Kayıt yazılamazsa
+  e-posta gönderilmez (listelenmeyen/iptal edilemeyen link dağıtılmaz). Sonuç at-most-once —
+  `odevSonrasiVeliNotifier` ile aynı: başarısız e-posta loglanır, tekrar denenmez. Hedef hafta step içinde
+  memoize (retry gece yarısını geçse de aynı hafta), `concurrency: 1`.
+- `veli_tokens.issued_by` = öğrencinin o haftadaki ilk maddesinin öğretmeni → link Öğrenci 360'ta aktif link
+  olarak görünür; o öğretmen ve yöneticiler "Devre Dışı Bırak" ile iptal edebilir.
+- `createPublicToken(type, id, ttl, meta, fixedJti?)` — geriye uyumlu opsiyonel parametre.
+- Cron okuması 1000'lik sayfalarla (tüm okulların haftalık maddeleri PostgREST max-rows'a takılmasın).
+- **Kullanım metriği:** portal dashboard `UsageTracker` kapsamında değil → `featureMap`/whitelist değişmez.
+  `VeliTracker` page_view'ı zaten sayar; bölüme `data-veli-section` konmadı çünkü `veli_portal_events.section`
+  CHECK'i yalnız `odevler/devamsizlik/notlar` kabul ediyor (eklemek migration ister — YAGNI).
+- Bilinen sınır: toplu gönderim diğer notifier'lar gibi `Promise.allSettled`; çok büyük okulda Resend hız
+  limiti 429 üretebilir (ortak risk, ayrı iş).
+
+### Test
+- Unit: `veliPlanMath` 21, `VeliPlanService` 11, `public-token` (sabit jti) 2.
+- E2E: `tests/playwright/e2e/plan-veli.spec.ts` — öğretmen madde ekler → Öğrenci 360'ta veli linki üretir →
+  oturumsuz bağlamda portalda "Haftalık Çalışma Planı / Bu Hafta" altında madde "Planlandı" görünür → temizlik.
