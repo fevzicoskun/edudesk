@@ -3,7 +3,7 @@
 export const FEATURES = [
   'anasayfa', 'yoklama', 'odevler', 'takvim', 'ders-programi',
   'randevular', 'rapor', 'siniflar', 'kullanicilar', 'nobet',
-  'yonetim', 'ayarlar', 'profil',
+  'yonetim', 'ayarlar', 'profil', 'mentorluk',
 ] as const
 
 export type Feature = (typeof FEATURES)[number]
