@@ -2,11 +2,70 @@ import { MentorRepository } from '../repositories/MentorRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 // Bir sınıfa rehber öğretmen atayabilen roller (yalnızca idare)
 const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi', 'admin']
 
+export type MentorshipRow = {
+  student_id:       string
+  full_name:        string
+  class_name:       string | null
+  last_report_date: string | null
+}
+
 export const MentorService = {
+  // ── Mentörlük listesi ────────────────────────────────────────────────────
+
+  async getMyMentorships(): Promise<MentorshipRow[]> {
+    const ability = await requireAbility()
+    const [listRes, dateRes] = await Promise.all([
+      MentorRepository.listMentorships(ability.userId, ability.schoolId),
+      MentorRepository.lastReportDates(ability.userId, ability.schoolId),
+    ])
+    if (listRes.error) {
+      logger.error({ event: 'mentorship_list_failed', userId: ability.userId, err: listRes.error.message }, 'Mentörlük listesi okunamadı')
+      return []
+    }
+    // report_date'e göre azalan sıralı geldiği için ilk görülen en yenisidir
+    const sonGorusme = new Map<string, string>()
+    for (const r of dateRes.data ?? []) {
+      if (!sonGorusme.has(r.student_id)) sonGorusme.set(r.student_id, r.report_date)
+    }
+    return (listRes.data ?? []).map(row => {
+      const s = row.students as unknown as { full_name: string; classes: { name: string } | null } | null
+      return {
+        student_id:       row.student_id,
+        full_name:        s?.full_name ?? '—',
+        class_name:       s?.classes?.name ?? null,
+        last_report_date: sonGorusme.get(row.student_id) ?? null,
+      }
+    })
+  },
+
+  async addMentorship(studentId: string): Promise<{ error?: string }> {
+    const ability = await requireAbility()
+    // Cross-tenant koruması: öğrenci gerçekten bu okulda mı?
+    const { data: student } = await MentorRepository.findStudentInSchool(studentId, ability.schoolId)
+    if (!student) return { error: 'Öğrenci bulunamadı' }
+
+    const { error } = await MentorRepository.insertMentorship({
+      mentor_id: ability.userId, student_id: studentId, school_id: ability.schoolId,
+    })
+    if (error) {
+      if ((error as { code?: string }).code === '23505') return { error: 'Bu öğrenci zaten listenizde' }
+      return { error: error.message }
+    }
+    return {}
+  },
+
+  async removeMentorship(studentId: string): Promise<{ error?: string }> {
+    const ability = await requireAbility()
+    const { error } = await MentorRepository.deleteMentorship(studentId, ability.userId, ability.schoolId)
+    if (error) return { error: error.message }
+    return {}
+  },
+
   // Sınıfa rehber öğretmen ata/kaldır — yalnızca müdür + müdür yardımcısı (+admin).
   async assignClassMentor(classId: string, teacherId: string | null): Promise<{ error?: string }> {
     const profile = await getCurrentProfile()

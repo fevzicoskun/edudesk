@@ -1,6 +1,59 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 
 export const MentorRepository = {
+  // ── Mentörlük listesi ────────────────────────────────────────────────────
+
+  async listMentorships(mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentorships')
+      .select('id, student_id, students(id, full_name, class_id, classes(name))')
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .order('created_at')
+  },
+
+  async insertMentorship(data: { mentor_id: string; student_id: string; school_id: string }) {
+    const supabase = await createClient()
+    return supabase.from('mentorships').insert(data).select('id').single()
+  },
+
+  async deleteMentorship(studentId: string, mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    const { data: rows, error } = await supabase
+      .from('mentorships')
+      .delete()
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
+  },
+
+  async findStudentInSchool(studentId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('students')
+      .select('id, full_name, class_id')
+      .eq('id', studentId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+      .maybeSingle()
+  },
+
+  // Her öğrencinin en son görüşme tarihi (mentöre ait notlar üzerinden)
+  async lastReportDates(mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentor_reports')
+      .select('student_id, report_date')
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .order('report_date', { ascending: false })
+  },
+
   // ── Mentor Reports (sınıf öğrencileri için) ─────────────────────────────
 
   async insertMentorReport(data: {
