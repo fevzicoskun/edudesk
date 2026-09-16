@@ -81,36 +81,4 @@ export const MentorService = {
     if (error) return { error: error.message }
     return {}
   },
-
-  // ── Kişisel mentor öğrenci defteri ──────────────────────────────────────
-
-  async getMentorStudents() {
-    const ability = await requireAbility()
-    const { data } = await MentorRepository.getMentorStudents(ability.userId, ability.schoolId)
-    return data ?? []
-  },
-
-  async addMentorStudent(data: {
-    full_name:   string
-    parent_name?: string
-    phone?:      string
-  }): Promise<{ error?: string; id?: string }> {
-    const ability = await requireAbility()
-    const { data: inserted, error } = await MentorRepository.insertMentorStudent({
-      teacher_id:  ability.userId,
-      school_id:   ability.schoolId,
-      full_name:   data.full_name,
-      parent_name: data.parent_name,
-      phone:       data.phone,
-    })
-    if (error) return { error: error.message }
-    return { id: inserted?.id }
-  },
-
-  async deleteMentorStudent(studentId: string): Promise<{ error?: string }> {
-    const ability = await requireAbility()
-    const { error } = await MentorRepository.deleteMentorStudent(studentId, ability.userId, ability.schoolId)
-    if (error) return { error: error.message }
-    return {}
-  },
 }

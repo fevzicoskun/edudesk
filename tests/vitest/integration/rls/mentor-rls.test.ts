@@ -1,29 +1,21 @@
 /**
  * Mentor RLS erişim sınır testleri.
  *
- * NOT: mentor_reports ve mentor_students tabloları DB'de mevcuttur (migrations/2026-05-19).
+ * NOT: mentor_reports tablosu DB'de mevcuttur (migrations/2026-05-19).
  * Sınıf rehberliği (mentor_reports) uygulama katmanı 2026-06-17'de eklendi:
  * MentorRepository/MentorService/app/actions/mentor.ts + sınıf detayı (atama) ve
  * öğrenci profili (raporlar) UI'ı. assignClassMentor için ayrıca unit test vardır
  * (tests/vitest/unit/mentor/). Bu dosya yalnızca RLS politikalarının doğruluğunu doğrular.
  *
- * İki ayrı mentor sistemi test edilir:
- *
- * 1. mentor_reports (sistem öğrencileri için)
+ * mentor_reports (sistem öğrencileri için):
  *    - Sadece sınıfın mentor_teacher_id'sine atanmış öğretmen rapor ekleyebilir
  *    - Raporu yazan mentor silebilir, başkaları silemez
  *    - Okuma: sadece kendi + yöneticiler (mudur, mudur_yardimcisi, zumre_baskani)
- *
- * 2. mentor_students (kişisel defter — manuel öğrenciler)
- *    - Öğretmen sadece kendi oluşturduğu öğrencileri görebilir
- *    - Aynı okuldaki başka öğretmen göremez (teacher_id = auth.uid())
- *    - Cross-school: başka okul kullanıcısı hiç göremez
  *
  * Saldırı vektörleri (yorum olarak belgelenmiştir):
  *   A. class_id değiştirme: Mentör olmayan sınıf için rapor ekleme girişimi
  *   B. mentor_id taklit: Başka öğretmen adına rapor ekleme
  *   C. Cross-school: Okul B öğretmeni Okul A verilerine erişim
- *   D. teacher_id taklit: Başka öğretmenin mentor_student'ını okuma/yazma
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import {
@@ -215,116 +207,6 @@ describe('mentor_reports DELETE: sadece yazan mentör silebilir', () => {
       reportId,
       serviceDb,
       'cross-school-delete'
-    )
-  })
-})
-
-// ─── mentor_students tablosu (kişisel defter) ─────────────────────────────────
-describe('mentor_students: teacher_id izolasyonu', () => {
-  let msId: string  // mentorTeacher'ın oluşturduğu öğrenci
-
-  beforeAll(async () => {
-    // service ile doğrudan ekle — test verisi
-    const { data } = await serviceDb
-      .from('mentor_students')
-      .insert({
-        teacher_id: mentorTeacher.id,
-        school_id:  school.id,
-        full_name:  'Manuel Test Öğrenci',
-        parent_name: 'Veli Adı',
-        phone:      '05001234567',
-      })
-      .select('id').single()
-    msId = data!.id
-  })
-
-  it('oluşturan öğretmen kendi manuel öğrencisini görebilir', async () => {
-    await assertCanRead(createUserClient(tokenMentor), 'mentor_students', msId, 'owner')
-  })
-
-  it('aynı okuldaki başka öğretmen göremez — teacher_id = auth.uid() koşulu', async () => {
-    // Saldırı D: aynı okul içi horizontal privilege escalation
-    await assertCannotRead(createUserClient(tokenOther), 'mentor_students', msId, 'same-school-other')
-  })
-
-  it('başka okul öğretmeni hiç göremez', async () => {
-    // Saldırı C: cross-school
-    await assertCannotRead(createUserClient(tokenB), 'mentor_students', msId, 'cross-school')
-  })
-
-  it('başka öğretmen yanlış teacher_id ile insert edemez', async () => {
-    // Saldırı D: INSERT ile teacher_id = mentorTeacher.id taklit etme
-    // Policy WITH CHECK (teacher_id = auth.uid()) engeller
-    await assertInsertBlocked(
-      createUserClient(tokenOther),
-      'mentor_students',
-      {
-        teacher_id:  mentorTeacher.id,  // başkasının ID'si!
-        school_id:   school.id,
-        full_name:   'Sahte Öğrenci',
-      },
-      'teacher_id spoof'
-    )
-  })
-
-  it('başka öğretmen kendi adıyla da (doğru teacher_id) aynı okula ekleyemez mi?', async () => {
-    // Bu geçerli: her öğretmen kendi kişisel defterine öğrenci ekleyebilir
-    // Policy: teacher_id = auth.uid() AND school_id = current_school_id()
-    const client = createUserClient(tokenOther)
-    const { error } = await client.from('mentor_students').insert({
-      teacher_id: otherTeacher.id,
-      school_id:  school.id,
-      full_name:  'Other Teacher Manuel Öğrenci',
-    })
-    expect(error).toBeNull()  // kendi adına ekleyebilir — bu beklenen davranış
-  })
-})
-
-// ─── mentor_student_notes tablosu ────────────────────────────────────────────
-describe('mentor_student_notes: cross-teacher izolasyonu', () => {
-  let msId2: string
-  let noteId: string
-
-  beforeAll(async () => {
-    // mentorTeacher'ın kendi öğrencisi
-    const { data: ms } = await serviceDb
-      .from('mentor_students')
-      .insert({ teacher_id: mentorTeacher.id, school_id: school.id, full_name: 'Not Test Öğrencisi' })
-      .select('id').single()
-    msId2 = ms!.id
-
-    // Service ile not ekle
-    const { data: note } = await serviceDb
-      .from('mentor_student_notes')
-      .insert({
-        mentor_student_id: msId2,
-        teacher_id:        mentorTeacher.id,
-        school_id:         school.id,
-        content:           'Test notu içeriği',
-      })
-      .select('id').single()
-    noteId = note!.id
-  })
-
-  it('notun sahibi kendi notunu okuyabilir', async () => {
-    await assertCanRead(createUserClient(tokenMentor), 'mentor_student_notes', noteId, 'owner')
-  })
-
-  it('başka öğretmen notu okuyamaz', async () => {
-    await assertCannotRead(createUserClient(tokenOther), 'mentor_student_notes', noteId, 'other-teacher')
-  })
-
-  it('başka okul öğretmeni notu okuyamaz', async () => {
-    await assertCannotRead(createUserClient(tokenB), 'mentor_student_notes', noteId, 'cross-school')
-  })
-
-  it('başka öğretmen notu silemez', async () => {
-    await assertDeleteBlocked(
-      createUserClient(tokenOther),
-      'mentor_student_notes',
-      noteId,
-      serviceDb,
-      'other-delete'
     )
   })
 })

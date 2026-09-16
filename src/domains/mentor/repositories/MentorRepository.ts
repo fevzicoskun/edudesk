@@ -47,39 +47,6 @@ export const MentorRepository = {
       .eq('school_id', schoolId)
   },
 
-  // ── Mentor Students (kişisel defter) ────────────────────────────────────
-
-  async getMentorStudents(teacherId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_students')
-      .select('id, full_name, parent_name, phone, created_at')
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-      .order('full_name')
-  },
-
-  async insertMentorStudent(data: {
-    teacher_id:  string
-    school_id:   string
-    full_name:   string
-    parent_name?: string
-    phone?:      string
-  }) {
-    const supabase = await createClient()
-    return supabase.from('mentor_students').insert(data).select('id').single()
-  },
-
-  async deleteMentorStudent(studentId: string, teacherId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_students')
-      .delete()
-      .eq('id', studentId)
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-  },
-
   // ── Sınıfa rehber öğretmen atama ────────────────────────────────────────
 
   // Sınıfın mentor_teacher_id'sini set/temizle (teacherId null → kaldır)
