@@ -275,3 +275,30 @@ describe('parseSchedulePdf — pdf_alias ile şube eşleme', () => {
     expect(slots).toHaveLength(2)
   })
 })
+
+describe('parseSchedulePdf — ders adı', () => {
+  it('sınıf adının altındaki satırı ders adı olarak alır', () => {
+    const { slots } = parseSchedulePdf(NF_ITEMS, NF_CLASSES)
+    const bul = (day: number, period: number) => slots.find(s => s.day === day && s.period === period)
+    expect(bul(1, 3)?.subject).toBe('Matematik')      // Pzt 3-4: 11TM-A / Matematik
+    expect(bul(1, 4)?.subject).toBe('Matematik')      // birleşik hücrenin ikinci saati de taşır
+    expect(bul(1, 5)?.subject).toBe('Geometri')       // Pzt 5: 12TM-A / Geometri
+    expect(bul(1, 7)?.subject).toBe('Matematik 1')    // Pzt 7-8
+    expect(bul(4, 1)?.subject).toBe('S-MAT')          // Per 1: 11TM-A / S-MAT
+  })
+
+  it('alt satırda ders adı yoksa subject taşımaz (eski aSc biçimi)', () => {
+    const { slots } = parseSchedulePdf(REAL_ITEMS, CLASSES)
+    expect(slots.every(s => s.subject === undefined)).toBe(true)
+  })
+
+  it('alttaki başka bir sınıf adını ders adı sanmaz', () => {
+    const items: PdfTextItem[] = [
+      ...NF_HEADERS, ...NF_DAYS,
+      { str: '10A', x: 759.8, y: 463, width: 18.4 },
+      { str: '9A',  x: 763.9, y: 455, width: 12.5 },   // hemen altta başka sınıf
+    ]
+    const { slots } = parseSchedulePdf(items, NF_CLASSES)
+    expect(slots.find(s => s.day === 1 && s.period === 9)?.subject).toBeUndefined()
+  })
+})

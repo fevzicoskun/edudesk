@@ -1,5 +1,6 @@
 export interface Period { no: number; start: string; end: string } // "HH:MM"
-export interface Slot { day: number; period: number; class_id: string }
+/** subject: PDF'ten okunan ders adi ("Matematik 1"); elle doldurmada bos kalir. */
+export interface Slot { day: number; period: number; class_id: string; subject?: string }
 export interface TodayLesson { period: number; start: string; end: string; classId: string }
 
 // Varsayılan zil çizelgesi (09:00 başlangıç; öğretmen UI'dan düzenler).
@@ -44,6 +45,10 @@ export function validateSlots(slots: Slot[], periods: Period[], validClassIds: s
     if (!Number.isInteger(s.day) || s.day < 1 || s.day > 5) return 'Geçersiz gün'
     if (!periodNos.has(s.period)) return `Geçersiz ders saati: ${s.period}`
     if (!classes.has(s.class_id)) return 'Geçersiz sınıf seçimi'
+    // subject serbest metin ve DB'ye yazılıyor — tip ve uzunluk sınırı burada
+    if (s.subject !== undefined && (typeof s.subject !== 'string' || s.subject.length > 40)) {
+      return 'Geçersiz ders adı'
+    }
     const key = `${s.day}-${s.period}`
     if (cells.has(key)) return 'Aynı saatte birden fazla sınıf seçilemez'
     cells.add(key)

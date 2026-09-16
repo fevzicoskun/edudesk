@@ -106,12 +106,13 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
     }
   }
 
-  const cellClass = (day: number, period: number) =>
-    slots.find(s => s.day === day && s.period === period)?.class_id ?? ''
+  const cellSlot = (day: number, period: number) =>
+    slots.find(s => s.day === day && s.period === period)
 
   function setCell(day: number, period: number, classId: string) {
     setSlots(prev => {
       const rest = prev.filter(s => !(s.day === day && s.period === period))
+      // Sinif elle degistirildiginde PDF'ten gelen ders adi artik gecerli degil
       return classId ? [...rest, { day, period, class_id: classId }] : rest
     })
   }
@@ -265,7 +266,8 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                 </td>
 
                 {DAYS.map(d => {
-                  const id = cellClass(d.n, p.no)
+                  const slot = cellSlot(d.n, p.no)
+                  const id = slot?.class_id ?? ''
                   const isToday = d.n === todayN
                   return (
                     <td
@@ -290,11 +292,16 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                         </select>
                       ) : id ? (
                         <div
-                          className={`flex items-center justify-center min-h-[44px] rounded-lg px-2 py-1.5 text-center font-semibold ring-1 ${classColor(
+                          className={`flex flex-col items-center justify-center min-h-[44px] rounded-lg px-2 py-1.5 text-center font-semibold ring-1 ${classColor(
                             classNameById.get(id) ?? id,
                           )}`}
                         >
-                          {classNameById.get(id) ?? '—'}
+                          <span className="leading-tight">{classNameById.get(id) ?? '—'}</span>
+                          {slot?.subject && (
+                            <span className="text-[10px] font-normal leading-tight opacity-75 truncate max-w-full">
+                              {slot.subject}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <div className="min-h-[44px]" aria-hidden="true" />

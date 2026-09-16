@@ -134,6 +134,23 @@ export function parseSchedulePdf(items: PdfTextItem[], classes: ClassRef[]): Par
     byNorm.set(normalizeClassName(c.name), c.id)
     if (c.pdf_alias) byNorm.set(normalizeClassName(c.pdf_alias), c.id)
   }
+  // Ders adi, sinif adinin hemen ALTINDAKI ayni sutunda duran metindir
+  // ("11TM-A" / "Matematik"). Eski aSc bicimi bu satiri bos birakir -> undefined.
+  const subjectFor = (cell: PdfTextItem): string | undefined => {
+    const cellX = cx(cell)
+    let best: { text: string; dy: number } | undefined
+    for (const it of items) {
+      const dy = cell.y - it.y
+      if (dy <= 0 || dy > 20) continue                    // yalnizca hemen alt satir
+      if (Math.abs(cx(it) - cellX) > 6) continue          // ayni hucre sutunu
+      const text = it.str.trim()
+      if (!text || text.length > 40) continue
+      if (byNorm.has(normalizeClassName(text))) continue  // alttaki bir baska sinif adi olmasin
+      if (!best || dy < best.dy) best = { text, dy }
+    }
+    return best?.text
+  }
+
   const seen = new Set<string>()
   const unmatched = new Set<string>()
   const out: Slot[] = []
@@ -146,11 +163,12 @@ export function parseSchedulePdf(items: PdfTextItem[], classes: ClassRef[]): Par
       continue
     }
     const day = nearestDay(it.y)
+    const subject = subjectFor(it)
     for (const period of periodsFor(cx(it))) {
       const k = `${day}-${period}`
       if (seen.has(k)) continue
       seen.add(k)
-      out.push({ day, period, class_id: id })
+      out.push(subject ? { day, period, class_id: id, subject } : { day, period, class_id: id })
     }
   }
 
