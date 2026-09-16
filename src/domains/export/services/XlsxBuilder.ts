@@ -3,6 +3,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { UUID } from '@/src/shared/validation'
 import type { JobType } from '../types'
 import { XLSX_EXPORT_LIMIT, XLSX_EXPORT_LIMIT_LG } from '@/src/shared/constants/limits'
+import { todayLocalISO } from '@/src/shared/date'
 
 const JOB_LABELS: Record<JobType, string> = {
   excel_odevler:           'Ödevler',
@@ -82,7 +83,7 @@ export async function uploadToStorage(
   jobType: JobType
 ): Promise<{ url: string; filename: string }> {
   const db = createServiceClient()
-  const date = new Date().toISOString().split('T')[0]
+  const date = todayLocalISO()
   const filename = `${jobType}-${date}.xlsx`
   const path = `${userId}/${filename}`
 

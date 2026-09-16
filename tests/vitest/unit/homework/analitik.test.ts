@@ -118,6 +118,13 @@ describe('computeWeeklyTrend()', () => {
     expect(computeWeeklyTrend([], [], [])).toEqual([])
   })
 
+  it('hafta anahtarı haftanın pazartesisidir (sunucu saat diliminden bağımsız)', () => {
+    // 2026-05-01 Cuma → hafta 2026-04-27 Pazartesi. Eski kod toISOString() ile UTC'ye
+    // çevirdiği için TR saat dilimli makinede 2026-04-26 (Pazar) üretiyordu.
+    const [bucket] = computeWeeklyTrend([hw('h1', 'c1', '2026-05-01')], [], [student('s1', 'c1')])
+    expect(bucket.weekKey).toBe('2026-04-27')
+  })
+
   it('due_date null → atlanır', () => {
     expect(computeWeeklyTrend([hw('h1', 'c1', null)], [], [student('s1','c1')])).toEqual([])
   })

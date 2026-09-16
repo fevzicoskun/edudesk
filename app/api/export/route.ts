@@ -6,6 +6,7 @@ import type { JobType } from '@/src/domains/export/types'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
+import { todayLocalISO } from '@/src/shared/date'
 
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
   try {
     const rows = await fetchRows(jobType, params, schoolId, { notesTeacherId })
     const buffer = await buildXlsx(rows, jobType)
-    const date = new Date().toISOString().split('T')[0]
+    const date = todayLocalISO()
     const filename = `${jobType}-${date}.xlsx`
 
     return new NextResponse(new Uint8Array(buffer), {

@@ -1,5 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
+import { todayLocalISO } from '@/src/shared/date'
 
 type AlertLevel = 'yellow'
 
@@ -14,8 +15,7 @@ const STYLES: Record<AlertLevel, { pill: string; dot: string }> = {
 
 export default async function UyariBandi() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
-  const today     = new Date()
-  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0]
+  const thisMonthStart = `${todayLocalISO().slice(0, 7)}-01`
 
   const { data: meetings } = await supabase
     .from('school_meetings')

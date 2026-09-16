@@ -1,4 +1,4 @@
-import { startOfWeek, parseISO } from '@/src/shared/date'
+import { startOfWeek, parseISO, format } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 function todayTR(): string {
@@ -139,7 +139,7 @@ export function computeWeeklyTrend(
   const weekMap = new Map<string, AnalitikHomework[]>()
   for (const hw of homeworks) {
     if (!hw.due_date) continue
-    const weekKey = startOfWeek(parseISO(hw.due_date), { weekStartsOn: 1 }).toISOString().slice(0, 10)
+    const weekKey = format(startOfWeek(parseISO(hw.due_date), { weekStartsOn: 1 }), 'yyyy-MM-dd')
     if (!weekMap.has(weekKey)) weekMap.set(weekKey, [])
     weekMap.get(weekKey)!.push(hw)
   }
@@ -243,7 +243,7 @@ export function computeClassWeekHeatmap(
     .filter(h => h.due_date !== null)
     .map(h => ({
       ...h,
-      weekKey: startOfWeek(parseISO(h.due_date as string), { weekStartsOn: 1 }).toISOString().slice(0, 10),
+      weekKey: format(startOfWeek(parseISO(h.due_date as string), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
     }))
 
   const weeks = [...new Set(datedHws.map(h => h.weekKey))].sort((a, b) => a.localeCompare(b)).slice(-8)

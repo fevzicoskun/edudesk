@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { todayLocalISO } from '@/src/shared/date'
 
 export type ClassOption = { id: string; name: string; grade?: number | null }
 
@@ -17,10 +18,10 @@ const REPORT_TYPES: ReportType[] = [
   { value: 'excel_sinif_ogrencileri', label: 'Sınıf Öğrencileri', hasClass: true,  hasDates: false },
 ]
 
+// Türkiye gününe göre bir ay öncesi (UTC'ye çevirmek gece yarısından sonra dünü verirdi)
 function defaultDateFrom() {
-  const d = new Date()
-  d.setMonth(d.getMonth() - 1)
-  return d.toISOString().split('T')[0]
+  const [y, m, d] = todayLocalISO().split('-').map(Number)
+  return new Date(Date.UTC(y, m - 2, d)).toISOString().slice(0, 10)
 }
 
 export default function RaporButton({ classes = [] }: { classes?: ClassOption[] }) {
@@ -30,7 +31,7 @@ export default function RaporButton({ classes = [] }: { classes?: ClassOption[] 
   const [error, setError]       = useState<string | null>(null)
   const [classId, setClassId]   = useState('')
   const [dateFrom, setDateFrom] = useState(defaultDateFrom)
-  const [dateTo, setDateTo]     = useState(() => new Date().toISOString().split('T')[0])
+  const [dateTo, setDateTo]     = useState(todayLocalISO)
 
   const selectedType = REPORT_TYPES.find(r => r.value === selected)
 

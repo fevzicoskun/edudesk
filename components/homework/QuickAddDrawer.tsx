@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast'
 import { quickCreateHomework, getHomeworkTemplates } from '@/app/actions/homework'
 import { getMyClasses } from '@/app/actions/classes'
 import type { HomeworkTemplate } from '@/src/shared/types'
+import { todayLocalISO } from '@/src/shared/date'
 
 type ClassItem = { id: string; name: string; grade: number | null }
 
@@ -99,7 +100,7 @@ export default function QuickAddDrawer() {
     })
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocalISO()
 
   if (hidden) return null
 
