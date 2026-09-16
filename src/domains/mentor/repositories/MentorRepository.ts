@@ -124,4 +124,30 @@ export const MentorRepository = {
       .eq('school_id', schoolId)
       .single()
   },
+
+  // ── Tanıma kartı ─────────────────────────────────────────────────────────
+
+  async getMentorProfile(studentId: string, mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentor_profiles')
+      .select('goals_short, goals_long, interests, family_info, study_environment, special_note, support_request, rules_explained_at')
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .maybeSingle()
+  },
+
+  async upsertMentorProfile(row: {
+    mentor_id:  string
+    student_id: string
+    school_id:  string
+    updated_at: string
+    [alan: string]: string | null
+  }) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentor_profiles')
+      .upsert(row as never, { onConflict: 'mentor_id,student_id' })
+  },
 }

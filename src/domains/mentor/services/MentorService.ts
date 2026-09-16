@@ -3,6 +3,8 @@ import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { mentorProfileSchema, type MentorProfileInput } from '../validators'
+import { todayLocalISO } from '@/src/shared/date'
 
 // Bir sınıfa rehber öğretmen atayabilen roller (yalnızca idare)
 const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi', 'admin']
@@ -12,6 +14,17 @@ export type MentorshipRow = {
   full_name:        string
   class_name:       string | null
   last_report_date: string | null
+}
+
+export type MentorProfileRow = {
+  goals_short:        string | null
+  goals_long:         string | null
+  interests:          string | null
+  family_info:        string | null
+  study_environment:  string | null
+  special_note:       string | null
+  support_request:    string | null
+  rules_explained_at: string | null
 }
 
 export const MentorService = {
@@ -140,6 +153,55 @@ export const MentorService = {
   async deleteMentorReport(reportId: string): Promise<{ error?: string }> {
     const ability = await requireAbility()
     const { error } = await MentorRepository.deleteMentorReport(reportId, ability.userId, ability.schoolId)
+    if (error) return { error: error.message }
+    return {}
+  },
+
+  // ── Tanıma kartı ─────────────────────────────────────────────────────────
+
+  async getMentorProfile(studentId: string): Promise<MentorProfileRow | null> {
+    const ability = await requireAbility()
+    const { data } = await MentorRepository.getMentorProfile(studentId, ability.userId, ability.schoolId)
+    return (data as MentorProfileRow | null) ?? null
+  },
+
+  async saveMentorProfile(studentId: string, input: MentorProfileInput): Promise<{ error?: string }> {
+    const ability = await requireAbility()
+
+    const parsed = mentorProfileSchema.safeParse(input)
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+
+    const { data: student } = await MentorRepository.findStudentInSchool(studentId, ability.schoolId)
+    if (!student) return { error: 'Öğrenci bulunamadı' }
+
+    // Boş string -> null; "silindi" ile "hiç girilmedi" aynı kabul edilir
+    const alanlar = Object.fromEntries(
+      Object.entries(parsed.data).map(([k, v]) => [k, v?.trim() ? v.trim() : null]),
+    )
+
+    const { error } = await MentorRepository.upsertMentorProfile({
+      mentor_id:  ability.userId,
+      student_id: studentId,
+      school_id:  ability.schoolId,
+      updated_at: new Date().toISOString(),
+      ...alanlar,
+    })
+    if (error) return { error: error.message }
+    return {}
+  },
+
+  async markRulesExplained(studentId: string): Promise<{ error?: string }> {
+    const ability = await requireAbility()
+    const { data: student } = await MentorRepository.findStudentInSchool(studentId, ability.schoolId)
+    if (!student) return { error: 'Öğrenci bulunamadı' }
+
+    const { error } = await MentorRepository.upsertMentorProfile({
+      mentor_id:          ability.userId,
+      student_id:         studentId,
+      school_id:          ability.schoolId,
+      updated_at:         new Date().toISOString(),
+      rules_explained_at: todayLocalISO(),
+    })
     if (error) return { error: error.message }
     return {}
   },
