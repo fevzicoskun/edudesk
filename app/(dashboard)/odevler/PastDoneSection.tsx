@@ -2,9 +2,10 @@ import HomeworkCard from './HomeworkCard'
 import SectionHeader from './SectionHeader'
 import type { HW, StatusCounts } from './types'
 
-export default function PastDoneSection({ pastDone, canWrite, statusMap, classStudentMap }: {
+export default function PastDoneSection({ pastDone, canWrite, userId, statusMap, classStudentMap }: {
   pastDone: HW[]
   canWrite: boolean
+  userId: string
   statusMap: Map<string, StatusCounts>
   classStudentMap: Map<string, number>
 }) {
@@ -35,7 +36,7 @@ export default function PastDoneSection({ pastDone, canWrite, statusMap, classSt
         )}
       </div>
       <div className="space-y-3 opacity-80">
-        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />)}
+        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite && hw.teacher_id === userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
       </div>
     </section>
   )

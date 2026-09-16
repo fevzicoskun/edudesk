@@ -133,13 +133,13 @@ export default async function HomeworkSection({
             <section className="mb-6">
               <SectionHeader label="Aktif" count={active.length} color="bg-emerald-500" />
               <div className="space-y-3">
-                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />)}
+                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite && hw.teacher_id === userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
               </div>
             </section>
           )}
 
           {pastDone.length > 0 && (
-            <PastDoneSection pastDone={pastDone} canWrite={canWrite} statusMap={statusMap} classStudentMap={classStudentMap} />
+            <PastDoneSection pastDone={pastDone} canWrite={canWrite} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />
           )}
         </>
       )}

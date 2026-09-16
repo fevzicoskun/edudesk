@@ -318,17 +318,24 @@ describe('HomeworkService.deleteHomework()', () => {
     vi.mocked(HomeworkRepository.softDeleteHomework).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.deleteHomework('hw-1')
     expect(result.error).toBeUndefined()
-    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalled()
-    expect(HomeworkRepository.softDeleteHomeworkAsManager).not.toHaveBeenCalled()
+    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID)
   })
 
-  it('school-scope yönetici → softDeleteHomeworkAsManager çağrılır', async () => {
+  it('school-scope yönetici de yalnızca kendi ödevini siler (teacher_id filtreli)', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
-    vi.mocked(HomeworkRepository.softDeleteHomeworkAsManager).mockResolvedValue({ error: null } as never)
+    vi.mocked(HomeworkRepository.softDeleteHomework).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.deleteHomework('hw-1')
     expect(result.error).toBeUndefined()
-    expect(HomeworkRepository.softDeleteHomeworkAsManager).toHaveBeenCalled()
-    expect(HomeworkRepository.softDeleteHomework).not.toHaveBeenCalled()
+    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID)
+  })
+
+  it('başkasının ödevi (repo 0 satır) → hata döner, sessiz kalmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.softDeleteHomework).mockResolvedValue({
+      error: { message: 'Ödev bulunamadı veya yetkiniz yok.' },
+    } as never)
+    const result = await HomeworkService.deleteHomework('hw-baskasinin')
+    expect(result.error).toBe('Ödev bulunamadı veya yetkiniz yok.')
   })
 })
 
@@ -340,17 +347,17 @@ describe('HomeworkService.restoreHomework()', () => {
     expect(HomeworkRepository.restoreHomework).not.toHaveBeenCalled()
   })
 
-  it('own-scope öğretmen restore edemez', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+  it('homework:update izni yoksa restore edemez', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
     await HomeworkService.restoreHomework('hw-1')
     expect(HomeworkRepository.restoreHomework).not.toHaveBeenCalled()
   })
 
-  it('school-scope yönetici restore edebilir', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
-    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ data: null, error: null } as never)
+  it('öğretmen kendi sildiği ödevi geri alır (teacher_id filtreli)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ error: null } as never)
     await HomeworkService.restoreHomework('hw-1')
-    expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith('hw-1', SCHOOL_ID)
+    expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID)
   })
 })
 
@@ -382,17 +389,15 @@ describe('HomeworkService.updateHomework()', () => {
     expect(result.error).toBeUndefined()
     expect(HomeworkRepository.classExistsInSchool).toHaveBeenCalledWith('cls-1', SCHOOL_ID)
     expect(HomeworkRepository.updateHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID, HW_UPDATE)
-    expect(HomeworkRepository.updateHomeworkAsManager).not.toHaveBeenCalled()
   })
 
-  it('school-scope yönetici → updateHomeworkAsManager çağrılır (teacher_id filtresi yok)', async () => {
+  it('school-scope yönetici de teacher_id filtreli güncelleme kullanır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
     vi.mocked(HomeworkRepository.classExistsInSchool).mockResolvedValue(true)
-    vi.mocked(HomeworkRepository.updateHomeworkAsManager).mockResolvedValue({ error: null } as never)
+    vi.mocked(HomeworkRepository.updateHomework).mockResolvedValue({ error: null } as never)
     const result = await HomeworkService.updateHomework('hw-1', HW_UPDATE)
     expect(result.error).toBeUndefined()
-    expect(HomeworkRepository.updateHomeworkAsManager).toHaveBeenCalledWith('hw-1', SCHOOL_ID, HW_UPDATE)
-    expect(HomeworkRepository.updateHomework).not.toHaveBeenCalled()
+    expect(HomeworkRepository.updateHomework).toHaveBeenCalledWith('hw-1', TEACHER_ID, SCHOOL_ID, HW_UPDATE)
   })
 
   it('class_id başka okula aitse → hata döner', async () => {

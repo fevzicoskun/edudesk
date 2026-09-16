@@ -9,6 +9,7 @@ type Props = {
   note: string
   totalHomeworks: number
   isPending: boolean
+  readOnly?: boolean
   noteSaved: boolean
   expandedNote: string | null
   historyOpenId: string | null
@@ -31,6 +32,7 @@ export default function StudentRow({
   note,
   totalHomeworks,
   isPending,
+  readOnly = false,
   noteSaved,
   expandedNote,
   historyOpenId,
@@ -141,7 +143,7 @@ export default function StudentRow({
 
       {/* Mobil: tek-dokunuş döngü butonu */}
       <button
-        disabled={isPending}
+        disabled={isPending || readOnly}
         onClick={() => onSetStatus(item.student_id, next)}
         className={`md:hidden w-full flex items-center justify-between gap-2 px-4 min-h-[52px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
       >
@@ -159,7 +161,7 @@ export default function StudentRow({
         {(['yapildi', 'eksik', 'yapilmadi'] as SubmissionStatus[]).map(option => (
           <button
             key={option}
-            disabled={isPending}
+            disabled={isPending || readOnly}
             onClick={() => onSetStatus(item.student_id, option)}
             className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
               status === option
@@ -175,7 +177,7 @@ export default function StudentRow({
         {(['gec', 'mazeretli'] as SubmissionStatus[]).map(option => (
           <button
             key={option}
-            disabled={isPending}
+            disabled={isPending || readOnly}
             onClick={() => onSetStatus(item.student_id, option)}
             className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
               status === option

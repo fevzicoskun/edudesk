@@ -37,8 +37,8 @@ export async function sendHomeworkReminderEmails(
 
   if (!hw) return { error: 'Ödev bulunamadı' }
 
-  const isManager = ability.scope(P.HOMEWORK.UPDATE) === 'school'
-  if (!isManager && hw.teacher_id !== ability.userId) {
+  // Veli bildirimi ödevin sahibine ait — yönetici de başkasının ödevi adına gönderemez
+  if (hw.teacher_id !== ability.userId) {
     return { error: 'Bu ödev için yetkiniz yok' }
   }
 

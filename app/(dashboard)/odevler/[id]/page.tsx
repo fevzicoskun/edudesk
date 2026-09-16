@@ -74,7 +74,9 @@ export default async function OdevDetayPage({
   const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
   if (!isManager && hw.teacher_id !== user.id) notFound()
 
-  const canWrite = isTeachingRole(profile.role)
+  // Yazma yalnızca ödevin sahibine ait; yönetici görüntüler, değiştiremez
+  const isOwner  = hw.teacher_id === user.id
+  const canWrite = isTeachingRole(profile.role) && isOwner
   const cls = hw.classes as { name: string } | null
 
   return (
@@ -159,6 +161,7 @@ export default async function OdevDetayPage({
           schoolId={profile.school_id}
           homeworkTitle={hw.title}
           className={cls?.name}
+          readOnly={!canWrite}
         />
       </Suspense>
     </div>

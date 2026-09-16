@@ -222,14 +222,17 @@ export async function deleteHomework(id: string): Promise<ActionResult> {
   return {}
 }
 
-export async function bulkDeleteHomeworks(ids: string[]): Promise<{ deleted: number; error?: string }> {
+export async function bulkDeleteHomeworks(
+  ids: string[],
+): Promise<{ deleted: number; skipped: number; error?: string }> {
   const validIds = ids.filter(id => UUID.safeParse(id).success)
-  if (validIds.length === 0) return { deleted: 0 }
+  if (validIds.length === 0) return { deleted: 0, skipped: ids.length }
   const result = await HomeworkService.bulkDelete(validIds)
   if (result.error) return result
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
-  return { deleted: result.deleted }
+  // Geçersiz UUID'ler de atlananlara dahil — kullanıcı seçtiği her ödevin akıbetini görsün
+  return { deleted: result.deleted, skipped: ids.length - result.deleted }
 }
 
 export async function restoreHomework(id: string): Promise<ActionResult> {

@@ -108,26 +108,37 @@ export default function SwipeableHomeworkCard({
 
   if (isDeleted) return null
 
-  // Bulk select mode: simplified card with checkbox
+  // Bulk select mode: simplified card with checkbox.
+  // Başkasının ödevi seçilemez — silinemeyecek bir ödevi seçtirmek sessiz kayba yol açıyordu.
   if (bulk?.bulkMode) {
     return (
       <div
-        onClick={() => bulk.toggle(id)}
-        className={`flex items-center gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
-          isSelected
-            ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-600'
-            : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600'
+        onClick={() => { if (canWrite) bulk.toggle(id) }}
+        aria-disabled={!canWrite}
+        title={canWrite ? undefined : 'Bu ödev size ait değil — yalnızca görüntüleyebilirsiniz'}
+        className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+          !canWrite
+            ? 'bg-gray-50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 opacity-60 cursor-not-allowed'
+            : isSelected
+              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-600 cursor-pointer'
+              : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 cursor-pointer'
         }`}
       >
-        <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-          isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-slate-600'
-        }`}>
-          {isSelected && (
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </div>
+        {canWrite ? (
+          <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
+            isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300 dark:border-slate-600'
+          }`}>
+            {isSelected && (
+              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            )}
+          </div>
+        ) : (
+          <svg className="w-4 h-4 shrink-0 text-gray-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        )}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 truncate">{title}</p>
           <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{className} · {subject} · {dueDateStr}</p>

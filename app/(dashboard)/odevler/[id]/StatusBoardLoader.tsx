@@ -12,6 +12,7 @@ interface Props {
   schoolId: string
   homeworkTitle?: string
   className?: string
+  readOnly?: boolean
 }
 
 export default async function StatusBoardLoader({
@@ -21,6 +22,7 @@ export default async function StatusBoardLoader({
   schoolId,
   homeworkTitle,
   className,
+  readOnly = false,
 }: Props) {
   const supabase = await createClient()
 
@@ -98,6 +100,7 @@ export default async function StatusBoardLoader({
       dueDate={dueDate ? format(parseISO(dueDate), 'd MMMM yyyy') : ''}
       className={className}
       weekLoad={weekLoad}
+      readOnly={readOnly}
     />
   )
 }

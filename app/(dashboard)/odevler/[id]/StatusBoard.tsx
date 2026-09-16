@@ -28,6 +28,7 @@ export default function StatusBoard({
   dueDate = '',
   className = '',
   weekLoad = null,
+  readOnly = false,
 }: {
   homeworkId: string
   items: StatusItem[]
@@ -37,6 +38,8 @@ export default function StatusBoard({
   dueDate?: string
   className?: string
   weekLoad?: ClassWeekLoad | null
+  /** Başkasının ödevi: görüntülenir, yazılamaz */
+  readOnly?: boolean
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map(i => [i.student_id, i.status]))
@@ -88,7 +91,7 @@ export default function StatusBoard({
   const totalStudents  = items.length
 
   function setStatus(studentId: string, next: SubmissionStatus) {
-    if (pendingIds.has(studentId)) return
+    if (readOnly || pendingIds.has(studentId)) return
     const oldStatus = statuses[studentId] ?? 'yapilmadi'
     setStatuses(s => ({ ...s, [studentId]: next }))
     setPendingIds(cur => new Set([...cur, studentId]))
@@ -105,6 +108,7 @@ export default function StatusBoard({
   }
 
   function saveNote(studentId: string, note: string) {
+    if (readOnly) return
     setNotes(prev => ({ ...prev, [studentId]: note }))
     startTransition(async () => {
       const result = await updateSubmissionNote(homeworkId, studentId, note)
@@ -147,7 +151,7 @@ export default function StatusBoard({
   }
 
   function setSelectedStatuses(next: SubmissionStatus) {
-    if (selectedIds.size === 0) return
+    if (readOnly || selectedIds.size === 0) return
     const ids = [...selectedIds]
     const prevStatuses = { ...statuses }
     setStatuses(s => ({ ...s, ...Object.fromEntries(ids.map(id => [id, next])) }))
@@ -165,6 +169,7 @@ export default function StatusBoard({
   }
 
   function setAllStatuses(next: SubmissionStatus) {
+    if (readOnly) return
     const prevAll    = { ...statuses }
     const studentIds = items.map(i => i.student_id)
     setStatuses(Object.fromEntries(studentIds.map(id => [id, next])))
@@ -183,6 +188,14 @@ export default function StatusBoard({
 
   return (
     <div>
+      {readOnly && (
+        <div className="mb-4 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm px-4 py-3 rounded-xl">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          Bu ödev size ait değil — durumları görüntüleyebilir, değiştiremezsiniz.
+        </div>
+      )}
       {openBadge && (
         <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(false)} />
       )}
@@ -196,8 +209,8 @@ export default function StatusBoard({
         onToggleBadge={() => setOpenBadge(p => !p)}
       />
 
-      {/* Toplu güncelleme + Excel — aramada gizle */}
-      {!search && (
+      {/* Toplu güncelleme + Excel — aramada ve salt-okunur görünümde gizle */}
+      {!search && !readOnly && (
         <StatusBoardToolbar
           isPending={isPending}
           onBulkUpdate={setAllStatuses}
@@ -222,6 +235,7 @@ export default function StatusBoard({
             note={notes[item.student_id] ?? ''}
             totalHomeworks={totalHomeworks}
             isPending={pendingIds.has(item.student_id)}
+            readOnly={readOnly}
             noteSaved={noteSavedId === item.student_id}
             expandedNote={expandedNote}
             historyOpenId={historyOpenId}

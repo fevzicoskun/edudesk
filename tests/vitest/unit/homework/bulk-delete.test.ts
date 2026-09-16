@@ -21,8 +21,10 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
-// Supabase fluent mock: .from().update().in().eq().eq().is()
-const mockIsChain = vi.fn().mockResolvedValue({ error: null, count: 2 })
+// Supabase fluent mock: .from().update().in().eq().eq().is().select('id')
+// .select('id') terminal: silinen satırların id'lerini döndürür (count değil!)
+const mockSelect  = vi.fn().mockResolvedValue({ data: [{ id: 'x' }, { id: 'y' }], error: null })
+const mockIsChain = vi.fn().mockReturnValue({ select: mockSelect })
 const mockEqChain = { eq: vi.fn().mockReturnThis(), is: mockIsChain }
 const mockInChain = { in: vi.fn().mockReturnValue(mockEqChain) }
 const mockUpdate  = vi.fn().mockReturnValue(mockInChain)
@@ -55,7 +57,8 @@ beforeEach(() => {
   mockUpdate.mockReturnValue(mockInChain)
   mockInChain.in.mockReturnValue(mockEqChain)
   mockEqChain.eq.mockReturnThis()
-  mockIsChain.mockResolvedValue({ error: null, count: VALID_IDS.length })
+  mockIsChain.mockReturnValue({ select: mockSelect })
+  mockSelect.mockResolvedValue({ data: VALID_IDS.map(id => ({ id })), error: null })
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -121,15 +124,34 @@ describe('bulkDeleteHomeworks()', () => {
 
   it('DB hatası → { deleted: 0, error }', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    mockIsChain.mockResolvedValue({ error: { message: 'DB down' }, count: null })
+    mockSelect.mockResolvedValue({ data: null, error: { message: 'DB down' } })
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.deleted).toBe(0)
     expect(result.error).toBe('DB down')
   })
 
+  it('REGRESYON: başkasının ödevi atlanınca deleted şişirilmez, skipped raporlanır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    // 2 ödev seçildi, DB yalnızca 1'ini güncelledi (diğeri başka öğretmenin)
+    mockSelect.mockResolvedValue({ data: [{ id: VALID_IDS[0] }], error: null })
+    const result = await bulkDeleteHomeworks(VALID_IDS)
+    expect(result.error).toBeUndefined()
+    expect(result.deleted).toBe(1)
+    expect(result.skipped).toBe(1)
+  })
+
+  it('REGRESYON: hiçbir satır güncellenmezse deleted 0 döner (sessiz başarı yok)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    mockSelect.mockResolvedValue({ data: [], error: null })
+    const result = await bulkDeleteHomeworks(VALID_IDS)
+    expect(result.error).toBeUndefined()
+    expect(result.deleted).toBe(0)
+    expect(result.skipped).toBe(VALID_IDS.length)
+  })
+
   it('karma liste: sadece geçerli UUID\'ler işlenir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    mockIsChain.mockResolvedValue({ error: null, count: 1 })
+    mockSelect.mockResolvedValue({ data: [{ id: VALID_IDS[0] }], error: null })
     const result = await bulkDeleteHomeworks([VALID_IDS[0], 'gecersiz-uuid'])
     expect(result.error).toBeUndefined()
     // Sadece 1 geçerli ID işlendi

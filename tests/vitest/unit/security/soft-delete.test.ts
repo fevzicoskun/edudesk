@@ -145,17 +145,16 @@ describe('HomeworkService.deleteHomework() — soft delete', () => {
     await HomeworkService.deleteHomework(HW_ID)
 
     expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
-    expect(HomeworkRepository.softDeleteHomeworkAsManager).not.toHaveBeenCalled()
   })
 
-  it('school-scope: softDeleteHomeworkAsManager çağrılır', async () => {
+  it('school-scope yönetici de teacher_id filtreli silme kullanır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
-    vi.mocked(HomeworkRepository.softDeleteHomeworkAsManager).mockResolvedValue({ error: null } as never)
+    vi.mocked(HomeworkRepository.softDeleteHomework).mockResolvedValue({ error: null } as never)
 
     await HomeworkService.deleteHomework(HW_ID)
 
-    expect(HomeworkRepository.softDeleteHomeworkAsManager).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
-    expect(HomeworkRepository.softDeleteHomework).not.toHaveBeenCalled()
+    // Okul kapsamlı izin olsa bile silme sahibiyle sınırlıdır
+    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
   })
 
   it('silme başarısız (DB hatası) → error döner', async () => {
@@ -170,20 +169,30 @@ describe('HomeworkService.deleteHomework() — soft delete', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
-describe('HomeworkService.restoreHomework() — sadece yönetici', () => {
-  it('own-scope öğretmen restore edemez → { error }', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
+describe('HomeworkService.restoreHomework() — sadece kendi ödevi', () => {
+  it('homework:update izni yoksa restore edemez → { error }', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
     const result = await HomeworkService.restoreHomework(HW_ID)
     expect(result.error).toBeTruthy()
     expect(HomeworkRepository.restoreHomework).not.toHaveBeenCalled()
   })
 
-  it('school-scope yönetici restore edebilir', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
+  it('öğretmen kendi sildiği ödevi geri alır — teacher_id filtreli', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
     vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ error: null } as never)
 
     const result = await HomeworkService.restoreHomework(HW_ID)
     expect(result.error).toBeUndefined()
-    expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith(HW_ID, SCHOOL_ID)
+    expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
+  })
+
+  it('başkasının sildiği ödev (repo 0 satır) → hata döner', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
+    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({
+      error: { message: 'Ödev bulunamadı veya yetkiniz yok.' },
+    } as never)
+
+    const result = await HomeworkService.restoreHomework(HW_ID)
+    expect(result.error).toBe('Ödev bulunamadı veya yetkiniz yok.')
   })
 })

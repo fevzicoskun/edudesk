@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useState, useTransition, type ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { bulkDeleteHomeworks } from '@/app/actions/homework'
 
@@ -22,7 +22,14 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [result, setResult] = useState<{ deleted: number; skipped: number } | null>(null)
   const router = useRouter()
+
+  useEffect(() => {
+    if (!result) return
+    const t = setTimeout(() => setResult(null), 5000)
+    return () => clearTimeout(t)
+  }, [result])
 
   function toggle(id: string) {
     setSelected(prev => {
@@ -46,10 +53,15 @@ export function BulkProvider({ children }: { children: ReactNode }) {
       setConfirmingDelete(true)
       return
     }
+    const count = selected.size
     startTransition(async () => {
-      await bulkDeleteHomeworks([...selected])
+      const res = await bulkDeleteHomeworks([...selected])
       setBulkMode(false)
       setConfirmingDelete(false)
+      // Kısmi başarı sessiz kalmasın: silinmeyen ödev varsa kullanıcı görsün
+      setResult(res.error
+        ? { deleted: 0, skipped: count }
+        : { deleted: res.deleted, skipped: res.skipped })
       router.refresh()
     })
   }
@@ -57,6 +69,26 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   return (
     <BulkContext.Provider value={{ bulkMode, selected, toggle, setBulkMode }}>
       {children}
+
+      {/* Silme sonucu — kaç ödev silindi, kaçı atlandı */}
+      {result && (
+        <div
+          role="status"
+          className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl ${
+            result.deleted === 0
+              ? 'bg-red-600 text-white'
+              : result.skipped > 0
+                ? 'bg-amber-600 text-white'
+                : 'bg-gray-900 dark:bg-slate-700 text-white'
+          }`}
+        >
+          {result.deleted === 0
+            ? 'Hiçbir ödev silinemedi — yalnızca kendi ödevlerinizi silebilirsiniz.'
+            : result.skipped > 0
+              ? `${result.deleted} ödev silindi · ${result.skipped} ödev size ait olmadığı için silinemedi.`
+              : `${result.deleted} ödev silindi.`}
+        </div>
+      )}
 
       {/* Floating action bar */}
       {bulkMode && (

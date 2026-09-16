@@ -112,46 +112,22 @@ export const HomeworkRepository = {
     return { error: null }
   },
 
-  async updateHomeworkAsManager(
-    homeworkId: string,
-    schoolId: string,
-    data: {
-      title: string
-      subject: string
-      description: string | null
-      due_date: string | null
-      source_id: string | null
-      class_id: string
-    }
-  ) {
+  async softDeleteHomework(homeworkId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
     const { data: rows, error } = await supabase.from('homeworks')
-      .update(data)
+      .update({ deleted_at: new Date().toISOString(), deleted_by: teacherId })
       .eq('id', homeworkId)
+      .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .select('id')
     if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı.' } }
+    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı veya yetkiniz yok.' } }
     return { error: null }
   },
 
-  async softDeleteHomework(homeworkId: string, teacherId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase.from('homeworks')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: teacherId })
-      .eq('id', homeworkId).eq('teacher_id', teacherId).eq('school_id', schoolId)
-  },
-
-  // Zümre başkanı: teacher_id filtresi yok, okul kapsamlı silme
-  async softDeleteHomeworkAsManager(homeworkId: string, deletedBy: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase.from('homeworks')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-      .eq('id', homeworkId).eq('school_id', schoolId)
-  },
-
-  // Öğretmen kendi ödevlerini toplu siler — teacher_id ile sınırlı
+  // Öğretmen kendi ödevlerini toplu siler — teacher_id ile sınırlı.
+  // Silinen satırların id'lerini döndürür: RLS/sahiplik nedeniyle atlananlar çağırana görünür.
   async bulkSoftDeleteHomeworks(ids: string[], teacherId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('homeworks')
@@ -160,13 +136,22 @@ export const HomeworkRepository = {
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
+      .select('id')
   },
 
-  async restoreHomework(homeworkId: string, schoolId: string) {
+  // Öğretmen yalnızca kendi sildiği ödevi geri alır
+  async restoreHomework(homeworkId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('homeworks')
+    const { data: rows, error } = await supabase.from('homeworks')
       .update({ deleted_at: null, deleted_by: null })
-      .eq('id', homeworkId).eq('school_id', schoolId)
+      .eq('id', homeworkId)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
+      .not('deleted_at', 'is', null)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // Haftalık ödev yükü için ham satırlar — saf hesaplama lib/week-load.buildClassWeekLoad'da yapılır

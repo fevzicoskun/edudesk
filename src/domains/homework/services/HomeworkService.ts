@@ -167,10 +167,8 @@ export const HomeworkService = {
     const classExists = await HomeworkRepository.classExistsInSchool(data.class_id, ability.schoolId)
     if (!classExists) return { error: 'Geçersiz sınıf' }
 
-    const isManager = ability.scope(P.HOMEWORK.UPDATE) === 'school'
-    const { error } = isManager
-      ? await HomeworkRepository.updateHomeworkAsManager(id, ability.schoolId, data)
-      : await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, data)
+    // Ödeve yazma yalnızca sahibine ait — yönetici de başkasının ödevini değiştiremez
+    const { error } = await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, data)
 
     if (error) return { error: error.message }
     return {}
@@ -181,41 +179,38 @@ export const HomeworkService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.DELETE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const isManager =
-      ability.scope(P.HOMEWORK.DELETE) === 'school' ||
-      ability.scope(P.HOMEWORK.UPDATE) === 'school'
-
-    const { error } = isManager
-      ? await HomeworkRepository.softDeleteHomeworkAsManager(id, ability.userId, ability.schoolId)
-      : await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
-
+    const { error } = await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
     if (error) return { error: error.message }
     return {}
   },
 
-  async bulkDelete(ids: string[]): Promise<{ deleted: number; error?: string }> {
+  /** Seçilenlerden yalnızca kullanıcının kendi ödevleri silinir; atlananlar `skipped` ile raporlanır. */
+  async bulkDelete(ids: string[]): Promise<{ deleted: number; skipped: number; error?: string }> {
     const ability = await getAbility()
-    if (!ability) return { deleted: 0, error: 'Giriş gerekli' }
-    if (ability.cannot(P.HOMEWORK.DELETE)) return { deleted: 0, error: 'Bu işlem için yetkiniz yok.' }
+    if (!ability) return { deleted: 0, skipped: ids.length, error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.DELETE)) {
+      return { deleted: 0, skipped: ids.length, error: 'Bu işlem için yetkiniz yok.' }
+    }
 
-    const { error, count } = await HomeworkRepository.bulkSoftDeleteHomeworks(
+    const { data: rows, error } = await HomeworkRepository.bulkSoftDeleteHomeworks(
       ids, ability.userId, ability.schoolId,
     )
     if (error) {
       logger.error({ schoolId: ability.schoolId, code: error.code }, 'bulkDelete DB hatası')
-      return { deleted: 0, error: error.message }
+      return { deleted: 0, skipped: ids.length, error: error.message }
     }
-    return { deleted: count ?? ids.length }
+    // Gerçekten güncellenen satırlar sayılır — 0 satır güncellemek DB hatası değildir,
+    // ids.length'e düşmek sessiz kayba yol açardı.
+    const deleted = rows?.length ?? 0
+    return { deleted, skipped: ids.length - deleted }
   },
 
   async restoreHomework(id: string): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
-    // Restore requires school-wide scope — own-scope teachers cannot restore
-    const scope = ability.scope(P.HOMEWORK.UPDATE)
-    if (!scope || scope === 'own') return { error: 'Bu işlem için yetkiniz yok.' }
+    if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const { error } = await HomeworkRepository.restoreHomework(id, ability.schoolId)
+    const { error } = await HomeworkRepository.restoreHomework(id, ability.userId, ability.schoolId)
     if (error) return { error: error.message }
     return {}
   },
