@@ -7,13 +7,16 @@
  * öğrenci profili (raporlar) UI'ı. assignClassMentor için ayrıca unit test vardır
  * (tests/vitest/unit/mentor/). Bu dosya yalnızca RLS politikalarının doğruluğunu doğrular.
  *
- * mentor_reports (sistem öğrencileri için):
- *    - Sadece sınıfın mentor_teacher_id'sine atanmış öğretmen rapor ekleyebilir
+ * mentor_reports (mentörlük görüşme notları):
+ *    - Not ekleme yetkisi artık sınıf rehberliğinden (classes.mentor_teacher_id) değil,
+ *      kişisel mentörlük bağından gelir (mentorships: mentor_id + student_id + school_id)
+ *      — 2026-09-16 spec kararı, bkz. migrations/20260916140000_mentorluk.sql
  *    - Raporu yazan mentor silebilir, başkaları silemez
- *    - Okuma: sadece kendi + yöneticiler (mudur, mudur_yardimcisi, zumre_baskani)
+ *    - Okuma: YALNIZ raporu yazan mentör — yönetici rolleri dahil (mudur, mudur_yardimcisi,
+ *      zumre_baskani) kimse başkasının notunu okuyamaz (hassas aile/özel durum bilgisi)
  *
  * Saldırı vektörleri (yorum olarak belgelenmiştir):
- *   A. class_id değiştirme: Mentör olmayan sınıf için rapor ekleme girişimi
+ *   A. mentorships bağı olmadan rapor ekleme girişimi
  *   B. mentor_id taklit: Başka öğretmen adına rapor ekleme
  *   C. Cross-school: Okul B öğretmeni Okul A verilerine erişim
  */
@@ -34,9 +37,9 @@ import { assertCanRead, assertCannotRead, assertInsertBlocked, assertDeleteBlock
 
 let school:          TestSchool
 let schoolB:         TestSchool
-let mentorTeacher:   TestUser  // class'a atanmış mentor
-let otherTeacher:    TestUser  // aynı okul, mentor değil
-let manager:         TestUser  // mudur_yardimcisi — rapor okuyabilir
+let mentorTeacher:   TestUser  // studentId için kişisel mentörlük bağı olan mentor
+let otherTeacher:    TestUser  // aynı okul, mentörlük bağı yok
+let manager:         TestUser  // mudur_yardimcisi — spec kararıyla artık rapor okuyamaz
 let teacherB:        TestUser  // başka okul öğretmeni
 
 let tokenMentor:  string
@@ -44,9 +47,9 @@ let tokenOther:   string
 let tokenManager: string
 let tokenB:       string
 
-let classId:   string  // mentorTeacher'ın atandığı sınıf
-let classNoMentor: string  // mentor atanmamış sınıf
-let studentId: string  // classId içindeki öğrenci
+let classId:   string  // öğrencilerin bulunduğu sınıf
+let studentId: string  // mentorTeacher'ın mentörlük listesindeki öğrenci
+let studentIdNoMentorship: string  // aynı sınıfta, mentörlük bağı OLMAYAN öğrenci
 let reportId:  string  // mentorTeacher'ın eklediği rapor
 
 beforeAll(async () => {
@@ -69,30 +72,32 @@ beforeAll(async () => {
     signInTestUser(teacherB.email,      teacherB.password),
   ])
 
-  // mentorTeacher'ı sınıfa mentor olarak ata
   const { data: cls } = await serviceDb
     .from('classes')
-    .insert({
-      name: 'Mentor Test Sınıfı', grade: 10, academic_year: '2025-2026',
-      school_id: school.id,
-      mentor_teacher_id: mentorTeacher.id,
-    })
+    .insert({ name: 'Mentor Test Sınıfı', grade: 10, academic_year: '2025-2026', school_id: school.id })
     .select('id').single()
   classId = cls!.id
 
-  // Mentor atanmamış sınıf
-  const { data: cls2 } = await serviceDb
-    .from('classes')
-    .insert({ name: 'Mentor Yok Sınıfı', grade: 11, academic_year: '2025-2026', school_id: school.id })
-    .select('id').single()
-  classNoMentor = cls2!.id
-
-  // Sınıfa öğrenci ekle
+  // Sınıfa öğrenci ekle (mentorTeacher'ın mentörlük listesindeki öğrenci)
   const { data: stu } = await serviceDb
     .from('students')
     .insert({ full_name: 'Mentor Test Öğrenci', student_number: null, class_id: classId, school_id: school.id })
     .select('id').single()
   studentId = stu!.id
+
+  // Aynı sınıfta, kimseyle mentörlük bağı OLMAYAN ikinci öğrenci
+  const { data: stu2 } = await serviceDb
+    .from('students')
+    .insert({ full_name: 'Mentörlüksüz Öğrenci', student_number: null, class_id: classId, school_id: school.id })
+    .select('id').single()
+  studentIdNoMentorship = stu2!.id
+
+  // mentorTeacher'ı studentId için kişisel mentörlük listesine ekle — yeni yetki modelinin temeli
+  await serviceDb.from('mentorships').insert({
+    mentor_id:  mentorTeacher.id,
+    student_id: studentId,
+    school_id:  school.id,
+  })
 
   // mentorTeacher adına servis clienti ile rapor ekle (read testleri için)
   const { data: rpt } = await serviceDb
@@ -122,8 +127,9 @@ describe('mentor_reports SELECT: kimler okuyabilir', () => {
     await assertCanRead(createUserClient(tokenMentor), 'mentor_reports', reportId, 'mentor')
   })
 
-  it('mudur_yardimcisi tüm okul raporlarını okuyabilir', async () => {
-    await assertCanRead(createUserClient(tokenManager), 'mentor_reports', reportId, 'manager')
+  it('mudur_yardimcisi okuyamaz — notlar yalnız mentöre özeldir', async () => {
+    // Spec kararı: aile/özel durum bilgisi hassas; yönetici rolleri de erişemez
+    await assertCannotRead(createUserClient(tokenManager), 'mentor_reports', reportId, 'manager')
   })
 
   it('aynı okuldaki başka öğretmen okuyamaz', async () => {
@@ -138,7 +144,7 @@ describe('mentor_reports SELECT: kimler okuyabilir', () => {
 })
 
 // ─── mentor_reports INSERT politikası ────────────────────────────────────────
-describe('mentor_reports INSERT: sadece atanmış mentor yazabilir', () => {
+describe('mentor_reports INSERT: sadece mentörlük listesindeki mentör yazabilir', () => {
   const baseRow = () => ({
     student_id:  studentId,
     class_id:    classId,
@@ -147,7 +153,7 @@ describe('mentor_reports INSERT: sadece atanmış mentor yazabilir', () => {
     report_date: '2026-05-15',
   })
 
-  it('mentör kendi atandığı sınıf için rapor ekleyebilir', async () => {
+  it('mentörlük listesindeki öğrenci için rapor ekleyebilir', async () => {
     const client = createUserClient(tokenMentor)
     const { error } = await client.from('mentor_reports').insert({
       ...baseRow(),
@@ -156,8 +162,18 @@ describe('mentor_reports INSERT: sadece atanmış mentor yazabilir', () => {
     expect(error).toBeNull()
   })
 
-  it('mentor olmayan öğretmen rapor ekleyemez — sınıfa atanmamış', async () => {
-    // Saldırı A: mentor_teacher_id = NULL olan sınıf için rapor ekleme girişimi
+  it('mentörlük listesinde olmayan öğrenciye rapor eklenemez', async () => {
+    // mentorships bağı yoksa RLS reddeder — yeni yetki modelinin özü
+    await assertInsertBlocked(
+      createUserClient(tokenMentor),
+      'mentor_reports',
+      { ...baseRow(), student_id: studentIdNoMentorship, mentor_id: mentorTeacher.id },
+      'not in mentorship list'
+    )
+  })
+
+  it('mentor olmayan öğretmen rapor ekleyemez — mentörlük bağı yok', async () => {
+    // Saldırı A: mentorships kaydı olmayan öğretmen rapor ekleme girişimi
     await assertInsertBlocked(
       createUserClient(tokenOther),
       'mentor_reports',
