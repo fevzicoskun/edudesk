@@ -27,13 +27,16 @@ export const MentorService = {
       logger.error({ event: 'mentorship_list_failed', userId: ability.userId, err: listRes.error.message }, 'Mentörlük listesi okunamadı')
       return []
     }
+    if (dateRes.error) {
+      logger.error({ event: 'mentorship_last_report_dates_failed', userId: ability.userId, err: dateRes.error.message }, 'Son görüşme tarihleri okunamadı')
+    }
     // report_date'e göre azalan sıralı geldiği için ilk görülen en yenisidir
     const sonGorusme = new Map<string, string>()
     for (const r of dateRes.data ?? []) {
       if (!sonGorusme.has(r.student_id)) sonGorusme.set(r.student_id, r.report_date)
     }
     return (listRes.data ?? []).map(row => {
-      const s = row.students as unknown as { full_name: string; classes: { name: string } | null } | null
+      const s = row.students
       return {
         student_id:       row.student_id,
         full_name:        s?.full_name ?? '—',

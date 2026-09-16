@@ -21,6 +21,7 @@
  *   C. Cross-school: Okul B öğretmeni Okul A verilerine erişim
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   serviceDb,
   createUserClient,
@@ -224,5 +225,72 @@ describe('mentor_reports DELETE: sadece yazan mentör silebilir', () => {
       serviceDb,
       'cross-school-delete'
     )
+  })
+})
+
+// ─── mentorships DELETE: "sessiz silme yasak" kuralının gerçek DB'ye karşı doğrulanması ────
+//
+// Bulgu 3 (task-3 review): MentorRepository.deleteMentorship()'teki 0-satır → hata mantığı
+// yalnızca mock'lu unit testte dolaylı doğrulanmıştı. Bu blok aynı mantığı — 0 satır etkilenirse
+// 'Kayıt bulunamadı veya yetkiniz yok.' hatası dön, sessizce başarı DEĞİL — gerçek Supabase
+// yanıtına karşı test eder.
+//
+// MentorRepository.deleteMentorship, createClient() (next/headers cookie tabanlı server client)
+// kullandığından bu dosyada doğrudan çağrılamıyor (Next.js request context gerektiriyor).
+// Bunun yerine repository'nin BİREBİR aynı sorgu/karar mantığı burada tekrarlanıp
+// RLS'i uygulayan createUserClient ile gerçek DB'ye karşı çalıştırılıyor — doğrulanan şey
+// mock değil, RLS'in gerçekten 0 satır döndürdüğü ve bu 0 satırın hataya çevrildiğidir.
+describe('mentorships DELETE: sessiz silme yasak kuralı gerçek DB karşısında', () => {
+  // MentorRepository.deleteMentorship ile birebir aynı sorgu + karar mantığı
+  async function deleteMentorshipLike(
+    client: SupabaseClient,
+    targetStudentId: string,
+    targetMentorId: string,
+    schoolId: string
+  ) {
+    const { data: rows, error } = await client
+      .from('mentorships')
+      .delete()
+      .eq('student_id', targetStudentId)
+      .eq('mentor_id', targetMentorId)
+      .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
+  }
+
+  it('mentör kendi mentörlük kaydını silebilir — kayıt gerçekten gider', async () => {
+    const result = await deleteMentorshipLike(createUserClient(tokenMentor), studentId, mentorTeacher.id, school.id)
+    expect(result.error).toBeNull()
+
+    const { data: after } = await serviceDb
+      .from('mentorships')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorTeacher.id)
+    expect(after ?? []).toHaveLength(0)
+
+    // Bu describe bloğunun ikinci testi aynı kaydın var olduğunu varsayıyor — geri yükle.
+    const { error: restoreErr } = await serviceDb
+      .from('mentorships')
+      .insert({ mentor_id: mentorTeacher.id, student_id: studentId, school_id: school.id })
+    if (restoreErr) throw new Error(`mentorships geri yükleme hatası: ${restoreErr.message}`)
+  })
+
+  it('başka öğretmen mentörlük kaydını silmeye çalışınca 0 satır etkilenir — hata döner, sessiz başarı değil', async () => {
+    // otherTeacher, mentorTeacher'ın mentörlük kaydını silmeye çalışıyor.
+    // RLS (mentorships_owner_all: mentor_id = auth.uid()) bu satırı otherTeacher'a hiç göstermez
+    // → DELETE 0 satır etkiler, supabase-js hata döndürmez (sessiz). deleteMentorship bunu
+    // açık bir hataya çevirmek ZORUNDA — aksi halde çağıran "başarılı silindi" sanır.
+    const result = await deleteMentorshipLike(createUserClient(tokenOther), studentId, mentorTeacher.id, school.id)
+    expect(result.error).toEqual({ message: 'Kayıt bulunamadı veya yetkiniz yok.' })
+
+    const { data: after } = await serviceDb
+      .from('mentorships')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorTeacher.id)
+    expect(after ?? [], 'kayıt silinmemiş olmalı').toHaveLength(1)
   })
 })

@@ -7,9 +7,10 @@ export const MentorRepository = {
     const supabase = await createClient()
     return supabase
       .from('mentorships')
-      .select('id, student_id, students(id, full_name, class_id, classes(name))')
+      .select('id, student_id, students!inner(id, full_name, class_id, deleted_at, classes(name))')
       .eq('mentor_id', mentorId)
       .eq('school_id', schoolId)
+      .is('students.deleted_at', null)
       .order('created_at')
   },
 
