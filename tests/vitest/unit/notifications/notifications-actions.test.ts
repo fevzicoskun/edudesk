@@ -284,6 +284,16 @@ describe('saveNotificationPreferences()', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/ayarlar')
   })
 
+  it('upsert hatası sessiz kalmaz — hata döner, revalidate edilmez', async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(MOCK_USER as never)
+    vi.mocked(createClient).mockResolvedValue(makeSupabase({ data: null, error: { message: 'db down' } }) as never)
+    const { revalidatePath } = await import('next/cache')
+    vi.mocked(revalidatePath).mockClear()
+    const r = await saveNotificationPreferences(makeFormData('3', 'on'))
+    expect(r.error).toBe('Tercihler kaydedilemedi, tekrar deneyin.')
+    expect(revalidatePath).not.toHaveBeenCalled()
+  })
+
   it('from("notification_preferences") ile upsert çalışır', async () => {
     vi.mocked(getCurrentUser).mockResolvedValue(MOCK_USER as never)
     const mockDb = makeSupabase({ data: null, error: null })

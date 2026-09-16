@@ -61,16 +61,18 @@ export async function getNotificationPreferences() {
   return data ?? { days_before: 1, email_on: true }
 }
 
-export async function saveNotificationPreferences(formData: FormData) {
+export async function saveNotificationPreferences(formData: FormData): Promise<{ error?: string }> {
   const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
-  if (!user) return
+  if (!user) return { error: 'Oturum bulunamadı, tekrar giriş yapın.' }
 
   const days_before = Math.min(7, Math.max(1, Number(formData.get('days_before')) || 1))
   const email_on = formData.get('email_on') === 'on'
 
-  await supabase
+  const { error } = await supabase
     .from('notification_preferences')
     .upsert({ user_id: user.id, days_before, email_on, updated_at: new Date().toISOString() })
+  if (error) return { error: 'Tercihler kaydedilemedi, tekrar deneyin.' }
 
-  revalidatePath('/ayarlar')
+  revalidatePath('/ayarlar') // bileşen profil/ klasöründe ama /ayarlar'da render ediliyor
+  return {}
 }

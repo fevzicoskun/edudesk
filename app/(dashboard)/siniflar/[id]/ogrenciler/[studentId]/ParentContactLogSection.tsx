@@ -129,12 +129,15 @@ export default function ParentContactLogSection({
 }) {
   const [isPending, startTransition] = useTransition()
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function handleDelete(logId: string) {
     if (!confirm('Bu kayıt silinecek. Emin misiniz?')) return
     setDeletingId(logId)
+    setDeleteError(null)
     startTransition(async () => {
-      await deleteParentContactLog(logId, studentId, classId)
+      const r = await deleteParentContactLog(logId, studentId, classId)
+      if (r.error) setDeleteError(r.error)
       setDeletingId(null)
     })
   }
@@ -145,6 +148,7 @@ export default function ParentContactLogSection({
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Veli İletişim Günlüğü</h2>
         <AddLogForm studentId={studentId} classId={classId} />
       </div>
+      {deleteError && <p role="alert" className="text-sm text-red-600 dark:text-red-400 mb-2">{deleteError}</p>}
 
       {logs.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-6">Henüz kayıt yok.</p>

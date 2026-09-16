@@ -11,9 +11,9 @@ interface Props {
 
 export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Props) {
   const [state, action, pending] = useActionState(
-    async (_prev: { ok: boolean } | null, formData: FormData) => {
-      await saveNotificationPreferences(formData)
-      return { ok: true }
+    async (_prev: { ok: boolean; error?: string } | null, formData: FormData) => {
+      const r = await saveNotificationPreferences(formData)
+      return r.error ? { ok: false, error: r.error } : { ok: true }
     },
     null
   )
@@ -60,6 +60,9 @@ export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Prop
           </button>
           {state?.ok && (
             <span className="text-sm text-green-600 dark:text-green-400">Kaydedildi</span>
+          )}
+          {state?.error && (
+            <span role="alert" className="text-sm text-red-600 dark:text-red-400">{state.error}</span>
           )}
         </div>
       </form>
