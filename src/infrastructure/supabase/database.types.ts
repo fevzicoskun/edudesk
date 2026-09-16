@@ -1326,6 +1326,90 @@ export type Database = {
           },
         ]
       }
+      mentor_profiles: {
+        Row: {
+          family_info: string | null
+          goals_long: string | null
+          goals_short: string | null
+          id: string
+          interests: string | null
+          mentor_id: string
+          rules_explained_at: string | null
+          school_id: string
+          special_note: string | null
+          student_id: string
+          study_environment: string | null
+          support_request: string | null
+          updated_at: string
+        }
+        Insert: {
+          family_info?: string | null
+          goals_long?: string | null
+          goals_short?: string | null
+          id?: string
+          interests?: string | null
+          mentor_id: string
+          rules_explained_at?: string | null
+          school_id: string
+          special_note?: string | null
+          student_id: string
+          study_environment?: string | null
+          support_request?: string | null
+          updated_at?: string
+        }
+        Update: {
+          family_info?: string | null
+          goals_long?: string | null
+          goals_short?: string | null
+          id?: string
+          interests?: string | null
+          mentor_id?: string
+          rules_explained_at?: string | null
+          school_id?: string
+          special_note?: string | null
+          student_id?: string
+          study_environment?: string | null
+          support_request?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_profiles_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_profiles_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "mentor_profiles_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_profiles_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentor_reports: {
         Row: {
           class_id: string
@@ -1409,97 +1493,63 @@ export type Database = {
           },
         ]
       }
-      mentor_student_notes: {
+      mentorships: {
         Row: {
-          content: string
           created_at: string
           id: string
-          mentor_student_id: string
+          mentor_id: string
           school_id: string
-          teacher_id: string
+          student_id: string
         }
         Insert: {
-          content: string
           created_at?: string
           id?: string
-          mentor_student_id: string
+          mentor_id: string
           school_id: string
-          teacher_id: string
+          student_id: string
         }
         Update: {
-          content?: string
           created_at?: string
           id?: string
-          mentor_student_id?: string
+          mentor_id?: string
           school_id?: string
-          teacher_id?: string
+          student_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "mentor_student_notes_mentor_student_id_fkey"
-            columns: ["mentor_student_id"]
+            foreignKeyName: "mentorships_mentor_id_fkey"
+            columns: ["mentor_id"]
             isOneToOne: false
-            referencedRelation: "mentor_students"
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mentor_student_notes_school_id_fkey"
+            foreignKeyName: "mentorships_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "schools"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mentor_student_notes_school_id_fkey"
+            foreignKeyName: "mentorships_school_id_fkey"
             columns: ["school_id"]
             isOneToOne: false
             referencedRelation: "tenant_metrics"
             referencedColumns: ["school_id"]
           },
-        ]
-      }
-      mentor_students: {
-        Row: {
-          created_at: string
-          full_name: string
-          id: string
-          parent_name: string | null
-          phone: string | null
-          school_id: string
-          teacher_id: string
-        }
-        Insert: {
-          created_at?: string
-          full_name: string
-          id?: string
-          parent_name?: string | null
-          phone?: string | null
-          school_id: string
-          teacher_id: string
-        }
-        Update: {
-          created_at?: string
-          full_name?: string
-          id?: string
-          parent_name?: string | null
-          phone?: string | null
-          school_id?: string
-          teacher_id?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "mentor_students_school_id_fkey"
-            columns: ["school_id"]
+            foreignKeyName: "mentorships_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "schools"
+            referencedRelation: "active_students"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "mentor_students_school_id_fkey"
-            columns: ["school_id"]
+            foreignKeyName: "mentorships_student_id_fkey"
+            columns: ["student_id"]
             isOneToOne: false
-            referencedRelation: "tenant_metrics"
-            referencedColumns: ["school_id"]
+            referencedRelation: "students"
+            referencedColumns: ["id"]
           },
         ]
       }
