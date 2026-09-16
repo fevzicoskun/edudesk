@@ -22,16 +22,24 @@ export const ClassRepository = {
 
   async softDeleteStudent(studentId: string, schoolId: string, deletedBy: string) {
     const supabase = await createClient()
-    return supabase.from('students')
+    const { data: rows, error } = await supabase.from('students')
       .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
       .eq('id', studentId).eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async restoreStudent(studentId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('students')
+    const { data: rows, error } = await supabase.from('students')
       .update({ deleted_at: null, deleted_by: null })
       .eq('id', studentId).eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async insertStudent(data: { class_id: string; full_name: string; student_number: string | null; school_id: string }) {
@@ -46,8 +54,12 @@ export const ClassRepository = {
 
   async deleteStudentNote(noteId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase.from('student_notes').delete()
+    const { data: rows, error } = await supabase.from('student_notes').delete()
       .eq('id', noteId).eq('teacher_id', teacherId).eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async insertStudentNote(data: { teacher_id: string; student_id: string; body: string; school_id: string }) {
@@ -94,11 +106,15 @@ export const ClassRepository = {
 
   async deleteParentContactLog(logId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase
+    const { data: rows, error } = await supabase
       .from('parent_contact_logs')
       .delete()
       .eq('id', logId)
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 }

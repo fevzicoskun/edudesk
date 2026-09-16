@@ -42,22 +42,30 @@ export const MeetingRepository = {
 
   async updateStatus(id: string, teacherId: string, schoolId: string, status: MeetingStatus) {
     const db = await createClient()
-    return db
+    const { data: rows, error } = await db
       .from('parent_meetings')
       .update({ status })
       .eq('id', id)
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async deleteById(id: string, teacherId: string, schoolId: string) {
     const db = await createClient()
-    return db
+    const { data: rows, error } = await db
       .from('parent_meetings')
       .delete()
       .eq('id', id)
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // Öğrenci 360: bir öğrencinin görüşmeleri. Görünürlüğü RLS kırpar

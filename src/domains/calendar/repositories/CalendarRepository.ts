@@ -59,11 +59,15 @@ export const CalendarRepository = {
   // Soft-delete (RLS UPDATE policy'si müdür/MY zorlar).
   async softDeleteEvent(id: string, schoolId: string, deletedBy: string) {
     const db = await createClient()
-    return db
+    const { data: rows, error } = await db
       .from('school_events')
       .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
       .eq('id', id)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 }

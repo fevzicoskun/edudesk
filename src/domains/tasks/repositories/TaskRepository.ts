@@ -45,25 +45,36 @@ export const TaskRepository = {
   // Tamamla / geri-aç. done=true → done_at now; false → null.
   async setDone(id: string, userId: string, done: boolean) {
     const db = await createClient()
-    return db
+    const { data: rows, error } = await db
       .from('tasks')
       .update({ done_at: done ? new Date().toISOString() : null })
       .eq('id', id)
       .eq('user_id', userId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // Ertele (untilDate) veya ertelemeyi kaldır (null).
   async setSnooze(id: string, userId: string, untilDate: string | null) {
     const db = await createClient()
-    return db
+    const { data: rows, error } = await db
       .from('tasks')
       .update({ snoozed_until: untilDate })
       .eq('id', id)
       .eq('user_id', userId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async deleteById(id: string, userId: string) {
     const db = await createClient()
-    return db.from('tasks').delete().eq('id', id).eq('user_id', userId)
+    const { data: rows, error } = await db.from('tasks').delete().eq('id', id).eq('user_id', userId).select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 }

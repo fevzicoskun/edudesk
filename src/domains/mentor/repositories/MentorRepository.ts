@@ -121,12 +121,16 @@ export const MentorRepository = {
   // Sınıfın mentor_teacher_id'sini set/temizle (teacherId null → kaldır)
   async setClassMentor(classId: string, teacherId: string | null, schoolId: string) {
     const supabase = await createClient()
-    return supabase
+    const { data: rows, error } = await supabase
       .from('classes')
       .update({ mentor_teacher_id: teacherId })
       .eq('id', classId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // Atanacak kişinin aynı okulda bir profil olduğunu doğrula (cross-tenant koruması)

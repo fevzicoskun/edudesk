@@ -47,7 +47,10 @@ export const DutyRepository = {
   // Tek nöbet sil. RLS zaten teacher_id=auth.uid() zorlar; teacher_id eşitliği savunma katmanı.
   async deleteById(id: string, teacherId: string) {
     const db = await createClient()
-    return db.from('teacher_duties').delete().eq('id', id).eq('teacher_id', teacherId)
+    const { data: rows, error } = await db.from('teacher_duties').delete().eq('id', id).eq('teacher_id', teacherId).select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // Müdür/MY: okuldaki tüm nöbetler + öğretmen adı. RLS müdür/MY'ye tüm okul SELECT verir;

@@ -24,12 +24,16 @@ export const HomeworkSourceRepository = {
 
   async deactivate(id: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase
+    const { data: rows, error } = await supabase
       .from('homework_sources')
       .update({ active: false })
       .eq('id', id)
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   async findHomeworkDates(teacherId: string, schoolId: string, since: string) {

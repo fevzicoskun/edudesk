@@ -126,12 +126,14 @@ export const ClassService = {
       if (isTeacher) return { error: 'Bu e-posta bir öğretmene ait. Veli için farklı bir e-posta girin.' }
     }
 
-    const { error } = await supabase
+    const { data: rows, error } = await supabase
       .from('students')
       .update({ veli_email: data.email, veli_telefon: data.telefon, veli_ad: data.ad })
       .eq('id', studentId)
       .eq('school_id', ability.schoolId)
+      .select('id')
     if (error) return { error: error.message }
+    if (!rows || rows.length === 0) return { error: 'Kayıt bulunamadı veya yetkiniz yok.' }
     return {}
   },
 

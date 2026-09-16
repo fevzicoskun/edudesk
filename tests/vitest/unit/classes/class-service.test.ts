@@ -302,9 +302,10 @@ describe('ClassService.updateVeliContact()', () => {
   // email_is_teacher RPC + students update için mock supabase.
   function makeVeliDb({ clash }: { clash: boolean }) {
     const studentsChain: Record<string, unknown> = {}
-    studentsChain.then  = (r: (v: unknown) => unknown) => Promise.resolve({ error: null }).then(r)
-    studentsChain.catch = () => Promise.resolve({ error: null })
-    for (const m of ['update','eq']) studentsChain[m] = vi.fn().mockReturnValue(studentsChain)
+    // Güncellenen satır döner (.select('id')) — 0 satır "Kayıt bulunamadı" sayılır
+    studentsChain.then  = (r: (v: unknown) => unknown) => Promise.resolve({ data: [{ id: 'stu-1' }], error: null }).then(r)
+    studentsChain.catch = () => Promise.resolve({ data: [{ id: 'stu-1' }], error: null })
+    for (const m of ['update','eq','select']) studentsChain[m] = vi.fn().mockReturnValue(studentsChain)
 
     const rpc = vi.fn().mockResolvedValue({ data: clash, error: null })
     const db = { from: vi.fn().mockReturnValue(studentsChain), rpc }
