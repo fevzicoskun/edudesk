@@ -54,6 +54,7 @@ export async function addMentorReport(
   if (result.error) return { error: result.error }
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  revalidatePath(`/mentorluk/${studentId}`)
   return {}
 }
 
@@ -69,5 +70,58 @@ export async function deleteMentorReport(
   if (result.error) return { error: result.error }
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  revalidatePath(`/mentorluk/${studentId}`)
+  return {}
+}
+
+// ── Mentörlük listesi ────────────────────────────────────────────────────────
+
+export async function addMentorship(studentId: string): Promise<ActionResult> {
+  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
+
+  const result = await MentorService.addMentorship(studentId)
+  if (result.error) return { error: result.error }
+
+  revalidatePath('/mentorluk')
+  return {}
+}
+
+export async function removeMentorship(studentId: string): Promise<ActionResult> {
+  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
+
+  const result = await MentorService.removeMentorship(studentId)
+  if (result.error) return { error: result.error }
+
+  revalidatePath('/mentorluk')
+  return {}
+}
+
+// ── Tanıma kartı ─────────────────────────────────────────────────────────────
+
+export async function saveMentorProfile(studentId: string, formData: FormData): Promise<ActionResult> {
+  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
+
+  const result = await MentorService.saveMentorProfile(studentId, {
+    goals_short:       String(formData.get('goals_short') ?? ''),
+    goals_long:        String(formData.get('goals_long') ?? ''),
+    interests:         String(formData.get('interests') ?? ''),
+    family_info:       String(formData.get('family_info') ?? ''),
+    study_environment: String(formData.get('study_environment') ?? ''),
+    special_note:      String(formData.get('special_note') ?? ''),
+    support_request:   String(formData.get('support_request') ?? ''),
+  })
+  if (result.error) return { error: result.error }
+
+  revalidatePath(`/mentorluk/${studentId}`)
+  return {}
+}
+
+export async function markRulesExplained(studentId: string): Promise<ActionResult> {
+  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
+
+  const result = await MentorService.markRulesExplained(studentId)
+  if (result.error) return { error: result.error }
+
+  revalidatePath(`/mentorluk/${studentId}`)
   return {}
 }
