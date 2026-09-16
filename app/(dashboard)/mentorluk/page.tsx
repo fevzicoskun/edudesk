@@ -4,17 +4,11 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { format, parseISO, todayLocalISO } from '@/src/shared/date'
+import { format, parseISO } from '@/src/shared/date'
+import { gunFarki } from '@/src/domains/mentor/mentorshipMath'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 
 export const metadata = { title: 'Mentörlük' }
-
-// Bir öğrenciyle en son ne zaman görüşüldüğünü gün cinsinden verir
-function gunFarki(dateISO: string): number {
-  const bugun = new Date(todayLocalISO() + 'T00:00:00').getTime()
-  const o = new Date(dateISO + 'T00:00:00').getTime()
-  return Math.round((bugun - o) / 86_400_000)
-}
 
 export default async function MentorlukPage() {
   const profile = await getCurrentProfile()

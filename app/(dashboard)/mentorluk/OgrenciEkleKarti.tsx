@@ -67,7 +67,7 @@ export default function OgrenciEkleKarti({ ogrenciler }: { ogrenciler: Ogrenci[]
       </ul>
       <button
         onClick={() => { setAcik(false); setArama(''); setHata(null) }}
-        className="mt-2 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
+        className="mt-2 min-h-[44px] px-1 text-xs text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
       >
         Kapat
       </button>
