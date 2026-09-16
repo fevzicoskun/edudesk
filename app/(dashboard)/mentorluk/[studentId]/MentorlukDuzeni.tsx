@@ -25,7 +25,7 @@ export default function MentorlukDuzeni({
       <ul className="space-y-2 mb-4">
         {MENTORSHIP_RULES.map(madde => (
           <li key={madde} className="flex gap-2 text-sm text-gray-700 dark:text-slate-300">
-            <span aria-hidden="true" className="text-gray-400 dark:text-slate-500">•</span>
+            <span aria-hidden="true" className="text-gray-500 dark:text-slate-400">•</span>
             <span>{madde}</span>
           </li>
         ))}

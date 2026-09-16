@@ -44,7 +44,7 @@ export default function TanimaKarti({ studentId, profil }: { studentId: string; 
         {!duzenle && (
           <button
             onClick={() => setDuzenle(true)}
-            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="inline-flex items-center min-h-[44px] px-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
           >
             Düzenle
           </button>
