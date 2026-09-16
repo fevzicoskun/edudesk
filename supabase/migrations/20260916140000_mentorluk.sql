@@ -38,11 +38,13 @@ alter table mentorships enable row level security;
 alter table mentor_profiles enable row level security;
 
 -- Satır sahibine aittir: dört işlem de aynı koşul
+drop policy if exists mentorships_owner_all on mentorships;
 create policy mentorships_owner_all on mentorships
   for all
   using (mentor_id = (select auth.uid()) and school_id = current_school_id())
   with check (mentor_id = (select auth.uid()) and school_id = current_school_id());
 
+drop policy if exists mentor_profiles_owner_all on mentor_profiles;
 create policy mentor_profiles_owner_all on mentor_profiles
   for all
   using (mentor_id = (select auth.uid()) and school_id = current_school_id())
@@ -53,6 +55,25 @@ drop policy if exists mentor_reports_select on mentor_reports;
 create policy mentor_reports_select on mentor_reports
   for select
   using (mentor_id = (select auth.uid()) and school_id = current_school_id());
+
+-- Not ekleme artık sınıf rehberliğine değil kişisel mentörlük bağına dayanır:
+-- mentörlük bu özellikte sınıf rehber öğretmenliğinden ayrıştırılıp
+-- mentorships tablosundaki kişisel öğrenci listesine taşındı (spec kararı).
+-- Eski koşul (classes.mentor_teacher_id) rehber olmayan mentörlerin kendi
+-- öğrencisine bile not yazmasını RLS seviyesinde engellerdi.
+drop policy if exists mentor_reports_insert on mentor_reports;
+create policy mentor_reports_insert on mentor_reports
+  for insert
+  with check (
+    school_id = current_school_id()
+    and mentor_id = (select auth.uid())
+    and exists (
+      select 1 from mentorships m
+      where m.student_id = mentor_reports.student_id
+        and m.mentor_id = (select auth.uid())
+        and m.school_id = current_school_id()
+    )
+  );
 
 -- Ölü tablolar: 0 kayıt, UI'sı hiç yapılmadı, okul öğrencisine bağlı değildi.
 -- mentor_student_notes, mentor_students'a FK ile bağlıydı (baseline şemasında
