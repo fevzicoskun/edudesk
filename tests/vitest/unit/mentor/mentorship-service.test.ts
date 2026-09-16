@@ -13,6 +13,8 @@ vi.mock('@/src/domains/mentor/repositories/MentorRepository', () => ({
     deleteMentorship: vi.fn(),
     findStudentInSchool: vi.fn(),
     lastReportDates: vi.fn(),
+    findMentorship: vi.fn(),
+    insertMentorReport: vi.fn(),
   },
 }))
 
@@ -98,5 +100,30 @@ describe('MentorService.getMyMentorships()', () => {
       { student_id: 's1', full_name: 'Ahmet', class_name: '11-B', last_report_date: '2026-09-12' },
       { student_id: 's2', full_name: 'Elif', class_name: '11-B', last_report_date: null },
     ])
+  })
+})
+
+describe('MentorService.addMentorReport() — yeni yetki modeli', () => {
+  it('öğrenci mentörlük listemde değilse not eklenemez', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: null } as never)
+    const result = await MentorService.addMentorReport({
+      student_id: STUDENT_ID, class_id: 'c1', content: 'Görüşme yapıldı', report_date: '2026-09-16',
+    })
+    expect(result.error).toBe('Bu öğrenci mentörlük listenizde değil')
+    expect(MentorRepository.insertMentorReport).not.toHaveBeenCalled()
+  })
+
+  it('listemdeki öğrenciye not eklenir, mentor_id sunucudan konur', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: { id: 'm1' } } as never)
+    vi.mocked(MentorRepository.insertMentorReport).mockResolvedValue({ data: { id: 'r1' }, error: null } as never)
+
+    const result = await MentorService.addMentorReport({
+      student_id: STUDENT_ID, class_id: 'c1', content: 'Görüşme yapıldı', report_date: '2026-09-16',
+    })
+
+    expect(result.error).toBeUndefined()
+    const arg = vi.mocked(MentorRepository.insertMentorReport).mock.calls[0][0] as Record<string, unknown>
+    expect(arg.mentor_id).toBe(TEACHER_ID)
+    expect(arg.school_id).toBe(SCHOOL_ID)
   })
 })

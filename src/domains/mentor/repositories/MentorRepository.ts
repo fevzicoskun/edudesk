@@ -55,6 +55,17 @@ export const MentorRepository = {
       .order('report_date', { ascending: false })
   },
 
+  async findMentorship(studentId: string, mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentorships')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .maybeSingle()
+  },
+
   // ── Mentor Reports (sınıf öğrencileri için) ─────────────────────────────
 
   async insertMentorReport(data: {

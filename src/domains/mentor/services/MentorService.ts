@@ -1,7 +1,6 @@
 import { MentorRepository } from '../repositories/MentorRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { mentorProfileSchema, type MentorProfileInput } from '../validators'
 import { todayLocalISO } from '@/src/shared/date'
@@ -101,8 +100,8 @@ export const MentorService = {
     return {}
   },
 
-  // Sınıf öğrencisi için mentor raporu ekle.
-  // Sadece sınıfın mentor_teacher_id'si ekleyebilir.
+  // Öğrenciye mentor görüşme notu ekle.
+  // Sadece öğrencinin kişisel mentörlük listesinde olan mentör ekleyebilir.
   async addMentorReport(data: {
     student_id:  string
     class_id:    string
@@ -111,18 +110,11 @@ export const MentorService = {
   }): Promise<{ error?: string; id?: string }> {
     const ability = await requireAbility()
 
-    // Sınıfın mentörü olduğunu doğrula
-    const supabase = await createClient()
-    const { data: cls } = await supabase
-      .from('classes')
-      .select('mentor_teacher_id')
-      .eq('id', data.class_id)
-      .eq('school_id', ability.schoolId)
-      .single()
-
-    if (!cls || cls.mentor_teacher_id !== ability.userId) {
-      return { error: 'Bu sınıfın mentörü değilsiniz' }
-    }
+    // Yetki: öğrenci mentörün kişisel listesinde olmalı
+    const { data: mentorship } = await MentorRepository.findMentorship(
+      data.student_id, ability.userId, ability.schoolId,
+    )
+    if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
 
     const { data: inserted, error } = await MentorRepository.insertMentorReport({
       mentor_id:   ability.userId,
