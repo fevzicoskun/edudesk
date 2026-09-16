@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
 import path from 'path'
+
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 
@@ -21,8 +24,14 @@ test.describe('Geri bildirim + kullanım beacon\'ı', () => {
   test('feedback formu gönderilir ve teşekkür mesajı görünür', async ({ page }) => {
     await page.goto('/anasayfa')
     await page.getByRole('button', { name: 'Öneri & Destek' }).click()
-    await page.getByPlaceholder('Mesajınızı buraya yazın…').fill('E2E test geri bildirimi — otomatik')
-    await page.getByRole('button', { name: 'Gönder' }).click()
-    await expect(page.getByText('Mesajın iletildi, teşekkürler!')).toBeVisible({ timeout: 10_000 })
+    // Benzersiz mesaj: yalnız bu koşunun satırı silinir (UI'da silme yok, /platform paneli kirlenmesin)
+    const mesaj = `E2E test geri bildirimi — otomatik ${Date.now()}`
+    try {
+      await page.getByPlaceholder('Mesajınızı buraya yazın…').fill(mesaj)
+      await page.getByRole('button', { name: 'Gönder' }).click()
+      await expect(page.getByText('Mesajın iletildi, teşekkürler!')).toBeVisible({ timeout: 10_000 })
+    } finally {
+      await db.from('feedback').delete().eq('message', mesaj)
+    }
   })
 })
