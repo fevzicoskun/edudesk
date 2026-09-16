@@ -37,15 +37,31 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   const todayN = new Date().getDay() // 0=Paz … 6=Cmt; DAYS.n 1..5 ile eşleşir
 
   function applyPage(items: PdfTextItem[], title: string) {
-    const found = parseSchedulePdf(items, classes)
+    const { slots: found, reason, unmatched } = parseSchedulePdf(items, classes)
+    const sayfa = title || 'Sayfa'
+
     if (found.length === 0) {
-      setMsg({ text: `${title || 'Sayfa'}: ders bulunamadı (farklı sayfa ya da taranmış görüntü olabilir). Izgarayı elle doldurabilirsiniz.` })
+      // Hangi adımın düştüğünü söyle — "ders bulunamadı" tek başına teşhis ettirmiyordu
+      const neden =
+        reason === 'sinif-eslesmedi'
+          ? `PDF'teki sınıf adları (${unmatched.slice(0, 4).join(', ')}${unmatched.length > 4 ? '…' : ''}) okulunuzdaki sınıflarla eşleşmedi. Sınıf adlarını aynı yazmak için yöneticinize başvurun.`
+          : reason === 'gun-yok'
+            ? 'gün satırları (Pazartesi…) okunamadı'
+            : reason === 'period-yok'
+              ? 'ders saati sütunları (1. ders…) okunamadı'
+              : 'sayfada metin katmanı yok (taranmış görüntü olabilir)'
+      setMsg({ text: `${sayfa}: ${neden} Izgarayı elle doldurabilirsiniz.` })
       return
     }
+
     setSlots(found)
     setPageChoices(null)
     setEditing(true) // kullanıcı içe aktarılanı kontrol edip kaydetsin
-    setMsg({ ok: true, text: `${title} — ${found.length} ders saati bulundu. Kontrol edip kaydedin.` })
+    // Kısmi eşleşme sessiz kalmasın: bazı dersler düştüyse kullanıcı bilsin
+    const eksik = unmatched.length > 0
+      ? ` ${unmatched.length} sınıf adı (${unmatched.join(', ')}) eşleşmedi, o saatler boş kaldı.`
+      : ''
+    setMsg({ ok: unmatched.length === 0, text: `${sayfa} — ${found.length} ders saati bulundu.${eksik} Kontrol edip kaydedin.` })
   }
 
   async function onPickPdf(e: React.ChangeEvent<HTMLInputElement>) {

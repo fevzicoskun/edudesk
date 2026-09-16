@@ -2,9 +2,10 @@ import { requireAbility } from '@/src/shared/authorization/server'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { ScheduleRepository } from '../repositories/ScheduleRepository'
 import { DEFAULT_PERIODS, validatePeriods, validateSlots, type Period, type Slot } from '../scheduleMath'
+import type { ClassRef } from '../parseSchedulePdf'
 
 export const ScheduleService = {
-  async getMySchedule(): Promise<{ periods: Period[]; slots: Slot[]; classes: { id: string; name: string }[] }> {
+  async getMySchedule(): Promise<{ periods: Period[]; slots: Slot[]; classes: ClassRef[] }> {
     const ability = await requireAbility()
     const [rowRes, classRes] = await Promise.all([
       ScheduleRepository.getByTeacher(ability.userId, ability.schoolId),
@@ -23,7 +24,7 @@ export const ScheduleService = {
     return {
       periods,
       slots,
-      classes: (classRes.data ?? []) as { id: string; name: string }[],
+      classes: (classRes.data ?? []) as ClassRef[],
     }
   },
 

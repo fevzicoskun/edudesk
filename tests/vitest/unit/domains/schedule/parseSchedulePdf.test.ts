@@ -58,7 +58,7 @@ const key = (s: { day: number; period: number; class_id: string }) => `${s.day}-
 
 describe('parseSchedulePdf — gerçek FEVZİ COŞKUN sayfası', () => {
   it('birleştirilmiş hücreleri kapsadıkları her saate yayar (22 ders saati)', () => {
-    const slots = parseSchedulePdf(REAL_ITEMS, CLASSES)
+    const { slots } = parseSchedulePdf(REAL_ITEMS, CLASSES)
     const got = new Set(slots.map(key))
     const expected = [
       '1-7:id-9b',
@@ -72,7 +72,7 @@ describe('parseSchedulePdf — gerçek FEVZİ COŞKUN sayfası', () => {
   })
 
   it('M / S-MAT / mntör etiketlerini sınıf saymaz', () => {
-    const slots = parseSchedulePdf(CELLS.filter(c => ['M', 'S-MAT', 'mntör'].includes(c.str)), CLASSES)
+    const { slots } = parseSchedulePdf(CELLS.filter(c => ['M', 'S-MAT', 'mntör'].includes(c.str)), CLASSES)
     expect(slots).toEqual([])
   })
 })
@@ -118,10 +118,160 @@ describe('findTeacherPageIndex', () => {
 
 describe('parseSchedulePdf — kenar durumları', () => {
   it('boş girdide boş döner', () => {
-    expect(parseSchedulePdf([], CLASSES)).toEqual([])
+    expect(parseSchedulePdf([], CLASSES).slots).toEqual([])
   })
   it('okul sınıfıyla eşleşmeyen dersi düşürür', () => {
     const items = [...HEADERS, ...DAYS, { str: '12Z', x: 120.4, y: 164.3, width: 27.6 }]
-    expect(parseSchedulePdf(items, CLASSES)).toEqual([])
+    expect(parseSchedulePdf(items, CLASSES).slots).toEqual([])
+  })
+})
+
+
+// -----------------------------------------------------------
+// Ikinci bicim: gun adlari tam yazili, sutun basliklari "1. ders",
+// sube adlari alan kodlu (11TM-A). Gercek PDF'ten alinmis koordinatlar.
+const NF_HEADERS: PdfTextItem[] = [
+  { str: 'Saat', x: 60, y: 505.3, width: 21.7 },
+  { str: '1. ders', x: 130, y: 510.5, width: 33.2 },
+  { str: '9:00-9:35', x: 129.1, y: 500, width: 35 },
+  { str: '2. ders', x: 207.8, y: 510.5, width: 33.2 },
+  { str: '9:45-10:20', x: 204.6, y: 500, width: 39.6 },
+  { str: '3. ders', x: 285.6, y: 510.5, width: 33.2 },
+  { str: '4. ders', x: 363.4, y: 510.5, width: 33.2 },
+  { str: '5. ders', x: 441.2, y: 510.5, width: 33.2 },
+  { str: '6. ders', x: 519, y: 510.5, width: 33.2 },
+  { str: '7. ders', x: 596.8, y: 510.5, width: 33.2 },
+  { str: '8. ders', x: 674.6, y: 510.5, width: 33.2 },
+  { str: '9. ders', x: 752.4, y: 510.5, width: 33.2 },
+]
+const NF_DAYS: PdfTextItem[] = [
+  { str: 'Pazartesi', x: 48.5, y: 458.5, width: 44.6 },
+  { str: 'Salı',      x: 62,   y: 401.8, width: 17.7 },
+  { str: 'Çarşamba',  x: 47,   y: 345.1, width: 47.6 },
+  { str: 'Perşembe',  x: 47,   y: 288.4, width: 47.7 },
+  { str: 'Cuma',      x: 57.4, y: 231.7, width: 26.9 },
+]
+const NF_CELLS: PdfTextItem[] = [
+  { str: '11TM-A',  x: 323,   y: 463,   width: 36.2 },  // Pzt 3-4 (birlesik)
+  { str: '12TM-A',  x: 439.7, y: 463,   width: 36.2 },  // Pzt 5
+  { str: '12TM-A',  x: 634.2, y: 463,   width: 36.2 },  // Pzt 7-8
+  { str: '10A',     x: 759.8, y: 463,   width: 18.4 },  // Pzt 9
+  { str: '12TM-A',  x: 167.4, y: 406.3, width: 36.2 },  // Sal 1-2
+  { str: '12SAY-A', x: 359.6, y: 406.3, width: 40.8 },  // Sal 4
+  { str: '12SAY-A', x: 165.1, y: 349.6, width: 40.8 },  // Car 1-2
+  { str: '11TM-A',  x: 712,   y: 349.6, width: 36.2 },  // Car 8-9
+  { str: '11TM-A',  x: 128.5, y: 292.9, width: 36.2 },  // Per 1
+  { str: '12TM-A',  x: 206.3, y: 292.9, width: 36.2 },  // Per 2
+  { str: '11TM-A',  x: 361.9, y: 292.9, width: 36.2 },  // Per 4
+  { str: '9A',      x: 490.4, y: 292.9, width: 12.5 },  // Per 5-6
+  { str: '11TM-A',  x: 478.6, y: 236.2, width: 36.2 },  // Cum 5-6
+  { str: '10A',     x: 604.2, y: 236.2, width: 18.4 },  // Cum 7
+  { str: '12TM-A',  x: 673.1, y: 236.2, width: 36.2 },  // Cum 8
+]
+// Ders adlari ve dipnot - hicbiri sinif sayilmamali
+const NF_NOISE: PdfTextItem[] = [
+  { str: 'Matematik',   x: 321.2, y: 453.5, width: 39.9 },
+  { str: 'Matematik 1', x: 628.8, y: 453.5, width: 47 },
+  { str: 'Geometri',    x: 440.3, y: 453.5, width: 35 },
+  { str: 'S-MAT',       x: 134.8, y: 283.4, width: 23.6 },
+  { str: 'Öğle yemeği: 13:00-13:30 · Sınıf bazında toplam: 11TM-A 8 saat, 12TM-A 7 saat.', x: 40, y: 192.6, width: 677.7 },
+]
+const NF_ITEMS = [...NF_HEADERS, ...NF_DAYS, ...NF_CELLS, ...NF_NOISE]
+
+// Okulun siniflari PDF'teki alan kodlu adlarla ayni yazildiginda
+const NF_CLASSES = [
+  { id: 'c-11tma',  name: '11TM-A' },
+  { id: 'c-12tma',  name: '12TM-A' },
+  { id: 'c-12saya', name: '12SAY-A' },
+  { id: 'c-10a',    name: '10-A' },
+  { id: 'c-9a',     name: '9-A' },
+]
+
+describe('parseSchedulePdf - tam gun adi + "N. ders" bicimi', () => {
+  it('22 ders saatini dogru gun/saate yerlestirir', () => {
+    const { slots, reason } = parseSchedulePdf(NF_ITEMS, NF_CLASSES)
+    expect(reason).toBeNull()
+    expect(slots).toHaveLength(22)
+    expect(new Set(slots.map(key))).toEqual(new Set([
+      '1-3:c-11tma', '1-4:c-11tma', '1-5:c-12tma', '1-7:c-12tma', '1-8:c-12tma', '1-9:c-10a',
+      '2-1:c-12tma', '2-2:c-12tma', '2-4:c-12saya',
+      '3-1:c-12saya', '3-2:c-12saya', '3-8:c-11tma', '3-9:c-11tma',
+      '4-1:c-11tma', '4-2:c-12tma', '4-4:c-11tma', '4-5:c-9a', '4-6:c-9a',
+      '5-5:c-11tma', '5-6:c-11tma', '5-7:c-10a', '5-8:c-12tma',
+    ]))
+  })
+
+  it('sinif basina toplam saat PDF dipnotuyla ayni', () => {
+    const { slots } = parseSchedulePdf(NF_ITEMS, NF_CLASSES)
+    const perClass = slots.reduce<Record<string, number>>((acc, s) => {
+      acc[s.class_id] = (acc[s.class_id] ?? 0) + 1
+      return acc
+    }, {})
+    expect(perClass).toEqual({ 'c-11tma': 8, 'c-12tma': 7, 'c-12saya': 3, 'c-10a': 2, 'c-9a': 2 })
+  })
+
+  it('"Saat" basligini Sali sanmaz', () => {
+    const { slots } = parseSchedulePdf(NF_ITEMS, NF_CLASSES)
+    expect(slots.every(s => s.day >= 1 && s.day <= 5)).toBe(true)
+    expect(slots.filter(s => s.day === 2)).toHaveLength(3)
+  })
+
+  it('ders adlarini ve dipnotu sinif saymaz', () => {
+    const { slots } = parseSchedulePdf([...NF_HEADERS, ...NF_DAYS, ...NF_NOISE], NF_CLASSES)
+    expect(slots).toEqual([])
+  })
+})
+
+describe('parseSchedulePdf - bos sonucun nedenini bildirir', () => {
+  it('gun satiri taninmazsa reason "gun-yok"', () => {
+    const { slots, reason } = parseSchedulePdf([...NF_HEADERS, ...NF_CELLS], NF_CLASSES)
+    expect(slots).toEqual([])
+    expect(reason).toBe('gun-yok')
+  })
+
+  it('ders saati sutunu taninmazsa reason "period-yok"', () => {
+    const { slots, reason } = parseSchedulePdf([...NF_DAYS, ...NF_CELLS], NF_CLASSES)
+    expect(slots).toEqual([])
+    expect(reason).toBe('period-yok')
+  })
+
+  it('sinif adlari okulunkilerle eslesmezse reason "sinif-eslesmedi" + eslesmeyenler', () => {
+    const okulSiniflari = [{ id: 'x', name: '11-A' }, { id: 'y', name: '12-A' }]
+    const { slots, reason, unmatched } = parseSchedulePdf(NF_ITEMS, okulSiniflari)
+    expect(slots).toEqual([])
+    expect(reason).toBe('sinif-eslesmedi')
+    expect(new Set(unmatched)).toEqual(new Set(['11TM-A', '12TM-A', '12SAY-A', '10A', '9A']))
+  })
+
+  it('kismi eslesmede reason null, eslesmeyenler yine raporlanir', () => {
+    const kismi = [{ id: 'c-10a', name: '10-A' }, { id: 'c-9a', name: '9-A' }]
+    const { slots, reason, unmatched } = parseSchedulePdf(NF_ITEMS, kismi)
+    expect(reason).toBeNull()
+    expect(slots).toHaveLength(4)
+    expect(new Set(unmatched)).toEqual(new Set(['11TM-A', '12TM-A', '12SAY-A']))
+  })
+})
+
+describe('parseSchedulePdf — pdf_alias ile şube eşleme', () => {
+  it('sınıf adı farklı yazılsa da takma adla eşleşir', () => {
+    // Okulda sade ad kullanılıyor; PDF alan kodlu yazıyor → alias köprü kurar
+    const aliasli = [
+      { id: 'x11a', name: '11-A', pdf_alias: '11TM-A' },
+      { id: 'x12a', name: '12-A', pdf_alias: '12TM-A' },
+      { id: 'x12b', name: '12-B', pdf_alias: '12SAY-A' },
+      { id: 'x10a', name: '10-A' },
+      { id: 'x9a',  name: '9-A'  },
+    ]
+    const { slots, reason, unmatched } = parseSchedulePdf(NF_ITEMS, aliasli)
+    expect(reason).toBeNull()
+    expect(unmatched).toEqual([])
+    expect(slots).toHaveLength(22)
+    const perClass = slots.reduce<Record<string, number>>((a, s) => { a[s.class_id] = (a[s.class_id] ?? 0) + 1; return a }, {})
+    expect(perClass).toEqual({ x11a: 8, x12a: 7, x12b: 3, x10a: 2, x9a: 2 })
+  })
+
+  it('takma ad yoksa davranış değişmez (resmi ad ile eşleşme)', () => {
+    const { slots } = parseSchedulePdf(NF_ITEMS, [{ id: 'x10a', name: '10-A', pdf_alias: null }])
+    expect(slots).toHaveLength(2)
   })
 })

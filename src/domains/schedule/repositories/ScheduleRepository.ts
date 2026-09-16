@@ -17,7 +17,7 @@ export const ScheduleRepository = {
     const db = await createClient()
     return db
       .from('classes')
-      .select('id, name')
+      .select('id, name, pdf_alias')
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('grade')
