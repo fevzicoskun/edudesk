@@ -107,23 +107,55 @@ describe('MentorService.addMentorReport() — yeni yetki modeli', () => {
   it('öğrenci mentörlük listemde değilse not eklenemez', async () => {
     vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: null } as never)
     const result = await MentorService.addMentorReport({
-      student_id: STUDENT_ID, class_id: 'c1', content: 'Görüşme yapıldı', report_date: '2026-09-16',
+      student_id: STUDENT_ID, content: 'Görüşme yapıldı', report_date: '2026-09-16',
     })
     expect(result.error).toBe('Bu öğrenci mentörlük listenizde değil')
     expect(MentorRepository.insertMentorReport).not.toHaveBeenCalled()
   })
 
+  it('öğrenci okulda bulunamazsa not eklenemez (trust boundary)', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: { id: 'm1' } } as never)
+    vi.mocked(MentorRepository.findStudentInSchool).mockResolvedValue({ data: null } as never)
+
+    const result = await MentorService.addMentorReport({
+      student_id: STUDENT_ID, content: 'Görüşme yapıldı', report_date: '2026-09-16',
+    })
+
+    expect(result.error).toBe('Öğrenci bulunamadı')
+    expect(MentorRepository.insertMentorReport).not.toHaveBeenCalled()
+  })
+
   it('listemdeki öğrenciye not eklenir, mentor_id sunucudan konur', async () => {
     vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: { id: 'm1' } } as never)
+    vi.mocked(MentorRepository.findStudentInSchool).mockResolvedValue({
+      data: { id: STUDENT_ID, full_name: 'Ahmet', class_id: 'c1' },
+    } as never)
     vi.mocked(MentorRepository.insertMentorReport).mockResolvedValue({ data: { id: 'r1' }, error: null } as never)
 
     const result = await MentorService.addMentorReport({
-      student_id: STUDENT_ID, class_id: 'c1', content: 'Görüşme yapıldı', report_date: '2026-09-16',
+      student_id: STUDENT_ID, content: 'Görüşme yapıldı', report_date: '2026-09-16',
     })
 
     expect(result.error).toBeUndefined()
     const arg = vi.mocked(MentorRepository.insertMentorReport).mock.calls[0][0] as Record<string, unknown>
     expect(arg.mentor_id).toBe(TEACHER_ID)
     expect(arg.school_id).toBe(SCHOOL_ID)
+    expect(arg.class_id).toBe('c1')
+  })
+
+  it('class_id istemciden değil öğrencinin gerçek kaydından alınır (başka okulun ID\'si göz ardı edilir)', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: { id: 'm1' } } as never)
+    vi.mocked(MentorRepository.findStudentInSchool).mockResolvedValue({
+      data: { id: STUDENT_ID, full_name: 'Ahmet', class_id: 'gercek-sinif-id' },
+    } as never)
+    vi.mocked(MentorRepository.insertMentorReport).mockResolvedValue({ data: { id: 'r1' }, error: null } as never)
+
+    // Servis imzasında artık class_id parametresi yok — istemciden hiç alınmıyor
+    await MentorService.addMentorReport({
+      student_id: STUDENT_ID, content: 'Görüşme yapıldı', report_date: '2026-09-16',
+    })
+
+    const arg = vi.mocked(MentorRepository.insertMentorReport).mock.calls[0][0] as Record<string, unknown>
+    expect(arg.class_id).toBe('gercek-sinif-id')
   })
 })

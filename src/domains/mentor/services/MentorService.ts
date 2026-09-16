@@ -102,9 +102,9 @@ export const MentorService = {
 
   // Öğrenciye mentor görüşme notu ekle.
   // Sadece öğrencinin kişisel mentörlük listesinde olan mentör ekleyebilir.
+  // class_id istemciden alınmaz — trust boundary: öğrencinin gerçek sınıfı sunucuda okunur.
   async addMentorReport(data: {
     student_id:  string
-    class_id:    string
     content:     string
     report_date: string
   }): Promise<{ error?: string; id?: string }> {
@@ -116,10 +116,14 @@ export const MentorService = {
     )
     if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
 
+    // class_id istemciden değil, öğrencinin okuldaki gerçek kaydından alınır
+    const { data: student } = await MentorRepository.findStudentInSchool(data.student_id, ability.schoolId)
+    if (!student) return { error: 'Öğrenci bulunamadı' }
+
     const { data: inserted, error } = await MentorRepository.insertMentorReport({
       mentor_id:   ability.userId,
       student_id:  data.student_id,
-      class_id:    data.class_id,
+      class_id:    student.class_id,
       school_id:   ability.schoolId,
       content:     data.content,
       report_date: data.report_date,

@@ -47,7 +47,6 @@ export async function addMentorReport(
 
   const result = await MentorService.addMentorReport({
     student_id:  studentId,
-    class_id:    classId,
     content:     parsed.data.content,
     report_date: parsed.data.report_date,
   })
