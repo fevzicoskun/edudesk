@@ -55,8 +55,17 @@ test.describe('Haftalık Çalışma Planı — veli portalı', () => {
     }
 
     // Temizlik: maddeyi sil
+    // Hydration yarışı burada da geçerli: tıklama kaybolursa madde canlıda kalır → toPass.
+    // Önceki deneme silmeyi başarmışsa tekrar tıklamaya çalışma (eleman artık yok).
     const plan360 = page.locator('section', { hasText: 'Haftalık Çalışma Planı' })
-    await plan360.locator('li', { hasText: MADDE }).getByRole('button', { name: 'Maddeyi sil' }).click()
-    await expect(plan360.getByText(MADDE)).toHaveCount(0, { timeout: 10_000 })
+    const silinecek = plan360.locator('li', { hasText: MADDE })
+    // Bölüm stream ile geç gelebilir: önce maddenin görünmesini bekle, yoksa
+    // count()=0 döner ve boş bölümde toHaveCount(0) yanlışlıkla geçer (madde canlıda kalır).
+    await expect(silinecek).toBeVisible({ timeout: 15_000 })
+    await expect(async () => {
+      if (await silinecek.count()) await silinecek.getByRole('button', { name: 'Maddeyi sil' }).click()
+      // Geniş iç bekleme: başarılı silme yansımadan ikinci tıklama gitmesin
+      await expect(plan360.getByText(MADDE)).toHaveCount(0, { timeout: 10_000 })
+    }).toPass({ timeout: 40_000 })
   })
 })
