@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { addMentorReport, deleteMentorReport } from '@/app/actions/mentor'
-import { format, parseISO } from '@/src/shared/date'
+import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 
 type Not = { id: string; content: string; report_date: string }
 
@@ -13,7 +13,7 @@ export default function GorusmeNotlari({
   const [silOnayId, setSilOnayId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const formRef = useRef<HTMLFormElement>(null)
-  const bugun = new Date().toISOString().split('T')[0]
+  const bugun = todayLocalISO()
 
   function ekle(formData: FormData) {
     setHata(null)

@@ -167,8 +167,9 @@ export const MentorService = {
     const parsed = mentorProfileSchema.safeParse(input)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-    const { data: student } = await MentorRepository.findStudentInSchool(studentId, ability.schoolId)
-    if (!student) return { error: 'Öğrenci bulunamadı' }
+    // Yetki: öğrenci mentörün kişisel listesinde olmalı (mentorships satırı school_id'ye bağlı)
+    const { data: mentorship } = await MentorRepository.findMentorship(studentId, ability.userId, ability.schoolId)
+    if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
 
     // Boş string -> null; "silindi" ile "hiç girilmedi" aynı kabul edilir
     const alanlar = Object.fromEntries(
@@ -188,8 +189,9 @@ export const MentorService = {
 
   async markRulesExplained(studentId: string): Promise<{ error?: string }> {
     const ability = await requireAbility()
-    const { data: student } = await MentorRepository.findStudentInSchool(studentId, ability.schoolId)
-    if (!student) return { error: 'Öğrenci bulunamadı' }
+    // Yetki: öğrenci mentörün kişisel listesinde olmalı (mentorships satırı school_id'ye bağlı)
+    const { data: mentorship } = await MentorRepository.findMentorship(studentId, ability.userId, ability.schoolId)
+    if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
 
     const { error } = await MentorRepository.upsertMentorProfile({
       mentor_id:          ability.userId,

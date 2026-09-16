@@ -123,3 +123,39 @@ describe('MentorRepository.deleteMentorship — gerçek fonksiyon, gerçek DB (R
     expect(after ?? [], 'kayıt silinmemiş olmalı').toHaveLength(1)
   })
 })
+
+describe('MentorRepository.deleteMentorReport — sessiz silme yasak (gerçek DB, RLS aktif)', () => {
+  async function createReport(studentId: string): Promise<string> {
+    const { data, error } = await serviceDb
+      .from('mentor_reports')
+      .insert({
+        mentor_id: mentorTeacher.id, student_id: studentId, class_id: classId,
+        school_id: school.id, content: 'Silme testi notu', report_date: '2026-09-16',
+      })
+      .select('id').single()
+    if (error) throw new Error(`test notu oluşturulamadı: ${error.message}`)
+    return data!.id
+  }
+
+  it('mentör kendi notunu siler — not gerçekten gider', async () => {
+    const reportId = await createReport(await createMentoredStudent())
+    vi.mocked(createClient).mockResolvedValue(createUserClient(tokenMentor) as never)
+
+    const { error } = await MentorRepository.deleteMentorReport(reportId, mentorTeacher.id, school.id)
+    expect(error).toBeNull()
+
+    const { data: after } = await serviceDb.from('mentor_reports').select('id').eq('id', reportId)
+    expect(after ?? []).toHaveLength(0)
+  })
+
+  it('başka öğretmen notu silmeye çalışır — açık hata döner, not kalır', async () => {
+    const reportId = await createReport(await createMentoredStudent())
+    vi.mocked(createClient).mockResolvedValue(createUserClient(tokenOther) as never)
+
+    const { error } = await MentorRepository.deleteMentorReport(reportId, otherTeacher.id, school.id)
+    expect(error).toEqual({ message: 'Kayıt bulunamadı veya yetkiniz yok.' })
+
+    const { data: after } = await serviceDb.from('mentor_reports').select('id').eq('id', reportId)
+    expect(after ?? []).toHaveLength(1)
+  })
+})

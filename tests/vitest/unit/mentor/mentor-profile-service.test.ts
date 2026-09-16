@@ -10,7 +10,7 @@ vi.mock('@/src/domains/mentor/repositories/MentorRepository', () => ({
   MentorRepository: {
     getMentorProfile: vi.fn(),
     upsertMentorProfile: vi.fn(),
-    findStudentInSchool: vi.fn(),
+    findMentorship: vi.fn(),
   },
 }))
 
@@ -27,9 +27,7 @@ beforeEach(() => {
   vi.mocked(requireAbility).mockResolvedValue(
     createAbility({ userId: TEACHER_ID, schoolId: SCHOOL_ID, permissions: OGRETMEN_PERMS }) as never,
   )
-  vi.mocked(MentorRepository.findStudentInSchool).mockResolvedValue({
-    data: { id: STUDENT_ID, full_name: 'Ahmet', class_id: 'c1' },
-  } as never)
+  vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: { id: 'm1' } } as never)
 })
 
 describe('MentorService.saveMentorProfile()', () => {
@@ -51,10 +49,11 @@ describe('MentorService.saveMentorProfile()', () => {
     expect(MentorRepository.upsertMentorProfile).not.toHaveBeenCalled()
   })
 
-  it('başka okulun öğrencisine profil yazılamaz', async () => {
-    vi.mocked(MentorRepository.findStudentInSchool).mockResolvedValue({ data: null } as never)
+  it('kişisel listede olmayan (veya başka okulun) öğrencisine profil yazılamaz', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: null } as never)
     const result = await MentorService.saveMentorProfile(STUDENT_ID, { goals_short: 'x' })
-    expect(result.error).toBe('Öğrenci bulunamadı')
+    expect(result.error).toBe('Bu öğrenci mentörlük listenizde değil')
+    expect(MentorRepository.findMentorship).toHaveBeenCalledWith(STUDENT_ID, TEACHER_ID, SCHOOL_ID)
     expect(MentorRepository.upsertMentorProfile).not.toHaveBeenCalled()
   })
 })
@@ -68,5 +67,12 @@ describe('MentorService.markRulesExplained()', () => {
     const arg = vi.mocked(MentorRepository.upsertMentorProfile).mock.calls[0][0] as Record<string, unknown>
     expect(arg.rules_explained_at).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     expect(arg.mentor_id).toBe(TEACHER_ID)
+  })
+
+  it('kişisel listede olmayan öğrenci için işaretlenemez', async () => {
+    vi.mocked(MentorRepository.findMentorship).mockResolvedValue({ data: null } as never)
+    const result = await MentorService.markRulesExplained(STUDENT_ID)
+    expect(result.error).toBe('Bu öğrenci mentörlük listenizde değil')
+    expect(MentorRepository.upsertMentorProfile).not.toHaveBeenCalled()
   })
 })

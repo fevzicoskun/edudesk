@@ -54,6 +54,7 @@ export async function addMentorReport(
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
   revalidatePath(`/mentorluk/${studentId}`)
+  revalidatePath('/mentorluk') // listedeki "son görüşme" rozeti
   return {}
 }
 
@@ -70,6 +71,7 @@ export async function deleteMentorReport(
 
   revalidatePath(`/siniflar/${classId}/ogrenciler/${studentId}`)
   revalidatePath(`/mentorluk/${studentId}`)
+  revalidatePath('/mentorluk') // listedeki "son görüşme" rozeti
   return {}
 }
 

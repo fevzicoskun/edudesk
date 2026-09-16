@@ -104,12 +104,16 @@ export const MentorRepository = {
 
   async deleteMentorReport(reportId: string, mentorId: string, schoolId: string) {
     const supabase = await createClient()
-    return supabase
+    const { data: rows, error } = await supabase
       .from('mentor_reports')
       .delete()
       .eq('id', reportId)
       .eq('mentor_id', mentorId)
       .eq('school_id', schoolId)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
   },
 
   // ── Sınıfa rehber öğretmen atama ────────────────────────────────────────

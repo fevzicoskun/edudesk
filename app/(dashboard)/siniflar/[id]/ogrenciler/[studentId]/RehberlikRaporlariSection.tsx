@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { addMentorReport, deleteMentorReport } from '@/app/actions/mentor'
-import { format, parseISO } from '@/src/shared/date'
+import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 
 type Report = { id: string; content: string; report_date: string; mentor_id: string; created_at: string }
 
@@ -20,7 +20,7 @@ export default function RehberlikRaporlariSection({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocalISO()
 
   function submit(formData: FormData) {
     setError(null)
@@ -32,8 +32,10 @@ export default function RehberlikRaporlariSection({
   }
 
   function remove(reportId: string) {
+    setError(null)
     startTransition(async () => {
-      await deleteMentorReport(reportId, classId, studentId)
+      const result = await deleteMentorReport(reportId, classId, studentId)
+      if (result.error) setError(result.error)
     })
   }
 
