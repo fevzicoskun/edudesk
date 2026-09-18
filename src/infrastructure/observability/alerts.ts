@@ -13,12 +13,18 @@ import { env } from '@/src/lib/env'
 import { esc } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { AlertRateLimiter, errorFingerprint } from './alert-rate-limiter'
+import { kaydetHata } from './errorStore'
+import type { HataKaynagi } from './hataKaydi'
 
 export interface CriticalAlertInput {
   name:     string
   message:  string
   digest?:  string
   context?: Record<string, unknown>
+  /** Kalıcı kayıtta hangi katmandan geldiği — varsayılan 'server' */
+  source?:  HataKaynagi
+  userId?:   string | null
+  schoolId?: string | null
 }
 
 // Modül seviyesinde tek instance — aynı server process içinde paylaşılır.
@@ -30,6 +36,17 @@ export function sendCriticalAlert(err: CriticalAlertInput): void {
     { event: 'critical_error', name: err.name, message: err.message, digest: err.digest, context: err.context },
     `Kritik hata: ${err.name}`
   )
+
+  // Kalıcı kayıt — e-posta rate limit'inden bağımsız: e-posta susturulsa bile
+  // /platform'da hatanın kaç kez tekrarlandığı görünmeli.
+  kaydetHata({
+    name:     err.name,
+    message:  err.message,
+    source:   err.source ?? 'server',
+    context:  { ...err.context, digest: err.digest },
+    userId:   err.userId,
+    schoolId: err.schoolId,
+  })
 
   // Sadece production'da e-posta gönder
   if (process.env.NODE_ENV !== 'production') return

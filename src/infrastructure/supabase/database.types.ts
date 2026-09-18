@@ -43,6 +43,42 @@ export type Database = {
           },
         ]
       }
+      app_errors: {
+        Row: {
+          context: Json
+          created_at: string
+          fingerprint: string
+          id: string
+          message: string
+          name: string
+          school_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          fingerprint: string
+          id?: string
+          message: string
+          name: string
+          school_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          message?: string
+          name?: string
+          school_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string | null

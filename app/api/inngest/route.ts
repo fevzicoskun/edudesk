@@ -8,8 +8,10 @@ import { homeworkCreatedNotifierFn } from '@/src/domains/notifications/functions
 import { yoklamaHatirlaticiFn } from '@/src/domains/notifications/functions/yoklamaHatirlatici'
 import { gunlukOzetFn } from '@/src/domains/notifications/functions/gunlukOzet'
 import { planVeliNotifierFn } from '@/src/domains/notifications/functions/planVeliNotifier'
+import { cronHataBildirimiFn } from '@/src/domains/notifications/functions/cronHataBildirimi'
+import { haftalikYedekFn } from '@/src/domains/notifications/functions/haftalikYedek'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, yoklamaHatirlaticiFn, gunlukOzetFn, planVeliNotifierFn],
+  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, yoklamaHatirlaticiFn, gunlukOzetFn, planVeliNotifierFn, cronHataBildirimiFn, haftalikYedekFn],
 })

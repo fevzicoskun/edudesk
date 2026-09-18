@@ -37,10 +37,11 @@ export async function reportClientError(input: {
     name:    'ClientError',
     message: parsed.data.message,
     digest:  parsed.data.digest,
+    source:  'client',
+    userId,
     context: {
       source: 'client-error-boundary',
       url:    parsed.data.url,
-      userId,
     },
   })
 

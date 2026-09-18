@@ -6,6 +6,7 @@ import CancelSchoolButton from './CancelSchoolButton'
 import PaymentsModal from './PaymentsModal'
 import UsageSummary from './UsageSummary'
 import FeedbackList from './FeedbackList'
+import ErrorList from './ErrorList'
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active:    { label: 'Aktif',     variant: 'default' },
@@ -104,6 +105,7 @@ export default async function PlatformPage() {
       </div>
 
       <UsageSummary />
+      <ErrorList />
       <FeedbackList />
     </div>
   )
