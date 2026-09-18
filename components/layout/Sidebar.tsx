@@ -13,6 +13,7 @@ import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
 import EduDeskLogo from '@/components/EduDeskLogo'
 import Avatar from '@/app/components/Avatar'
+import { gorunurNav, gruplaNav, mobilNavSec, type NavGrup } from '@/components/layout/navMath'
 
 type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'> & { avatar_url?: string | null }
 
@@ -27,12 +28,13 @@ function formatName(raw: string): string {
     .join(' ') || raw
 }
 
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; icon: ReactNode }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; icon: ReactNode }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
     mobile: true,
     roles: null,
+    grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10" /></svg>,
   },
   {
@@ -40,6 +42,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Okul Durumu',
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
   {
@@ -47,6 +50,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Nöbet',
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
   },
   {
@@ -54,6 +58,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Ödevler',
     mobile: true,
     roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
   },
   {
@@ -61,6 +66,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Yoklama',
     mobile: true,
     roles: ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi'],
+    grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
   },
   {
@@ -68,6 +74,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Ders Programım',
     mobile: false,
     roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
   {
@@ -75,6 +82,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Veli Görüşmeleri',
     mobile: false,
     roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
   {
@@ -82,13 +90,17 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Mentörlük',
     mobile: false,
     roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>,
   },
   {
     href: '/takvim',
     label: 'Takvim',
-    mobile: true,
+    // mobile:false — alt bardaki 4 yuva Anasayfa/Ödevler/Yoklama/Sınıflar'ın;
+    // Takvim "Daha Fazla" çekmecesinde (bkz. navMath.mobilNavSec testleri)
+    mobile: false,
     roles: null,
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2zm4-6h.01M12 15h.01M16 15h.01M8 18h.01M12 18h.01" /></svg>,
   },
   {
@@ -96,6 +108,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Sınıflar',
     mobile: true,
     roles: ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi'],
+    grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
   },
   {
@@ -103,6 +116,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Profil',
     mobile: false,
     roles: null,
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
   },
   {
@@ -110,6 +124,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Ayarlar',
     mobile: false,
     roles: null,
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" /></svg>,
   },
   {
@@ -117,6 +132,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Devamsızlık Raporu',
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   },
   {
@@ -124,6 +140,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Öğretmen Aktivitesi',
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>,
   },
   {
@@ -131,9 +148,34 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     label: 'Kullanıcılar',
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>,
   },
 ]
+
+/** Menü bağlantısı — günlük grup, "Diğer" grubu ve daraltılmış menü aynı görünümü paylaşır */
+function NavLink({
+  href, label, icon, collapsed, pathname,
+}: { href: string; label: string; icon: ReactNode; collapsed: boolean; pathname: string }) {
+  const active = pathname.startsWith(href)
+  return (
+    <Link
+      href={href}
+      title={collapsed ? label : undefined}
+      aria-current={active ? 'page' : undefined}
+      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+        collapsed ? 'justify-center' : ''
+      } ${
+        active
+          ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
+          : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
+      }`}
+    >
+      {icon}
+      {!collapsed && <span className="truncate">{label}</span>}
+    </Link>
+  )
+}
 
 export default function Sidebar({ profile, email }: { profile: SidebarProfile | null; email: string }) {
   const pathname = usePathname()
@@ -145,9 +187,29 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
   const roleLabel = role ? ROLE_LABELS[role] ?? 'Öğretmen' : 'Öğretmen'
 
   const [collapsed, setCollapsed] = useState(false)
+  const [digerAcik, setDigerAcik] = useState(false)
+
+  const filteredNav = gorunurNav(navItems, role)
+  const { gunluk, diger } = gruplaNav(filteredNav)
+  const aktifDigerde = diger.some(i => pathname.startsWith(i.href))
+
   useEffect(() => {
     if (localStorage.getItem('sidebar-collapsed') === 'true') setCollapsed(true)
+    if (localStorage.getItem('sidebar-diger-acik') === 'true') setDigerAcik(true)
   }, [])
+
+  // Kullanıcı "Diğer" altındaki bir sayfadaysa grup açık olmalı — yoksa menüde
+  // bulunduğu sayfa hiç görünmez.
+  useEffect(() => {
+    if (aktifDigerde) setDigerAcik(true)
+  }, [aktifDigerde])
+
+  function toggleDiger() {
+    setDigerAcik(v => {
+      localStorage.setItem('sidebar-diger-acik', String(!v))
+      return !v
+    })
+  }
 
   function toggleCollapsed() {
     setCollapsed(v => {
@@ -155,8 +217,6 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       return !v
     })
   }
-
-  const filteredNav = navItems.filter(item => !item.roles || item.roles.includes(role as Role))
 
   return (
     <>
@@ -198,28 +258,38 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           </div>
         </div>
 
-        {/* Nav */}
+        {/* Nav — günlük ekranlar üstte, kalanlar katlanır "Diğer" grubunda.
+            Daraltılmış menüde gruplama anlamsız: tüm ikonlar düz listelenir. */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {filteredNav.map(({ href, label, icon }) => {
-            const active = pathname.startsWith(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                title={collapsed ? label : undefined}
-                className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  collapsed ? 'justify-center' : ''
-                } ${
-                  active
-                    ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300'
-                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
-                }`}
+          {(collapsed ? filteredNav : gunluk).map(({ href, label, icon }) => (
+            <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} pathname={pathname} />
+          ))}
+
+          {!collapsed && diger.length > 0 && (
+            <>
+              <button
+                onClick={toggleDiger}
+                aria-expanded={digerAcik}
+                className="w-full flex items-center gap-2 px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 transition-colors"
               >
-                {icon}
-                {!collapsed && <span className="truncate">{label}</span>}
-              </Link>
-            )
-          })}
+                <span>Diğer</span>
+                {!digerAcik && (
+                  <span className="text-[10px] font-medium normal-case tracking-normal text-gray-400 dark:text-slate-500">
+                    {diger.length}
+                  </span>
+                )}
+                <svg
+                  className={`w-3.5 h-3.5 ml-auto shrink-0 transition-transform duration-200 ${digerAcik ? 'rotate-180' : ''}`}
+                  fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {digerAcik && diger.map(({ href, label, icon }) => (
+                <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} pathname={pathname} />
+              ))}
+            </>
+          )}
         </nav>
 
         {/* Toggle + user + logout */}
@@ -288,14 +358,11 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {(() => {
-          const mobileItems = navItems.filter(i => i.mobile && (!i.roles || i.roles.includes(role as Role)))
-          const drawerItems = navItems.filter(i => !i.mobile && (!i.roles || i.roles.includes(role as Role)))
-          const MAX_NAV = 5
-          const showDrawer = drawerItems.length > 0
-          const visibleMobile = showDrawer ? mobileItems.slice(0, MAX_NAV - 1) : mobileItems.slice(0, MAX_NAV)
+          const { altBar, drawer } = mobilNavSec(navItems, role)
+          const showDrawer = drawer.length > 0
           return (
             <>
-              {visibleMobile.map(({ href, label, icon }) => {
+              {altBar.map(({ href, label, icon }) => {
                 const active = pathname.startsWith(href)
                 return (
                   <Link
@@ -311,7 +378,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                 )
               })}
               {showDrawer && (
-                <MobileNavDrawer items={drawerItems} role={role} />
+                <MobileNavDrawer items={drawer} role={role} />
               )}
             </>
           )
