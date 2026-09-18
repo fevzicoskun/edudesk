@@ -268,7 +268,9 @@ export default function StudentRow({
   )
 }
 
-/** Seçili durum ⋯ menüsündeyse butonun kendisi o durumu gösterir */
+/** Seçili durum ⋯ menüsündeyse butonun kendisi o durumu gösterir.
+ *  md:w sabit — buton bazen "⋯", bazen "Mazeretli" gösteriyor; genişliği değişirse
+ *  o satırın durum butonları sola kayıp diğer satırlarla hizasını bozuyor. */
 function MenuButton({
   open, ikincilSecili, status, onClick,
 }: { open: boolean; ikincilSecili: boolean; status: SubmissionStatus; onClick: () => void }) {
@@ -278,7 +280,7 @@ function MenuButton({
       aria-expanded={open}
       aria-haspopup="menu"
       aria-label="Diğer işlemler"
-      className={`flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-[34px] px-2 rounded-lg border text-xs font-medium transition-colors ${
+      className={`flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-[34px] md:w-[84px] px-2 rounded-lg border text-xs font-medium transition-colors ${
         ikincilSecili
           ? `${STYLES[status]} font-bold`
           : open
