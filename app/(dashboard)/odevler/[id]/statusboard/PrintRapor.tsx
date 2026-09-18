@@ -1,3 +1,4 @@
+import { yapmayanlar } from '@/src/domains/homework/lib/odev-rapor'
 import type { RaporSatiri, OzetKalemi } from '@/src/domains/homework/lib/odev-rapor'
 
 type Props = {
@@ -15,6 +16,8 @@ type Props = {
 export default function PrintRapor({
   okulAdi, odevBasligi, sinif, ders, sonTeslim, ogretmenAdi, satirlar, ozet,
 }: Props) {
+  const eksikler = yapmayanlar(satirlar)
+
   return (
     <div className="hidden print:block text-black">
       {/* not: <header> kullanma — globals.css print kuralı tüm header'ları gizliyor */}
@@ -41,6 +44,15 @@ export default function PrintRapor({
           {ozet.map(o => `${o.sayi} ${o.etiket}`).join('  ·  ')}
           <span className="text-gray-600"> ({satirlar.length} öğrenci)</span>
         </p>
+      )}
+
+      {eksikler.length > 0 && (
+        <div className="mb-3 pb-2 border-b border-gray-400">
+          <p className="text-[11pt]">
+            <span className="font-bold">Yapmayanlar ({eksikler.length}): </span>
+            {eksikler.join(' · ')}
+          </p>
+        </div>
       )}
 
       <table className="w-full text-[10.5pt] border-collapse">

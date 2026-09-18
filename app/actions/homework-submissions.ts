@@ -23,13 +23,16 @@ export async function updateSubmissionStatus(
 export async function updateAllSubmissionStatuses(
   homeworkId: string,
   studentIds: string[],
-  status: SubmissionStatus
+  status: SubmissionStatus,
+  isaretiKaldir?: boolean
 ) {
   if (!UUID.safeParse(homeworkId).success) return { error: 'Geçersiz istek' }
   if (!submissionStatusSchema.safeParse(status).success) return { error: 'Geçersiz durum değeri' }
   if (studentIds.some(id => !UUID.safeParse(id).success)) return { error: 'Geçersiz öğrenci listesi' }
 
-  const result = await HomeworkService.updateAllSubmissionStatuses(homeworkId, studentIds, status)
+  const result = await HomeworkService.updateAllSubmissionStatuses(
+    homeworkId, studentIds, status, isaretiKaldir === true
+  )
   if (!('error' in result)) revalidatePath(`/odevler/${homeworkId}`)
   return result
 }

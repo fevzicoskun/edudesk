@@ -944,6 +944,7 @@ export type Database = {
         Row: {
           homework_id: string
           id: string
+          marked_at: string | null
           note: string | null
           school_id: string
           status: string
@@ -953,6 +954,7 @@ export type Database = {
         Insert: {
           homework_id: string
           id?: string
+          marked_at?: string | null
           note?: string | null
           school_id: string
           status?: string
@@ -962,6 +964,7 @@ export type Database = {
         Update: {
           homework_id?: string
           id?: string
+          marked_at?: string | null
           note?: string | null
           school_id?: string
           status?: string

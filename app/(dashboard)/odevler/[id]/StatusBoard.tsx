@@ -8,15 +8,13 @@ import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/Hom
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import StudentHomeworkProfileModal from './StudentHomeworkProfileModal'
 import VeliIletisimPaneli from './VeliIletisimPaneli'
-import StatusBoardProgress from './statusboard/StatusBoardProgress'
-import StatusBoardToolbar from './statusboard/StatusBoardToolbar'
+import StatusBoardBar from './statusboard/StatusBoardBar'
 import StudentRow from './statusboard/StudentRow'
 import PrintRapor from './statusboard/PrintRapor'
 import { raporSatirlari, raporOzeti } from '@/src/domains/homework/lib/odev-rapor'
 import { STATUS_OPTIONS } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
 import { useExcelExport } from './useExcelExport'
-import SearchInput from './SearchInput'
 import SelectionBar from './statusboard/SelectionBar'
 
 export type { StatusItem }
@@ -73,12 +71,23 @@ export default function StatusBoard({
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
   const [menuOpenId, setMenuOpenId]       = useState<string | null>(null)
+  /** Son toplu işlemin geri alma bilgisi — "Hepsi yaptı" birincil eylem olduğu için yanlış basmaya karşı */
+  const [geriAl, setGeriAl] = useState<{
+    onceki: Record<string, SubmissionStatus>
+    onceKayitli: Set<string>
+  } | null>(null)
 
   useEffect(() => {
     if (!errorMsg) return
     const t = setTimeout(() => setErrorMsg(null), 3500)
     return () => clearTimeout(t)
   }, [errorMsg])
+
+  useEffect(() => {
+    if (!geriAl) return
+    const t = setTimeout(() => setGeriAl(null), 10_000)
+    return () => clearTimeout(t)
+  }, [geriAl])
 
   const filteredItems = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -181,6 +190,7 @@ export default function StatusBoard({
   function setAllStatuses(next: SubmissionStatus) {
     if (readOnly) return
     const prevAll    = { ...statuses }
+    const prevKayitli = new Set(recordedIds)
     const studentIds = items.map(i => i.student_id)
     setStatuses(Object.fromEntries(studentIds.map(id => [id, next])))
     startTransition(async () => {
@@ -190,6 +200,44 @@ export default function StatusBoard({
         setErrorMsg(result.error)
       } else {
         setRecordedIds(new Set(studentIds))
+        // Geri alma yalnız daha önce işaretlenmemiş öğrenci varsa anlamlı
+        if (prevKayitli.size < studentIds.length) setGeriAl({ onceki: prevAll, onceKayitli: prevKayitli })
+      }
+    })
+  }
+
+  /** Toplu işlemi geri alır. Eski durumlar farklı olabileceği için duruma göre
+   *  gruplanır; ayrıca ÖNCEDEN işaretsiz olanların "işaretlendi" damgası da silinir,
+   *  yoksa geri alınmış bir işlem ilerleme göstergesini kalıcı olarak şişirir. */
+  function toplumuGeriAl() {
+    if (!geriAl || readOnly) return
+    const { onceki, onceKayitli } = geriAl
+    setGeriAl(null)
+
+    const simdikiDurum   = { ...statuses }
+    const simdikiKayitli = new Set(recordedIds)
+    setStatuses(onceki)
+    setRecordedIds(onceKayitli)
+
+    // (durum, damga-silinsin-mi) ikilisine göre grupla
+    const gruplar = new Map<string, { durum: SubmissionStatus; kaldir: boolean; ids: string[] }>()
+    for (const [studentId, durum] of Object.entries(onceki)) {
+      const kaldir = !onceKayitli.has(studentId)
+      const anahtar = `${durum}|${kaldir}`
+      const grup = gruplar.get(anahtar) ?? { durum, kaldir, ids: [] }
+      grup.ids.push(studentId)
+      gruplar.set(anahtar, grup)
+    }
+
+    startTransition(async () => {
+      for (const { durum, kaldir, ids } of gruplar.values()) {
+        const result = await updateAllSubmissionStatuses(homeworkId, ids, durum, kaldir)
+        if (result?.error) {
+          setStatuses(simdikiDurum)
+          setRecordedIds(simdikiKayitli)
+          setErrorMsg(result.error)
+          return
+        }
       }
     })
   }
@@ -220,30 +268,29 @@ export default function StatusBoard({
         <div className="fixed inset-0 z-10" onClick={() => setOpenBadge(false)} />
       )}
 
-      <StatusBoardProgress
+      <StatusBoardBar
         recordedCount={recordedCount}
         totalStudents={totalStudents}
         counts={counts}
+        ozet={ozet}
         weekLoad={weekLoad}
         openBadge={openBadge}
         onToggleBadge={() => setOpenBadge(p => !p)}
+        isPending={isPending}
+        readOnly={readOnly}
+        selectionMode={selectionMode}
+        onHepsiYapti={() => setAllStatuses('yapildi')}
+        onBulkUpdate={setAllStatuses}
+        onToggleSelectMode={() => {
+          setSelectionMode(p => !p)
+          setSelectedIds(new Set())
+        }}
+        onExportExcel={exportToExcel}
+        search={search}
+        onSearchChange={setSearch}
+        showSearch={items.length > 6}
+        resultCount={filteredItems.length}
       />
-
-      {/* Toplu güncelleme + Excel — aramada ve salt-okunur görünümde gizle */}
-      {!search && !readOnly && (
-        <StatusBoardToolbar
-          isPending={isPending}
-          onBulkUpdate={setAllStatuses}
-          onExportExcel={exportToExcel}
-          selectionMode={selectionMode}
-          onToggleSelectMode={() => {
-            setSelectionMode(p => !p)
-            setSelectedIds(new Set())
-          }}
-        />
-      )}
-
-      <SearchInput show={items.length > 6} value={search} onChange={setSearch} resultCount={filteredItems.length} />
 
       {/* Öğrenci listesi */}
       <div className="space-y-2">
@@ -285,6 +332,18 @@ export default function StatusBoard({
         onSetStatus={setSelectedStatuses}
         onCancel={() => { setSelectionMode(false); setSelectedIds(new Set()) }}
       />
+
+      {geriAl && !errorMsg && (
+        <div className="fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 dark:bg-slate-700 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg">
+          <span>Tüm sınıf işaretlendi.</span>
+          <button
+            onClick={toplumuGeriAl}
+            className="font-semibold text-emerald-300 hover:text-emerald-200 underline underline-offset-2"
+          >
+            Geri al
+          </button>
+        </div>
+      )}
 
       {errorMsg && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-red-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-lg">

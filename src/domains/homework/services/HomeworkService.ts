@@ -52,12 +52,14 @@ export const HomeworkService = {
       homeworkId, studentId, ability.schoolId
     )
 
+    const now = new Date().toISOString()
     const { error } = await HomeworkRepository.upsertSubmissionStatus({
       homework_id: homeworkId,
       student_id:  studentId,
       status,
       school_id:   ability.schoolId,
-      updated_at:  new Date().toISOString(),
+      updated_at:  now,
+      marked_at:   now,
     })
 
     if (error) return { error: error.message }
@@ -78,7 +80,9 @@ export const HomeworkService = {
   async updateAllSubmissionStatuses(
     homeworkId: string,
     studentIds: string[],
-    status:     SubmissionStatus
+    status:     SubmissionStatus,
+    /** Geri alma: durumla birlikte "işaretlendi" damgası da silinir */
+    isaretiKaldir = false
   ): Promise<StatusResult> {
     if (studentIds.length > 200) return { error: 'Çok fazla öğrenci (maks. 200)' }
 
@@ -92,12 +96,14 @@ export const HomeworkService = {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
 
+    const islemZamani = new Date().toISOString()
     const rows = studentIds.map(studentId => ({
       homework_id: homeworkId,
       student_id:  studentId,
       school_id:   ability.schoolId,
       status,
-      updated_at:  new Date().toISOString(),
+      updated_at:  islemZamani,
+      marked_at:   isaretiKaldir ? null : islemZamani,
     }))
 
     if (rows.length === 0) return { success: true }

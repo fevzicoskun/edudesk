@@ -40,7 +40,12 @@ export function raporSatirlari({ items, statuses, notes, recordedIds }: SatirGir
   })
 }
 
-export type OzetKalemi = { etiket: string; sayi: number }
+export type OzetKalemi = {
+  etiket: string
+  sayi: number
+  /** null = "Girilmedi" — gerçek bir durum değil, kayıt yokluğu */
+  kod: SubmissionStatus | null
+}
 
 /** Sıfır olan durumları atlar; işaretlenmemiş öğrencileri ayrı "Girilmedi" kalemi yapar */
 export function raporOzeti(
@@ -51,8 +56,17 @@ export function raporOzeti(
   const sayimlar = RAPOR_SIRASI.map(kod => ({
     etiket: ETIKET[kod],
     sayi:   Object.entries(statuses).filter(([id, s]) => s === kod && recordedIds.has(id)).length,
+    kod,
   })).filter(k => k.sayi > 0)
 
   const girilmedi = Math.max(0, toplamOgrenci - recordedIds.size)
-  return girilmedi > 0 ? [...sayimlar, { etiket: 'Girilmedi', sayi: girilmedi }] : sayimlar
+  return girilmedi > 0 ? [...sayimlar, { etiket: 'Girilmedi', sayi: girilmedi, kod: null }] : sayimlar
+}
+
+/** Raporun başına konan "kim yapmadı" listesi — çıktının en çok bakılan bilgisi.
+ *  İşaretlenmemiş öğrenci (durumKodu null) listeye GİRMEZ: bilgi yokken suçlama olmaz. */
+export function yapmayanlar(satirlar: RaporSatiri[]): string[] {
+  return satirlar
+    .filter(s => s.durumKodu === 'yapilmadi' || s.durumKodu === 'eksik')
+    .map(s => s.numara ? `${s.ad} (${s.numara})` : s.ad)
 }

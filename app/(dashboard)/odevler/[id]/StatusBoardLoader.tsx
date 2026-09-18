@@ -42,7 +42,7 @@ export default async function StatusBoardLoader({
       .limit(200),
     supabase
       .from('homework_submissions')
-      .select('student_id, status, note')
+      .select('student_id, status, note, marked_at')
       .eq('homework_id', homeworkId)
       .eq('school_id', schoolId),
     // Sınıfın diğer ödevlerindeki kümülatif yük — öğrenci başına kaçırılan +
@@ -79,7 +79,8 @@ export default async function StatusBoardLoader({
         veli_email:     (student as typeof student & { veli_email?: string | null }).veli_email ?? null,
         status:         (sub?.status ?? 'yapilmadi') as SubmissionStatus,
         note:           sub?.note ?? null,
-        hasRecord:      !!sub,
+        // Trigger her öğrenciye satır açıyor; işaretlenmiş SAYILMAK için marked_at şart
+        hasRecord:      !!sub?.marked_at,
         missedCount:    missedByStudent.get(student.id) ?? 0,
         totalHomeworks: totalHomeworkCount,
       }

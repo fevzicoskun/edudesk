@@ -41,6 +41,8 @@ export const HomeworkRepository = {
     status: SubmissionStatus
     school_id: string
     updated_at: string
+    /** Öğretmenin gerçekten işaretlediği an — trigger'ın açtığı boş satırdan ayırır */
+    marked_at: string
   }) {
     const supabase = await createClient()
     return supabase
@@ -54,6 +56,8 @@ export const HomeworkRepository = {
     school_id: string
     status: SubmissionStatus
     updated_at: string
+    /** null = işaret damgası kaldırılır (geri alma) */
+    marked_at: string | null
   }[]) {
     const supabase = await createClient()
     return supabase

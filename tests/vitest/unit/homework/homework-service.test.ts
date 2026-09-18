@@ -171,6 +171,65 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
+// Trigger her öğrenciye 'yapilmadi' satırı açtığı için satırın VARLIĞI
+// "öğretmen işaretledi" demek değil; marked_at gerçek dokunuşu işaretler.
+describe('HomeworkService — marked_at (gerçekten işaretlendi damgası)', () => {
+  it('tekil güncellemede marked_at yazılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateSubmissionStatus('hw-1', 'stu-1', 'yapildi')
+
+    expect(HomeworkRepository.upsertSubmissionStatus).toHaveBeenCalledWith(
+      expect.objectContaining({ marked_at: expect.any(String) })
+    )
+  })
+
+  it('toplu güncellemede her satıra marked_at yazılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateAllSubmissionStatuses('hw-1', ['stu-1', 'stu-2'], 'yapildi')
+
+    const rows = vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mock.calls[0][0]
+    expect(rows).toHaveLength(2)
+    expect(rows.every(r => typeof r.marked_at === 'string')).toBe(true)
+  })
+
+  it('geri almada marked_at null yazılır — işaret damgası da geri sarılır', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateAllSubmissionStatuses('hw-1', ['stu-1'], 'yapilmadi', true)
+
+    const rows = vi.mocked(HomeworkRepository.upsertSubmissionsStatus).mock.calls[0][0]
+    expect(rows[0].marked_at).toBeNull()
+  })
+
+  it('not güncellemesi marked_at yazmaz — not yazmak durum işaretlemek değildir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.upsertSubmissionNote).mockResolvedValue({ error: null } as never)
+
+    await HomeworkService.updateSubmissionNote('hw-1', 'stu-1', 'kısa not')
+
+    const arg = vi.mocked(HomeworkRepository.upsertSubmissionNote).mock.calls[0][0] as Record<string, unknown>
+    expect(arg).not.toHaveProperty('marked_at')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
 describe('HomeworkService.updateSubmissionStatus() — audit log', () => {
   it('başarılı güncelleme → insertSubmissionLog çağrılır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)

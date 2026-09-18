@@ -112,19 +112,20 @@ export default function StudentRow({
                 {item.missedCount}/{totalHomeworks} eksik
               </span>
             )}
-            {hasNote && (
-              <button
-                onClick={() => onToggleNote(item.student_id)}
-                aria-expanded={expandedNote === item.student_id}
-                className={`text-[11px] px-1.5 rounded-full border transition-colors ${
-                  noteSaved
-                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                    : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                }`}
-              >
-                {noteSaved ? '✓ Not kaydedildi' : 'Not'}
-              </button>
-            )}
+            <button
+              onClick={() => onToggleNote(item.student_id)}
+              aria-expanded={expandedNote === item.student_id}
+              aria-label={hasNote ? `${item.full_name} notunu düzenle` : `${item.full_name} için not ekle`}
+              className={`text-[11px] px-1.5 rounded-full border transition-colors ${
+                noteSaved
+                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                  : hasNote
+                    ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                    : 'border-transparent text-gray-500 dark:text-slate-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-slate-200'
+              }`}
+            >
+              {noteSaved ? '✓ kaydedildi' : hasNote ? 'Not' : '+ not'}
+            </button>
             {isPending && (
               <svg className="w-3 h-3 text-blue-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" aria-label="Kaydediliyor">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -208,13 +209,6 @@ export default function StudentRow({
               {LABELS[option]}
             </button>
           ))}
-          <button
-            role="menuitem"
-            onClick={() => { onToggleNote(item.student_id); onToggleMenu(item.student_id) }}
-            className="text-xs px-3 py-1.5 rounded-lg border font-medium text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300"
-          >
-            {hasNote ? 'Notu düzenle' : 'Not ekle'}
-          </button>
           <button
             role="menuitem"
             onClick={() => { onToggleHistory(item.student_id); onToggleMenu(item.student_id) }}
