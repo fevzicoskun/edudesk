@@ -11,6 +11,8 @@ import VeliIletisimPaneli from './VeliIletisimPaneli'
 import StatusBoardProgress from './statusboard/StatusBoardProgress'
 import StatusBoardToolbar from './statusboard/StatusBoardToolbar'
 import StudentRow from './statusboard/StudentRow'
+import PrintRapor from './statusboard/PrintRapor'
+import { raporSatirlari, raporOzeti } from '@/src/domains/homework/lib/odev-rapor'
 import { STATUS_OPTIONS } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
 import { useExcelExport } from './useExcelExport'
@@ -29,6 +31,9 @@ export default function StatusBoard({
   className = '',
   weekLoad = null,
   readOnly = false,
+  okulAdi = '',
+  ders = '',
+  ogretmenAdi = '',
 }: {
   homeworkId: string
   items: StatusItem[]
@@ -40,6 +45,10 @@ export default function StatusBoard({
   weekLoad?: ClassWeekLoad | null
   /** Başkasının ödevi: görüntülenir, yazılamaz */
   readOnly?: boolean
+  /** Yalnızca yazdırma raporunun başlığı için */
+  okulAdi?: string
+  ders?: string
+  ogretmenAdi?: string
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map(i => [i.student_id, i.status]))
@@ -63,6 +72,7 @@ export default function StatusBoard({
   const [historyLoadingIds, setHistoryLoadingIds] = useState<Set<string>>(new Set())
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds]     = useState<Set<string>>(new Set())
+  const [menuOpenId, setMenuOpenId]       = useState<string | null>(null)
 
   useEffect(() => {
     if (!errorMsg) return
@@ -184,10 +194,20 @@ export default function StatusBoard({
     })
   }
 
-  const exportToExcel = useExcelExport({ homeworkTitle, className, dueDate, items, statuses, notes })
+  const satirlar = useMemo(
+    () => raporSatirlari({ items, statuses, notes, recordedIds }),
+    [items, statuses, notes, recordedIds],
+  )
+  const ozet = useMemo(
+    () => raporOzeti(statuses, recordedIds, totalStudents),
+    [statuses, recordedIds, totalStudents],
+  )
+
+  const exportToExcel = useExcelExport({ homeworkTitle, className, dueDate, satirlar })
 
   return (
-    <div>
+    <>
+    <div className="print:hidden">
       {readOnly && (
         <div className="mb-4 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm px-4 py-3 rounded-xl">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
@@ -241,6 +261,8 @@ export default function StatusBoard({
             historyOpenId={historyOpenId}
             historyLoadingIds={historyLoadingIds}
             historyMap={historyMap}
+            menuOpenId={menuOpenId}
+            onToggleMenu={id => setMenuOpenId(cur => cur === id ? null : id)}
             onSetStatus={setStatus}
             onToggleNote={id => setExpandedNote(expandedNote === id ? null : id)}
             onNoteChange={(id, val) => setNotes(prev => ({ ...prev, [id]: val }))}
@@ -292,6 +314,18 @@ export default function StatusBoard({
         }))}
       />
     </div>
+
+    <PrintRapor
+      okulAdi={okulAdi}
+      odevBasligi={homeworkTitle ?? ''}
+      sinif={className}
+      ders={ders}
+      sonTeslim={dueDate}
+      ogretmenAdi={ogretmenAdi}
+      satirlar={satirlar}
+      ozet={ozet}
+    />
+    </>
   )
 }
 

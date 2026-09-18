@@ -1,7 +1,12 @@
+import { useEffect, useRef } from 'react'
 import type { SubmissionStatus } from '@/src/shared/types'
 import type { SubmissionLogEntry } from '@/src/domains/homework/repositories/HomeworkRepository'
 import { LABELS, STYLES, STYLE_TEXT, nextInCycle, relativeTime } from './types'
 import type { StatusItem } from './types'
+
+/** Satırda doğrudan gösterilen durumlar; kalanlar ⋯ menüsünde */
+const BIRINCIL: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi']
+const IKINCIL:  SubmissionStatus[] = ['gec', 'mazeretli']
 
 type Props = {
   item: StatusItem
@@ -15,6 +20,8 @@ type Props = {
   historyOpenId: string | null
   historyLoadingIds: Set<string>
   historyMap: Record<string, SubmissionLogEntry[]>
+  menuOpenId: string | null
+  onToggleMenu: (studentId: string) => void
   onSetStatus: (studentId: string, status: SubmissionStatus) => void
   onToggleNote: (studentId: string) => void
   onNoteChange: (studentId: string, value: string) => void
@@ -38,6 +45,8 @@ export default function StudentRow({
   historyOpenId,
   historyLoadingIds,
   historyMap,
+  menuOpenId,
+  onToggleMenu,
   onSetStatus,
   onToggleNote,
   onNoteChange,
@@ -48,43 +57,52 @@ export default function StudentRow({
   selected,
   onToggleSelect,
 }: Props) {
-  const hasNote = !!note
-  const next    = nextInCycle(status)
+  const hasNote       = !!note
+  const next          = nextInCycle(status)
+  const menuAcik      = menuOpenId === item.student_id
+  const ikincilSecili = IKINCIL.includes(status)
+  const menuRef       = useRef<HTMLDivElement>(null)
+
+  // Esc ile kapat; açıldığında ilk seçeneğe odaklan
+  useEffect(() => {
+    if (!menuAcik) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onToggleMenu(item.student_id) }
+    document.addEventListener('keydown', onKey)
+    menuRef.current?.querySelector<HTMLButtonElement>('button')?.focus()
+    return () => document.removeEventListener('keydown', onKey)
+  }, [menuAcik, item.student_id, onToggleMenu])
 
   return (
     <div
-      className={`bg-white dark:bg-slate-800 border rounded-xl px-4 py-3 transition-colors ${
+      className={`bg-white dark:bg-slate-800 border rounded-xl px-3 py-2 transition-colors ${
         isPending ? 'border-blue-200 dark:border-blue-800' : 'border-gray-200 dark:border-slate-700'
       }`}
     >
-      {selectionMode && (
-        <div className="mb-2">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={selected}
-              onChange={() => onToggleSelect(item.student_id)}
-              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-xs text-gray-500 dark:text-slate-400">Seç</span>
-          </label>
-        </div>
-      )}
-      {/* Üst satır: isim + geçmiş + not butonu */}
-      <div className="flex items-start justify-between gap-2 mb-2.5">
-        <div className="min-w-0 pt-0.5">
+      <div className="flex items-center gap-3">
+        {selectionMode && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(item.student_id)}
+            aria-label={`${item.full_name} seç`}
+            className="w-4 h-4 shrink-0 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+        )}
+
+        {/* Sol: isim + künye */}
+        <div className="min-w-0 flex-1">
           <button
             onClick={() => onSelectStudent(item.student_id)}
-            className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            className="block max-w-full truncate text-sm font-medium text-gray-900 dark:text-slate-100 text-left hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             {item.full_name}
           </button>
-          <div className="flex items-center gap-2 mt-0.5">
+          <div className="flex items-center gap-2 mt-0.5 min-h-[16px]">
             {item.student_number && (
-              <span className="text-xs text-gray-500 dark:text-slate-400">No: {item.student_number}</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400 tabular-nums">{item.student_number}</span>
             )}
             {totalHomeworks > 0 && item.missedCount > 0 && (
-              <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${
+              <span className={`text-[11px] font-semibold px-1.5 rounded-full ${
                 item.missedCount >= Math.ceil(totalHomeworks * 0.5)
                   ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
                   : item.missedCount >= 3
@@ -94,50 +112,61 @@ export default function StudentRow({
                 {item.missedCount}/{totalHomeworks} eksik
               </span>
             )}
+            {hasNote && (
+              <button
+                onClick={() => onToggleNote(item.student_id)}
+                aria-expanded={expandedNote === item.student_id}
+                className={`text-[11px] px-1.5 rounded-full border transition-colors ${
+                  noteSaved
+                    ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                    : 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                }`}
+              >
+                {noteSaved ? '✓ Not kaydedildi' : 'Not'}
+              </button>
+            )}
             {isPending && (
-              <svg className="w-3.5 h-3.5 text-blue-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+              <svg className="w-3 h-3 text-blue-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" aria-label="Kaydediliyor">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             )}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {/* Geçmiş butonu */}
-          <button
-            onClick={() => onToggleHistory(item.student_id)}
-            aria-expanded={historyOpenId === item.student_id}
-            aria-label="Durum geçmişi"
-            className={`flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-8 md:w-8 rounded-lg border transition-colors ${
-              historyOpenId === item.student_id
-                ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300 dark:hover:border-slate-500'
-            }`}
-          >
-            {historyLoadingIds.has(item.student_id) ? (
-              <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-            ) : (
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            )}
-          </button>
-          {/* Not butonu */}
-          <button
-            onClick={() => onToggleNote(item.student_id)}
-            className={`text-xs px-2.5 min-h-[44px] min-w-[64px] md:min-h-0 md:min-w-0 md:h-8 rounded-lg border transition-colors ${
-              noteSaved
-                ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                : hasNote
-                  ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                  : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300'
-            }`}
-          >
-            {noteSaved ? '✓ Kaydedildi' : hasNote ? 'Not ✓' : '+ Not'}
-          </button>
+
+        {/* Sağ (desktop): 3 birincil durum + ⋯ */}
+        <div className="hidden md:flex items-center gap-1 shrink-0">
+          {BIRINCIL.map(option => (
+            <button
+              key={option}
+              disabled={isPending || readOnly}
+              onClick={() => onSetStatus(item.student_id, option)}
+              aria-pressed={status === option}
+              className={`text-xs px-2.5 py-1.5 rounded-lg border transition-colors disabled:cursor-not-allowed ${
+                status === option
+                  ? `${STYLES[option]} font-bold`
+                  : 'font-medium bg-transparent text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300 hover:text-gray-700 dark:hover:border-slate-500'
+              }`}
+            >
+              {LABELS[option]}
+            </button>
+          ))}
+          <MenuButton
+            open={menuAcik}
+            ikincilSecili={ikincilSecili}
+            status={status}
+            onClick={() => onToggleMenu(item.student_id)}
+          />
+        </div>
+
+        {/* Sağ (mobil): yalnızca ⋯ — durum değişimi aşağıdaki döngü butonunda */}
+        <div className="md:hidden shrink-0">
+          <MenuButton
+            open={menuAcik}
+            ikincilSecili={false}
+            status={status}
+            onClick={() => onToggleMenu(item.student_id)}
+          />
         </div>
       </div>
 
@@ -145,7 +174,7 @@ export default function StudentRow({
       <button
         disabled={isPending || readOnly}
         onClick={() => onSetStatus(item.student_id, next)}
-        className={`md:hidden w-full flex items-center justify-between gap-2 px-4 min-h-[52px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
+        className={`md:hidden mt-2 w-full flex items-center justify-between gap-2 px-4 min-h-[48px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
       >
         <span className="font-bold text-sm">{LABELS[status]}</span>
         <span className="flex items-center gap-1 text-[11px] font-medium opacity-70">
@@ -156,56 +185,63 @@ export default function StudentRow({
         </span>
       </button>
 
-      {/* Desktop: 3+2 buton grid */}
-      <div className="hidden md:grid grid-cols-3 gap-1.5 mb-1.5">
-        {(['yapildi', 'eksik', 'yapilmadi'] as SubmissionStatus[]).map(option => (
+      {/* ⋯ menüsü */}
+      {menuAcik && (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label={`${item.full_name} için diğer işlemler`}
+          className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 flex flex-wrap gap-1.5"
+        >
+          {!readOnly && IKINCIL.map(option => (
+            <button
+              key={option}
+              role="menuitem"
+              disabled={isPending}
+              onClick={() => { onSetStatus(item.student_id, option); onToggleMenu(item.student_id) }}
+              className={`text-xs px-3 py-1.5 rounded-lg border transition-colors disabled:cursor-not-allowed ${
+                status === option
+                  ? `${STYLES[option]} font-bold`
+                  : 'font-medium text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300'
+              }`}
+            >
+              {LABELS[option]}
+            </button>
+          ))}
           <button
-            key={option}
-            disabled={isPending || readOnly}
-            onClick={() => onSetStatus(item.student_id, option)}
-            className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
-              status === option
-                ? `${STYLES[option]} ring-2 ring-current font-bold`
-                : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
-            }`}
+            role="menuitem"
+            onClick={() => { onToggleNote(item.student_id); onToggleMenu(item.student_id) }}
+            className="text-xs px-3 py-1.5 rounded-lg border font-medium text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300"
           >
-            {LABELS[option]}
+            {hasNote ? 'Notu düzenle' : 'Not ekle'}
           </button>
-        ))}
-      </div>
-      <div className="hidden md:grid grid-cols-2 gap-1.5">
-        {(['gec', 'mazeretli'] as SubmissionStatus[]).map(option => (
           <button
-            key={option}
-            disabled={isPending || readOnly}
-            onClick={() => onSetStatus(item.student_id, option)}
-            className={`text-xs px-2 py-1.5 rounded-xl border transition-colors min-h-[44px] md:min-h-0 flex items-center justify-center disabled:cursor-not-allowed ${
-              status === option
-                ? `${STYLES[option]} ring-2 ring-current font-bold`
-                : 'font-medium bg-gray-50 text-gray-400 border-gray-200 dark:bg-slate-700/50 dark:text-slate-500 dark:border-slate-600 hover:border-gray-300 dark:hover:border-slate-500'
-            }`}
+            role="menuitem"
+            onClick={() => { onToggleHistory(item.student_id); onToggleMenu(item.student_id) }}
+            className="text-xs px-3 py-1.5 rounded-lg border font-medium text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300"
           >
-            {LABELS[option]}
+            Geçmiş
           </button>
-        ))}
-      </div>
+        </div>
+      )}
 
       {expandedNote === item.student_id && (
-        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-700">
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700">
           <textarea
             value={note}
             onChange={e => onNoteChange(item.student_id, e.target.value)}
             onBlur={e => onNoteBlur(item.student_id, e.target.value)}
             rows={2}
+            aria-label={`${item.full_name} için not`}
             placeholder="Öğrenci hakkında kısa not..."
-            className="w-full px-3 py-2 text-base border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder:text-gray-400 dark:placeholder:text-slate-500"
+            className="w-full px-3 py-2 text-base border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder:text-gray-500 dark:placeholder:text-slate-400"
           />
         </div>
       )}
 
       {/* Geçmiş paneli */}
       {historyOpenId === item.student_id && (
-        <div className="mt-2.5 pt-2.5 border-t border-gray-100 dark:border-slate-700">
+        <div className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700">
           {historyLoadingIds.has(item.student_id) ? (
             <p className="text-xs text-gray-500 dark:text-slate-400">Yükleniyor…</p>
           ) : (historyMap[item.student_id] ?? []).length === 0 ? (
@@ -220,7 +256,7 @@ export default function StudentRow({
                   <span className="min-w-0 text-gray-600 dark:text-slate-300">
                     <span className="font-medium">{log.changed_by_name}</span>
                     {' · '}
-                    <span className={log.old_status ? STYLE_TEXT[log.old_status as SubmissionStatus] : 'text-gray-400'}>
+                    <span className={log.old_status ? STYLE_TEXT[log.old_status as SubmissionStatus] : 'text-gray-500'}>
                       {log.old_status ? LABELS[log.old_status as SubmissionStatus] : '—'}
                     </span>
                     {' → '}
@@ -235,5 +271,32 @@ export default function StudentRow({
         </div>
       )}
     </div>
+  )
+}
+
+/** Seçili durum ⋯ menüsündeyse butonun kendisi o durumu gösterir */
+function MenuButton({
+  open, ikincilSecili, status, onClick,
+}: { open: boolean; ikincilSecili: boolean; status: SubmissionStatus; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-expanded={open}
+      aria-haspopup="menu"
+      aria-label="Diğer işlemler"
+      className={`flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-[34px] px-2 rounded-lg border text-xs font-medium transition-colors ${
+        ikincilSecili
+          ? `${STYLES[status]} font-bold`
+          : open
+            ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+            : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300 dark:hover:border-slate-500'
+      }`}
+    >
+      {ikincilSecili ? LABELS[status] : (
+        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="19" cy="12" r="1.75" />
+        </svg>
+      )}
+    </button>
   )
 }

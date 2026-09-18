@@ -79,19 +79,19 @@ export default async function OdevDetayPage({
   const canWrite = isTeachingRole(profile.role) && isOwner
   const cls = hw.classes as { name: string } | null
 
+  // Yazdırma raporunun imza satırı için ödev sahibinin adı
+  let ogretmenAdi = profile.full_name ?? ''
+  if (!isOwner) {
+    const { data: sahip } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', hw.teacher_id)
+      .single()
+    ogretmenAdi = sahip?.full_name ?? ''
+  }
+
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
-      {/* Print başlığı */}
-      <div className="hidden print:block mb-6 pb-4 border-b border-gray-300">
-        <h1 className="text-xl font-bold text-gray-900">{hw.title}</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          {cls?.name ?? '—'} · {hw.subject ?? ''}
-          {hw.due_date ? ` · Son Teslim: ${format(parseISO(hw.due_date), 'd MMMM yyyy')}` : ''}
-        </p>
-        <p className="text-xs text-gray-400 mt-1">
-          Yazdırma tarihi: {format(new Date(), 'd MMMM yyyy')}
-        </p>
-      </div>
       {sp.guncellendi && (
         <div className="mb-4 flex items-center gap-2 bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300 text-sm px-4 py-3 rounded-xl print:hidden">
           <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -140,7 +140,7 @@ export default async function OdevDetayPage({
         </div>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 print:hidden">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{hw.title}</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
           {cls?.name ?? '—'} · {hw.subject}
@@ -162,6 +162,9 @@ export default async function OdevDetayPage({
           homeworkTitle={hw.title}
           className={cls?.name}
           readOnly={!canWrite}
+          okulAdi={profile.schools?.name ?? ''}
+          ders={hw.subject ?? ''}
+          ogretmenAdi={ogretmenAdi}
         />
       </Suspense>
     </div>

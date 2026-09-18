@@ -1,19 +1,15 @@
 'use client'
 
 import { useCallback } from 'react'
-import type { SubmissionStatus } from '@/src/shared/types'
-import type { StatusItem } from './statusboard/types'
-import { LABELS } from './statusboard/types'
+import type { RaporSatiri } from '@/src/domains/homework/lib/odev-rapor'
 
 export function useExcelExport({
-  homeworkTitle, className, dueDate, items, statuses, notes,
+  homeworkTitle, className, dueDate, satirlar,
 }: {
   homeworkTitle?: string
   className?: string
   dueDate?: string
-  items: StatusItem[]
-  statuses: Record<string, SubmissionStatus>
-  notes: Record<string, string>
+  satirlar: RaporSatiri[]
 }) {
   return useCallback(async () => {
     const { default: ExcelJS } = await import('exceljs')
@@ -38,8 +34,8 @@ export function useExcelExport({
     colHeader.font = { bold: true }
     colHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9EAD3' } }
 
-    items.forEach((item, i) => {
-      sheet.addRow([i + 1, item.student_number ?? '', item.full_name, LABELS[statuses[item.student_id] ?? 'yapilmadi'], notes[item.student_id] ?? ''])
+    satirlar.forEach(s => {
+      sheet.addRow([s.sira, s.numara, s.ad, s.durum, s.not])
     })
 
     const buffer = await workbook.xlsx.writeBuffer()
@@ -49,5 +45,5 @@ export function useExcelExport({
     a.download = homeworkTitle ? `${homeworkTitle.replace(/[^a-zA-Z0-9ğüşıöçĞÜŞİÖÇ\s]/g, '')}_odev.xlsx` : 'odev_durumu.xlsx'
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 100)
-  }, [homeworkTitle, className, dueDate, items, statuses, notes])
+  }, [homeworkTitle, className, dueDate, satirlar])
 }
