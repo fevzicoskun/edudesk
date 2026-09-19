@@ -231,12 +231,33 @@ describe('saveYoklama() — excused durum', () => {
 describe('saveYoklama() — yoklama lock', () => {
   it('öğretmen geçmiş tarih → throw düzenlenemez', async () => {
     vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'ogretmen' })
-    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Geçmiş tarih yoklaması düzenlenemez')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Yalnızca bugünün yoklaması düzenlenebilir')
   })
 
   it('zumre_baskani geçmiş tarih → throw düzenlenemez', async () => {
     vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'zumre_baskani' })
-    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Geçmiş tarih yoklaması düzenlenemez')
+    await expect(saveYoklama(CLASS_ID, '2026-06-09', [])).rejects.toThrow('Yalnızca bugünün yoklaması düzenlenebilir')
+  })
+
+  // 2026-09-19: 10:30 saat kilidi KALDIRILDI (canlı veri: kilitten sonra 3 ay
+  // boyunca tek yoklama kaydı oluşmadı). Bu test kilidin geri gelmesini engeller.
+  it('öğretmen BUGÜNÜN yoklamasını geç saatte de kaydedebilir', async () => {
+    // Çarşamba 16:00 TR (13:00 UTC) — hem hafta içi hem eski 10:30 kilidinin çok sonrası.
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-09-16T13:00:00Z'))
+    try {
+      vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'ogretmen' })
+      vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+      await saveYoklama(CLASS_ID, '2026-09-16', [{ studentId: S1, status: 'present' }])
+      expect(mockUpsert).toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('öğretmen GELECEK tarihe yoklama giremez', async () => {
+    vi.mocked(getCurrentProfile).mockResolvedValue({ ...PRIVILEGED_PROFILE, role: 'ogretmen' })
+    await expect(saveYoklama(CLASS_ID, '2099-01-01', [])).rejects.toThrow('Yalnızca bugünün yoklaması düzenlenebilir')
   })
 
   it('mudur geçmiş tarih → lock bypass, servise ulaşır', async () => {

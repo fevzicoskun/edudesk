@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ChangeEvent } from 'react'
-import { isYoklamaTimeLocked } from '@/src/shared/constants/attendance'
+import { yoklamaKilitDurumu, type YoklamaKilit } from '@/src/shared/constants/attendance'
 import type { ClassWithStudents } from './page'
 import { getYoklama, saveYoklama, type AttendanceStatus } from '@/app/actions/yoklama'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
@@ -9,7 +9,7 @@ import { isWeekendISO } from '@/src/domains/attendance/lib/attendanceMath'
 import YoklamaLockBanner from './YoklamaLockBanner'
 import YoklamaStudentPanel from './YoklamaStudentPanel'
 
-type LockStatus = 'open' | 'time_locked' | 'date_locked'
+type LockStatus = YoklamaKilit
 
 interface Props {
   classes: ClassWithStudents[]
@@ -117,11 +117,8 @@ export default function YoklamaClient({ classes, absenceCounts, initialStatuses,
   const isPastDate = date < today
 
   const lockStatus = useMemo((): LockStatus => {
-    if (canEditAfterLock) return 'open'
     const todayTR = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(now)
-    if (date < todayTR) return 'date_locked'
-    if (isYoklamaTimeLocked(now)) return 'time_locked'
-    return 'open'
+    return yoklamaKilitDurumu(date, todayTR, canEditAfterLock)
   }, [canEditAfterLock, date, now])
 
   const isLocked = lockStatus !== 'open'

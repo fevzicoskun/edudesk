@@ -2,18 +2,31 @@
 export const ATTENDANCE_WARN_DAYS  = 15  // uyarı — özürsüz 15 güne ulaştı
 export const ATTENDANCE_LIMIT_DAYS = 20  // tehlike — sınıf tekrarı riski
 
-// Öğretmenin yoklama düzenleyebildiği son saat (Türkiye saati)
-// Bu saatten sonra yalnızca müdür yardımcısı/müdür/admin düzenleyebilir
-export const YOKLAMA_LOCK_HOUR   = 10
-export const YOKLAMA_LOCK_MINUTE = 30
+export type YoklamaKilit = 'open' | 'date_locked'
 
-// Verilen ana göre (TR saati) öğretmenin bugünün yoklamasını düzenleme penceresi kapandı mı?
-// Tek kaynak: hem yoklama ekranı hem dashboard CTA bunu kullanır (drift olmasın diye).
-export function isYoklamaTimeLocked(now: Date): boolean {
-  const parts = new Intl.DateTimeFormat('en', {
-    timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hour12: false,
-  }).formatToParts(now)
-  const h = parseInt(parts.find(p => p.type === 'hour')!.value) % 24
-  const m = parseInt(parts.find(p => p.type === 'minute')!.value)
-  return h > YOKLAMA_LOCK_HOUR || (h === YOKLAMA_LOCK_HOUR && m >= YOKLAMA_LOCK_MINUTE)
+/**
+ * Öğretmen bu günün yoklamasını düzenleyebilir mi?
+ *
+ * Tek kaynak: yoklama ekranı, dashboard CTA ve saveYoklama server action'ı
+ * aynı fonksiyonu kullanır (drift olmasın diye).
+ *
+ * TARİHÇE — 10:30 saat kilidi 2026-09-19'da kaldırıldı:
+ * 2026-06-11'de "10:30 sonrası yalnız müdür yardımcısı" kuralı eklenmişti. Canlı
+ * veri kuralın gerçek kullanımı kestiğini gösterdi: kilitten önceki kayıtların
+ * %80'i 10:30'dan SONRA girilmişti ve kilit sonrası 3 ay boyunca tek kayıt
+ * oluşmadı (sistem 414 hatırlatma gönderdi, %56'sı okundu, yine kayıt yok).
+ * Ders anlatan öğretmene 10:00 hatırlatması + 10:30 kilidi 30 dakikalık
+ * gerçekçi olmayan bir pencere bırakıyordu.
+ *
+ * Yeni kural: bugünün yoklaması gün boyu açık; başka gün müdür/MY yetkisinde.
+ * Geçmiş kadar GELECEK de kapalı — eskiden UI gelecek tarihe izin veriyor ama
+ * sunucu reddediyordu.
+ */
+export function yoklamaKilitDurumu(
+  secilenTarih: string,
+  bugunTR: string,
+  ayricalikli: boolean,
+): YoklamaKilit {
+  if (ayricalikli) return 'open'
+  return secilenTarih === bugunTR ? 'open' : 'date_locked'
 }

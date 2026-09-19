@@ -6,7 +6,7 @@ import { UUID, attendanceStatusSchema } from '@/src/shared/validation'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import type { AttendanceEntry } from '@/src/domains/attendance/services/AttendanceService'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
+import { yoklamaKilitDurumu } from '@/src/shared/constants/attendance'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
 export type { AttendanceStatus } from '@/src/domains/attendance/types'
@@ -39,17 +39,10 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   z.array(entrySchema).max(200).parse(entries)
 
   const profile = await getCurrentProfile()
-  if (!PRIVILEGED_ROLES.includes(profile?.role ?? '')) {
-    const { dateISO, hour, minute } = turkeyTime()
-    if (date !== dateISO) {
-      throw new Error('Geçmiş tarih yoklaması düzenlenemez. Müdür yardımcısına başvurun.')
-    }
-    const pastLock = hour > YOKLAMA_LOCK_HOUR || (hour === YOKLAMA_LOCK_HOUR && minute >= YOKLAMA_LOCK_MINUTE)
-    if (pastLock) {
-      throw new Error(
-        `Yoklama düzenleme saati doldu (${YOKLAMA_LOCK_HOUR}:${String(YOKLAMA_LOCK_MINUTE).padStart(2, '0')}). Müdür yardımcısına başvurun.`
-      )
-    }
+  const ayricalikli = PRIVILEGED_ROLES.includes(profile?.role ?? '')
+  const { dateISO } = turkeyTime()
+  if (yoklamaKilitDurumu(date, dateISO, ayricalikli) !== 'open') {
+    throw new Error('Yalnızca bugünün yoklaması düzenlenebilir. Diğer günler için müdür yardımcısına başvurun.')
   }
 
   await AttendanceService.saveYoklama(classId, date, entries)

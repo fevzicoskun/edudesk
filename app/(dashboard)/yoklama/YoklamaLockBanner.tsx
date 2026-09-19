@@ -1,8 +1,7 @@
 'use client'
 
-import { YOKLAMA_LOCK_HOUR, YOKLAMA_LOCK_MINUTE } from '@/src/shared/constants/attendance'
 
-type LockStatus = 'open' | 'time_locked' | 'date_locked'
+type LockStatus = 'open' | 'date_locked'
 
 export default function YoklamaLockBanner({
   weekend, isPastDate, isLocked, lockStatus, isTodayWeekend, date, today, missingClassNames,
@@ -36,9 +35,7 @@ export default function YoklamaLockBanner({
         <div className="flex items-center gap-2 px-4 py-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl text-sm text-orange-800 dark:text-orange-300">
           <span>🔒</span>
           <span>
-            {lockStatus === 'time_locked'
-              ? `Yoklama düzenleme saati doldu (${YOKLAMA_LOCK_HOUR}:${String(YOKLAMA_LOCK_MINUTE).padStart(2, '0')}). Müdür yardımcısına başvurun.`
-              : 'Geçmiş tarih yoklaması düzenlenemez. Müdür yardımcısına başvurun.'}
+            Yalnızca bugünün yoklaması düzenlenebilir. Bu gün için müdür yardımcınıza başvurun.
           </span>
         </div>
       )}
