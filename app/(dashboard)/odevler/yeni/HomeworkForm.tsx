@@ -4,12 +4,14 @@ import { useActionState, useState, useEffect } from 'react'
 import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 import ClassWeekLoadSection from './ClassWeekLoadSection'
+import { onerilenBaslik } from '@/src/domains/homework/homeworkMath'
 
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
 
 export type Defaults = {
   title?: string
+  source_name?: string
   subject?: string
   description?: string | null
   class_id?: string
@@ -27,17 +29,31 @@ function todayISO() {
 const field =
   'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-900 placeholder:text-gray-400 hover:border-gray-300 focus:outline-none focus:bg-white focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10 transition-all duration-200'
 
+// Flex satırında genişliği flex belirler; field'ın w-full'ü hesabı bozuyordu.
+const fieldFlex = field.replace('w-full ', '')
+
 export default function HomeworkForm({
   classes,
   sources,
   defaults,
+  varsayilanDers = '',
 }: {
   classes: ClassItem[]
   sources: SourceItem[]
   defaults?: Defaults
+  /** Öğretmenin branşı (profiles.subject) — her ödevde elle yazmasın diye. */
+  varsayilanDers?: string
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
   const [isTemplate, setIsTemplate] = useState(false)
+
+  // Öğretmenin dili "hangi kitaptan hangi sayfalar" — başlık ondan türer.
+  // Öğretmen başlığa elle dokunursa öneri devreden çıkar.
+  const [kaynak, setKaynak]         = useState(defaults?.source_name ?? '')
+  const [sayfa, setSayfa]           = useState('')
+  const [baslik, setBaslik]         = useState(defaults?.title ?? '')
+  const [baslikElle, setBaslikElle] = useState(!!defaults?.title)
+  const gosterilenBaslik = baslikElle ? baslik : onerilenBaslik(kaynak, sayfa)
 
   useEffect(() => {
     if (state?.error) {
@@ -168,13 +184,13 @@ export default function HomeworkForm({
           {/* Ders */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-            <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? ''} />
+            <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
           </div>
 
-          {/* Kaynak */}
+          {/* Kaynak + Sayfa */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
+              <label htmlFor="hw-source" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Kaynak <span className="text-gray-400 font-normal normal-case tracking-normal">(opsiyonel)</span>
               </label>
               <Link
@@ -184,32 +200,51 @@ export default function HomeworkForm({
                 Kaynaklarımı yönet →
               </Link>
             </div>
-            {sources.length > 0 ? (
-              <select name="source_id" className={field} defaultValue={defaults?.source_id ?? ''}>
-                <option value="">Kaynak seçin</option>
-                {sources.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}{s.subject ? ` (${s.subject})` : ''}
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <div className="flex items-center gap-2 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700">
-                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Henüz kaynak eklemediniz.{' '}
-                <Link href="/ayarlar#kaynaklar" className="font-semibold underline underline-offset-2 hover:text-amber-900">
-                  Ayarlardan ekle
-                </Link>
-              </div>
-            )}
+            <div className="flex gap-2">
+              <input
+                id="hw-source"
+                name="source_name"
+                type="text"
+                list="hw-kaynak-listesi"
+                maxLength={100}
+                value={kaynak}
+                onChange={e => setKaynak(e.target.value)}
+                placeholder="Kitap veya kaynak adı"
+                className={`${fieldFlex} flex-1 min-w-0`}
+              />
+              <input
+                id="hw-sayfa"
+                type="text"
+                maxLength={30}
+                value={sayfa}
+                onChange={e => setSayfa(e.target.value)}
+                placeholder="39-47"
+                aria-label="Sayfa aralığı"
+                className={`${fieldFlex} w-24 shrink-0`}
+              />
+            </div>
+            <datalist id="hw-kaynak-listesi">
+              {sources.map(s => (
+                <option key={s.id} value={s.name}>{s.subject ?? ''}</option>
+              ))}
+            </datalist>
+            <p className="text-xs text-gray-500 dark:text-slate-400 pt-0.5">
+              Listede yoksa yazmanız yeter — kaynaklarınıza eklenir.
+            </p>
           </div>
 
           {/* Başlık */}
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Başlık</label>
-            <input name="title" type="text" required placeholder="Ödev başlığını girin" className={field} defaultValue={defaults?.title ?? ''} />
+            <input
+              name="title"
+              type="text"
+              required
+              placeholder="Ödev başlığını girin"
+              className={field}
+              value={gosterilenBaslik}
+              onChange={e => { setBaslikElle(true); setBaslik(e.target.value) }}
+            />
           </div>
 
           {/* Açıklama */}

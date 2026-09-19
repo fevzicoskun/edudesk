@@ -1,6 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { isPast, parseISO } from '@/src/shared/date'
-import { PENDING_REVIEW_DAYS } from '@/src/shared/constants/limits'
+import { kategorizeOdev } from '@/src/domains/homework/homeworkMath'
 import SinifChipBar from './SinifChipBar'
 import HomeworkStatCards from './HomeworkStatCards'
 import BekleyenKontrollerPanel from './BekleyenKontrollerPanel'
@@ -60,15 +59,18 @@ export default async function HomeworkSection({
 
   const [subStatsRes, classCountsRes] = await Promise.all([
     homeworkIds.length > 0
-      ? supabase.from('homework_submissions').select('homework_id, status').in('homework_id', homeworkIds).eq('school_id', schoolId)
-      : Promise.resolve({ data: [] as { homework_id: string; status: string }[] }),
+      ? supabase.from('homework_submissions').select('homework_id, status, marked_at').in('homework_id', homeworkIds).eq('school_id', schoolId)
+      : Promise.resolve({ data: [] as { homework_id: string; status: string; marked_at: string | null }[] }),
     classIds.length > 0
       ? supabase.from('students').select('class_id').in('class_id', classIds).eq('school_id', schoolId).is('deleted_at', null)
       : Promise.resolve({ data: [] as { class_id: string }[] }),
   ])
 
+  // Satırlar ödevle birlikte otomatik yaratılır; yalnız marked_at dolu olanlar
+  // öğretmenin gerçekten işaretlediğini gösterir (2026-09-19 bulgusu).
   const statusMap = new Map<string, StatusCounts>()
   for (const s of subStatsRes.data ?? []) {
+    if (!s.marked_at) continue
     const cur = statusMap.get(s.homework_id) ?? { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0 }
     const key = s.status as keyof StatusCounts
     if (key in cur) cur[key]++
@@ -87,17 +89,16 @@ export default async function HomeworkSection({
   const pastDone:     typeof homeworks = []
 
   for (const hw of homeworks) {
-    if (!hw.due_date) { active.push(hw); continue }
-    const overdue = isPast(parseISO(hw.due_date + 'T23:59:59'))
-    if (!overdue) { active.push(hw); continue }
+    const counts = statusMap.get(hw.id)
+    const kategori = kategorizeOdev({
+      dueDate:        hw.due_date,
+      isaretliSayisi: counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0,
+      ogrenciSayisi:  classStudentMap.get(hw.class_id as string) ?? 0,
+    }, now)
 
-    const counts    = statusMap.get(hw.id)
-    const checked   = counts ? Object.values(counts).reduce((a, b) => a + b, 0) : 0
-    const total     = classStudentMap.get(hw.class_id as string) ?? 0
-    const age       = Math.floor((now.getTime() - new Date(hw.due_date).getTime()) / 86_400_000)
-    const halfEntered = total > 0 ? checked >= Math.ceil(total / 2) : checked > 0
-    if (!halfEntered && age <= PENDING_REVIEW_DAYS) pendingCheck.push(hw)
-    else                                     pastDone.push(hw)
+    if (kategori === 'aktif')                 active.push(hw)
+    else if (kategori === 'kontrolBekliyor')  pendingCheck.push(hw)
+    else                                      pastDone.push(hw)
   }
 
   active.sort((a, b) => {

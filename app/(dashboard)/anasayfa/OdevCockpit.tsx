@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentUser } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
+import { hicIsaretlenmedi } from '@/src/domains/homework/homeworkMath'
 
 export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
   const user = await getCurrentUser()
@@ -12,7 +13,7 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
 
   const overdueRes = await supabase
     .from('homeworks')
-    .select('id, title, due_date, class_id, classes(name), homework_submissions(homework_id)')
+    .select('id, title, due_date, class_id, classes(name), homework_submissions(homework_id, marked_at)')
     .eq('teacher_id', user.id)
     .eq('school_id', schoolId)
     .eq('is_template', false)
@@ -22,10 +23,11 @@ export default async function OdevCockpit({ schoolId }: { schoolId: string }) {
     .limit(20)
 
   const allOverdue = overdueRes.data ?? []
-  const unreviewed = allOverdue.filter(hw => {
-    const subs = (hw.homework_submissions as { homework_id: string }[] | null) ?? []
-    return subs.length === 0
-  })
+  // Submission satırları ödevle birlikte otomatik yaratılır — satır sayısı değil,
+  // marked_at ölçer. (Eski "subs.length === 0" koşulu hiç tetiklenmiyordu.)
+  const unreviewed = allOverdue.filter(hw =>
+    hicIsaretlenmedi((hw.homework_submissions as { marked_at: string | null }[] | null) ?? [])
+  )
 
   if (unreviewed.length === 0) return null
 

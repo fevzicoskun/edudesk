@@ -74,3 +74,13 @@ export function formatOzetBody(items: { period: number; className: string }[]): 
     .map(i => `${i.period}. ders ${i.className}`)
     .join(' · ')
 }
+
+/**
+ * Öğretmenin "şu an" bulunduğu sınıf: süren ders, teneffüste ise sıradaki ders.
+ * Gün bittiyse null — akşam saatinde rastgele bir sınıf önermek yanlış yoklamaya davettir.
+ * saat: "HH:MM" (sıfır dolgulu olduğundan sözlük sırası = kronolojik sıra).
+ */
+export function suankiDers(lessons: TodayLesson[], saat: string): string | null {
+  const sirali = [...lessons].sort((a, b) => a.start.localeCompare(b.start))
+  return sirali.find(l => saat <= l.end)?.classId ?? null
+}

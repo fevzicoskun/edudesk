@@ -5,6 +5,7 @@ import {
   validateSlots,
   todaysLessons,
   formatOzetBody,
+  suankiDers,
   type Period,
   type Slot,
 } from '@/src/domains/schedule/scheduleMath'
@@ -101,5 +102,37 @@ describe('formatOzetBody', () => {
   })
   it('ters sıralı girişi sıralar', () => {
     expect(formatOzetBody([{ period: 3, className: '10-B' }, { period: 1, className: '9-A' }])).toBe('1. ders 9-A · 3. ders 10-B')
+  })
+})
+
+describe('suankiDers', () => {
+  const dersler = [
+    { period: 3, start: '10:25', end: '11:00', classId: 'c-11b' },
+    { period: 5, start: '11:45', end: '12:20', classId: 'c-12a' },
+    { period: 8, start: '14:20', end: '14:55', classId: 'c-12b' },
+  ]
+
+  it('ders sürerken o dersin sınıfını verir', () => {
+    expect(suankiDers(dersler, '10:30')).toBe('c-11b')
+  })
+
+  it('dersin ilk dakikasında da o dersi verir', () => {
+    expect(suankiDers(dersler, '10:25')).toBe('c-11b')
+  })
+
+  it('teneffüste sıradaki dersi verir', () => {
+    expect(suankiDers(dersler, '11:10')).toBe('c-12a')
+  })
+
+  it('ilk dersten önce günün ilk dersini verir', () => {
+    expect(suankiDers(dersler, '08:15')).toBe('c-11b')
+  })
+
+  it('son ders bittikten sonra öneri yapmaz', () => {
+    expect(suankiDers(dersler, '15:30')).toBeNull()
+  })
+
+  it('o gün ders yoksa null döner', () => {
+    expect(suankiDers([], '10:30')).toBeNull()
   })
 })

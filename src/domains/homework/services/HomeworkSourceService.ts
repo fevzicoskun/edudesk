@@ -1,4 +1,5 @@
 import { HomeworkSourceRepository } from '../repositories/HomeworkSourceRepository'
+import { ayniKaynak } from '../homeworkMath'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { turkeyDate } from '@/src/lib/email-utils'
@@ -29,6 +30,26 @@ export const HomeworkSourceService = {
     })
     if (error) return { error: error.message, data: null }
     return { data, error: null }
+  },
+
+  /**
+   * Kaynağı adından çözer; listede yoksa oluşturur.
+   * Öğretmen kitabın adını yazabilsin diye var — eskiden yalnız dropdown vardı ve
+   * listede olmayan kitap ödev başlığına kaçıyordu (17 ödevin 15'inde source_id boştu).
+   */
+  async findOrCreateByName(name: string) {
+    const ability = await getAbility()
+    if (!ability) return { id: null, error: 'Giriş gerekli' }
+
+    const { data: mevcutlar, error } = await HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId)
+    if (error) return { id: null, error: error.message }
+
+    const eslesme = (mevcutlar ?? []).find(k => ayniKaynak(k.name, name))
+    if (eslesme) return { id: eslesme.id, error: null }
+
+    const olusan = await this.createSource(name.trim(), null)
+    if (olusan.error) return { id: null, error: olusan.error }
+    return { id: olusan.data?.id ?? null, error: null }
   },
 
   async deleteSource(id: string) {

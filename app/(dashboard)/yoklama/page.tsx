@@ -5,10 +5,13 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { getEgitimYili, schoolYearStart } from '@/src/shared/utils'
+import { todayWeekdayTR } from '@/src/shared/date'
 import { type AttendanceStatus } from '@/app/actions/yoklama'
 import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import type { AbsenceCount } from '@/src/domains/attendance/types'
 import YoklamaClient from './YoklamaClient'
+import { ScheduleService } from '@/src/domains/schedule/services/ScheduleService'
+import { todaysLessons, suankiDers } from '@/src/domains/schedule/scheduleMath'
 
 export const metadata = { title: 'Yoklama' }
 
@@ -49,7 +52,21 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
 
   const validSinif   = sinif && classes.some(c => c.id === sinif) ? sinif : null
   const firstMyClass = classes.find(c => myClassIds.has(c.id))?.id ?? null
-  const firstClassId = validSinif ?? firstMyClass ?? classes[0]?.id ?? ''
+
+  // Ders programı varsa "şu an bulunduğun sınıf" seçili gelsin — öğretmen
+  // yoklamayı ders başında alır, listeden sınıf aramak sürtünmedir.
+  // Program yoksa/okunamazsa sessizce eski davranışa düşer.
+  let programSinifi: string | null = null
+  try {
+    const { periods, slots } = await ScheduleService.getMySchedule()
+    const simdi = new Intl.DateTimeFormat('tr-TR', {
+      timeZone: 'Europe/Istanbul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(new Date())
+    const aday = suankiDers(todaysLessons(slots, periods, todayWeekdayTR()), simdi)
+    if (aday && classes.some(c => c.id === aday)) programSinifi = aday
+  } catch { /* program okunamadı — öntanımlı seçim eski mantıkla sürer */ }
+
+  const firstClassId = validSinif ?? programSinifi ?? firstMyClass ?? classes[0]?.id ?? ''
 
   const studentIds = classes.flatMap(c => c.students.map(s => s.id))
   const todayISO   = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())

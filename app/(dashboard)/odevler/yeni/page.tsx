@@ -83,6 +83,12 @@ export default async function YeniOdevPage({
     }
   }
 
+  // Form kaynağı adıyla taşıyor; kopya/şablonda id'yi ada çevir.
+  if (defaults?.source_id) {
+    const kaynakAdi = (sourcesRes.data ?? []).find(k => k.id === defaults!.source_id)?.name
+    if (kaynakAdi) defaults = { ...defaults, source_name: kaynakAdi }
+  }
+
   const templates = (templatesRes.data ?? []).map(t => ({
     id: t.id as string,
     title: t.title as string,
@@ -181,6 +187,7 @@ export default async function YeniOdevPage({
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
           defaults={defaults ?? (tarihDefault ? { due_date: tarihDefault } : undefined)}
+          varsayilanDers={profile.subject ?? ''}
         />
       </div>
     </div>

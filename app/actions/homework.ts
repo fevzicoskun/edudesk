@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { UUID } from '@/src/shared/validation'
 import { createHomeworkSchema } from '@/src/domains/homework/validators'
+import { createHomeworkSourceSchema } from '@/src/shared/validation'
+import { HomeworkSourceService } from '@/src/domains/homework/services/HomeworkSourceService'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { HomeworkRepository } from '@/src/domains/homework/repositories/HomeworkRepository'
 import type { HomeworkTemplate, ActionResult } from '@/src/shared/types'
@@ -14,8 +16,28 @@ import { turkeyDate } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
+
+/**
+ * Form kaynağı ad olarak gönderir (yazarak ekleme). Boşsa kaynak seçilmemiştir.
+ * Ad, kaynak şemasıyla doğrulanır — serbest metin doğrudan DB'ye gitmez.
+ */
+async function kaynakIdCoz(raw: FormDataEntryValue | null): Promise<{ id: string | null; error?: string }> {
+  const ad = typeof raw === 'string' ? raw.trim() : ''
+  if (!ad) return { id: null }
+
+  const parsed = createHomeworkSourceSchema.safeParse({ name: ad, subject: null })
+  if (!parsed.success) return { id: null, error: parsed.error.issues[0]?.message ?? 'Geçersiz kaynak adı' }
+
+  const { id, error } = await HomeworkSourceService.findOrCreateByName(parsed.data.name)
+  if (error) return { id: null, error }
+  return { id }
+}
+
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
+
+  const kaynak = await kaynakIdCoz(formData.get('source_name'))
+  if (kaynak.error) return { error: kaynak.error }
 
   if (isTemplate) {
     const parsed = createHomeworkSchema.safeParse({
@@ -24,7 +46,7 @@ export async function createHomework(_: unknown, formData: FormData) {
       description: formData.get('description') || null,
       subject:     formData.get('subject'),
       due_date:    null,
-      source_id:   formData.get('source_id') || null,
+      source_id:   kaynak.id,
       is_template: true,
     })
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
@@ -50,7 +72,7 @@ export async function createHomework(_: unknown, formData: FormData) {
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
     due_date:    formData.get('due_date') || null,
-    source_id:   formData.get('source_id') || null,
+    source_id:   kaynak.id,
     is_template: false,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
