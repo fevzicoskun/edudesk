@@ -26,6 +26,8 @@ export default function StatusBoard({
   totalHomeworks,
   classId,
   dueDate = '',
+  verilisTarihi = '',
+  kontrolTarihi = '',
   className = '',
   weekLoad = null,
   readOnly = false,
@@ -39,6 +41,9 @@ export default function StatusBoard({
   totalHomeworks: number
   classId: string
   dueDate?: string
+  /** Yazdırma raporu için: ödevin verildiği ve son işaretlendiği gün */
+  verilisTarihi?: string
+  kontrolTarihi?: string
   className?: string
   weekLoad?: ClassWeekLoad | null
   /** Başkasının ödevi: görüntülenir, yazılamaz */
@@ -64,6 +69,9 @@ export default function StatusBoard({
   const [recordedIds, setRecordedIds]       = useState<Set<string>>(
     () => new Set(items.filter(i => i.hasRecord).map(i => i.student_id))
   )
+  /** Rapordaki "kontrol edildiği tarih": sunucudan gelen son işaretleme günü,
+   *  bu oturumda işaretleme yapılırsa bugüne çekilir (sayfa yenilenmeden yazdırılabiliyor) */
+  const [kontrolGunu, setKontrolGunu]       = useState(kontrolTarihi)
   const [openBadge, setOpenBadge]           = useState<boolean>(false)
   const [historyOpenId, setHistoryOpenId]   = useState<string | null>(null)
   const [historyMap, setHistoryMap]         = useState<Record<string, SubmissionLogEntry[]>>({})
@@ -106,6 +114,10 @@ export default function StatusBoard({
     [statuses]
   )
 
+  const damgala = () => setKontrolGunu(
+    new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
+  )
+
   const recordedCount  = recordedIds.size
   const totalStudents  = items.length
 
@@ -122,6 +134,7 @@ export default function StatusBoard({
         setErrorMsg(result.error)
       } else {
         setRecordedIds(cur => new Set([...cur, studentId]))
+        damgala()
       }
     })
   }
@@ -181,6 +194,7 @@ export default function StatusBoard({
         setErrorMsg(result.error)
       } else {
         setRecordedIds(cur => new Set([...cur, ...ids]))
+        damgala()
       }
     })
     setSelectionMode(false)
@@ -200,6 +214,7 @@ export default function StatusBoard({
         setErrorMsg(result.error)
       } else {
         setRecordedIds(new Set(studentIds))
+        damgala()
         // Geri alma yalnız daha önce işaretlenmemiş öğrenci varsa anlamlı
         if (prevKayitli.size < studentIds.length) setGeriAl({ onceki: prevAll, onceKayitli: prevKayitli })
       }
@@ -239,6 +254,7 @@ export default function StatusBoard({
           return
         }
       }
+      damgala()
     })
   }
 
@@ -379,7 +395,9 @@ export default function StatusBoard({
       odevBasligi={homeworkTitle ?? ''}
       sinif={className}
       ders={ders}
+      verilisTarihi={verilisTarihi}
       sonTeslim={dueDate}
+      kontrolTarihi={kontrolGunu}
       ogretmenAdi={ogretmenAdi}
       satirlar={satirlar}
       ozet={ozet}

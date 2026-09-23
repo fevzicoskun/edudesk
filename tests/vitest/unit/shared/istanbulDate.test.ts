@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { addDaysISO, istanbulLocalToUtc } from '@/src/shared/date'
+import { addDaysISO, istanbulLocalToUtc, formatIstanbulGun } from '@/src/shared/date'
 
 describe('addDaysISO', () => {
   it('gün ekler/çıkarır, ay ve yıl sınırını geçer', () => {
@@ -23,5 +23,16 @@ describe('istanbulLocalToUtc', () => {
 
   it('gece yarısına yakın yerel saat UTC önceki güne düşer (yerel gün değişmez)', () => {
     expect(istanbulLocalToUtc('2026-09-14', '01:30').toISOString()).toBe('2026-09-13T22:30:00.000Z')
+  })
+})
+
+describe('formatIstanbulGun', () => {
+  it('timestamptz degerini Türkçe uzun tarihe çevirir', () => {
+    expect(formatIstanbulGun('2026-09-23T07:51:00.000Z')).toBe('23 Eylül 2026')
+  })
+
+  it('gece yarısından sonraki kayıt bir gün geriye kaymaz (UTC sunucu tuzağı)', () => {
+    // 24 Eylül 01:30 İstanbul = 23 Eylül 22:30 UTC
+    expect(formatIstanbulGun('2026-09-23T22:30:00.000Z')).toBe('24 Eylül 2026')
   })
 })

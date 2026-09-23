@@ -63,10 +63,12 @@ export function raporOzeti(
   return girilmedi > 0 ? [...sayimlar, { etiket: 'Girilmedi', sayi: girilmedi, kod: null }] : sayimlar
 }
 
-/** Raporun başına konan "kim yapmadı" listesi — çıktının en çok bakılan bilgisi.
- *  İşaretlenmemiş öğrenci (durumKodu null) listeye GİRMEZ: bilgi yokken suçlama olmaz. */
-export function yapmayanlar(satirlar: RaporSatiri[]): string[] {
+/** Raporun başına konan isim listeleri — çıktının en çok bakılan bilgisi.
+ *  "Yapmayanlar" ve "Eksik bırakanlar" AYRI listelenir: tek listede toplanınca
+ *  özetteki sayılarla ("10 Yapılmadı" ama "Yapmayanlar (11)") tutmuyordu.
+ *  İşaretlenmemiş öğrenci (durumKodu null) hiçbir listeye GİRMEZ: bilgi yokken suçlama olmaz. */
+export function durumListesi(satirlar: RaporSatiri[], kodlar: SubmissionStatus[]): string[] {
   return satirlar
-    .filter(s => s.durumKodu === 'yapilmadi' || s.durumKodu === 'eksik')
+    .filter(s => s.durumKodu !== null && kodlar.includes(s.durumKodu))
     .map(s => s.numara ? `${s.ad} (${s.numara})` : s.ad)
 }

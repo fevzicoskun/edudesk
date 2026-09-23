@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { raporSatirlari, raporOzeti, yapmayanlar } from '@/src/domains/homework/lib/odev-rapor'
+import { raporSatirlari, raporOzeti, durumListesi } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 const ogrenci = (id: string, ad: string, no: string | null = null) => ({
@@ -89,38 +89,42 @@ describe('raporOzeti()', () => {
   })
 })
 
-describe('yapmayanlar()', () => {
+describe('durumListesi()', () => {
   const satir = (ad: string, numara: string, durumKodu: string | null) => ({
     sira: 1, numara, ad, durum: '', durumKodu, not: '',
   })
 
-  it('yalnız yapmayanları döker — yapıldı/geç/mazeretli listeye girmez', () => {
-    const liste = yapmayanlar([
-      satir('Ahmet', '201', 'yapildi'),
-      satir('Ayşe', '202', 'yapilmadi'),
-      satir('Emre', '205', 'gec'),
-      satir('Elif', '206', 'mazeretli'),
-      satir('Selin', '208', 'yapilmadi'),
-    ] as never)
-    expect(liste).toEqual(['Ayşe (202)', 'Selin (208)'])
+  const sinif = [
+    satir('Ahmet', '201', 'yapildi'),
+    satir('Ayşe', '202', 'yapilmadi'),
+    satir('Emre', '205', 'gec'),
+    satir('Elif', '206', 'mazeretli'),
+    satir('Selin', '208', 'yapilmadi'),
+    satir('Deniz', '209', 'eksik'),
+  ] as never
+
+  it('yalnız istenen durumdakileri döker', () => {
+    expect(durumListesi(sinif, ['yapilmadi'])).toEqual(['Ayşe (202)', 'Selin (208)'])
   })
 
-  it('eksik teslim de yapmayan sayılır', () => {
-    const liste = yapmayanlar([satir('Ayşe', '202', 'eksik')] as never)
-    expect(liste).toEqual(['Ayşe (202)'])
+  it('eksik bırakanlar yapmayanlardan AYRI listelenir — özetteki sayılarla tutsun diye', () => {
+    expect(durumListesi(sinif, ['eksik'])).toEqual(['Deniz (209)'])
+  })
+
+  it('birden çok durum aynı anda süzülebilir', () => {
+    expect(durumListesi(sinif, ['yapilmadi', 'eksik']))
+      .toEqual(['Ayşe (202)', 'Selin (208)', 'Deniz (209)'])
   })
 
   it('numarası olmayan öğrenci parantezsiz yazılır', () => {
-    const liste = yapmayanlar([satir('Ayşe', '', 'yapilmadi')] as never)
-    expect(liste).toEqual(['Ayşe'])
+    expect(durumListesi([satir('Ayşe', '', 'yapilmadi')] as never, ['yapilmadi'])).toEqual(['Ayşe'])
   })
 
-  it('işaretlenmemiş öğrenci yapmayan sayılmaz — bilgi yok, suçlama yok', () => {
-    const liste = yapmayanlar([satir('Ayşe', '202', null)] as never)
-    expect(liste).toEqual([])
+  it('işaretlenmemiş öğrenci listeye girmez — bilgi yok, suçlama yok', () => {
+    expect(durumListesi([satir('Ayşe', '202', null)] as never, ['yapilmadi'])).toEqual([])
   })
 
   it('herkes yaptıysa boş döner', () => {
-    expect(yapmayanlar([satir('Ahmet', '201', 'yapildi')] as never)).toEqual([])
+    expect(durumListesi([satir('Ahmet', '201', 'yapildi')] as never, ['yapilmadi'])).toEqual([])
   })
 })

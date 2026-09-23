@@ -1,6 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getClassWeekLoad } from '@/app/actions/homework'
-import { format, parseISO } from '@/src/shared/date'
+import { format, parseISO, formatIstanbulGun } from '@/src/shared/date'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import type { SubmissionStatus } from '@/src/shared/types'
 import StatusBoard, { type StatusItem } from './StatusBoard'
@@ -9,6 +9,8 @@ interface Props {
   homeworkId: string
   classId: string
   dueDate: string | null
+  /** Ödevin verildiği gün — yazdırma raporunda gösterilir */
+  assignedDate?: string | null
   schoolId: string
   homeworkTitle?: string
   className?: string
@@ -22,6 +24,7 @@ export default async function StatusBoardLoader({
   homeworkId,
   classId,
   dueDate,
+  assignedDate = null,
   schoolId,
   homeworkTitle,
   className,
@@ -62,6 +65,10 @@ export default async function StatusBoardLoader({
   const students = studentsResult.data ?? []
   const subs     = subsResult.data ?? []
   const subMap   = new Map(subs.map(s => [s.student_id, s]))
+
+  // Raporun "kontrol edildiği tarih"i: öğretmenin son işaretlemesi
+  const sonKontrol = subs.reduce<string | null>(
+    (en, s) => (s.marked_at && (!en || s.marked_at > en) ? s.marked_at : en), null)
 
   const cumulativeRows     = cumulativeRes.data ?? []
   const totalHomeworkCount = Number(cumulativeRows[0]?.total_homeworks ?? 0)
@@ -105,6 +112,8 @@ export default async function StatusBoardLoader({
       totalHomeworks={totalHomeworkCount}
       classId={classId}
       dueDate={dueDate ? format(parseISO(dueDate), 'd MMMM yyyy') : ''}
+      verilisTarihi={assignedDate ? format(parseISO(assignedDate), 'd MMMM yyyy') : ''}
+      kontrolTarihi={sonKontrol ? formatIstanbulGun(sonKontrol) : ''}
       className={className}
       weekLoad={weekLoad}
       readOnly={readOnly}

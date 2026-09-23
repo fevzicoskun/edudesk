@@ -52,6 +52,14 @@ export function todayLocalISO(): string {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date())
 }
 
+/** timestamptz → "23 Eylül 2026". Günü İstanbul'a göre keser: UTC sunucuda
+ *  gece yarısından sonraki kayıtlar bir gün geriye kaymaz. */
+export function formatIstanbulGun(iso: string): string {
+  return new Intl.DateTimeFormat('tr-TR', {
+    timeZone: 'Europe/Istanbul', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(new Date(iso))
+}
+
 /** 'YYYY-MM-DD' tarihine gün ekler/çıkarır. Saf takvim aritmetiği (UTC) — saat dilimi/DST günü kaydıramaz. */
 export function addDaysISO(iso: string, days: number): string {
   const [y, m, d] = iso.split('-').map(Number)

@@ -189,6 +189,9 @@ body {
   .flex.h-full { display: block !important; }
   /* print:hidden Tailwind sınıfını destekle */
   .print\:hidden { display: none !important; }
+  /* Ekrana sabitlenmiş her katman (PWA "Ana ekrana ekle" banner'ı, toast, FAB)
+     kağıda akıyordu — yazdırılan tek şey sayfa içeriği olsun */
+  .fixed { display: none !important; }
   /* Renkleri koru */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }

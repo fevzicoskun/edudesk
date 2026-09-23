@@ -62,7 +62,7 @@ export default async function OdevDetayPage({
 
   const { data: hw } = await supabase
     .from('homeworks')
-    .select('id, title, subject, description, due_date, class_id, teacher_id, is_template, classes(name)')
+    .select('id, title, subject, description, due_date, assigned_date, class_id, teacher_id, is_template, classes(name)')
     .eq('id', id)
     .eq('school_id', profile.school_id)
     .is('deleted_at', null)
@@ -158,6 +158,7 @@ export default async function OdevDetayPage({
           homeworkId={id}
           classId={hw.class_id}
           dueDate={hw.due_date ?? null}
+          assignedDate={hw.assigned_date ?? null}
           schoolId={profile.school_id}
           homeworkTitle={hw.title}
           className={cls?.name}
