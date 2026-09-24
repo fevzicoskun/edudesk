@@ -24,26 +24,31 @@ let school:   TestSchool
 let school2:  TestSchool
 let ogretmen: TestUser
 let token:    string
+// Metriğe yazan yol için gerçek-domainli kullanıcı (test.example filtrelenir, 20260919140000)
+let gercek:      TestUser
+let gercekToken: string
 
 beforeAll(async () => {
   school  = await createTestSchool('_USAGE')
   school2 = await createTestSchool('_USAGE2')
   ogretmen = await createTestUser({ role: 'ogretmen', schoolId: school.id })
   token = await signInTestUser(ogretmen.email, ogretmen.password)
+  gercek = await createTestUser({ role: 'ogretmen', schoolId: school.id, emailDomain: 'example.com' })
+  gercekToken = await signInTestUser(gercek.email, gercek.password)
 })
 
 afterAll(async () => {
   await serviceDb.from('usage_daily').delete().eq('school_id', school.id)
   await serviceDb.from('feedback').delete().eq('school_id', school.id)
   await cleanupTestData({
-    userIds: [ogretmen.id],
+    userIds: [ogretmen.id, gercek.id],
     schoolIds: [school.id, school2.id],
   })
 })
 
 describe('increment_usage RPC', () => {
   it('aynı gün iki çağrıda count=2 olur', async () => {
-    const client = createUserClient(token)
+    const client = createUserClient(gercekToken)
     const { error: e1 } = await client.rpc('increment_usage', { p_feature: 'yoklama' })
     expect(e1).toBeNull()
     const { error: e2 } = await client.rpc('increment_usage', { p_feature: 'yoklama' })
@@ -52,7 +57,7 @@ describe('increment_usage RPC', () => {
     const { data } = await serviceDb
       .from('usage_daily')
       .select('count, role, school_id')
-      .eq('user_id', ogretmen.id)
+      .eq('user_id', gercek.id)
       .eq('feature', 'yoklama')
       .single()
     expect(data?.count).toBe(2)
@@ -61,13 +66,21 @@ describe('increment_usage RPC', () => {
   })
 
   it('farklı feature ayrı satır açar', async () => {
-    const client = createUserClient(token)
+    const client = createUserClient(gercekToken)
     await client.rpc('increment_usage', { p_feature: 'odevler' })
     const { data } = await serviceDb
       .from('usage_daily')
       .select('feature')
-      .eq('user_id', ogretmen.id)
+      .eq('user_id', gercek.id)
     expect(data?.map(r => r.feature).sort()).toEqual(['odevler', 'yoklama'])
+  })
+
+  it('test hesabı (@test.example) metriğe yazmaz', async () => {
+    const client = createUserClient(token)
+    const { error } = await client.rpc('increment_usage', { p_feature: 'yoklama' })
+    expect(error).toBeNull()
+    const { data } = await serviceDb.from('usage_daily').select('feature').eq('user_id', ogretmen.id)
+    expect(data ?? []).toHaveLength(0)
   })
 
   it('whitelist dışı feature sessizce yazılmaz', async () => {

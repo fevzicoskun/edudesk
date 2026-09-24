@@ -78,9 +78,11 @@ export async function createTestUser(params: {
   role: string
   schoolId: string
   suffix?: string
+  /** Varsayılan test.example — increment_usage bu domaini metriğe yazmaz; gerçek kullanıcı yolu için 'example.com' ver */
+  emailDomain?: string
 }): Promise<TestUser> {
   const uid      = randomUUID().slice(0, 8)
-  const email    = `test_${uid}${params.suffix ?? ''}@test.example`
+  const email    = `test_${uid}${params.suffix ?? ''}@${params.emailDomain ?? 'test.example'}`
   const password = 'Test1234!'
   const fullName = `Test ${params.role} ${uid}`
 
