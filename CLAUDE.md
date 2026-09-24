@@ -67,6 +67,7 @@ Server components call Supabase directly (read-only, no mutations). Mutations go
 - **Yeni dashboard modülünde `featureMap.ts` + `increment_usage` DB whitelist'i BİRLİKTE güncellenir** — biri eksikse beacon sessizce düşer.
 - **RLS helper SECURITY DEFINER fn'lerden anon/authenticated EXECUTE ÇEKME** — production'ı kilitler (advisor 0028/0029 bilinçli kabul).
 - **`.limit(BÜYÜK_SAYI)` + JS-tarafı gruplama = sessiz truncation bug'ı** — sayım/agregat Postgres `group by`/RPC'de yapılır.
+- **PostgREST `max_rows=1000`: `.limit(5000)` bile 1000 satır döner, hata YOK** (canlıda ölçüldü 2026-09-24). 1000'i aşabilecek her okuma `fetchAll`/`fetchAllResult` (`src/shared/utils/fetchAll.ts`) + sonda `.order('id')` ile sayfalı; yalnız sayı lazımsa `{ count: 'exact', head: true }`. Binlerce id'yi `.in()`'e verme (URL 414) — filtreyi `tablo!inner(...)` join'iyle uygula. `attendance` "geldi" dahil öğrenci×gün yazar: en hızlı büyüyen tablo.
 - **PostgREST `numeric`'i string döndürür** (bigint/float8 number) — RPC'de `::float8` cast + tüketicide `Number()`.
 - **Saat-bağımlı UI e2e'sinde `page.clock` yetmez** — kilit SSR'da gerçek saatle hesaplanır; yetki-bypass'lı rol kullan.
 - **Responsive ikiz içerik (`hidden md:block`/`md:hidden`) Playwright strict mode'u patlatır** — `{ exact: true }` / `.first()` / kapsamlı locator.
