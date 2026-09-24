@@ -10,6 +10,7 @@ import { TeacherDashboardService } from '@/src/domains/dashboard/services/Teache
 import { DutyService } from '@/src/domains/schedule/services/DutyService'
 import BugunYapilacaklarWidget from './BugunYapilacaklarWidget'
 import BugunProgramWidget from './BugunProgramWidget'
+import BugunVerdiklerimWidget from './BugunVerdiklerimWidget'
 import OdevCockpit from './OdevCockpit'
 import HizliAksiyonlar from './HizliAksiyonlar'
 import Yapilacaklarim from './Yapilacaklarim'
@@ -158,13 +159,18 @@ export default async function OgretmenDashboard() {
         <OdevCockpit schoolId={profile.school_id ?? ''} />
       </Suspense>
 
-      {/* Bugün Yapılacaklar */}
-      <BugunYapilacaklarWidget
-        yoklamaDurumu={metrics.yoklamaDurumu}
-        todayHomeworks={todayHws}
-        activeRiskCount={metrics.activeRiskCount}
-        hasClasses={metrics.yoklamaDurumu.length > 0}
-      />
+      {/* Bugün Yapılacaklar + gün sonu için bugün verilen ödevler, yan yana */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start *:mb-0">
+        <BugunYapilacaklarWidget
+          yoklamaDurumu={metrics.yoklamaDurumu}
+          todayHomeworks={todayHws}
+          activeRiskCount={metrics.activeRiskCount}
+          hasClasses={metrics.yoklamaDurumu.length > 0}
+        />
+        <Suspense fallback={<div className="h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
+          <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
+        </Suspense>
+      </div>
 
       {/* 3 Ana Kart */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { raporSatirlari, raporOzeti, durumListesi } from '@/src/domains/homework/lib/odev-rapor'
+import { raporSatirlari, raporOzeti, durumListesi, sutunlaraBol } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 const ogrenci = (id: string, ad: string, no: string | null = null) => ({
@@ -126,5 +126,30 @@ describe('durumListesi()', () => {
 
   it('herkes yaptıysa boş döner', () => {
     expect(durumListesi([satir('Ahmet', '201', 'yapildi')] as never, ['yapilmadi'])).toEqual([])
+  })
+})
+
+describe('sutunlaraBol() — rapor tek A4 sayfaya sığsın', () => {
+  const n = (k: number) => Array.from({ length: k }, (_, i) => i + 1)
+
+  it('az öğrenci → tek sütun', () => {
+    expect(sutunlaraBol(n(20))).toEqual([n(20)])
+  })
+
+  it('orta sınıf → 2 sütun, yukarıdan aşağı sırayla (numara sırası bozulmaz)', () => {
+    const s = sutunlaraBol(n(34))
+    expect(s).toHaveLength(2)
+    expect(s[0]).toEqual(n(17))
+    expect(s[1][0]).toBe(18)
+  })
+
+  it('kalabalık sınıf → 3 sütun, hiçbir satır kaybolmaz', () => {
+    const s = sutunlaraBol(n(50))
+    expect(s).toHaveLength(3)
+    expect(s.flat()).toEqual(n(50))
+  })
+
+  it('boş liste → tek boş sütun', () => {
+    expect(sutunlaraBol([])).toEqual([[]])
   })
 })

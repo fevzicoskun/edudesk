@@ -72,3 +72,12 @@ export function durumListesi(satirlar: RaporSatiri[], kodlar: SubmissionStatus[]
     .filter(s => s.durumKodu !== null && kodlar.includes(s.durumKodu))
     .map(s => s.numara ? `${s.ad} (${s.numara})` : s.ad)
 }
+
+/** Raporun tek A4 sayfaya sığması için satırları sütunlara böler (sütun sütun, numara sırası korunur).
+ *  ponytail: eşikler 10.5pt satır yüksekliği + başlık bloğu için ölçüldü; font değişirse yeniden ayarla. */
+export function sutunlaraBol<T>(satirlar: T[]): T[][] {
+  const sutun = satirlar.length <= 22 ? 1 : satirlar.length <= 46 ? 2 : 3
+  const boy = Math.ceil(satirlar.length / sutun)
+  if (boy === 0) return [[]]
+  return Array.from({ length: sutun }, (_, i) => satirlar.slice(i * boy, (i + 1) * boy)).filter(s => s.length > 0)
+}

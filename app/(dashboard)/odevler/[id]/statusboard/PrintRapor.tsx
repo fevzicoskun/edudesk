@@ -1,4 +1,4 @@
-import { durumListesi } from '@/src/domains/homework/lib/odev-rapor'
+import { durumListesi, sutunlaraBol } from '@/src/domains/homework/lib/odev-rapor'
 import type { RaporSatiri, OzetKalemi } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
 
@@ -45,18 +45,21 @@ export default function PrintRapor({
 }: Props) {
   const yapmayanlar = durumListesi(satirlar, ['yapilmadi'])
   const eksikler    = durumListesi(satirlar, ['eksik'])
+  // Tek sayfaya sığsın: kalabalık sınıfta 2-3 sütun; çok sütunda not adın altına iner
+  const sutunlar = sutunlaraBol(satirlar)
+  const tekSutun = sutunlar.length === 1
 
   return (
     <div className="hidden print:block text-black">
       {/* not: <header> kullanma — globals.css print kuralı tüm header'ları gizliyor */}
-      <div className="border-b-2 border-black pb-2 mb-4">
+      <div className="border-b-2 border-black pb-1 mb-2">
         <div className="flex items-baseline justify-between">
           <h1 className="text-base font-bold">{okulAdi}</h1>
           <span className="text-sm">Ödev Durum Raporu</span>
         </div>
       </div>
 
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[11pt] mb-3">
+      <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 gap-y-0.5 text-[10pt] mb-2">
         <dt className="font-semibold">Ödev</dt>
         <dd>{odevBasligi || '—'}</dd>
         <dt className="font-semibold">Sınıf</dt>
@@ -99,30 +102,37 @@ export default function PrintRapor({
         </div>
       )}
 
-      <table className="w-full text-[10.5pt] border-collapse">
-        <thead>
-          <tr className="border-b border-black">
-            <th className="text-left font-semibold py-1 w-16">No</th>
-            <th className="text-left font-semibold py-1">Ad Soyad</th>
-            <th className="text-left font-semibold py-1 w-28">Durum</th>
-            <th className="text-left font-semibold py-1 w-1/3">Not</th>
-          </tr>
-        </thead>
-        <tbody>
-          {satirlar.map(s => (
-            <tr key={s.sira} className="border-b border-gray-300">
-              <td className="py-1 tabular-nums align-top">{s.numara || '—'}</td>
-              <td className="py-1 align-top">{s.ad}</td>
-              <td className="py-1 align-top">
-                <span className={`inline-block px-1.5 py-0.5 rounded font-bold ${rozet(s.durumKodu)}`}>{s.durum}</span>
-              </td>
-              <td className="py-1 align-top text-gray-700">{s.not}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className={`grid gap-x-4 ${tekSutun ? '' : sutunlar.length === 2 ? 'grid-cols-2' : 'grid-cols-3'}`}>
+        {sutunlar.map((sutun, i) => (
+          <table key={i} className={`w-full border-collapse self-start ${tekSutun ? 'text-[10.5pt]' : sutunlar.length === 2 ? 'text-[9.5pt]' : 'text-[8.5pt]'}`}>
+            <thead>
+              <tr className="border-b border-black">
+                <th className={`text-left font-semibold py-0.5 ${tekSutun ? 'w-12' : 'w-8'}`}>No</th>
+                <th className="text-left font-semibold py-0.5">Ad Soyad</th>
+                <th className={`text-left font-semibold py-0.5 ${tekSutun ? 'w-24' : 'w-16'}`}>Durum</th>
+                {tekSutun && <th className="text-left font-semibold py-0.5 w-1/3">Not</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {sutun.map(s => (
+                <tr key={s.sira} className="border-b border-gray-300 break-inside-avoid">
+                  <td className="py-0.5 tabular-nums align-top">{s.numara || '—'}</td>
+                  <td className="py-0.5 align-top leading-tight">
+                    {s.ad}
+                    {!tekSutun && s.not && <span className="block text-[8pt] text-gray-700">{s.not}</span>}
+                  </td>
+                  <td className="py-0.5 align-top">
+                    <span className={`inline-block px-1 rounded font-bold whitespace-nowrap ${rozet(s.durumKodu)}`}>{s.durum}</span>
+                  </td>
+                  {tekSutun && <td className="py-0.5 align-top text-gray-700">{s.not}</td>}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
+      </div>
 
-      <div className="flex justify-end gap-10 mt-8 text-[10pt]">
+      <div className="flex justify-end gap-10 mt-4 text-[10pt] break-inside-avoid">
         {ogretmenAdi && <span>Öğretmen: <strong>{ogretmenAdi}</strong></span>}
         <span>İmza: ______________</span>
       </div>

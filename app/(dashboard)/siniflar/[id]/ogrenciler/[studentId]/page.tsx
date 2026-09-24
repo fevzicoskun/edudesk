@@ -256,7 +256,7 @@ export default async function OgrenciDetayPage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <OdevGecmisiSection submissions={submissions} />
+        <OdevGecmisiSection submissions={submissions} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>

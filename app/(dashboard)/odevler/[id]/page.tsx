@@ -41,12 +41,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const supabase = await createClient()
   const { data } = await supabase
     .from('homeworks')
-    .select('title')
+    .select('title, teacher_id')
     .eq('id', id)
     .eq('school_id', profile.school_id)
     .is('deleted_at', null)
     .single()
-  return { title: data?.title ?? 'Ödev' }
+  // Kapsam dışı ödevin adı sekme başlığından da sızmasın
+  const kapsam = await HomeworkService.getOdevKapsami()
+  if (!data || !kapsam || !kapsamdaMi(kapsam, data.teacher_id)) return { title: 'Ödev' }
+  return { title: data.title }
 }
 
 export default async function OdevDetayPage({

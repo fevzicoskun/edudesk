@@ -14,10 +14,15 @@ const BADGE: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
-export default function OdevGecmisiSection({ submissions }: { submissions: SubmissionRow[] }) {
+export default function OdevGecmisiSection({ submissions, raporHref }: { submissions: SubmissionRow[]; raporHref: string }) {
   return (
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
-      <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Ödev Geçmişi</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Ödev Geçmişi</h2>
+        <Link href={raporHref} className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+          Özeti yazdır →
+        </Link>
+      </div>
       {submissions.length === 0 ? (
         <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-10">Henüz ödev kaydı yok.</p>
       ) : (

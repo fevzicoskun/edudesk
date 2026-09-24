@@ -142,7 +142,7 @@ export default function CommandPalette() {
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       {/* Palette */}
-      <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div role="dialog" aria-modal="true" aria-label="Arama" className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden">
 
         {/* Search input */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-gray-100 dark:border-slate-800">
@@ -162,6 +162,7 @@ export default function CommandPalette() {
             onChange={handleQueryChange}
             onKeyDown={handleKeyDown}
             placeholder="Sayfa, öğrenci veya ödev ara..."
+            aria-label="Sayfa, öğrenci veya ödev ara"
             className="flex-1 bg-transparent text-sm text-gray-900 dark:text-slate-100 placeholder-gray-400 dark:placeholder-slate-500 outline-none"
           />
           <kbd className="hidden sm:inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-medium text-gray-400 dark:text-slate-600 border border-gray-200 dark:border-slate-700 rounded">
