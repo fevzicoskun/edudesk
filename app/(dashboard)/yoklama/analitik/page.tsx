@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -66,7 +67,8 @@ export default async function YoklamaAnalitikPage() {
   const [studentRes, absRes, todayRes] = classIds.length
     ? await Promise.all([
         supabase.from('students').select('id, class_id, full_name, student_number').in('class_id', classIds).eq('school_id', sid).is('deleted_at', null),
-        supabase.from('attendance').select('student_id, status, date').eq('school_id', sid).in('class_id', classIds).in('status', ['absent', 'late', 'excused']).gte('date', yearStart),
+        // Yıl boyu okul çapı devamsızlık: max_rows=1000'i aşar → sayfalı
+        fetchAllResult((f, t) => supabase.from('attendance').select('student_id, status, date').eq('school_id', sid).in('class_id', classIds).in('status', ['absent', 'late', 'excused']).gte('date', yearStart).order('id').range(f, t)),
         supabase.from('attendance').select('class_id').eq('school_id', sid).in('class_id', classIds).eq('date', todayISO),
       ])
     : ([{ data: [] as StudentA[] }, { data: [] as AbsenceRowA[] }, { data: [] as { class_id: string }[] }] as const)

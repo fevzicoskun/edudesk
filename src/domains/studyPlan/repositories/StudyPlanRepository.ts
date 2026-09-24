@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 
 const ITEM_COLS = 'id, student_id, teacher_id, subject, week_start, plan_date, source, description, status, note'
 
@@ -48,7 +49,8 @@ export const StudyPlanRepository = {
       .eq('teacher_id', teacherId).eq('school_id', schoolId).eq('week_start', weekStart)
       .order('plan_date', { ascending: true, nullsFirst: true }).order('created_at')
     if (studentIds) q = q.in('student_id', studentIds)
-    return q.limit(2000)
+    q = q.order('id')
+    return fetchAllResult((f, t) => q.range(f, t)) // .limit(2000) max_rows=1000'de kesilirdi
   },
 
   async listStudentItems(studentId: string, schoolId: string, weekStart: string) {

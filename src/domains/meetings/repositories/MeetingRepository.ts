@@ -1,31 +1,35 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import type { MeetingStatus } from '../parentMeetingMath'
 
 // Not: createClient (kullanıcı oturumu) → RLS "parent_meetings_own" politikasını uygular.
 export const MeetingRepository = {
   async listForTeacher(teacherId: string, schoolId: string) {
     const db = await createClient()
-    return db
+    // .limit(N) max_rows=1000'i aşamaz (sessiz kesilir) → sayfalı
+    return fetchAllResult((f, t) => db
       .from('parent_meetings')
       .select('id, student_id, meet_date, period, status, note, students(full_name, class_id, classes(name))')
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .order('meet_date', { ascending: true })
       .order('period', { ascending: true })
-      .limit(1000)
+      .order('id')
+      .range(f, t))
   },
 
   async listStudentsByClassIds(classIds: string[], schoolId: string) {
     if (classIds.length === 0) return { data: [], error: null }
     const db = await createClient()
-    return db
+    return fetchAllResult((f, t) => db
       .from('students')
       .select('id, full_name, class_id, classes(name)')
       .in('class_id', classIds)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('full_name')
-      .limit(2000)
+      .order('id')
+      .range(f, t))
   },
 
   async insert(row: {

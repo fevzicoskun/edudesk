@@ -10,7 +10,6 @@ vi.mock('@/src/domains/dashboard/repositories/DashboardRepository', () => ({
     insertActivityLog:        vi.fn(),
     getClassSubmissions:      vi.fn(),
     getTodayClassAttendance:  vi.fn(),
-    getAttendanceTrend:       vi.fn(),
   },
 }))
 
@@ -45,7 +44,6 @@ describe('getDashboardMetrics', () => {
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.todayHomeworkCount).toBe(1)
@@ -66,7 +64,6 @@ describe('getDashboardMetrics', () => {
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.totalMissingCount).toBe(1)
@@ -90,7 +87,6 @@ describe('getDashboardMetrics', () => {
     })
     ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
     ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getAttendanceTrend as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
     expect(metrics.activeRiskCount).toBe(1)

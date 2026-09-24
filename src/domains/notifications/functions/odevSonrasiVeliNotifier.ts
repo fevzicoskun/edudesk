@@ -3,6 +3,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { formatDateTR, buildMissedEmail } from '@/src/lib/email-utils'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 
 // "Dün" Türkiye saatine göre hesapla. Server UTC'de çalışsa da Intl ile doğru tarihi üretiriz.
 export function yesterdayInTurkey(): string {
@@ -82,19 +83,24 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
       const hwIds           = homeworks.map(hw => hw.id)
 
       const [{ data: allStudents }, { data: allSubs }] = await Promise.all([
-        supabase
+        // Sayfalı: max_rows=1000'de kesilirse bazı velilere bildirim hiç gitmez
+        fetchAllResult((f, t) => supabase
           .from('students')
           .select('id, full_name, veli_email, veli_ad, veli_email_opt_out, class_id')
           .in('class_id', uniqueClassIds)
           .in('school_id', uniqueSchoolIds)
           .is('deleted_at', null)
           .not('veli_email', 'is', null)
-          .eq('veli_email_opt_out', false),
-        supabase
+          .eq('veli_email_opt_out', false)
+          .order('id')
+          .range(f, t)),
+        fetchAllResult((f, t) => supabase
           .from('homework_submissions')
           .select('student_id, homework_id, status, marked_at')
           .in('homework_id', hwIds)
-          .in('school_id', uniqueSchoolIds),
+          .in('school_id', uniqueSchoolIds)
+          .order('id')
+          .range(f, t)),
       ])
 
       return filterMissingCandidates(

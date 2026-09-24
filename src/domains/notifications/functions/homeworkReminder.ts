@@ -4,6 +4,7 @@ import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR, turkeyDate } from '@/src/lib/email-utils'
 import { unsubscribeUrl } from '@/src/lib/unsubscribeToken'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 
 export const homeworkReminderFn = inngest.createFunction(
@@ -150,20 +151,25 @@ export const homeworkReminderFn = inngest.createFunction(
       const hwIds           = toSend.map((hw) => hw.homeworkId)
 
       const [{ data: allStudents }, { data: doneSubs }] = await Promise.all([
-        supabase
+        // Sayfalı: "yapanlar" 1000'de kesilirse ödevini yapmış öğrencinin velisine hatırlatma gider
+        fetchAllResult((f, t) => supabase
           .from('students')
           .select('id, full_name, veli_email, class_id')
           .in('class_id', uniqueClassIds)
           .in('school_id', uniqueSchoolIds)
           .not('veli_email', 'is', null)
           .eq('veli_email_opt_out', false)
-          .is('deleted_at', null),
-        supabase
+          .is('deleted_at', null)
+          .order('id')
+          .range(f, t)),
+        fetchAllResult((f, t) => supabase
           .from('homework_submissions')
           .select('student_id, homework_id')
           .in('homework_id', hwIds)
           .in('school_id', uniqueSchoolIds)
-          .eq('status', 'yapildi'),
+          .eq('status', 'yapildi')
+          .order('id')
+          .range(f, t)),
       ])
 
       const doneKey = new Set((doneSubs ?? []).map((s) => `${s.homework_id}:${s.student_id}`))

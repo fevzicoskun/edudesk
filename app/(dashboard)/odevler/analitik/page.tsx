@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { redirect } from 'next/navigation'
@@ -47,10 +48,11 @@ export default async function AnalitikPage() {
     .eq('is_template', false)
 
   if (!kapsam.tumu) hwQuery = hwQuery.in('teacher_id', kapsam.ogretmenIds)
+  hwQuery = hwQuery.order('id')
 
   const [classesRes, homeworksRes] = await Promise.all([
     supabase.from('classes').select('id, name, grade').eq('school_id', sid).is('deleted_at', null).order('grade').order('name'),
-    hwQuery,
+    fetchAllResult((f, t) => hwQuery.range(f, t)),
   ])
 
   const homeworks  = (homeworksRes.data ?? []) as AnalitikHomework[]
@@ -59,12 +61,18 @@ export default async function AnalitikPage() {
 
   const [submissionsRes, studentsRes] = await Promise.all([
     hwIds.length > 0
-      ? supabase
-          .from('homework_submissions')
-          .select('homework_id, student_id, status')
-          .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
-          .in('homework_id', hwIds)
-          .eq('school_id', sid)
+      // hwIds ile .in() binlerce id'de URL'yi patlatır (414) → ödev filtreleri join üzerinden; sayfalı (max_rows=1000)
+      ? fetchAllResult((f, t) => {
+          let q = supabase
+            .from('homework_submissions')
+            .select('homework_id, student_id, status, homeworks!inner(id)')
+            .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
+            .eq('school_id', sid)
+            .is('homeworks.deleted_at', null)
+            .eq('homeworks.is_template', false)
+          if (!kapsam.tumu) q = q.in('homeworks.teacher_id', kapsam.ogretmenIds)
+          return q.order('id').range(f, t)
+        })
       : Promise.resolve({ data: [] as { homework_id: string; student_id: string; status: string }[] }),
     classIds.length > 0
       ? supabase

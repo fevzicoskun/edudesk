@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 
@@ -24,13 +25,15 @@ export default async function DevamsizlarPage() {
       .eq('date', todayStr)
       .in('status', ['absent', 'late'])
       .order('status'),
-    supabase
+    fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id')
       .eq('school_id', profile.school_id!)
       .gte('date', monthStart)
       .lte('date', todayStr)
-      .in('status', ['absent', 'late']),
+      .in('status', ['absent', 'late'])
+      .order('id')
+      .range(f, t)),
   ])
 
   const rows = todayRes.data ?? []

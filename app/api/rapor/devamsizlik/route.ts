@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import ExcelJS from 'exceljs'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { schoolYearStart } from '@/src/shared/utils'
 import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
 import { buildReportRows, buildExcelRows } from '@/src/domains/attendance/lib/absenceReport'
@@ -18,15 +19,20 @@ export async function GET() {
   const since = schoolYearStart()
 
   const [{ data: attRows }, { data: studentRows }] = await Promise.all([
-    db.from('attendance')
+    // Yıl boyu okul çapı: max_rows=1000'de kesilirse rapor eksik sayar → sayfalı
+    fetchAllResult((f, t) => db.from('attendance')
       .select('student_id, status, date')
       .eq('school_id', profile.school_id)
       .gte('date', since)
-      .neq('status', 'present'),
-    db.from('students')
+      .neq('status', 'present')
+      .order('id')
+      .range(f, t)),
+    fetchAllResult((f, t) => db.from('students')
       .select('id, full_name, student_number, classes(name)')
       .eq('school_id', profile.school_id)
-      .is('deleted_at', null),
+      .is('deleted_at', null)
+      .order('id')
+      .range(f, t)),
   ])
 
   const counts    = countAbsences(attRows ?? [])

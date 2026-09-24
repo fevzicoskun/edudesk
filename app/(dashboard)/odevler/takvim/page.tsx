@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { redirect } from 'next/navigation'
@@ -27,22 +28,32 @@ export default async function OdevTakvimPage() {
     .order('due_date')
 
   if (!kapsam.tumu) query = query.in('teacher_id', kapsam.ogretmenIds)
+  query = query.order('id')
 
-  const { data: rawHomeworks } = await query
-  const homeworks = (rawHomeworks ?? []).map(hw => ({
+  const { data: rawHomeworks } = await fetchAllResult((f, t) => query.range(f, t))
+  // due_date null'lar sorguda elendi; tip daralması sayfalı okumada kaybolduğu için burada açıkça
+  const homeworks = (rawHomeworks ?? []).flatMap(hw => hw.due_date ? [{
     ...hw,
+    due_date: hw.due_date,
     classes: Array.isArray(hw.classes) ? (hw.classes[0] ?? null) : hw.classes,
-  }))
+  }] : [])
 
   const hwIds = homeworks.map(h => h.id)
 
   const { data: subRows } = hwIds.length > 0
-    ? await supabase
-        .from('homework_submissions')
-        .select('homework_id, status')
-        .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
-        .in('homework_id', hwIds)
-        .eq('school_id', sid)
+    // hwIds ile .in() binlerce id'de URL'yi patlatır (414) → ödev filtreleri join üzerinden; sayfalı (max_rows=1000)
+    ? await fetchAllResult((f, t) => {
+        let q = supabase
+          .from('homework_submissions')
+          .select('homework_id, status, homeworks!inner(id)')
+          .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
+          .eq('school_id', sid)
+          .is('homeworks.deleted_at', null)
+          .eq('homeworks.is_template', false)
+          .not('homeworks.due_date', 'is', null)
+        if (!kapsam.tumu) q = q.in('homeworks.teacher_id', kapsam.ogretmenIds)
+        return q.order('id').range(f, t)
+      })
     : { data: [] as { homework_id: string; status: string }[] }
 
   const completionMap: Record<string, { yapildi: number; total: number }> = {}

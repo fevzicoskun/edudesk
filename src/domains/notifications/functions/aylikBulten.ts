@@ -66,19 +66,20 @@ export const aylikBultenFn = inngest.createFunction(
           { count: teacherCount },
           { data: classes },
           { data: attendanceRates },
-          { data: submissions },
+          { count: completedCount },
           { data: meetings },
         ] = await Promise.all([
           db.from('students').select('id', { count: 'exact', head: true }).eq('school_id', sid).is('deleted_at', null),
           db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
           db.rpc('get_class_attendance_rates', { p_school_id: sid, p_start: monthStart, p_end: monthEnd }),
-          db.from('homework_submissions').select('status').eq('school_id', sid).not('marked_at', 'is', null).gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
+          // Sayım DB'de: satır çekip JS'te saymak max_rows=1000'de sessizce keserdi
+          db.from('homework_submissions').select('id', { count: 'exact', head: true }).eq('school_id', sid).not('marked_at', 'is', null).eq('status', 'yapildi').gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
           db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
         ])
 
         // Tamamlanan ödev sayısı
-        const completedHomeworks = (submissions ?? []).filter(s => s.status === 'yapildi').length
+        const completedHomeworks = completedCount ?? 0
 
         // En iyi yoklama sınıfı — sınıf başına present/total DB'den agregat gelir
         const classNameMap = new Map((classes ?? []).map(c => [c.id, c.name]))

@@ -7,46 +7,40 @@
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { logger } from '@/src/infrastructure/observability/logger'
-import { YEDEKLENEN_TABLOLAR, yedekDosyaAdi, eskiYedekMi } from '../yedekMath'
+import { fetchAll } from '@/src/shared/utils/fetchAll'
+import { YEDEKLENEN_TABLOLAR, yedekDosyaAdi, eskiYedekMi, yedekSiralama } from '../yedekMath'
 
 const KOVA = 'yedekler'
-/** Tablo başına üst sınır — beklenmedik büyümede fonksiyonu kilitlemesin */
-const SATIR_SINIRI = 50_000
 
 export const haftalikYedekFn = inngest.createFunction(
   { id: 'haftalik-yedek', triggers: [{ cron: 'TZ=Europe/Istanbul 0 3 * * 0' }] },
   async ({ step }) => {
-    const sonuc = await step.run('tablolari-topla', async () => {
+    // Toplama + yazma TEK adımda: step dönüşü Inngest'te saklanır ve 4MB ile sınırlı —
+    // ham veri adımlar arasında taşınırsa büyüyen okulda yedek düşer. Dışarı yalnız özet çıkar.
+    const yuklendi = await step.run('topla-ve-yaz', async () => {
       const db = createServiceClient()
       const veri: Record<string, unknown[]> = {}
       const basarisiz: string[] = []
 
       for (const tablo of YEDEKLENEN_TABLOLAR) {
-        const { data, error } = await db.from(tablo).select('*').limit(SATIR_SINIRI)
-        if (error) {
+        try {
+          // Sayfalı: PostgREST max_rows=1000 tek istekte fazlasını SESSİZCE keser
+          veri[tablo] = await fetchAll((from, to) => {
+            let q = db.from(tablo).select('*')
+            for (const kolon of yedekSiralama(tablo)) q = q.order(kolon)
+            return q.range(from, to)
+          })
+        } catch (e) {
           // Tek tablonun hatası yedeği tümden iptal etmesin; eksik olan raporlanır.
           basarisiz.push(tablo)
-          logger.warn({ event: 'yedek_tablo_okunamadi', tablo, code: error.code }, 'Yedek tablosu okunamadı')
-          continue
+          logger.warn({ event: 'yedek_tablo_okunamadi', tablo, hata: (e as Error).message }, 'Yedek tablosu okunamadı')
         }
-        veri[tablo] = data ?? []
       }
 
-      return { veri, basarisiz }
-    })
-
-    const yuklendi = await step.run('storage-yaz', async () => {
-      const db = createServiceClient()
       const simdi = new Date()
       const dosya = yedekDosyaAdi(simdi)
-
-      const govde = JSON.stringify({
-        alindi:    simdi.toISOString(),
-        surum:     1,
-        basarisiz: sonuc.basarisiz,
-        satirlar:  Object.fromEntries(Object.entries(sonuc.veri).map(([t, r]) => [t, r.length])),
-        veri:      sonuc.veri,
-      })
+      const satirlar = Object.fromEntries(Object.entries(veri).map(([t, r]) => [t, r.length]))
+      const govde = JSON.stringify({ alindi: simdi.toISOString(), surum: 1, basarisiz, satirlar, veri })
 
       const { error } = await db.storage.from(KOVA).upload(dosya, govde, {
         contentType: 'application/json',
@@ -54,7 +48,7 @@ export const haftalikYedekFn = inngest.createFunction(
       })
       if (error) throw new Error(`Yedek yüklenemedi: ${error.message}`)
 
-      return { dosya, boyut: govde.length }
+      return { dosya, boyut: govde.length, basarisiz }
     })
 
     // Saklama süresi dolmuş yedekleri temizle
@@ -86,10 +80,10 @@ export const haftalikYedekFn = inngest.createFunction(
     })
 
     logger.info(
-      { event: 'haftalik_yedek', dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: sonuc.basarisiz },
+      { event: 'haftalik_yedek', dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: yuklendi.basarisiz },
       'Haftalık yedek alındı',
     )
 
-    return { dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: sonuc.basarisiz }
+    return { dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: yuklendi.basarisiz }
   },
 )

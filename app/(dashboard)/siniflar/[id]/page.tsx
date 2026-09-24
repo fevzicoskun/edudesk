@@ -1,4 +1,5 @@
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
@@ -57,13 +58,15 @@ export default async function SinifDetayPage({
       .is('deleted_at', null)
       .order('student_number', { nullsFirst: false })
       .order('full_name'),
-    supabase
+    fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id, status')
       .eq('class_id', id)
       .eq('school_id', schoolId)
       .in('status', ['absent', 'late'])
-      .gte('date', yearStart),
+      .gte('date', yearStart)
+      .order('id')
+      .range(f, t)),
     VeliAnalyticsRepository.getVeliViewCounts(id, schoolId),
     supabase
       .from('profiles')

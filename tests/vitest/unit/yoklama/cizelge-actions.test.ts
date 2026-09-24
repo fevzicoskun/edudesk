@@ -6,7 +6,7 @@ vi.mock('@/src/shared/authorization/server', () => ({ getAbility: vi.fn() }))
 
 const mockSingle      = vi.fn()
 const mockMaybeSingle = vi.fn()
-const mockLimit       = vi.fn()
+const mockRange       = vi.fn() // findClassRange sayfalı okur (fetchAll) → terminal .range()
 const mockFromResult = {
   select:      vi.fn().mockReturnThis(),
   eq:          vi.fn().mockReturnThis(),
@@ -19,7 +19,7 @@ const mockFromResult = {
   not:         vi.fn().mockReturnThis(),
   single:      mockSingle,
   maybeSingle: mockMaybeSingle,
-  limit:       mockLimit,
+  range:       mockRange,
 }
 const mockSupabase = { from: vi.fn().mockReturnValue(mockFromResult) }
 
@@ -62,7 +62,7 @@ describe('getCizelge()', () => {
     mockSingle
       .mockResolvedValueOnce({ data: { id: CLASS_ID, mentor_teacher_id: null }, error: null })
       .mockResolvedValueOnce({ data: { role: 'mudur' }, error: null })
-    mockLimit.mockResolvedValueOnce({
+    mockRange.mockResolvedValueOnce({
       data: [{ student_id: 'st1', status: 'absent', date: '2026-06-08' }],
       error: null,
     })
@@ -77,7 +77,7 @@ describe('getCizelge()', () => {
     )
     // findClass → başka öğretmenin sınıfı; okul-içi olduğu için erişim serbest
     mockSingle.mockResolvedValueOnce({ data: { id: CLASS_ID, mentor_teacher_id: 'baskasi' }, error: null })
-    mockLimit.mockResolvedValueOnce({
+    mockRange.mockResolvedValueOnce({
       data: [{ student_id: 'st1', status: 'absent', date: '2026-06-08' }],
       error: null,
     })

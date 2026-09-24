@@ -27,6 +27,20 @@ export const YEDEKLENEN_TABLOLAR = [
   'school_payments',
 ] as const
 
+/** id kolonu olmayan tabloların birincil anahtarı (DB'den doğrulandı 2026-09-24). */
+const BILESIK_ANAHTAR: Partial<Record<(typeof YEDEKLENEN_TABLOLAR)[number], string[]>> = {
+  teacher_classes:  ['teacher_id', 'class_id'],
+  user_roles:       ['user_id', 'role_id'],
+  role_permissions: ['role_id', 'permission_id'],
+  user_permissions: ['user_id', 'permission_id'],
+  ogretmen_dosyasi: ['teacher_id', 'academic_year'],
+}
+
+/** Sayfalı okuma için kararlı sıralama — sırasız sayfalamada satır atlanabilir/tekrarlanabilir. */
+export function yedekSiralama(tablo: (typeof YEDEKLENEN_TABLOLAR)[number]): string[] {
+  return BILESIK_ANAHTAR[tablo] ?? ['id']
+}
+
 /** 12 hafta = 84 gün. Bu süreden eski yedekler temizlenir. */
 const SAKLAMA_GUN = 84
 

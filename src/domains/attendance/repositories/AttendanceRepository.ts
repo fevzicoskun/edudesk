@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/src/infrastructure/supabase/database.types'
 import type { AbsenceCount } from '../types'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { fetchAll } from '@/src/shared/utils/fetchAll'
 
 type Client = SupabaseClient<Database>
 
@@ -55,16 +56,16 @@ export const AttendanceRepository = {
   },
 
   async findClassRange(db: Client, classId: string, schoolId: string, from: string, to: string) {
-    const { data, error } = await db
+    // "geldi" dahil her gün öğrenci başına satır: 35 kişilik sınıf ~29 okul gününde 1000'i aşar
+    return fetchAll((f, t) => db
       .from('attendance')
       .select('student_id, status, date')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
       .gte('date', from)
       .lte('date', to)
-      .limit(5000)
-    if (error) throw new Error(error.message)
-    return data ?? []
+      .order('id')
+      .range(f, t))
   },
 
   async findStudentHistory(db: Client, studentId: string, schoolId: string, from: string) {

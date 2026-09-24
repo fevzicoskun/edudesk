@@ -2,7 +2,8 @@
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { UUID } from '@/src/shared/validation'
 import type { JobType } from '../types'
-import { XLSX_EXPORT_LIMIT, XLSX_EXPORT_LIMIT_LG } from '@/src/shared/constants/limits'
+import { XLSX_EXPORT_LIMIT } from '@/src/shared/constants/limits'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { todayLocalISO } from '@/src/shared/date'
 
 const JOB_LABELS: Record<JobType, string> = {
@@ -145,12 +146,13 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string, te
   for (const id of hwIds) subMap.set(id, { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, toplam: 0 })
 
   if (hwIds.length > 0) {
-    const { data: subData, error: subErr } = await db
+    const { data: subData, error: subErr } = await fetchAllResult((f, t) => db
       .from('homework_submissions')
       .select('homework_id, status')
       .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
-      .limit(XLSX_EXPORT_LIMIT * 60)
+      .order('id')
+      .range(f, t))
     if (subErr) throw new Error(`Teslim sorgu hatası: ${subErr.message}`)
     for (const s of subData ?? []) {
       const e = subMap.get(s.homework_id)
@@ -190,9 +192,9 @@ async function fetchNotlar(schoolId: string, teacherId?: string) {
     .select('body, created_at, students(full_name, student_number, deleted_at, classes(name))')
     .eq('school_id', schoolId)
     .order('created_at', { ascending: true })
-    .limit(5000)
+    .order('id')
   if (teacherId) q = q.eq('teacher_id', teacherId)
-  const { data, error } = await q
+  const { data, error } = await fetchAllResult((f, t) => q.range(f, t))
   if (error) throw new Error(`Notlar sorgu hatası: ${error.message}`)
 
   type StudentRow = { full_name: string; student_number: string | null; deleted_at: string | null; classes: { name: string } | null }
@@ -236,11 +238,11 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     .eq('school_id', schoolId)
     .is('deleted_at', null)
     .order('full_name')
-    .limit(XLSX_EXPORT_LIMIT_LG)
+    .order('id')
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
 
-  const { data, error } = await q
+  const { data, error } = await fetchAllResult((f, t) => q.range(f, t))
   if (error) throw new Error(`Öğrenciler sorgu hatası: ${error.message}`)
 
   const rows = (data ?? []).map(s => ({
@@ -275,7 +277,7 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     .in('status', ['absent', 'late', 'excused'])   // present kayıtları rapora dahil edilmez
     .order('full_name', { referencedTable: 'students' })
     .order('date', { ascending: true })
-    .limit(10000)
+    .order('id')
 
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
@@ -287,7 +289,7 @@ async function fetchYoklama(params: Record<string, string>, schoolId: string) {
     q = q.lte('date', params.until)
   }
 
-  const { data, error } = await q
+  const { data, error } = await fetchAllResult((f, t) => q.range(f, t))
   if (error) throw new Error(`Yoklama sorgu hatası: ${error.message}`)
 
   const STATUS_LABELS: Record<string, string> = { absent: 'Gelmedi', late: 'Geç Geldi', excused: 'Özürlü' }

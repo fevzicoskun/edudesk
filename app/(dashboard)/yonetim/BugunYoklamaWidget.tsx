@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { requireSchoolId } from '@/src/shared/auth'
 import { schoolYearStart } from '@/src/shared/utils'
 import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
@@ -35,13 +36,15 @@ export default async function BugunYoklamaWidget() {
       .select('class_id, status, teacher_id, created_at')
       .eq('school_id', school_id)
       .eq('date', todayStr),
-    supabase
+    // .limit(10000) max_rows=1000'i aşamaz (sessiz kesilir) → sayfalı
+    fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id, status, date, students(full_name, deleted_at)')
       .eq('school_id', school_id)
       .gte('date', schoolYearStart())
       .in('status', ['absent', 'late'])
-      .limit(10000),
+      .order('id')
+      .range(f, t)),
   ])
 
   const classes    = classesRes.data ?? []

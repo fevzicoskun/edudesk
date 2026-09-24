@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import type { Database } from '@/src/infrastructure/supabase/database.types'
 
 export type CalendarDb = SupabaseClient<Database>
@@ -21,7 +22,8 @@ export const CalendarRepository = {
       .lte('meet_date', to)
       .neq('status', 'iptal')
     if (teacherId) q = q.eq('teacher_id', teacherId)
-    return q.limit(1000)
+    q = q.order('id')
+    return fetchAllResult((f, t) => q.range(f, t)) // .limit(1000) = max_rows: sessiz kesilirdi
   },
 
   // Aralıkta teslim tarihi olan ödevler. teacherId verilirse yalnız o öğretmenin.
@@ -35,7 +37,8 @@ export const CalendarRepository = {
       .gte('due_date', from)
       .lte('due_date', to)
     if (teacherId) q = q.eq('teacher_id', teacherId)
-    return q.limit(1000)
+    q = q.order('id')
+    return fetchAllResult((f, t) => q.range(f, t)) // .limit(1000) = max_rows: sessiz kesilirdi
   },
 
   // Aralıktaki okul etkinlikleri (okulun tüm üyelerine açık).

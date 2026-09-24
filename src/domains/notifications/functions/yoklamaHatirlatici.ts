@@ -2,6 +2,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 
 const YONETICI_ROLLER = ['mudur', 'mudur_yardimcisi']
 
@@ -20,16 +21,21 @@ export const yoklamaHatirlaticiFn = inngest.createFunction(
 
     const missing = await step.run('eksik-siniflar', async () => {
       const db = createServiceClient()
-      const { data: classes } = await db.from('classes')
+      // Tüm okullar: sayfalı (max_rows=1000'de kesilirse yoklamasını almış sınıfa "eksik" denir)
+      const { data: classes } = await fetchAllResult((f, t) => db.from('classes')
         .select('id, name, school_id, mentor_teacher_id')
         .is('deleted_at', null)
         .not('school_id', 'is', null)
+        .order('id')
+        .range(f, t))
       if (!classes?.length) return []
       const schoolIds = [...new Set(classes.map(c => c.school_id as string))]
-      const { data: attData } = await db.from('attendance')
+      const { data: attData } = await fetchAllResult((f, t) => db.from('attendance')
         .select('class_id')
         .eq('date', todayISO)
         .in('school_id', schoolIds)
+        .order('id')
+        .range(f, t))
       return findMissingClasses(classes, attData ?? [])
     })
 

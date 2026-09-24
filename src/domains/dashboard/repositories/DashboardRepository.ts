@@ -1,5 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 
 export const DashboardRepository = {
   async getTeacherHomeworks(teacherId: string, schoolId: string, sinceDate?: string) {
@@ -18,26 +19,28 @@ export const DashboardRepository = {
   async getSubmissions(hwIds: string[], schoolId: string) {
     if (hwIds.length === 0) return { data: [] }
     const supabase = await createClient()
-    return supabase
+    return fetchAllResult((f, t) => supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
       .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .eq('school_id', schoolId)
-      .limit(5000)
+      .order('id')
+      .range(f, t))
   },
 
   async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string, schoolId: string) {
     if (classIds.length === 0) return { data: [] }
     const supabase = await createClient()
-    return supabase
+    return fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id, status')
       .in('class_id', classIds)
       .eq('teacher_id', teacherId)
       .eq('school_id', schoolId)
       .gte('date', sinceDate)
-      .limit(3000)
+      .order('id')
+      .range(f, t))
   },
 
   async getStudentsByClasses(classIds: string[], schoolId: string) {
@@ -55,13 +58,14 @@ export const DashboardRepository = {
   async getWeeklySubmissionStats(hwIds: string[], weekStart: string) {
     if (hwIds.length === 0) return { data: [] }
     const supabase = await createClient()
-    return supabase
+    return fetchAllResult((f, t) => supabase
       .from('homework_submissions')
       .select('homework_id, status')
       .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .gte('updated_at', weekStart)
-      .limit(2000)
+      .order('id')
+      .range(f, t))
   },
 
   async insertActivityLog(row: {
@@ -85,18 +89,6 @@ export const DashboardRepository = {
       .eq('date', todayStr)
   },
 
-  async getAttendanceTrend(classIds: string[], since: string, schoolId: string) {
-    if (classIds.length === 0) return { data: [] }
-    const supabase = await createClient()
-    return supabase
-      .from('attendance')
-      .select('date, status')
-      .in('class_id', classIds)
-      .eq('school_id', schoolId)
-      .gte('date', since)
-      .order('date')
-      .limit(2000)
-  },
 
   async getClassSubmissions(classId: string, teacherId: string, schoolId: string) {
     const supabase = await createClient()
@@ -111,11 +103,12 @@ export const DashboardRepository = {
     type HwIdRow = { id: string }
     const hwIds = ((homeworks ?? []) as HwIdRow[]).map(h => h.id)
     if (hwIds.length === 0) return { data: [] }
-    return supabase
+    return fetchAllResult((f, t) => supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
       .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
-      .limit(hwIds.length * 60)
+      .order('id')
+      .range(f, t))
   },
 }

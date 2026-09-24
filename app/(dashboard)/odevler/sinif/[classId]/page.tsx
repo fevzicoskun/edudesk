@@ -1,5 +1,6 @@
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
@@ -68,12 +69,15 @@ export default async function SinifMatrisPage({
 
   const hwIds = homeworks.map(h => h.id)
   const { data: rawSubs } = hwIds.length > 0
-    ? await supabase
+    // 30 ödev × 35 öğrenci = 1050 satır > max_rows=1000 → sayfalı
+    ? await fetchAllResult((f, t) => supabase
         .from('homework_submissions')
         .select('homework_id, student_id, status')
         .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
         .in('homework_id', hwIds)
         .eq('school_id', sid)
+        .order('id')
+        .range(f, t))
     : { data: [] as { homework_id: string; student_id: string; status: string }[] }
 
   const subMap: Record<string, SubmissionStatus> = {}

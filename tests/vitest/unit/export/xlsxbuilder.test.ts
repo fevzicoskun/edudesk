@@ -24,6 +24,7 @@ function makeQueryMock(result: { data: unknown; error: unknown }) {
     is:              vi.fn(),
     order:           vi.fn(),
     limit:           vi.fn(),
+    range:           vi.fn(),
     in:              vi.fn(),
     gte:             vi.fn(),
     lte:             vi.fn(),

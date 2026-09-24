@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { YEDEKLENEN_TABLOLAR, yedekDosyaAdi, eskiYedekMi } from '@/src/domains/notifications/yedekMath'
+import { YEDEKLENEN_TABLOLAR, yedekDosyaAdi, eskiYedekMi, yedekSiralama } from '@/src/domains/notifications/yedekMath'
 
 describe('YEDEKLENEN_TABLOLAR', () => {
   it('geri getirilemez okul verisini kapsar', () => {
@@ -51,5 +51,19 @@ describe('eskiYedekMi()', () => {
   it('beklenmeyen dosya adı asla silinmez', () => {
     expect(eskiYedekMi('elle-aldigim-yedek.json', bugun)).toBe(false)
     expect(eskiYedekMi('', bugun)).toBe(false)
+  })
+})
+
+describe('yedekSiralama() — sayfalı okumada satır atlanmasın/tekrarlanmasın', () => {
+  it('tekil id\'li tablo id ile sıralanır', () => {
+    expect(yedekSiralama('homework_submissions')).toEqual(['id'])
+  })
+
+  it('bileşik anahtarlı tablolar kendi anahtar kolonlarıyla sıralanır (id kolonları yok)', () => {
+    expect(yedekSiralama('teacher_classes')).toEqual(['teacher_id', 'class_id'])
+    expect(yedekSiralama('user_roles')).toEqual(['user_id', 'role_id'])
+    expect(yedekSiralama('role_permissions')).toEqual(['role_id', 'permission_id'])
+    expect(yedekSiralama('user_permissions')).toEqual(['user_id', 'permission_id'])
+    expect(yedekSiralama('ogretmen_dosyasi')).toEqual(['teacher_id', 'academic_year'])
   })
 })

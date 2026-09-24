@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { requireSchoolId } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
 import Link from 'next/link'
@@ -10,13 +11,15 @@ export default async function AylikDevamsizlikWidget() {
   const [y, m]    = todayStr.split('-')
   const monthStart = `${y}-${m}-01`
 
-  const { data } = await supabase
+  const { data } = await fetchAllResult((f, t) => supabase
     .from('attendance')
     .select('class_id, classes(name)')
     .eq('school_id', school_id)
     .gte('date', monthStart)
     .lte('date', todayStr)
     .eq('status', 'absent')
+    .order('id')
+    .range(f, t))
 
   type Row = { class_id: string; classes: { name: string } | null }
   const rows = (data ?? []) as Row[]

@@ -15,7 +15,7 @@ function makeChain(result: unknown = { data: null, error: null }) {
   const q: Record<string, unknown> = {}
   q.then  = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve)
   q.catch = () => Promise.resolve(result)
-  for (const m of ['select','insert','update','delete','eq','in','is','not','gte','lte','order','limit','neq','single']) {
+  for (const m of ['select','insert','update','delete','eq','in','is','not','gte','lte','order','limit','range','neq','single']) {
     q[m] = vi.fn().mockReturnValue(q)
   }
   return q as { [k: string]: ReturnType<typeof vi.fn> }
@@ -64,11 +64,6 @@ describe('DashboardRepository — boş dizi guard\'ları', () => {
     expect(createClient).not.toHaveBeenCalled()
   })
 
-  it('getAttendanceTrend([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getAttendanceTrend([], '2026-01-01', SCHOOL_ID)
-    expect(result).toEqual({ data: [] })
-    expect(createClient).not.toHaveBeenCalled()
-  })
 })
 
 // ─── getClassSubmissions — iki aşamalı sorgu mantığı ─────────

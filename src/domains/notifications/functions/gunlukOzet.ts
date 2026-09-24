@@ -5,6 +5,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { todaysLessons, formatOzetBody, type Period, type Slot } from '@/src/domains/schedule/scheduleMath'
 import { formatDutyReminder } from '@/src/domains/schedule/dutyMath'
 import { findMissingClasses } from './yoklamaHatirlatici'
@@ -29,12 +30,13 @@ export const gunlukOzetFn = inngest.createFunction(
 
       // 6 toplu okul-geneli sorgu (RLS bypass). Fail-quiet: hatalı sorgunun bölümü boş kalır.
       const [schedules, classes, duties, attendance, homeworks, meetings] = await Promise.all([
-        db.from('lesson_schedules').select('teacher_id, school_id, slots, periods').not('teacher_id', 'is', null),
-        db.from('classes').select('id, name, school_id, mentor_teacher_id').is('deleted_at', null),
-        db.from('teacher_duties').select('teacher_id, school_id, day_of_week, time_range, location, notes').eq('day_of_week', today),
-        db.from('attendance').select('class_id, school_id').eq('date', dunISO),
-        db.from('homeworks').select('teacher_id, school_id, title').eq('due_date', todayISO).is('deleted_at', null),
-        db.from('parent_meetings').select('teacher_id, school_id, period, students(full_name)').eq('meet_date', todayISO).eq('status', 'planlandi'),
+        // Tüm okullar tek sorguda → max_rows=1000 aşılır (dünkü yoklama tek başına okul başına öğrenci sayısı kadar); sayfalı
+        fetchAllResult((f, t) => db.from('lesson_schedules').select('teacher_id, school_id, slots, periods').not('teacher_id', 'is', null).order('id').range(f, t)),
+        fetchAllResult((f, t) => db.from('classes').select('id, name, school_id, mentor_teacher_id').is('deleted_at', null).order('id').range(f, t)),
+        fetchAllResult((f, t) => db.from('teacher_duties').select('teacher_id, school_id, day_of_week, time_range, location, notes').eq('day_of_week', today).order('id').range(f, t)),
+        fetchAllResult((f, t) => db.from('attendance').select('class_id, school_id').eq('date', dunISO).order('id').range(f, t)),
+        fetchAllResult((f, t) => db.from('homeworks').select('teacher_id, school_id, title').eq('due_date', todayISO).is('deleted_at', null).order('id').range(f, t)),
+        fetchAllResult((f, t) => db.from('parent_meetings').select('teacher_id, school_id, period, students(full_name)').eq('meet_date', todayISO).eq('status', 'planlandi').order('id').range(f, t)),
       ])
       for (const [name, r] of Object.entries({ schedules, classes, duties, attendance, homeworks, meetings })) {
         if (r.error) logger.error({ event: 'gunluk_ozet_query_failed', query: name, err: r.error.message }, 'Günlük özet sorgusu başarısız')
