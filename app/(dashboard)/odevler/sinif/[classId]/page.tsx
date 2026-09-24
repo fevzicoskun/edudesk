@@ -1,3 +1,4 @@
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
@@ -36,6 +37,17 @@ export default async function SinifMatrisPage({
 
   const supabase = await createClient()
   const sid = profile.school_id
+  const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [profile.id] }
+  let homeworksQuery = supabase
+    .from('homeworks')
+    .select('id, title, subject, due_date')
+    .eq('class_id', classId)
+    .eq('school_id', sid)
+    .is('deleted_at', null)
+    .eq('is_template', false)
+    .order('due_date', { ascending: false })
+    .limit(30)
+  if (!kapsam.tumu) homeworksQuery = homeworksQuery.in('teacher_id', kapsam.ogretmenIds)
 
   const [clsRes, studentsRes, homeworksRes] = await Promise.all([
     supabase.from('classes').select('name, grade').eq('id', classId).eq('school_id', sid).single(),
@@ -46,15 +58,7 @@ export default async function SinifMatrisPage({
       .eq('school_id', sid)
       .is('deleted_at', null)
       .order('student_number'),
-    supabase
-      .from('homeworks')
-      .select('id, title, subject, due_date')
-      .eq('class_id', classId)
-      .eq('school_id', sid)
-      .is('deleted_at', null)
-      .eq('is_template', false)
-      .order('due_date', { ascending: false })
-      .limit(30),
+    homeworksQuery,
   ])
 
   if (!clsRes.data) notFound()

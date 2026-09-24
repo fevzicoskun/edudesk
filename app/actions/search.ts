@@ -1,8 +1,9 @@
 'use server'
 
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
+
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
-import { isMudurOrAbove } from '@/src/shared/types'
 
 export type SearchResult = {
   type: 'page' | 'student' | 'homework'
@@ -32,7 +33,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
   const [profile, user] = await Promise.all([getCurrentProfile(), getCurrentUser()])
   if (!profile?.school_id || !user) return []
 
-  const isManager = isMudurOrAbove(profile.role)
+  const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [user.id] }
   const supabase = await createClient()
 
   let hwQuery = supabase
@@ -45,7 +46,7 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
     .order('created_at', { ascending: false })
     .limit(6)
 
-  if (!isManager) hwQuery = hwQuery.eq('teacher_id', user.id)
+  if (!kapsam.tumu) hwQuery = hwQuery.in('teacher_id', kapsam.ogretmenIds)
 
   const [studentsRes, homeworkRes] = await Promise.all([
     supabase
@@ -69,7 +70,8 @@ export async function globalSearch(query: string): Promise<SearchResult[]> {
       id: s.id,
       title: s.full_name,
       subtitle: cls?.name ?? 'Öğrenci',
-      href: `/siniflar/${cls?.id ?? ''}`,
+      // Doğrudan öğrencinin sayfası (sınıf listesine değil)
+      href: cls?.id ? `/siniflar/${cls.id}/ogrenciler/${s.id}` : '/siniflar',
     }
   })
 

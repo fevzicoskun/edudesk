@@ -17,10 +17,10 @@ export async function fetchRows(
   jobType: JobType,
   params: Record<string, string>,
   schoolId: string,
-  opts?: { notesTeacherId?: string }
+  opts?: { notesTeacherId?: string; odevTeacherIds?: string[] }
 ): Promise<Record<string, unknown>[]> {
   switch (jobType) {
-    case 'excel_odevler':           return fetchOdevler(params, schoolId)
+    case 'excel_odevler':           return fetchOdevler(params, schoolId, opts?.odevTeacherIds)
     case 'excel_notlar':            return fetchNotlar(schoolId, opts?.notesTeacherId)
     case 'excel_sinif_ogrencileri': return fetchSinifOgrencileri(params, schoolId)
     case 'excel_not_defteri':       throw new Error('Not Defteri export route handler üzerinden çağrılmalı')
@@ -112,16 +112,19 @@ function fmtDate(iso: string) {
   return `${d}.${m}.${y}`
 }
 
-async function fetchOdevler(params: Record<string, string>, schoolId: string) {
+/** teacherIds verilirse yalnız o öğretmenlerin ödevleri (service client RLS'i atlar, kapsam burada) */
+async function fetchOdevler(params: Record<string, string>, schoolId: string, teacherIds?: string[]) {
   const db = createServiceClient()
   let q = db
     .from('homeworks')
     .select('id, title, subject, due_date, classes(name)')
     .eq('school_id', schoolId)
+    .eq('is_template', false)
     .is('deleted_at', null)
     .order('due_date', { ascending: false })
     .limit(XLSX_EXPORT_LIMIT)
 
+  if (teacherIds) q = q.in('teacher_id', teacherIds)
   if (params.classId) { UUID.parse(params.classId); q = q.eq('class_id', params.classId) }
   if (params.since) {
     if (!DATE_RE.test(params.since)) throw new Error('Geçersiz tarih formatı: since')

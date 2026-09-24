@@ -1,7 +1,7 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { redirect } from 'next/navigation'
-import { isMudurOrAbove } from '@/src/shared/types'
 import Link from 'next/link'
 import HomeworkCalendar from './HomeworkCalendar'
 
@@ -15,7 +15,7 @@ export default async function OdevTakvimPage() {
 
   const supabase   = await createClient()
   const sid        = profile.school_id
-  const isManager  = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
+  const kapsam     = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [user.id] }
 
   let query = supabase
     .from('homeworks')
@@ -26,9 +26,7 @@ export default async function OdevTakvimPage() {
     .not('due_date', 'is', null)
     .order('due_date')
 
-  if (!isManager) {
-    query = query.eq('teacher_id', user.id)
-  }
+  if (!kapsam.tumu) query = query.in('teacher_id', kapsam.ogretmenIds)
 
   const { data: rawHomeworks } = await query
   const homeworks = (rawHomeworks ?? []).map(hw => ({

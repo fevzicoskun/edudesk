@@ -1,3 +1,4 @@
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
@@ -51,7 +52,11 @@ export async function POST(req: NextRequest) {
   const notesTeacherId = ability.scope(P.NOTES.READ) === 'school' ? undefined : ability.userId
 
   try {
-    const rows = await fetchRows(jobType, params, schoolId, { notesTeacherId })
+    // Ödev kapsamı: öğretmen kendi, zümre başkanı zümresi, yönetim hepsi
+    const kapsam = jobType === 'excel_odevler' ? await HomeworkService.getOdevKapsami() : null
+    if (jobType === 'excel_odevler' && !kapsam) return NextResponse.json({ error: 'Yetki yok' }, { status: 403 })
+    const odevTeacherIds = kapsam && !kapsam.tumu ? kapsam.ogretmenIds : undefined
+    const rows = await fetchRows(jobType, params, schoolId, { notesTeacherId, odevTeacherIds })
     const buffer = await buildXlsx(rows, jobType)
     const date = todayLocalISO()
     const filename = `${jobType}-${date}.xlsx`

@@ -9,6 +9,16 @@ export type SubmissionLogEntry = {
 }
 
 export const HomeworkRepository = {
+  // Zümre kapsamı için okulun öğretmenleri ve branşları
+  async findSchoolTeacherSubjects(schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('profiles')
+      .select('id, subject')
+      .eq('school_id', schoolId)
+      .in('role', ['ogretmen', 'zumre_baskani'])
+  },
+
   async insertHomework(data: {
     teacher_id:  string
     school_id:   string
@@ -207,8 +217,18 @@ export const HomeworkRepository = {
       .eq('school_id', schoolId)
   },
 
-  async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string) {
+  /** teacherIds verilirse yalnız o öğretmenlerin ödevleri (kapsam); undefined = sınıfın tüm ödevleri */
+  async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string, teacherIds?: string[]) {
     const supabase = await createClient()
+    let homeworksQuery = supabase
+      .from('homeworks')
+      .select('id, title, subject, due_date')
+      .eq('class_id', classId)
+      .eq('school_id', schoolId)
+      .eq('is_template', false)
+      .is('deleted_at', null)
+      .order('due_date', { ascending: false })
+    if (teacherIds) homeworksQuery = homeworksQuery.in('teacher_id', teacherIds)
     const [studentRes, homeworksRes] = await Promise.all([
       supabase
         .from('students')
@@ -216,14 +236,7 @@ export const HomeworkRepository = {
         .eq('id', studentId)
         .eq('school_id', schoolId)
         .single(),
-      supabase
-        .from('homeworks')
-        .select('id, title, subject, due_date')
-        .eq('class_id', classId)
-        .eq('school_id', schoolId)
-        .eq('is_template', false)
-        .is('deleted_at', null)
-        .order('due_date', { ascending: false }),
+      homeworksQuery,
     ])
 
     if (studentRes.error || homeworksRes.error) {

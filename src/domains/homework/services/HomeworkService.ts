@@ -4,8 +4,21 @@ import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus, HomeworkTemplate, StatusResult } from '@/src/shared/types'
 import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { odevKapsami, type OdevKapsami } from '@/src/domains/homework/lib/kapsam'
+import { getCurrentProfile } from '@/src/shared/auth'
 
 export const HomeworkService = {
+  /** Oturumdaki kullanıcının görebileceği ödev sahipleri. Profil yoksa null. */
+  async getOdevKapsami(): Promise<OdevKapsami | null> {
+    const profile = await getCurrentProfile()
+    if (!profile?.school_id) return null
+    if (profile.role !== 'zumre_baskani') return odevKapsami(profile, [])
+    const { data, error } = await HomeworkRepository.findSchoolTeacherSubjects(profile.school_id)
+    // Hata → yalnız kendi ödevleri (fail-closed; tüm okula açılmaz)
+    if (error) logger.error({ schoolId: profile.school_id, code: error.code }, 'zümre öğretmenleri okunamadı')
+    return odevKapsami(profile, data ?? [])
+  },
+
   async createHomework(data: {
     class_id:    string
     title:       string
@@ -262,8 +275,10 @@ export const HomeworkService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.READ)) return { error: 'Bu işlem için yetkiniz yok.' }
 
+    const kapsam = await HomeworkService.getOdevKapsami()
+    if (!kapsam) return { error: 'Giriş gerekli' }
     const profileData = await HomeworkRepository.findStudentHomeworkProfile(
-      studentId, classId, ability.schoolId,
+      studentId, classId, ability.schoolId, kapsam.tumu ? undefined : kapsam.ogretmenIds,
     )
 
     if ('error' in profileData && profileData.error) return { error: profileData.error }
@@ -277,7 +292,7 @@ export const HomeworkService = {
         title: hw.title,
         subject: hw.subject,
         due_date: hw.due_date,
-        status: ((sub?.status ?? 'yapilmadi') as HomeworkRecord['status']),
+        status: (sub?.status ?? null) as HomeworkRecord['status'], // satır yok = işaretlenmedi
         note: sub?.note ?? null,
       }
     })

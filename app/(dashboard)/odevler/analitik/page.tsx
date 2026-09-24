@@ -1,5 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
@@ -33,7 +34,9 @@ export default async function AnalitikPage() {
   if (!canAccess) redirect('/odevler')
 
   const sid       = profile.school_id
-  const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
+  const kapsam    = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [user.id] }
+  // Öğretmen karşılaştırması birden çok öğretmeni görenlere (zümre başkanı, yönetim)
+  const isManager = kapsam.tumu || kapsam.ogretmenIds.length > 1
   const supabase  = await createClient()
 
   let hwQuery = supabase
@@ -43,7 +46,7 @@ export default async function AnalitikPage() {
     .is('deleted_at', null)
     .eq('is_template', false)
 
-  if (!isManager) hwQuery = hwQuery.eq('teacher_id', user.id)
+  if (!kapsam.tumu) hwQuery = hwQuery.in('teacher_id', kapsam.ogretmenIds)
 
   const [classesRes, homeworksRes] = await Promise.all([
     supabase.from('classes').select('id, name, grade').eq('school_id', sid).is('deleted_at', null).order('grade').order('name'),
@@ -77,12 +80,14 @@ export default async function AnalitikPage() {
   const students      = (studentsRes.data  ?? []) as AnalitikStudent[]
   const activeClasses = (classesRes.data   ?? []).filter(c => classIds.includes(c.id))
 
+  let teacherProfilesQuery = supabase
+    .from('profiles')
+    .select('id, full_name')
+    .eq('school_id', sid)
+    .in('role', ['ogretmen', 'zumre_baskani'])
+  if (!kapsam.tumu) teacherProfilesQuery = teacherProfilesQuery.in('id', kapsam.ogretmenIds)
   const teacherProfilesRes = isManager
-    ? await supabase
-        .from('profiles')
-        .select('id, full_name')
-        .eq('school_id', sid)
-        .in('role', ['ogretmen', 'zumre_baskani'])
+    ? await teacherProfilesQuery
     : { data: [] as { id: string; full_name: string }[] }
 
   const teacherStats: TeacherStat[] = isManager

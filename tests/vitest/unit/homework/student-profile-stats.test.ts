@@ -2,15 +2,15 @@ import { describe, it, expect } from 'vitest'
 import { computeStudentHomeworkStats } from '@/src/domains/homework/lib/stats'
 import type { SubmissionStatus } from '@/src/shared/types'
 
-type Record = { id: string; title: string; subject: string; due_date: string; status: SubmissionStatus; note: string | null }
+type Record = { id: string; title: string; subject: string; due_date: string; status: SubmissionStatus | null; note: string | null }
 
-const hw = (id: string, status: SubmissionStatus): Record =>
+const hw = (id: string, status: SubmissionStatus | null): Record =>
   ({ id, title: `Ödev ${id}`, subject: 'Mat', due_date: '2026-06-01', status, note: null })
 
 describe('computeStudentHomeworkStats()', () => {
   it('boş liste → sıfır istatistik, rate=0', () => {
     const s = computeStudentHomeworkStats([])
-    expect(s).toEqual({ total: 0, yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, completionRate: 0 })
+    expect(s).toEqual({ total: 0, yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, kontrolEdilmedi: 0, completionRate: 0 })
   })
 
   it('tüm yapıldı → rate=100', () => {
@@ -44,5 +44,11 @@ describe('computeStudentHomeworkStats()', () => {
     ]
     const s = computeStudentHomeworkStats(list)
     expect(s).toMatchObject({ total: 5, yapildi: 1, eksik: 1, yapilmadi: 1, gec: 1, mazeretli: 1 })
+  })
+
+  // Öğretmen henüz işaretlememiş ödev "yapılmadı" değildir; oranı düşürmez.
+  it('kontrol edilmemiş ödev ayrı sayılır ve orana girmez', () => {
+    const s = computeStudentHomeworkStats([hw('1','yapildi'), hw('2', null), hw('3', null)])
+    expect(s).toMatchObject({ total: 3, yapildi: 1, yapilmadi: 0, kontrolEdilmedi: 2, completionRate: 100 })
   })
 })

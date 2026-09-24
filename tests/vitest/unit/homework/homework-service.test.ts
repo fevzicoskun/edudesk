@@ -15,8 +15,13 @@ vi.mock('@/src/shared/authorization/server', () => ({
   requireAbility: vi.fn(),
 }))
 
+vi.mock('@/src/shared/auth', () => ({
+  getCurrentProfile: vi.fn().mockResolvedValue({ id: 'teacher-1', role: 'ogretmen', subject: 'Matematik', school_id: 'school-1' }),
+}))
+
 vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
   HomeworkRepository: {
+    findSchoolTeacherSubjects:       vi.fn().mockResolvedValue({ data: [], error: null }),
     insertHomework:                  vi.fn(),
     findHomeworkTeacher:             vi.fn(),
     upsertSubmissionStatus:          vi.fn(),
@@ -758,6 +763,15 @@ describe('HomeworkService.getStudentHomeworkProfile()', () => {
     expect(result).toMatchObject({ error: 'Bu işlem için yetkiniz yok.' })
   })
 
+  it('öğretmen yalnız kendi ödevlerini görür (kapsam repoya iletilir)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
+      student: { full_name: 'Ali', student_number: null, veli_ad: null, veli_telefon: null }, homeworks: [], submissions: [],
+    } as never)
+    await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
+    expect(vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mock.calls.at(-1)?.[3]).toEqual(['teacher-1'])
+  })
+
   it('öğrenci bulunamazsa hata döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
@@ -781,7 +795,7 @@ describe('HomeworkService.getStudentHomeworkProfile()', () => {
     expect(result.stats.completionRate).toBe(0)
   })
 
-  it('submission yoksa tümü yapilmadi sayılır', async () => {
+  it('submission yoksa tümü kontrol edilmedi sayılır (yapılmadı DEĞİL)', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     vi.mocked(HomeworkRepository.findStudentHomeworkProfile).mockResolvedValue({
       student: { full_name: 'Ali', student_number: null, veli_ad: null, veli_telefon: null },
@@ -794,8 +808,9 @@ describe('HomeworkService.getStudentHomeworkProfile()', () => {
     const result = await HomeworkService.getStudentHomeworkProfile(STU_ID, CLS_ID)
     if ('error' in result) throw new Error(result.error)
     expect(result.homeworks).toHaveLength(2)
-    expect(result.homeworks.every(h => h.status === 'yapilmadi')).toBe(true)
-    expect(result.stats.yapilmadi).toBe(2)
+    expect(result.homeworks.every(h => h.status === null)).toBe(true)
+    expect(result.stats.yapilmadi).toBe(0)
+    expect(result.stats.kontrolEdilmedi).toBe(2)
     expect(result.stats.completionRate).toBe(0)
   })
 
@@ -835,6 +850,6 @@ describe('HomeworkService.getStudentHomeworkProfile()', () => {
     const result = await HomeworkService.getStudentHomeworkProfile('stu-1', 'cls-1')
     if ('error' in result) throw new Error(result.error)
     expect(result.homeworks[0].due_date).toBeNull()
-    expect(result.homeworks[0].status).toBe('yapilmadi')
+    expect(result.homeworks[0].status).toBeNull()
   })
 })

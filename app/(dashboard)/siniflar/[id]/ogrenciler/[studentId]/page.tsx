@@ -1,3 +1,4 @@
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 ﻿import { createClient } from '@/src/infrastructure/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -68,11 +69,15 @@ export default async function OgrenciDetayPage({
   if (!currentProfile?.school_id) redirect('/login')
 
   const schoolId = currentProfile.school_id
+  const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
+  // Ödev geçmişi: öğretmen kendi ödevlerini, zümre başkanı zümresini, yönetim hepsini görür
+  let submissionsQuery = supabase.from('homework_submissions').select('id, status, updated_at, homeworks!inner(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId).not('marked_at', 'is', null)
+  if (!kapsam.tumu) submissionsQuery = submissionsQuery.in('homeworks.teacher_id', kapsam.ogretmenIds)
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
     supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
-    supabase.from('homework_submissions').select('id, status, updated_at, homeworks(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId).not('marked_at', 'is', null),
+    submissionsQuery,
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),

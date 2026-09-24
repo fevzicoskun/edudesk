@@ -1,3 +1,5 @@
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
+import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
 import { Suspense } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
@@ -5,7 +7,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import PrintButton from '@/components/PrintButton'
 import { format, parseISO } from '@/src/shared/date'
-import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
+import { isTeachingRole } from '@/src/shared/types'
 import StatusBoardLoader from './StatusBoardLoader'
 
 export const revalidate = 30
@@ -71,8 +73,8 @@ export default async function OdevDetayPage({
   if (!hw || hw.is_template) notFound()
 
   // Yetki kontrolü önce — erişim yoksa loader'a gerek yok
-  const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
-  if (!isManager && hw.teacher_id !== user.id) notFound()
+  const kapsam = await HomeworkService.getOdevKapsami()
+  if (!kapsam || !kapsamdaMi(kapsam, hw.teacher_id)) notFound()
 
   // Yazma yalnızca ödevin sahibine ait; yönetici görüntüler, değiştiremez
   const isOwner  = hw.teacher_id === user.id

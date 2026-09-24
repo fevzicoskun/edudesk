@@ -5,12 +5,13 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import Link from 'next/link'
 import OdevlerFilterBar from './FilterBar'
 import RaporButton from '@/components/RaporButton'
-import { isMudurOrAbove, isTeachingRole } from '@/src/shared/types'
+import { isTeachingRole } from '@/src/shared/types'
 import { BulkProvider, BulkModeToggle } from './BulkContext'
 import OlusturulduBanner from './OlusturulduBanner'
 import HomeworkSection from './HomeworkSection'
 import HomeworkListSkeleton from './HomeworkListSkeleton'
 import type { FilterParams } from './types'
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 
 export const revalidate = 30
 
@@ -26,19 +27,21 @@ export default async function OdevlerPage({
   if (!user || !profile?.school_id) redirect('/anasayfa')
   const sid = profile.school_id
 
-  const isZumreBaskani = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
+  const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [user.id] }
+  // Birden çok öğretmenin ödevini görenlere öğretmen filtresi/adı gösterilir
+  const cokOgretmen = kapsam.tumu || kapsam.ogretmenIds.length > 1
   const canWrite = isTeachingRole(profile.role)
 
-  const subjectsQuery = isZumreBaskani
-    ? supabase.from('homeworks').select('subject').eq('school_id', sid).is('deleted_at', null)
-    : supabase.from('homeworks').select('subject').eq('school_id', sid).eq('teacher_id', user.id).is('deleted_at', null)
+  let subjectsQuery = supabase.from('homeworks').select('subject').eq('school_id', sid).is('deleted_at', null)
+  if (!kapsam.tumu) subjectsQuery = subjectsQuery.in('teacher_id', kapsam.ogretmenIds)
+
+  let teachersQuery = supabase.from('profiles').select('id, full_name').eq('school_id', sid).order('full_name')
+  if (!kapsam.tumu) teachersQuery = teachersQuery.in('id', kapsam.ogretmenIds)
 
   const [classesResult, subjectsResult, teachersResult] = await Promise.all([
     supabase.from('classes').select('id, name, grade').eq('school_id', sid).is('deleted_at', null).order('grade').order('name'),
     subjectsQuery,
-    isZumreBaskani
-      ? supabase.from('profiles').select('id, full_name').eq('school_id', sid).order('full_name')
-      : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
+    cokOgretmen ? teachersQuery : Promise.resolve({ data: [] as { id: string; full_name: string }[] }),
   ])
 
   const classes  = classesResult.data ?? []
@@ -92,7 +95,7 @@ export default async function OdevlerPage({
         <OdevlerFilterBar
           classes={classes}
           subjects={subjects}
-          teachers={isZumreBaskani ? teachers : []}
+          teachers={cokOgretmen ? teachers : []}
           currentParams={params}
         />
 
@@ -101,7 +104,7 @@ export default async function OdevlerPage({
             params={params}
             userId={user.id}
             schoolId={sid}
-            isZumreBaskani={isZumreBaskani}
+            kapsam={kapsam}
             canWrite={canWrite}
             classes={classes}
           />

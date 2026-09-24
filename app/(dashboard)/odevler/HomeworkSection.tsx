@@ -9,6 +9,7 @@ import PaginationBar from './PaginationBar'
 import EmptyState from './EmptyState'
 import SectionHeader from './SectionHeader'
 import type { FilterParams, StatusCounts } from './types'
+import type { OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 
 const PAGE_SIZE = 50
 
@@ -16,14 +17,14 @@ export default async function HomeworkSection({
   params,
   userId,
   schoolId,
-  isZumreBaskani,
+  kapsam,
   canWrite,
   classes,
 }: {
   params: FilterParams
   userId: string
   schoolId: string
-  isZumreBaskani: boolean
+  kapsam: OdevKapsami
   canWrite: boolean
   classes: { id: string; name: string; grade: number }[]
 }) {
@@ -39,11 +40,9 @@ export default async function HomeworkSection({
     .eq('is_template', false)
     .order('due_date', { ascending: false })
 
-  if (!isZumreBaskani) {
-    query = query.eq('teacher_id', userId)
-  } else if (params.ogretmen) {
-    query = query.eq('teacher_id', params.ogretmen)
-  }
+  if (!kapsam.tumu) query = query.in('teacher_id', kapsam.ogretmenIds)
+  // URL'deki öğretmen filtresi kapsamı genişletemez: kapsam dışı id → boş liste
+  if (params.ogretmen) query = query.eq('teacher_id', params.ogretmen)
 
   if (params.sinif) query = query.eq('class_id', params.sinif)
   if (params.ders)  query = query.eq('subject', params.ders)

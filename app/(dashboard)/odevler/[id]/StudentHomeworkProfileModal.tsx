@@ -228,8 +228,8 @@ export default function StudentHomeworkProfileModal({
                       key={hw.id}
                       className="flex items-center gap-3 py-2.5 px-3 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-800/60 transition-colors"
                     >
-                      <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLOR[hw.status]}`}>
-                        {STATUS_LABEL[hw.status]}
+                      <span className={`shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-full ${hw.status ? STATUS_COLOR[hw.status] : 'bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300'}`}>
+                        {hw.status ? STATUS_LABEL[hw.status] : 'Kontrol edilmedi'}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-gray-800 dark:text-slate-200 truncate">{hw.title}</p>
