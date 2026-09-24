@@ -238,6 +238,7 @@ export const HomeworkRepository = {
       ? await supabase
           .from('homework_submissions')
           .select('homework_id, status, note')
+          .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi, "yapılmadı" değil
           .in('homework_id', homeworkIds)
           .eq('student_id', studentId)
           .eq('school_id', schoolId)

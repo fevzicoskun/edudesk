@@ -103,35 +103,45 @@ describe('filterMissingCandidates()', () => {
   const hw = { id: 'hw1', title: 'Ödev', due_date: '2026-01-10', school_id: 'sch1', class_id: 'cls1' }
   const student = { id: 'st1', full_name: 'Ali', veli_email: 'v@t.com', veli_ad: 'Veli Ali', class_id: 'cls1' }
 
-  it('teslim etmemiş öğrenci → aday listesine girer', () => {
-    const result = filterMissingCandidates([hw], [student], [])
+  const M = '2026-01-10T10:00:00Z' // öğretmenin işaretlediği an
+  const sub = (status: string, marked_at: string | null = M) => [{ homework_id: 'hw1', student_id: 'st1', status, marked_at }]
+
+  it('öğretmen "yapılmadı" işaretlediyse → aday listesine girer', () => {
+    const result = filterMissingCandidates([hw], [student], sub('yapilmadi'))
     expect(result).toHaveLength(1)
     expect(result[0].studentId).toBe('st1')
   })
 
+  // 2026-09-24 bulgusu: ödevle otomatik açılan boş satır (status=yapilmadi, marked_at=null)
+  // veliye "teslim edilmedi" e-postası gönderiyordu — öğretmen hiç kontrol etmemişken.
+  it('işaretlenmemiş varsayılan satır → aday DEĞİL', () => {
+    expect(filterMissingCandidates([hw], [student], sub('yapilmadi', null))).toHaveLength(0)
+  })
+
+  it('hiç satır yoksa → aday DEĞİL (kontrol edilmemiş)', () => {
+    expect(filterMissingCandidates([hw], [student], [])).toHaveLength(0)
+  })
+
   it('yapildi durumundaki → hariç', () => {
-    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'yapildi' }]
-    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(0)
+    expect(filterMissingCandidates([hw], [student], sub('yapildi'))).toHaveLength(0)
   })
 
   it('mazeretli durumundaki → hariç', () => {
-    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'mazeretli' }]
-    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(0)
+    expect(filterMissingCandidates([hw], [student], sub('mazeretli'))).toHaveLength(0)
   })
 
   it('eksik durumundaki → aday listesinde kalır', () => {
-    const subs = [{ homework_id: 'hw1', student_id: 'st1', status: 'eksik' }]
-    expect(filterMissingCandidates([hw], [student], subs)).toHaveLength(1)
+    expect(filterMissingCandidates([hw], [student], sub('eksik'))).toHaveLength(1)
   })
 
   it('farklı sınıftaki öğrenci → eşleşmez', () => {
     const otherStudent = { ...student, class_id: 'cls2' }
-    expect(filterMissingCandidates([hw], [otherStudent], [])).toHaveLength(0)
+    expect(filterMissingCandidates([hw], [otherStudent], sub('yapilmadi'))).toHaveLength(0)
   })
 
   it('veli adı null ise varsayılan atanır', () => {
     const s = { ...student, veli_ad: null }
-    const result = filterMissingCandidates([hw], [s], [])
+    const result = filterMissingCandidates([hw], [s], sub('yapilmadi'))
     expect(result[0].veliAd).toBe('Sayın Veli')
   })
 })

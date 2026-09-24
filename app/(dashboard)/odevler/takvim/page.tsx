@@ -42,6 +42,7 @@ export default async function OdevTakvimPage() {
     ? await supabase
         .from('homework_submissions')
         .select('homework_id, status')
+        .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
         .in('homework_id', hwIds)
         .eq('school_id', sid)
     : { data: [] as { homework_id: string; status: string }[] }

@@ -82,6 +82,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       let q = supabase
         .from('homework_submissions')
         .select('id, status, updated_at, homeworks(title, subject, due_date, description)')
+        .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
         .eq('student_id', studentId)
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q

@@ -73,7 +73,7 @@ export const aylikBultenFn = inngest.createFunction(
           db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
           db.rpc('get_class_attendance_rates', { p_school_id: sid, p_start: monthStart, p_end: monthEnd }),
-          db.from('homework_submissions').select('status').eq('school_id', sid).gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
+          db.from('homework_submissions').select('status').eq('school_id', sid).not('marked_at', 'is', null).gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
           db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
         ])
 

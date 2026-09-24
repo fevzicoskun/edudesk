@@ -145,6 +145,7 @@ async function fetchOdevler(params: Record<string, string>, schoolId: string) {
     const { data: subData, error: subErr } = await db
       .from('homework_submissions')
       .select('homework_id, status')
+      .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .limit(XLSX_EXPORT_LIMIT * 60)
     if (subErr) throw new Error(`Teslim sorgu hatası: ${subErr.message}`)

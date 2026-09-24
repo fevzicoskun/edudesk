@@ -13,7 +13,7 @@ export function yesterdayInTurkey(): string {
 
 type HwRow = { id: string; title: string; due_date: string | null; school_id: string; class_id: string }
 type StudentVeliRow = { id: string; full_name: string; veli_email: string; veli_ad: string | null; class_id: string }
-type SubRow = { student_id: string; homework_id: string; status: string }
+type SubRow = { student_id: string; homework_id: string; status: string; marked_at: string | null }
 type VeliCandidate = { homeworkId: string; studentId: string; schoolId: string; to: string; veliAd: string; ogrenciAdi: string; odevBaslik: string; dueDate: string }
 
 export function filterMissingCandidates(
@@ -28,13 +28,15 @@ export function filterMissingCandidates(
     studentsByClass.set(s.class_id, list)
   }
   const subKey = new Map<string, string>()
-  for (const s of allSubs) subKey.set(`${s.homework_id}:${s.student_id}`, s.status)
+  // Yalnız öğretmenin gerçekten işaretlediği satırlar sayılır: satırlar ödevle birlikte
+  // status='yapilmadi' olarak otomatik açılır; marked_at boşsa ödev henüz kontrol edilmemiştir.
+  for (const s of allSubs) if (s.marked_at) subKey.set(`${s.homework_id}:${s.student_id}`, s.status)
 
   const results: VeliCandidate[] = []
   for (const hw of homeworks) {
     for (const student of (studentsByClass.get(hw.class_id) ?? [])) {
-      const status = subKey.get(`${hw.id}:${student.id}`) ?? 'yapilmadi'
-      if (status === 'yapildi' || status === 'mazeretli') continue
+      const status = subKey.get(`${hw.id}:${student.id}`)
+      if (!status || status === 'yapildi' || status === 'mazeretli') continue
       results.push({
         homeworkId: hw.id,
         studentId: student.id,
@@ -90,7 +92,7 @@ export const odevSonrasiVeliNotifierFn = inngest.createFunction(
           .eq('veli_email_opt_out', false),
         supabase
           .from('homework_submissions')
-          .select('student_id, homework_id, status')
+          .select('student_id, homework_id, status, marked_at')
           .in('homework_id', hwIds)
           .in('school_id', uniqueSchoolIds),
       ])

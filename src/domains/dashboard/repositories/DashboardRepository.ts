@@ -21,6 +21,7 @@ export const DashboardRepository = {
     return supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
+      .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .eq('school_id', schoolId)
       .limit(5000)
@@ -57,6 +58,7 @@ export const DashboardRepository = {
     return supabase
       .from('homework_submissions')
       .select('homework_id, status')
+      .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .gte('updated_at', weekStart)
       .limit(2000)
@@ -112,6 +114,7 @@ export const DashboardRepository = {
     return supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
+      .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
       .in('homework_id', hwIds)
       .limit(hwIds.length * 60)
   },

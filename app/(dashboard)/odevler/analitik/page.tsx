@@ -59,6 +59,7 @@ export default async function AnalitikPage() {
       ? supabase
           .from('homework_submissions')
           .select('homework_id, student_id, status')
+          .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
           .in('homework_id', hwIds)
           .eq('school_id', sid)
       : Promise.resolve({ data: [] as { homework_id: string; student_id: string; status: string }[] }),

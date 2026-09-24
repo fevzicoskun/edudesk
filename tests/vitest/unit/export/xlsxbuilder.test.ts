@@ -27,6 +27,7 @@ function makeQueryMock(result: { data: unknown; error: unknown }) {
     in:              vi.fn(),
     gte:             vi.fn(),
     lte:             vi.fn(),
+    not:             vi.fn(),
     then:            vi.fn().mockImplementation((resolve: (v: unknown) => unknown) => Promise.resolve(resolve(result))),
   }
   // Make each fluent method return the same query object AND be awaitable
