@@ -132,6 +132,28 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
     await expect(page).toHaveURL(new RegExp(`/siniflar/${classId}/ogrenciler/${ogrenci.id}`), { timeout: 20_000 })
   })
 
+  test('sınıfın tüm öğrenci özetleri tek sayfada; yazdırınca her öğrenci ayrı sayfa', async ({ page }) => {
+    await page.goto(`/siniflar/${classId}`)
+    await page.getByRole('link', { name: 'Ödev Özetleri' }).click()
+    await expect(page).toHaveURL(new RegExp(`/siniflar/${classId}/odev-raporu`), { timeout: 20_000 })
+    await expect(page.getByRole('heading', { name: 'Tüm Öğrencilerin Ödev Özetleri' })).toBeVisible({ timeout: 20_000 })
+
+    const { count } = await db.from('students').select('id', { count: 'exact', head: true })
+      .eq('class_id', classId).is('deleted_at', null)
+    const bolumler = page.locator('section[aria-label]')
+    await expect(bolumler).toHaveCount(count!)
+    await expect(page.getByRole('region', { name: ogrenci.full_name })).toBeVisible()
+    // kapsam: her öğrencide öğretmenin kendi ödevi var, zümre başkanınınki yok
+    await expect(page.getByText(baslik.ogr)).toHaveCount(count!)
+    await expect(page.getByText(baslik.zb)).toHaveCount(0)
+
+    // Gerçek yazdırma çıktısı: sayfa sayısı ≥ öğrenci sayısı (her öğrenci yeni sayfada başlar)
+    await page.emulateMedia({ media: 'print' })
+    const pdf = (await page.pdf({ format: 'A4' })).toString('latin1')
+    const sayfa = (pdf.match(/\/Type\s*\/Page[^s]/g) ?? []).length
+    expect(sayfa).toBeGreaterThanOrEqual(count!)
+  })
+
   test('öğrencinin ödev özeti sayfası açılır ve yazdır düğmesi vardır', async ({ page }) => {
     await page.goto(`/siniflar/${classId}/ogrenciler/${ogrenci.id}/odev-raporu`)
     await expect(page.getByText('Öğrenci Ödev Özeti')).toBeVisible({ timeout: 20_000 })

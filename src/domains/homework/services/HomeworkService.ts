@@ -2,7 +2,7 @@ import { HomeworkRepository, type SubmissionLogEntry } from '../repositories/Hom
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import type { SubmissionStatus, HomeworkTemplate, StatusResult } from '@/src/shared/types'
-import { computeStudentHomeworkStats, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import { computeStudentHomeworkStats, sinifOdevKayitlari, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { odevKapsami, type OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -298,5 +298,31 @@ export const HomeworkService = {
     })
 
     return { student: profileData.student, homeworks: records, stats: computeStudentHomeworkStats(records) }
+  },
+
+  /** Sınıfın tüm öğrencileri için ödev özeti (toplu yazdırma). Numara sırasına göre, numarasızlar sonda. */
+  async getClassHomeworkProfiles(classId: string): Promise<
+    | { error: string }
+    | { ogrenciler: { id: string; full_name: string; student_number: string | null; homeworks: HomeworkRecord[]; stats: ReturnType<typeof computeStudentHomeworkStats> }[] }
+  > {
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.READ)) return { error: 'Bu işlem için yetkiniz yok.' }
+    const kapsam = await HomeworkService.getOdevKapsami()
+    if (!kapsam) return { error: 'Giriş gerekli' }
+
+    const { students, homeworks, submissions } = await HomeworkRepository.findClassHomeworkProfiles(
+      classId, ability.schoolId, kapsam.tumu ? undefined : kapsam.ogretmenIds,
+    )
+    const kayitlar = sinifOdevKayitlari(students.map(s => s.id), homeworks, submissions)
+    const ogrenciler = [...students]
+      .sort((a, b) =>
+        (a.student_number ?? '￿').localeCompare(b.student_number ?? '￿', 'tr', { numeric: true }) ||
+        a.full_name.localeCompare(b.full_name, 'tr'))
+      .map(s => {
+        const hws = kayitlar.get(s.id) ?? []
+        return { ...s, homeworks: hws, stats: computeStudentHomeworkStats(hws) }
+      })
+    return { ogrenciler }
   },
 }

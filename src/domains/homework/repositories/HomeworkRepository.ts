@@ -1,4 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
+import { fetchAll } from '@/src/shared/utils/fetchAll'
 import type { SubmissionStatus } from '../types'
 
 export type SubmissionLogEntry = {
@@ -271,6 +272,45 @@ export const HomeworkRepository = {
       homeworks: homeworksRes.data ?? [],
       submissions: subsRes.data ?? [],
     }
+  },
+
+  /** Sınıftaki tüm öğrenciler + (kapsamdaki) ödevler + işaretli teslimler — toplu özet için sabit sorgu sayısı. */
+  async findClassHomeworkProfiles(classId: string, schoolId: string, teacherIds?: string[]) {
+    const supabase = await createClient()
+    let homeworksQuery = supabase
+      .from('homeworks')
+      .select('id, title, subject, due_date')
+      .eq('class_id', classId)
+      .eq('school_id', schoolId)
+      .eq('is_template', false)
+      .is('deleted_at', null)
+      .order('due_date', { ascending: false })
+      .order('id')
+    if (teacherIds) homeworksQuery = homeworksQuery.in('teacher_id', teacherIds)
+    const [studentsRes, homeworks] = await Promise.all([
+      supabase
+        .from('students')
+        .select('id, full_name, student_number')
+        .eq('class_id', classId)
+        .eq('school_id', schoolId)
+        .is('deleted_at', null),
+      fetchAll((from, to) => homeworksQuery.range(from, to)),
+    ])
+    if (studentsRes.error) throw new Error(studentsRes.error.message)
+    const students = studentsRes.data ?? []
+
+    // Öğrenci id'siyle filtrelenir (35 id kısa URL; 200 ödev id'si URL'yi şişirirdi); başka sınıfın ödevi eşleşmez, yok sayılır
+    const submissions = students.length === 0 || homeworks.length === 0 ? [] : await fetchAll((from, to) =>
+      supabase
+        .from('homework_submissions')
+        .select('homework_id, student_id, status, note')
+        .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi
+        .in('student_id', students.map(s => s.id))
+        .eq('school_id', schoolId)
+        .order('id')
+        .range(from, to))
+
+    return { students, homeworks, submissions }
   },
 
   async insertSubmissionLog(log: {

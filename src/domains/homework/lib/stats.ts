@@ -30,3 +30,24 @@ export function computeStudentHomeworkStats(homeworks: HomeworkRecord[]): Studen
   const completionRate = eligible === 0 ? 0 : Math.round((counts.yapildi / eligible) * 100)
   return { total: homeworks.length, ...counts, completionRate }
 }
+
+type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null }
+type TeslimSatiri = { homework_id: string; student_id: string; status: string; note: string | null }
+
+/** Sınıfın ödevlerini + işaretli teslimleri öğrenci başına HomeworkRecord listesine çevirir.
+ *  Teslimi olmayan ödev status=null ("kontrol edilmedi") — "yapılmadı" DEĞİL. */
+export function sinifOdevKayitlari(
+  ogrenciIds: string[],
+  odevler: OdevSatiri[],
+  teslimler: TeslimSatiri[],
+): Map<string, HomeworkRecord[]> {
+  const teslim = new Map(teslimler.map(t => [`${t.student_id}:${t.homework_id}`, t]))
+  return new Map(ogrenciIds.map(sid => [sid, odevler.map(hw => {
+    const t = teslim.get(`${sid}:${hw.id}`)
+    return {
+      id: hw.id, title: hw.title, subject: hw.subject, due_date: hw.due_date,
+      status: (t?.status ?? null) as SubmissionStatus | null,
+      note: t?.note ?? null,
+    }
+  })]))
+}
