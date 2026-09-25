@@ -174,14 +174,16 @@ export default function SwipeableHomeworkCard({
         <div className="min-w-0 flex-1">
           <Link
             href={`/odevler/${id}`}
-            className="block truncate text-sm font-medium text-gray-900 dark:text-slate-100 after:absolute after:inset-0"
+            className="block line-clamp-2 text-sm font-medium text-gray-900 dark:text-slate-100 after:absolute after:inset-0"
           >
             {title}
           </Link>
-          <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400 truncate">
-            {className} · {subject} · {dueDateStr}
-            {teacherName && ` · ${teacherName}`}
-            {ilerleme && <span className={allEntered ? 'text-emerald-700 dark:text-emerald-400' : ''}> · {ilerleme}</span>}
+          {/* Parçalar bölünmez — dar sütunda "2/2" ile "yaptı" ayrı satıra düşmesin */}
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400 flex flex-wrap gap-x-1.5">
+            <span className="whitespace-nowrap">{className} · {subject}</span>
+            <span className="whitespace-nowrap">· {dueDateStr}</span>
+            {teacherName && <span className="whitespace-nowrap">· {teacherName}</span>}
+            {ilerleme && <span className={`whitespace-nowrap ${allEntered ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>· {ilerleme}</span>}
           </p>
         </div>
         {/* Yalnız yaklaşan teslimde rozet — "Aktif" rozeti bu bölümde bilgi taşımıyordu */}
@@ -195,14 +197,14 @@ export default function SwipeableHomeworkCard({
             onClick={() => setShowConfirm(true)}
             aria-label={`"${title}" ödevini sil`}
             title="Sil (mobilde sola kaydır)"
-            className="relative z-10 shrink-0 p-1 hidden sm:block opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded"
+            className="relative z-10 shrink-0 -m-1 p-1 hidden sm:group-hover:block sm:group-focus-within:block text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
               <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
             </svg>
           </button>
         )}
-        <svg className="w-4 h-4 shrink-0 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+        <svg className={`w-4 h-4 shrink-0 text-gray-300 dark:text-slate-600 ${canWrite ? 'sm:group-hover:hidden sm:group-focus-within:hidden' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
         </svg>
       </div>

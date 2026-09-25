@@ -11,6 +11,7 @@ import type { FilterParams, StatusCounts } from './types'
 import type { OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 
 const PAGE_SIZE = 50
+const SUTUN: Record<number, string> = { 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-2 xl:grid-cols-3' }
 
 export default async function HomeworkSection({
   params,
@@ -118,8 +119,8 @@ export default async function HomeworkSection({
         <EmptyState hasFilters={hasFilters} canWrite={canWrite} />
       ) : (
         <>
-          {/* Masaüstünde iki bölüm yan yana — tek sütunda satırlar ekran boyu uzayıp ortası boş kalıyordu */}
-          <div className={`mb-6 ${pendingCheck.length > 0 && active.length > 0 ? 'grid gap-6 lg:grid-cols-2 items-start' : ''}`}>
+          {/* Masaüstünde bölümler yan yana (kaç bölüm doluysa o kadar sütun) — tek sütunda satırlar ekran boyu uzayıp ortası boş kalıyordu */}
+          <div className={`mb-6 grid gap-6 items-start ${SUTUN[[pendingCheck, active, pastDone].filter(l => l.length > 0).length] ?? ''}`}>
             <BekleyenKontrollerPanel
               pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
               statusMap={statusMap}
@@ -134,11 +135,10 @@ export default async function HomeworkSection({
                 </div>
               </section>
             )}
+            {pastDone.length > 0 && (
+              <PastDoneSection pastDone={pastDone} canWrite={canWrite} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />
+            )}
           </div>
-
-          {pastDone.length > 0 && (
-            <PastDoneSection pastDone={pastDone} canWrite={canWrite} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />
-          )}
         </>
       )}
 

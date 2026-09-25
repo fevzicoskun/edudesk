@@ -1,6 +1,8 @@
 import HomeworkCard from './HomeworkCard'
-import { LISTE } from './SectionHeader'
+import SectionHeader from './SectionHeader'
 import type { HW, StatusCounts } from './types'
+
+const ILK_GORUNEN = 8
 
 export default function PastDoneSection({ pastDone, canWrite, userId, statusMap, classStudentMap }: {
   pastDone: HW[]
@@ -19,21 +21,29 @@ export default function PastDoneSection({ pastDone, canWrite, userId, statusMap,
   }
   const avgPct = totalPossible > 0 ? Math.round((totalYapildi / totalPossible) * 100) : null
 
-  // Varsayılan kapalı: biten ödevler listeyi kalabalıklaştırıyordu; açınca hepsi görünür
+  // Kontrol edilmiş (son tarihi geçmiş + işaretlenmiş) ödevler — diğer iki bölümle aynı görünür.
+  // En yeni ILK_GORUNEN tanesi açık, kalanı "+N daha" altında (liste 50'ye kadar uzayabiliyor)
+  const ilk = pastDone.slice(0, ILK_GORUNEN)
+  const kalan = pastDone.slice(ILK_GORUNEN)
+  const satir = (hw: HW) => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />
+
   return (
-    <details className="group">
-      <summary className="flex items-center justify-between gap-2 mb-2 px-1 cursor-pointer list-none select-none">
-        <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">
-          <span className="inline-block mr-1 text-gray-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
-          Geçmiş <span className="font-normal text-gray-500 dark:text-slate-400">· {pastDone.length}</span>
-        </span>
-        {avgPct !== null && (
-          <span className="text-xs text-gray-500 dark:text-slate-400">ortalama %{avgPct} yapıldı</span>
+    <section>
+      <SectionHeader label="Kontrol edildi" count={pastDone.length}>
+        {avgPct !== null && <span className="text-xs text-gray-500 dark:text-slate-400">ortalama %{avgPct} yapıldı</span>}
+      </SectionHeader>
+      <div className="bg-white dark:bg-slate-800 border border-emerald-300 dark:border-emerald-800 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-slate-700/60">
+        {ilk.map(satir)}
+        {kalan.length > 0 && (
+          <details className="group">
+            <summary className="px-4 py-2.5 text-sm font-medium text-blue-600 dark:text-blue-400 cursor-pointer list-none select-none hover:bg-gray-50 dark:hover:bg-slate-700/50 group-open:border-b group-open:border-gray-100 dark:group-open:border-slate-700/60">
+              <span className="group-open:hidden">+{kalan.length} ödev daha</span>
+              <span className="hidden group-open:inline">Daha az göster</span>
+            </summary>
+            <div className="divide-y divide-gray-100 dark:divide-slate-700/60">{kalan.map(satir)}</div>
+          </details>
         )}
-      </summary>
-      <div className={LISTE}>
-        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
       </div>
-    </details>
+    </section>
   )
 }

@@ -22,7 +22,7 @@ function dueDateStr(due: string | null): string {
   if (!due) return '—'
   try {
     const d = new Date(due + 'T12:00:00')
-    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
   } catch { return due }
 }
 
@@ -54,11 +54,12 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
               className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 line-clamp-2">
                   {hw.title}
                 </p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                  {hw.classes?.name ?? '—'} · {dueDateStr(hw.due_date)} · {progressLabel}
+                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-1.5">
+                  <span className="whitespace-nowrap">{hw.classes?.name ?? '—'} · {dueDateStr(hw.due_date)}</span>
+                  <span className="whitespace-nowrap">· {progressLabel}</span>
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">

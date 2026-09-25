@@ -16,7 +16,7 @@ export default function HomeworkCard({ hw, overdue, canWrite, statusMap, classSt
   function dueDateStr(due: string | null) {
     if (!due) return '—'
     try {
-      return new Date(due + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' })
+      return new Date(due + 'T12:00:00').toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
     } catch { return due }
   }
 
