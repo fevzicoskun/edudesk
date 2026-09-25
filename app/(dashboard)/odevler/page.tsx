@@ -53,14 +53,23 @@ export default async function OdevlerPage({
   return (
     <BulkProvider>
     <div className="min-h-full">
-      <div className="p-4 md:p-6 max-w-4xl mx-auto">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto">
 
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ödevler</h1>
+        <div className="flex items-center justify-between gap-3 mb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 min-w-0">
+            <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ödevler</h1>
+            {/* İkincil eylemler — hepsi aynı biçim, yazılı etiket (simge tek başına anlaşılmıyordu) */}
+            <div className="flex flex-wrap items-center gap-1 -mx-2">
+              <Link href="/odevler/takvim" className={IKINCIL}>Takvim</Link>
+              <Link href="/odevler/analitik" className={IKINCIL}>Başarı haritası</Link>
+              <RaporButton classes={classes} />
+              {canWrite && <BulkModeToggle canWrite={canWrite} />}
+            </div>
+          </div>
           {canWrite && (
             <Link
               href="/odevler/yeni"
-              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-colors"
+              className="shrink-0 flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-colors self-start sm:self-auto"
             >
               <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
@@ -68,14 +77,6 @@ export default async function OdevlerPage({
               Yeni Ödev
             </Link>
           )}
-        </div>
-
-        {/* İkincil eylemler — hepsi aynı biçim, yazılı etiket (simge tek başına anlaşılmıyordu) */}
-        <div className="flex flex-wrap items-center gap-1 mt-2 mb-5 -mx-2">
-          <Link href="/odevler/takvim" className={IKINCIL}>Takvim</Link>
-          <Link href="/odevler/analitik" className={IKINCIL}>Başarı haritası</Link>
-          <RaporButton classes={classes} />
-          {canWrite && <BulkModeToggle canWrite={canWrite} />}
         </div>
 
         <OlusturulduBanner olusturuldu={params.olusturuldu} hatali={params.hatali} />

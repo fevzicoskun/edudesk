@@ -114,25 +114,27 @@ export default async function HomeworkSection({
   return (
     <>
       <SinifChipBar classes={classes} pendingByClass={pendingByClass} params={params} />
-      <BekleyenKontrollerPanel
-        pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
-        statusMap={statusMap}
-        classStudentMap={classStudentMap}
-        now={now}
-      />
-
       {homeworks.length === 0 ? (
         <EmptyState hasFilters={hasFilters} canWrite={canWrite} />
       ) : (
         <>
-          {active.length > 0 && (
-            <section className="mb-6">
-              <SectionHeader label="Aktif" count={active.length} />
-              <div className={LISTE}>
-                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
-              </div>
-            </section>
-          )}
+          {/* Masaüstünde iki bölüm yan yana — tek sütunda satırlar ekran boyu uzayıp ortası boş kalıyordu */}
+          <div className={`mb-6 ${pendingCheck.length > 0 && active.length > 0 ? 'grid gap-6 lg:grid-cols-2 items-start' : ''}`}>
+            <BekleyenKontrollerPanel
+              pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
+              statusMap={statusMap}
+              classStudentMap={classStudentMap}
+              now={now}
+            />
+            {active.length > 0 && (
+              <section>
+                <SectionHeader label="Aktif" count={active.length} />
+                <div className={LISTE}>
+                  {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
+                </div>
+              </section>
+            )}
+          </div>
 
           {pastDone.length > 0 && (
             <PastDoneSection pastDone={pastDone} canWrite={canWrite} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />

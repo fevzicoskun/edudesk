@@ -34,7 +34,7 @@ function daysSinceDue(due: string | null, now: Date): number {
 export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, classStudentMap, now }: Props) {
   if (!pendingCheck.length) return null
   return (
-    <section className="mb-6">
+    <section>
       <SectionHeader label="Kontrol bekliyor" count={pendingCheck.length}>
         <span className="text-xs text-gray-500 dark:text-slate-400">son tarihi geçti, işaretlenmedi</span>
       </SectionHeader>
