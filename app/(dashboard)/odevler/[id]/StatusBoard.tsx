@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useMemo, useEffect } from 'react'
+import { useState, useTransition, useMemo, useEffect, useRef } from 'react'
 
 import { updateAllSubmissionStatuses, updateSubmissionStatus, updateSubmissionNote, getSubmissionLogs } from '@/src/domains/homework/actions'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -60,6 +60,10 @@ export default function StatusBoard({
     Object.fromEntries(items.map(i => [i.student_id, i.note ?? '']))
   )
   const [expandedNote, setExpandedNote]     = useState<string | null>(null)
+  /** Sunucuda kayıtlı son not metni — değişmeyen notu tekrar kaydetmemek için */
+  const kayitliNotlar = useRef<Record<string, string>>(
+    Object.fromEntries(items.map(i => [i.student_id, i.note ?? '']))
+  )
   const [isPending, startTransition]        = useTransition()
   const [pendingIds, setPendingIds]         = useState<Set<string>>(new Set())
   const [noteSavedId, setNoteSavedId]       = useState<string | null>(null)
@@ -142,9 +146,13 @@ export default function StatusBoard({
   function saveNote(studentId: string, note: string) {
     if (readOnly) return
     setNotes(prev => ({ ...prev, [studentId]: note }))
+    // Her odak kaybında değil, yalnız metin değiştiyse kaydet — yoksa notu okuyup çıkmak bile "✓ kaydedildi" gösteriyordu
+    if (note.trim() === (kayitliNotlar.current[studentId] ?? '').trim()) return
+    kayitliNotlar.current[studentId] = note
     startTransition(async () => {
       const result = await updateSubmissionNote(homeworkId, studentId, note)
       if (result?.error) {
+        delete kayitliNotlar.current[studentId] // bir sonraki odak kaybında yeniden denensin
         setErrorMsg(result.error)
       } else {
         setNoteSavedId(studentId)

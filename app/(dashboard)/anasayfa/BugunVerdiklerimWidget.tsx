@@ -26,6 +26,8 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
     baslik: h.title,
     sonTeslim: h.due_date,
   }))
+  // Sınıf başına ayrı liste — her sınıfın kendi veli/öğrenci grubuna ayrı yapıştırılır
+  const siniflar = [...new Set(odevler.map(o => o.sinif))].sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }))
 
   return (
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -33,7 +35,7 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Bugün Verdiğim Ödevler{odevler.length > 0 && <span className="text-gray-500 dark:text-slate-400 font-normal"> · {odevler.length}</span>}
         </h2>
-        {odevler.length > 0 && <KopyalaButonu metin={gunlukOdevMetni(odevler)} />}
+        {siniflar.length > 1 && <KopyalaButonu metin={gunlukOdevMetni(odevler)} etiket="Tümünü kopyala" />}
       </div>
       {error ? (
         <p className="px-4 py-6 text-sm text-red-600 dark:text-red-400">Ödevler yüklenemedi.</p>
@@ -42,18 +44,31 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
           Bugün henüz ödev vermedin. <Link href="/odevler/yeni" className="text-blue-600 dark:text-blue-400 hover:underline">Ödev ver →</Link>
         </p>
       ) : (
-        <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
-          {odevler.map(o => (
-            <li key={o.id}>
-              <Link href={`/odevler/${o.id}`} className="block px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{o.baslik}</p>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                  {o.sinif} · {o.ders}{o.sonTeslim && ` · son teslim ${format(parseISO(o.sonTeslim), 'd MMM')}`}
-                </p>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
+          {siniflar.map(sinif => {
+            const liste = odevler.filter(o => o.sinif === sinif)
+            return (
+              <div key={sinif}>
+                <div className="px-4 pt-2.5 flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-bold text-gray-800 dark:text-slate-200">{sinif}</h3>
+                  <KopyalaButonu metin={gunlukOdevMetni(liste)} etiket="Kopyala" ariaLabel={`${sinif} ödevlerini kopyala`} />
+                </div>
+                <ul>
+                  {liste.map(o => (
+                    <li key={o.id}>
+                      <Link href={`/odevler/${o.id}`} className="block px-4 py-2 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                        <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{o.baslik}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                          {o.ders}{o.sonTeslim && ` · son teslim ${format(parseISO(o.sonTeslim), 'd MMM')}`}
+                        </p>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )
+          })}
+        </div>
       )}
     </section>
   )

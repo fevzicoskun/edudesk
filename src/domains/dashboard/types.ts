@@ -43,6 +43,7 @@ export type DashboardMetrics = {
   homeworks: HomeworkLite[]
   tamamlanmaData: OdevTamamlanmaItem[]
   yoklamaDurumu: YoklamaDurumItem[]
+  kontrolEdilenHwIds: string[]
   riskAlerts: RiskAlert[]
 }
 

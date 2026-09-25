@@ -115,6 +115,8 @@ export const TeacherDashboardService = {
       homeworks: homeworks as HomeworkLite[],
       tamamlanmaData,
       yoklamaDurumu,
+      // en az bir öğrencisi işaretlenmiş ödevler = kontrol edilmiş
+      kontrolEdilenHwIds: [...new Set(submissions.map(s => s.homework_id))],
       riskAlerts: alerts,
     }
   },

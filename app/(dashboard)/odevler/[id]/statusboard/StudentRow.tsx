@@ -225,6 +225,7 @@ export default function StudentRow({
             value={note}
             onChange={e => onNoteChange(item.student_id, e.target.value)}
             onBlur={e => onNoteBlur(item.student_id, e.target.value)}
+            autoFocus
             rows={2}
             aria-label={`${item.full_name} için not`}
             placeholder="Öğrenci hakkında kısa not..."

@@ -146,10 +146,10 @@ export default async function OgretmenDashboard() {
       {duties.length > 0 && <NobetBanner duties={duties} todayDow={today.getDay()} />}
 
       {/* Hızlı Aksiyonlar */}
-      <HizliAksiyonlar
-        yoklamaDurumu={metrics.yoklamaDurumu}
-        bugunHwSayisi={todayHws.length}
-      />
+      {/* Bugün teslimi olan ödevler — günün asıl işi, en üstte */}
+      <BugunYapilacaklarWidget todayHomeworks={todayHws} kontrolEdilenHwIds={metrics.kontrolEdilenHwIds} />
+
+      <HizliAksiyonlar />
 
       {/* Yapılacaklarım — kişisel aksiyon katmanı */}
       <Yapilacaklarim initial={myTasks} />
@@ -159,14 +159,8 @@ export default async function OgretmenDashboard() {
         <OdevCockpit schoolId={profile.school_id ?? ''} />
       </Suspense>
 
-      {/* Bugün Yapılacaklar + gün sonu için bugün verilen ödevler, yan yana */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 items-start *:mb-0">
-        <BugunYapilacaklarWidget
-          yoklamaDurumu={metrics.yoklamaDurumu}
-          todayHomeworks={todayHws}
-          activeRiskCount={metrics.activeRiskCount}
-          hasClasses={metrics.yoklamaDurumu.length > 0}
-        />
+      {/* Gün sonu için bugün verilen ödevler */}
+      <div className="mb-4">
         <Suspense fallback={<div className="h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
           <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
         </Suspense>

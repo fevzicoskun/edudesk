@@ -5,7 +5,6 @@ import { veliAbsenceNotifierFn } from '@/src/domains/notifications/functions/vel
 import { aylikBultenFn } from '@/src/domains/notifications/functions/aylikBulten'
 import { odevSonrasiVeliNotifierFn } from '@/src/domains/notifications/functions/odevSonrasiVeliNotifier'
 import { homeworkCreatedNotifierFn } from '@/src/domains/notifications/functions/homeworkCreatedNotifier'
-import { yoklamaHatirlaticiFn } from '@/src/domains/notifications/functions/yoklamaHatirlatici'
 import { gunlukOzetFn } from '@/src/domains/notifications/functions/gunlukOzet'
 import { planVeliNotifierFn } from '@/src/domains/notifications/functions/planVeliNotifier'
 import { cronHataBildirimiFn } from '@/src/domains/notifications/functions/cronHataBildirimi'
@@ -13,5 +12,6 @@ import { haftalikYedekFn } from '@/src/domains/notifications/functions/haftalikY
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, yoklamaHatirlaticiFn, gunlukOzetFn, planVeliNotifierFn, cronHataBildirimiFn, haftalikYedekFn],
+  // yoklamaHatirlaticiFn kapalı: yoklama arayüzden gizli (2026-09-25), hatırlatma gürültü olurdu
+  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, gunlukOzetFn, planVeliNotifierFn, cronHataBildirimiFn, haftalikYedekFn],
 })

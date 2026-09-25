@@ -9,7 +9,6 @@ const DEFAULT_PAGES: SearchResult[] = [
   { type: 'page', id: 'odevler',       title: 'Ödevler',            subtitle: 'Sayfa',  href: '/odevler' },
   { type: 'page', id: 'odevler-yeni',  title: 'Yeni Ödev Oluştur',  subtitle: 'Ödevler', href: '/odevler/yeni' },
   { type: 'page', id: 'siniflar',      title: 'Sınıflar',           subtitle: 'Sayfa',  href: '/siniflar' },
-  { type: 'page', id: 'yoklama',       title: 'Yoklama',            subtitle: 'Sayfa',  href: '/yoklama' },
 ]
 
 const TYPE_LABELS: Record<SearchResult['type'], string> = {

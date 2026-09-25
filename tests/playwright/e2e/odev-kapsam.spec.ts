@@ -112,7 +112,30 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
     await expect(panel).toBeVisible({ timeout: 20_000 })
     await expect(panel.getByText(baslik.ogr)).toBeVisible()
     await expect(panel.getByText(baslik.zb)).toHaveCount(0)
-    await expect(panel.getByRole('button', { name: /Listeyi kopyala/ })).toBeVisible()
+    // sınıf başına ayrı kopyala: panoya yalnız o sınıfın listesi gider
+    await page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
+    const { data: cls } = await db.from('classes').select('name').eq('id', classId).single()
+    await panel.getByRole('button', { name: `${cls!.name} ödevlerini kopyala` }).click()
+    await expect(panel.getByText('Kopyalandı ✓')).toBeVisible()
+    const pano = await page.evaluate(() => navigator.clipboard.readText())
+    expect(pano.split(/\r?\n/)[0]).toBe(cls!.name) // Windows panosu \n'i \r\n'e çevirir
+    expect(pano).toContain(baslik.ogr)
+  })
+
+  test('bugün teslimi olan ödev üstteki kontrol kartında, işaretlenince "Kontrol edildi" olur', async ({ page }) => {
+    const bugun = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })
+    await db.from('homeworks').update({ due_date: bugun }).eq('id', ids.ogr)
+    await page.goto('/anasayfa')
+    const kart = page.locator('section', { has: page.getByRole('heading', { name: 'Bugün kontrol edilecek ödevler' }) })
+    await expect(kart).toBeVisible({ timeout: 20_000 })
+    const satir = kart.getByRole('link', { name: new RegExp(baslik.ogr) })
+    await expect(satir).toContainText('Kontrol et')
+
+    await db.from('homework_submissions')
+      .update({ status: 'yapildi', marked_at: new Date().toISOString() })
+      .eq('homework_id', ids.ogr).eq('student_id', ogrenci.id)
+    await page.reload()
+    await expect(kart.getByRole('link', { name: new RegExp(baslik.ogr) })).toContainText('Kontrol edildi', { timeout: 20_000 })
   })
 
   test('aramada öğrenciye tıklayınca doğrudan öğrencinin sayfası açılır', async ({ page }) => {

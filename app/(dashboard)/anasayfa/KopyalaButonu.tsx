@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-export default function KopyalaButonu({ metin }: { metin: string }) {
+export default function KopyalaButonu({ metin, etiket = 'Listeyi kopyala', ariaLabel }: { metin: string; etiket?: string; ariaLabel?: string }) {
   const [durum, setDurum] = useState<'bos' | 'tamam' | 'hata'>('bos')
 
   async function kopyala() {
@@ -19,9 +19,10 @@ export default function KopyalaButonu({ metin }: { metin: string }) {
     <button
       type="button"
       onClick={kopyala}
+      aria-label={ariaLabel}
       className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline shrink-0"
     >
-      <span aria-live="polite">{durum === 'tamam' ? 'Kopyalandı ✓' : durum === 'hata' ? 'Kopyalanamadı' : 'Listeyi kopyala'}</span>
+      <span aria-live="polite">{durum === 'tamam' ? 'Kopyalandı ✓' : durum === 'hata' ? 'Kopyalanamadı' : etiket}</span>
     </button>
   )
 }
