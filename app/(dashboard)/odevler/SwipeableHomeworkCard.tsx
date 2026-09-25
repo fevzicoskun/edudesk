@@ -230,6 +230,8 @@ export default function SwipeableHomeworkCard({
                     if (result && 'error' in result && result.error) {
                       setIsDeleted(false)
                       setDeleteError(result.error)
+                    } else {
+                      bulk?.bildirSilindi([id]) // 10 sn "Geri al"
                     }
                   })
                 }}

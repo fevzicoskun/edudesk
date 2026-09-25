@@ -2,13 +2,15 @@
 
 import { createContext, useContext, useState, useEffect, useTransition, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { bulkDeleteHomeworks } from '@/app/actions/homework'
+import { bulkDeleteHomeworks, restoreHomeworks } from '@/app/actions/homework'
 
 type BulkCtx = {
   bulkMode: boolean
   selected: Set<string>
   toggle: (id: string) => void
   setBulkMode: (v: boolean) => void
+  /** Tekli silme sonrası da aynı "Geri al" bildirimi gösterilsin */
+  bildirSilindi: (ids: string[]) => void
 }
 
 const BulkContext = createContext<BulkCtx | null>(null)
@@ -22,12 +24,15 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [isPending, startTransition] = useTransition()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [result, setResult] = useState<{ deleted: number; skipped: number } | null>(null)
+  const [result, setResult] = useState<{ deleted: number; skipped: number; ids: string[] } | null>(null)
+  const [geriAliniyor, setGeriAliniyor] = useState(false)
+  const [geriAlHata, setGeriAlHata] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     if (!result) return
-    const t = setTimeout(() => setResult(null), 5000)
+    // Geri al süresi: 10 sn (yanlış silmeyi fark etmeye yetsin)
+    const t = setTimeout(() => setResult(null), 10_000)
     return () => clearTimeout(t)
   }, [result])
 
@@ -60,21 +65,42 @@ export function BulkProvider({ children }: { children: ReactNode }) {
       setConfirmingDelete(false)
       // Kısmi başarı sessiz kalmasın: silinmeyen ödev varsa kullanıcı görsün
       setResult(res.error
-        ? { deleted: 0, skipped: count }
-        : { deleted: res.deleted, skipped: res.skipped })
+        ? { deleted: 0, skipped: count, ids: [] }
+        : { deleted: res.deleted, skipped: res.skipped, ids: res.deletedIds ?? [] })
+      router.refresh()
+    })
+  }
+
+  function bildirSilindi(ids: string[]) {
+    setGeriAlHata(null)
+    setResult({ deleted: ids.length, skipped: 0, ids })
+  }
+
+  function geriAl() {
+    if (!result?.ids.length) return
+    const ids = result.ids
+    setGeriAliniyor(true)
+    startTransition(async () => {
+      const res = await restoreHomeworks(ids)
+      setGeriAliniyor(false)
+      if (res.error) {
+        setGeriAlHata(res.restored > 0 ? `${res.restored} ödev geri alındı, bazıları alınamadı.` : 'Geri alınamadı.')
+      } else {
+        setResult(null)
+      }
       router.refresh()
     })
   }
 
   return (
-    <BulkContext.Provider value={{ bulkMode, selected, toggle, setBulkMode }}>
+    <BulkContext.Provider value={{ bulkMode, selected, toggle, setBulkMode, bildirSilindi }}>
       {children}
 
       {/* Silme sonucu — kaç ödev silindi, kaçı atlandı */}
       {result && (
         <div
           role="status"
-          className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl ${
+          className={`fixed bottom-20 md:bottom-6 left-1/2 -translate-x-1/2 z-[100] flex items-center text-sm font-medium px-4 py-3 rounded-2xl shadow-2xl ${
             result.deleted === 0
               ? 'bg-red-600 text-white'
               : result.skipped > 0
@@ -82,11 +108,23 @@ export function BulkProvider({ children }: { children: ReactNode }) {
                 : 'bg-gray-900 dark:bg-slate-700 text-white'
           }`}
         >
-          {result.deleted === 0
-            ? 'Hiçbir ödev silinemedi — yalnızca kendi ödevlerinizi silebilirsiniz.'
-            : result.skipped > 0
-              ? `${result.deleted} ödev silindi · ${result.skipped} ödev size ait olmadığı için silinemedi.`
-              : `${result.deleted} ödev silindi.`}
+          <span>
+            {geriAlHata ?? (result.deleted === 0
+              ? 'Hiçbir ödev silinemedi — yalnızca kendi ödevlerinizi silebilirsiniz.'
+              : result.skipped > 0
+                ? `${result.deleted} ödev silindi · ${result.skipped} ödev size ait olmadığı için silinemedi.`
+                : `${result.deleted} ödev silindi.`)}
+          </span>
+          {result.ids.length > 0 && !geriAlHata && (
+            <button
+              type="button"
+              onClick={geriAl}
+              disabled={geriAliniyor}
+              className="ml-3 font-semibold underline underline-offset-2 hover:no-underline disabled:opacity-60"
+            >
+              {geriAliniyor ? 'Geri alınıyor…' : 'Geri al'}
+            </button>
+          )}
         </div>
       )}
 

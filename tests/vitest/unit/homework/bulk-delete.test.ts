@@ -1,8 +1,9 @@
 /**
  * bulkDeleteHomeworks action — RBAC + tenant isolation + soft delete testleri.
  *
- * Bu action service katmanını bypass edip doğrudan Supabase kullanır.
- * Teacher_id + school_id filtrelerinin her ikisinin de uygulandığını doğrularız.
+ * Silme soft_delete_homeworks RPC'siyle yapılır (2026-09-25); sahiplik + okul filtresi
+ * DB'de uygulanır ve gerçek JWT'lerle integration/rls/homework-owner-delete.test.ts'de sınanır.
+ * Burada action/service mantığı (izin, UUID filtresi, sayım, geri al için id'ler) test edilir.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createAbility } from '@/src/shared/authorization'
@@ -21,14 +22,9 @@ vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
 }))
 
-// Supabase fluent mock: .from().update().in().eq().eq().is().select('id')
-// .select('id') terminal: silinen satırların id'lerini döndürür (count değil!)
-const mockSelect  = vi.fn().mockResolvedValue({ data: [{ id: 'x' }, { id: 'y' }], error: null })
-const mockIsChain = vi.fn().mockReturnValue({ select: mockSelect })
-const mockEqChain = { eq: vi.fn().mockReturnThis(), is: mockIsChain }
-const mockInChain = { in: vi.fn().mockReturnValue(mockEqChain) }
-const mockUpdate  = vi.fn().mockReturnValue(mockInChain)
-const mockSupabase = { from: vi.fn().mockReturnValue({ update: mockUpdate }) }
+// RPC dönüşü: gerçekten silinen ödevlerin id'leri
+const mockRpc = vi.fn()
+const mockSupabase = { rpc: mockRpc }
 
 vi.mock('@/src/infrastructure/supabase/server', () => ({
   createClient: vi.fn().mockResolvedValue(mockSupabase),
@@ -53,12 +49,7 @@ function makeAbility(perms = OGRETMEN_PERMS) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockSupabase.from.mockReturnValue({ update: mockUpdate })
-  mockUpdate.mockReturnValue(mockInChain)
-  mockInChain.in.mockReturnValue(mockEqChain)
-  mockEqChain.eq.mockReturnThis()
-  mockIsChain.mockReturnValue({ select: mockSelect })
-  mockSelect.mockResolvedValue({ data: VALID_IDS.map(id => ({ id })), error: null })
+  mockRpc.mockResolvedValue({ data: VALID_IDS, error: null })
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -68,7 +59,7 @@ describe('bulkDeleteHomeworks()', () => {
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.deleted).toBe(0)
     expect(result.error).toBe('Giriş gerekli')
-    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('homework:delete izni yoksa → { deleted: 0, error }', async () => {
@@ -76,21 +67,21 @@ describe('bulkDeleteHomeworks()', () => {
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.deleted).toBe(0)
     expect(result.error).toBeTruthy()
-    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('boş liste → { deleted: 0 }, DB çağrısı yapılmaz', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const result = await bulkDeleteHomeworks([])
     expect(result.deleted).toBe(0)
-    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('geçersiz UUID\'ler filtrelenir, DB çağrısı yapılmaz', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const result = await bulkDeleteHomeworks(['gecersiz-id', 'baska-gecersiz'])
     expect(result.deleted).toBe(0)
-    expect(mockUpdate).not.toHaveBeenCalled()
+    expect(mockRpc).not.toHaveBeenCalled()
   })
 
   it('başarılı silme → deleted sayısı döner, revalidatePath çağrılır', async () => {
@@ -101,30 +92,16 @@ describe('bulkDeleteHomeworks()', () => {
     expect(revalidatePath).toHaveBeenCalledWith('/odevler')
   })
 
-  it('TENANT: teacher_id filtresi (ability.userId) uygulanır', async () => {
+  it('soft_delete_homeworks RPC seçilen idlerle çağrılır, geri al için silinenler döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    await bulkDeleteHomeworks(VALID_IDS)
-
-    // .eq('teacher_id', ability.userId) çağrısı yapıldığını doğrula
-    const eqCalls = vi.mocked(mockEqChain.eq).mock.calls
-    const teacherIdCall = eqCalls.find(([col]) => col === 'teacher_id')
-    expect(teacherIdCall).toBeDefined()
-    expect(teacherIdCall![1]).toBe(TEACHER_ID)
-  })
-
-  it('TENANT: school_id filtresi (ability.schoolId) uygulanır', async () => {
-    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    await bulkDeleteHomeworks(VALID_IDS)
-
-    const eqCalls = vi.mocked(mockEqChain.eq).mock.calls
-    const schoolIdCall = eqCalls.find(([col]) => col === 'school_id')
-    expect(schoolIdCall).toBeDefined()
-    expect(schoolIdCall![1]).toBe(SCHOOL_ID)
+    const result = await bulkDeleteHomeworks(VALID_IDS)
+    expect(mockRpc).toHaveBeenCalledWith('soft_delete_homeworks', { p_ids: VALID_IDS })
+    expect(result.deletedIds).toEqual(VALID_IDS)
   })
 
   it('DB hatası → { deleted: 0, error }', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    mockSelect.mockResolvedValue({ data: null, error: { message: 'DB down' } })
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'DB down' } })
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.deleted).toBe(0)
     expect(result.error).toBe('DB down')
@@ -133,7 +110,7 @@ describe('bulkDeleteHomeworks()', () => {
   it('REGRESYON: başkasının ödevi atlanınca deleted şişirilmez, skipped raporlanır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     // 2 ödev seçildi, DB yalnızca 1'ini güncelledi (diğeri başka öğretmenin)
-    mockSelect.mockResolvedValue({ data: [{ id: VALID_IDS[0] }], error: null })
+    mockRpc.mockResolvedValue({ data: [VALID_IDS[0]], error: null })
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.error).toBeUndefined()
     expect(result.deleted).toBe(1)
@@ -142,7 +119,7 @@ describe('bulkDeleteHomeworks()', () => {
 
   it('REGRESYON: hiçbir satır güncellenmezse deleted 0 döner (sessiz başarı yok)', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    mockSelect.mockResolvedValue({ data: [], error: null })
+    mockRpc.mockResolvedValue({ data: [], error: null })
     const result = await bulkDeleteHomeworks(VALID_IDS)
     expect(result.error).toBeUndefined()
     expect(result.deleted).toBe(0)
@@ -151,12 +128,10 @@ describe('bulkDeleteHomeworks()', () => {
 
   it('karma liste: sadece geçerli UUID\'ler işlenir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
-    mockSelect.mockResolvedValue({ data: [{ id: VALID_IDS[0] }], error: null })
+    mockRpc.mockResolvedValue({ data: [VALID_IDS[0]], error: null })
     const result = await bulkDeleteHomeworks([VALID_IDS[0], 'gecersiz-uuid'])
     expect(result.error).toBeUndefined()
     // Sadece 1 geçerli ID işlendi
-    const inCall = vi.mocked(mockInChain.in).mock.calls[0]
-    expect(inCall[1]).toHaveLength(1)
-    expect(inCall[1][0]).toBe(VALID_IDS[0])
+    expect(mockRpc).toHaveBeenCalledWith('soft_delete_homeworks', { p_ids: [VALID_IDS[0]] })
   })
 })

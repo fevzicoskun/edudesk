@@ -127,46 +127,29 @@ export const HomeworkRepository = {
     return { error: null }
   },
 
-  async softDeleteHomework(homeworkId: string, teacherId: string, schoolId: string) {
+  // Silme / geri alma RPC üzerinden: SELECT policy'si silinmiş satırı yalnız zümre başkanına
+  // gösterdiği için doğrudan `update ... returning` öğretmende 42501 veriyordu (2026-09-25).
+  // RPC'ler kendi ödevin + kendi okulun kuralını DB'de uygular; dönen id'ler gerçekten değişenlerdir.
+  async softDeleteHomework(homeworkId: string) {
     const supabase = await createClient()
-    const { data: rows, error } = await supabase.from('homeworks')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: teacherId })
-      .eq('id', homeworkId)
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .select('id')
+    const { data, error } = await supabase.rpc('soft_delete_homeworks', { p_ids: [homeworkId] })
     if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı veya yetkiniz yok.' } }
+    if (!data || data.length === 0) return { error: { message: 'Ödev bulunamadı veya yetkiniz yok.' } }
     return { error: null }
   },
 
-  // Öğretmen kendi ödevlerini toplu siler — teacher_id ile sınırlı.
-  // Silinen satırların id'lerini döndürür: RLS/sahiplik nedeniyle atlananlar çağırana görünür.
-  async bulkSoftDeleteHomeworks(ids: string[], teacherId: string, schoolId: string) {
+  // Öğretmen kendi ödevlerini toplu siler; atlananlar (başkasının/zaten silinmiş) dönüşte yoktur.
+  async bulkSoftDeleteHomeworks(ids: string[]) {
     const supabase = await createClient()
-    return supabase.from('homeworks')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: teacherId })
-      .in('id', ids)
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .select('id')
+    const { data, error } = await supabase.rpc('soft_delete_homeworks', { p_ids: ids })
+    return { data: (data ?? []).map(id => ({ id })), error }
   },
 
-  // Öğretmen yalnızca kendi sildiği ödevi geri alır
-  async restoreHomework(homeworkId: string, teacherId: string, schoolId: string) {
+  // Öğretmen yalnızca kendi ödevini geri alır
+  async restoreHomeworks(ids: string[]) {
     const supabase = await createClient()
-    const { data: rows, error } = await supabase.from('homeworks')
-      .update({ deleted_at: null, deleted_by: null })
-      .eq('id', homeworkId)
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-      .not('deleted_at', 'is', null)
-      .select('id')
-    if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Ödev bulunamadı veya yetkiniz yok.' } }
-    return { error: null }
+    const { data, error } = await supabase.rpc('restore_homeworks', { p_ids: ids })
+    return { restored: data ?? [], error }
   },
 
   // Haftalık ödev yükü için ham satırlar — saf hesaplama lib/week-load.buildClassWeekLoad'da yapılır

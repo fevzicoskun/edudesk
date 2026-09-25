@@ -198,40 +198,43 @@ export const HomeworkService = {
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.DELETE)) return { error: 'Bu işlem için yetkiniz yok.' }
 
-    const { error } = await HomeworkRepository.softDeleteHomework(id, ability.userId, ability.schoolId)
+    const { error } = await HomeworkRepository.softDeleteHomework(id)
     if (error) return { error: error.message }
     return {}
   },
 
   /** Seçilenlerden yalnızca kullanıcının kendi ödevleri silinir; atlananlar `skipped` ile raporlanır. */
-  async bulkDelete(ids: string[]): Promise<{ deleted: number; skipped: number; error?: string }> {
+  async bulkDelete(ids: string[]): Promise<{ deleted: number; skipped: number; deletedIds?: string[]; error?: string }> {
     const ability = await getAbility()
     if (!ability) return { deleted: 0, skipped: ids.length, error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.DELETE)) {
       return { deleted: 0, skipped: ids.length, error: 'Bu işlem için yetkiniz yok.' }
     }
 
-    const { data: rows, error } = await HomeworkRepository.bulkSoftDeleteHomeworks(
-      ids, ability.userId, ability.schoolId,
-    )
+    const { data: rows, error } = await HomeworkRepository.bulkSoftDeleteHomeworks(ids)
     if (error) {
       logger.error({ schoolId: ability.schoolId, code: error.code }, 'bulkDelete DB hatası')
       return { deleted: 0, skipped: ids.length, error: error.message }
     }
     // Gerçekten güncellenen satırlar sayılır — 0 satır güncellemek DB hatası değildir,
     // ids.length'e düşmek sessiz kayba yol açardı.
-    const deleted = rows?.length ?? 0
-    return { deleted, skipped: ids.length - deleted }
+    const deletedIds = (rows ?? []).map(r => r.id)
+    return { deleted: deletedIds.length, skipped: ids.length - deletedIds.length, deletedIds }
   },
 
-  async restoreHomework(id: string): Promise<{ error?: string }> {
+  /** Silinen ödevleri geri alır (silme sonrası "Geri al"). Yalnız kendi ödevin; dönen sayı gerçekten geri gelenler. */
+  async restoreHomeworks(ids: string[]): Promise<{ restored: number; error?: string }> {
     const ability = await getAbility()
-    if (!ability) return { error: 'Giriş gerekli' }
-    if (ability.cannot(P.HOMEWORK.UPDATE)) return { error: 'Bu işlem için yetkiniz yok.' }
+    if (!ability) return { restored: 0, error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.UPDATE)) return { restored: 0, error: 'Bu işlem için yetkiniz yok.' }
 
-    const { error } = await HomeworkRepository.restoreHomework(id, ability.userId, ability.schoolId)
-    if (error) return { error: error.message }
-    return {}
+    const { restored, error } = await HomeworkRepository.restoreHomeworks(ids)
+    if (error) {
+      logger.error({ schoolId: ability.schoolId, code: error.code }, 'restoreHomeworks DB hatası')
+      return { restored: 0, error: error.message }
+    }
+    if (restored.length < ids.length) return { restored: restored.length, error: 'Bazı ödevler geri alınamadı.' }
+    return { restored: restored.length }
   },
 
   async getSubmissionLogs(

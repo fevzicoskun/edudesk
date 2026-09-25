@@ -5,7 +5,7 @@
  * - deleteClass cascade: homeworks + students sınıfla birlikte silinir
  * - restoreClass cascade: homeworks + students sınıfla birlikte geri gelir
  * - deleteHomework: hard delete değil soft delete çağrılır
- * - restoreHomework: sadece school-scope yönetici yapabilir
+ * - restoreHomeworks: sadece school-scope yönetici yapabilir
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createAbility } from '@/src/shared/authorization'
@@ -47,7 +47,7 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
   HomeworkRepository: {
     softDeleteHomework:          vi.fn(),
     softDeleteHomeworkAsManager: vi.fn(),
-    restoreHomework:             vi.fn(),
+    restoreHomeworks:             vi.fn(),
     findHomeworkTeacher:         vi.fn(),
     classExistsInSchool:         vi.fn(),
     insertHomework:              vi.fn(),
@@ -144,7 +144,7 @@ describe('HomeworkService.deleteHomework() — soft delete', () => {
 
     await HomeworkService.deleteHomework(HW_ID)
 
-    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
+    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID) // sahiplik soft_delete_homeworks RPC'sinde
   })
 
   it('school-scope yönetici de teacher_id filtreli silme kullanır', async () => {
@@ -154,7 +154,7 @@ describe('HomeworkService.deleteHomework() — soft delete', () => {
     await HomeworkService.deleteHomework(HW_ID)
 
     // Okul kapsamlı izin olsa bile silme sahibiyle sınırlıdır
-    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
+    expect(HomeworkRepository.softDeleteHomework).toHaveBeenCalledWith(HW_ID) // sahiplik soft_delete_homeworks RPC'sinde
   })
 
   it('silme başarısız (DB hatası) → error döner', async () => {
@@ -169,30 +169,30 @@ describe('HomeworkService.deleteHomework() — soft delete', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
-describe('HomeworkService.restoreHomework() — sadece kendi ödevi', () => {
+describe('HomeworkService.restoreHomeworks() — sadece kendi ödevi', () => {
   it('homework:update izni yoksa restore edemez → { error }', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
-    const result = await HomeworkService.restoreHomework(HW_ID)
+    const result = await HomeworkService.restoreHomeworks([HW_ID])
     expect(result.error).toBeTruthy()
-    expect(HomeworkRepository.restoreHomework).not.toHaveBeenCalled()
+    expect(HomeworkRepository.restoreHomeworks).not.toHaveBeenCalled()
   })
 
   it('öğretmen kendi sildiği ödevi geri alır — teacher_id filtreli', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
-    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({ error: null } as never)
+    vi.mocked(HomeworkRepository.restoreHomeworks).mockResolvedValue({ restored: ['x'], error: null } as never)
 
-    const result = await HomeworkService.restoreHomework(HW_ID)
+    const result = await HomeworkService.restoreHomeworks([HW_ID])
     expect(result.error).toBeUndefined()
-    expect(HomeworkRepository.restoreHomework).toHaveBeenCalledWith(HW_ID, TEACHER_ID, SCHOOL_ID)
+    expect(HomeworkRepository.restoreHomeworks).toHaveBeenCalledWith([HW_ID])
   })
 
   it('başkasının sildiği ödev (repo 0 satır) → hata döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(SCHOOL_HW_PERMS) as never)
-    vi.mocked(HomeworkRepository.restoreHomework).mockResolvedValue({
-      error: { message: 'Ödev bulunamadı veya yetkiniz yok.' },
-    } as never)
+    // RPC başkasının ödevini güncellemez → dönen id listesi boş
+    vi.mocked(HomeworkRepository.restoreHomeworks).mockResolvedValue({ restored: [], error: null } as never)
 
-    const result = await HomeworkService.restoreHomework(HW_ID)
-    expect(result.error).toBe('Ödev bulunamadı veya yetkiniz yok.')
+    const result = await HomeworkService.restoreHomeworks([HW_ID])
+    expect(result.restored).toBe(0)
+    expect(result.error).toBe('Bazı ödevler geri alınamadı.')
   })
 })

@@ -3792,6 +3792,7 @@ export type Database = {
         Args: { p_class_id: string; p_school_id: string }
         Returns: undefined
       }
+      restore_homeworks: { Args: { p_ids: string[] }; Returns: string[] }
       restore_record: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
@@ -3808,6 +3809,7 @@ export type Database = {
         Args: { p_id: string; p_table: string }
         Returns: undefined
       }
+      soft_delete_homeworks: { Args: { p_ids: string[] }; Returns: string[] }
       soft_delete_class_cascade: {
         Args: { p_class_id: string; p_school_id: string }
         Returns: undefined

@@ -83,3 +83,20 @@ test('değişmeyen not odaktan çıkınca yeniden kaydedilmez, "kaydedildi" gör
   expect(istek.n).toBe(0)
   await expect(page.getByText('✓ kaydedildi')).toHaveCount(0)
 })
+
+test('telefonda başka uygulamaya geçince (sayfa gizlenince) yazılan not odak kaybı olmadan kaydedilir', async ({ page }) => {
+  await page.goto(`/odevler/${hwId}`)
+  const alan = await notuAc(page, /notunu düzenle$/)
+  const metin = 'Arka plana geçmeden önce yazıldı'
+  await alan.fill(metin)
+  await expect(alan).toBeFocused()
+  // blur yok — yalnız sayfa gizleniyor (uygulama değişimi / ekran kilidi)
+  await page.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' })
+    document.dispatchEvent(new Event('visibilitychange'))
+  })
+  await expect.poll(async () => {
+    const { data } = await db.from('homework_submissions').select('note').eq('homework_id', hwId).not('note', 'is', null)
+    return data?.map(r => r.note)
+  }).toEqual([metin])
+})

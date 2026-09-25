@@ -147,12 +147,13 @@ export default function StatusBoard({
     if (readOnly) return
     setNotes(prev => ({ ...prev, [studentId]: note }))
     // Her odak kaybında değil, yalnız metin değiştiyse kaydet — yoksa notu okuyup çıkmak bile "✓ kaydedildi" gösteriyordu
-    if (note.trim() === (kayitliNotlar.current[studentId] ?? '').trim()) return
+    const onceki = kayitliNotlar.current[studentId] ?? ''
+    if (note.trim() === onceki.trim()) return
     kayitliNotlar.current[studentId] = note
     startTransition(async () => {
       const result = await updateSubmissionNote(homeworkId, studentId, note)
       if (result?.error) {
-        delete kayitliNotlar.current[studentId] // bir sonraki odak kaybında yeniden denensin
+        kayitliNotlar.current[studentId] = onceki // kaydedilmedi say — bir sonraki odak kaybında yeniden denensin
         setErrorMsg(result.error)
       } else {
         setNoteSavedId(studentId)
@@ -160,6 +161,21 @@ export default function StatusBoard({
       }
     })
   }
+
+  // Telefonda not yazarken başka uygulamaya geçilince blur OLUŞMAZ; tarayıcı sekmeyi
+  // arka planda kapatırsa yazılan not kaybolurdu. Sayfa gizlenirken değişen notları kaydet.
+  const notlarRef = useRef(notes)
+  notlarRef.current = notes
+  const saveNoteRef = useRef(saveNote)
+  saveNoteRef.current = saveNote
+  useEffect(() => {
+    const onHide = () => {
+      if (document.visibilityState !== 'hidden') return
+      for (const [id, metin] of Object.entries(notlarRef.current)) saveNoteRef.current(id, metin)
+    }
+    document.addEventListener('visibilitychange', onHide)
+    return () => document.removeEventListener('visibilitychange', onHide)
+  }, [])
 
   function toggleHistory(studentId: string) {
     if (historyOpenId === studentId) { setHistoryOpenId(null); return }

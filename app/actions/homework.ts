@@ -246,7 +246,7 @@ export async function deleteHomework(id: string): Promise<ActionResult> {
 
 export async function bulkDeleteHomeworks(
   ids: string[],
-): Promise<{ deleted: number; skipped: number; error?: string }> {
+): Promise<{ deleted: number; skipped: number; deletedIds?: string[]; error?: string }> {
   const validIds = ids.filter(id => UUID.safeParse(id).success)
   if (validIds.length === 0) return { deleted: 0, skipped: ids.length }
   const result = await HomeworkService.bulkDelete(validIds)
@@ -254,16 +254,19 @@ export async function bulkDeleteHomeworks(
   revalidatePath('/odevler')
   revalidatePath('/anasayfa')
   // Geçersiz UUID'ler de atlananlara dahil — kullanıcı seçtiği her ödevin akıbetini görsün
-  return { deleted: result.deleted, skipped: ids.length - result.deleted }
+  return { deleted: result.deleted, skipped: ids.length - result.deleted, deletedIds: result.deletedIds }
 }
 
-export async function restoreHomework(id: string): Promise<ActionResult> {
-  if (!UUID.safeParse(id).success) return { error: 'Geçersiz istek' }
-  const result = await HomeworkService.restoreHomework(id)
-  if (result.error) return { error: result.error }
-  revalidatePath('/odevler')
-  revalidatePath('/anasayfa')
-  return {}
+export async function restoreHomeworks(ids: string[]): Promise<{ restored: number; error?: string }> {
+  if (!Array.isArray(ids) || ids.length === 0 || ids.length > 200 || ids.some(id => !UUID.safeParse(id).success)) {
+    return { restored: 0, error: 'Geçersiz istek' }
+  }
+  const result = await HomeworkService.restoreHomeworks(ids)
+  if (result.restored > 0) {
+    revalidatePath('/odevler')
+    revalidatePath('/anasayfa')
+  }
+  return result
 }
 
 export async function getHomeworkTemplates(classId: string): Promise<HomeworkTemplate[]> {
