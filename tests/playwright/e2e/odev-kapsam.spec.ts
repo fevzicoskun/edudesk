@@ -122,6 +122,23 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
     expect(pano).toContain(baslik.ogr)
   })
 
+  test('ödevler ekranı: sınıf çipi filtreler, toplu seç açılıp kapanır', async ({ page }) => {
+    const { data: cls } = await db.from('classes').select('name').eq('id', classId).single()
+    await page.goto('/odevler')
+    const filtre = page.getByRole('navigation', { name: 'Sınıf filtresi' })
+    await expect(filtre.getByRole('link', { name: 'Tümü' })).toHaveAttribute('aria-current', 'page', { timeout: 20_000 })
+    await filtre.getByRole('link', { name: cls!.name }).click()
+    await expect(page).toHaveURL(new RegExp(`sinif=${classId}`))
+    await expect(filtre.getByRole('link', { name: cls!.name })).toHaveAttribute('aria-current', 'page')
+    await expect(page.getByRole('link', { name: `${cls!.name} öğrenci × ödev tablosu →` })).toBeVisible()
+    await expect(page.getByRole('link', { name: baslik.ogr })).toBeVisible()
+
+    await expect(async () => {
+      await page.getByRole('button', { name: 'Toplu seç' }).click({ timeout: 2_000 })
+      await expect(page.getByRole('button', { name: 'Seçimi bitir' })).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 20_000 })
+  })
+
   test('bugün teslimi olan ödev üstteki kontrol kartında, işaretlenince "Kontrol edildi" olur', async ({ page }) => {
     const bugun = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })
     await db.from('homeworks').update({ due_date: bugun }).eq('id', ids.ogr)

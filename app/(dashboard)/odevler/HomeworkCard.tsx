@@ -2,8 +2,9 @@ import { deleteHomework } from '@/src/domains/homework/actions'
 import SwipeableHomeworkCard from './SwipeableHomeworkCard'
 import type { HW, StatusCounts } from './types'
 
-export default function HomeworkCard({ hw, overdue, canWrite, statusMap, classStudentMap }: {
+export default function HomeworkCard({ hw, overdue, canWrite, statusMap, classStudentMap, userId }: {
   hw: HW
+  userId: string
   overdue: boolean
   canWrite: boolean
   statusMap: Map<string, StatusCounts>
@@ -28,8 +29,7 @@ export default function HomeworkCard({ hw, overdue, canWrite, statusMap, classSt
       dueDateStr={dueDateStr(hw.due_date)}
       dueDate={hw.due_date}
       overdue={overdue}
-      description={hw.description ?? undefined}
-      teacherName={(teacher as { full_name: string } | null | undefined)?.full_name ?? undefined}
+      teacherName={hw.teacher_id === userId ? undefined : (teacher as { full_name: string } | null | undefined)?.full_name}
       canWrite={canWrite}
       statusCounts={statusMap.get(hw.id)}
       totalStudents={classStudentMap.get(hw.class_id as string) ?? 0}

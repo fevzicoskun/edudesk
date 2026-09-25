@@ -1,13 +1,12 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { kategorizeOdev } from '@/src/domains/homework/homeworkMath'
 import SinifChipBar from './SinifChipBar'
-import HomeworkStatCards from './HomeworkStatCards'
 import BekleyenKontrollerPanel from './BekleyenKontrollerPanel'
 import HomeworkCard from './HomeworkCard'
 import PastDoneSection from './PastDoneSection'
 import PaginationBar from './PaginationBar'
 import EmptyState from './EmptyState'
-import SectionHeader from './SectionHeader'
+import SectionHeader, { LISTE } from './SectionHeader'
 import type { FilterParams, StatusCounts } from './types'
 import type { OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 
@@ -109,15 +108,12 @@ export default async function HomeworkSection({
 
   const hasFilters = !!(params.sinif || params.ders || params.ogretmen || params.q)
 
-  const activeByClass  = new Map<string, number>()
   const pendingByClass = new Map<string, number>()
-  for (const hw of active)       activeByClass.set(hw.class_id as string, (activeByClass.get(hw.class_id as string) ?? 0) + 1)
   for (const hw of pendingCheck) pendingByClass.set(hw.class_id as string, (pendingByClass.get(hw.class_id as string) ?? 0) + 1)
 
   return (
     <>
-      <SinifChipBar classes={classes} activeByClass={activeByClass} pendingByClass={pendingByClass} />
-      <HomeworkStatCards activeCount={active.length} pendingCount={pendingCheck.length} />
+      <SinifChipBar classes={classes} pendingByClass={pendingByClass} params={params} />
       <BekleyenKontrollerPanel
         pendingCheck={pendingCheck.map(hw => ({ ...hw, classes: hw.classes as { name: string } | null }))}
         statusMap={statusMap}
@@ -131,9 +127,9 @@ export default async function HomeworkSection({
         <>
           {active.length > 0 && (
             <section className="mb-6">
-              <SectionHeader label="Aktif" count={active.length} color="bg-emerald-500" />
-              <div className="space-y-3">
-                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite && hw.teacher_id === userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
+              <SectionHeader label="Aktif" count={active.length} />
+              <div className={LISTE}>
+                {active.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={false} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
               </div>
             </section>
           )}

@@ -150,16 +150,14 @@ export function BulkModeToggle({ canWrite }: { canWrite: boolean }) {
   return (
     <button
       onClick={() => bulk.setBulkMode(!bulk.bulkMode)}
-      className={`flex items-center justify-center w-9 h-9 rounded-xl border text-gray-500 shadow-sm transition-all ${
+      aria-pressed={bulk.bulkMode}
+      className={`shrink-0 px-2 py-1.5 rounded-lg text-sm font-medium transition-colors ${
         bulk.bulkMode
-          ? 'bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-700 text-blue-600 dark:text-blue-400'
-          : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:text-gray-800 dark:hover:text-slate-200 hover:shadow'
+          ? 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+          : 'text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'
       }`}
-      title={bulk.bulkMode ? 'Seçim modundan çık' : 'Toplu işlem'}
     >
-      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-      </svg>
+      {bulk.bulkMode ? 'Seçimi bitir' : 'Toplu seç'}
     </button>
   )
 }

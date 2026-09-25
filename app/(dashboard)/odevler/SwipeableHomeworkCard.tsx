@@ -4,7 +4,6 @@ import { useState, useTransition, useEffect } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
 import { useBulk } from './BulkContext'
-import HomeworkStatusChips from './HomeworkStatusChips'
 
 type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
 
@@ -28,7 +27,6 @@ interface SwipeableHomeworkCardProps {
   dueDateStr: string
   dueDate?: string | null
   overdue: boolean
-  description?: string
   teacherName?: string
   canWrite: boolean
   statusCounts?: StatusCounts
@@ -44,7 +42,6 @@ export default function SwipeableHomeworkCard({
   dueDateStr,
   dueDate,
   overdue,
-  description,
   teacherName,
   canWrite,
   statusCounts,
@@ -101,7 +98,6 @@ export default function SwipeableHomeworkCard({
   const totalStu     = typeof totalStudents === 'number' ? totalStudents : 0
   const unrecorded   = totalStu - entered
   const allEntered   = totalStu > 0 && entered > 0 && unrecorded === 0
-  const showChips    = totalStu > 0 && (entered > 0 || (overdue && unrecorded > 0))
 
   const bulk = useBulk()
   const isSelected = bulk?.bulkMode && bulk.selected.has(id)
@@ -116,12 +112,12 @@ export default function SwipeableHomeworkCard({
         onClick={() => { if (canWrite) bulk.toggle(id) }}
         aria-disabled={!canWrite}
         title={canWrite ? undefined : 'Bu ödev size ait değil — yalnızca görüntüleyebilirsiniz'}
-        className={`flex items-center gap-3 p-4 rounded-2xl border transition-all ${
+        className={`flex items-center gap-3 px-4 py-3 transition-colors ${
           !canWrite
-            ? 'bg-gray-50 dark:bg-slate-900 border-gray-100 dark:border-slate-800 opacity-60 cursor-not-allowed'
+            ? 'bg-gray-50 dark:bg-slate-900 opacity-60 cursor-not-allowed'
             : isSelected
-              ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-300 dark:border-blue-600 cursor-pointer'
-              : 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 cursor-pointer'
+              ? 'bg-blue-50 dark:bg-blue-950/30 cursor-pointer'
+              : 'bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/50 cursor-pointer'
         }`}
       >
         {canWrite ? (
@@ -150,114 +146,72 @@ export default function SwipeableHomeworkCard({
     )
   }
 
+  // Kaç öğrencinin yaptığı — hiç işaretlenmemişse boş (aktif ödevde henüz söyleyecek bir şey yok)
+  const ilerleme = entered === 0 ? null
+    : allEntered ? `${statusCounts?.yapildi ?? 0}/${totalStu} yaptı`
+    : `${statusCounts?.yapildi ?? 0}/${totalStu} yaptı · ${unrecorded} girilmedi`
+
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className="relative overflow-hidden">
       {/* Sağa swipe: detay arkaplanı */}
-      <div className={`absolute inset-0 bg-blue-500 flex items-center pl-6 rounded-2xl transition-opacity duration-150 ${swipeDir === 'right' ? 'opacity-100' : 'opacity-0'}`}>
-        <svg className="w-5 h-5 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-white text-sm font-semibold">Detay</span>
+      <div className={`absolute inset-0 bg-blue-500 flex items-center pl-6 transition-opacity duration-150 ${swipeDir === 'right' ? 'opacity-100' : 'opacity-0'}`}>
+        <span className="text-white text-sm font-semibold">Detay →</span>
       </div>
 
       {/* Sola swipe: silme arkaplanı */}
-      {canWrite && (
-        <div className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6 rounded-2xl">
-          <span className="text-white text-sm font-semibold mr-2">Sil</span>
-          <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
+      {canWrite && swipeDir === 'left' && (
+        <div className="absolute inset-0 bg-red-500 flex items-center justify-end pr-6">
+          <span className="text-white text-sm font-semibold">Sil</span>
         </div>
       )}
 
-      {/* Kart içeriği */}
+      {/* Satır — başlık bağlantısı tüm satırı kaplar (after:inset-0), sil düğmesi üstte kalır */}
       <div
         {...handlers}
         style={{ transform: `translateX(${offset}px)`, transition: swiping ? 'none' : 'transform 0.2s ease' }}
-        className="group bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 hover:border-gray-200 dark:hover:border-slate-600 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+        className="group relative flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
       >
-        <div className={`h-0.5 ${overdue ? 'bg-red-400' : 'bg-emerald-400'}`} />
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-3 mb-2.5">
-            <Link
-              href={`/odevler/${id}`}
-              className="font-semibold text-gray-900 dark:text-slate-100 hover:text-red-700 dark:hover:text-red-400 transition-colors leading-snug text-base"
-            >
-              {title}
-            </Link>
-            <span className={`shrink-0 inline-flex items-center text-xs font-semibold px-2.5 py-1 rounded-full border ${badge.cls}`}>
-              <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${badge.dot}`} />
-              {badge.text}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center text-xs font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-md">
-              {className}
-            </span>
-            <span className="text-gray-300 dark:text-slate-600">·</span>
-            <span className="text-xs text-gray-500 dark:text-slate-400">{subject}</span>
-          </div>
-
-          {description && (
-            <p className="text-sm text-gray-500 line-clamp-2 mb-4 leading-relaxed">{description}</p>
-          )}
-
-          {/* Durum chip satırı */}
-          {showChips && (
-            <HomeworkStatusChips statusCounts={statusCounts} totalStu={totalStu} allEntered={allEntered} unrecorded={unrecorded} />
-          )}
-
-          <div className="flex items-center justify-between pt-3 border-t border-gray-50 dark:border-slate-700">
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{dueDateStr}</span>
-              </div>
-              {teacherName && (
-                <div className="hidden sm:flex items-center gap-1.5 text-xs text-gray-400">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  <span>{teacherName}</span>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {canWrite && (
-                <button
-                  onClick={() => setShowConfirm(true)}
-                  aria-label="Ödevi sil"
-                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-300 hover:text-red-500 dark:text-slate-600 dark:hover:text-red-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
-              <Link
-                href={`/odevler/${id}`}
-                className="flex items-center gap-1 text-xs font-semibold text-red-700 hover:text-red-800 transition-colors"
-              >
-                Detay
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </div>
-          </div>
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/odevler/${id}`}
+            className="block truncate text-sm font-medium text-gray-900 dark:text-slate-100 after:absolute after:inset-0"
+          >
+            {title}
+          </Link>
+          <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400 truncate">
+            {className} · {subject} · {dueDateStr}
+            {teacherName && ` · ${teacherName}`}
+            {ilerleme && <span className={allEntered ? 'text-emerald-700 dark:text-emerald-400' : ''}> · {ilerleme}</span>}
+          </p>
         </div>
+        {/* Yalnız yaklaşan teslimde rozet — "Aktif" rozeti bu bölümde bilgi taşımıyordu */}
+        {!overdue && badge.text !== 'Aktif' && (
+          <span className={`shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full border ${badge.cls}`}>
+            {badge.text}
+          </span>
+        )}
+        {canWrite && (
+          <button
+            onClick={() => setShowConfirm(true)}
+            aria-label={`"${title}" ödevini sil`}
+            title="Sil (mobilde sola kaydır)"
+            className="relative z-10 shrink-0 p-1 hidden sm:block opacity-0 group-hover:opacity-100 focus:opacity-100 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400 rounded"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
+        <svg className="w-4 h-4 shrink-0 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+        </svg>
       </div>
 
       {/* Silme onay modal */}
       {showConfirm && canWrite && (
-        <div className="absolute inset-0 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center p-4 z-10 border border-red-200 dark:border-red-900">
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-800 dark:text-slate-200 mb-1">Ödevi sil?</p>
-            <p className="text-xs text-gray-500 dark:text-slate-400 mb-4 line-clamp-1">&quot;{title}&quot;</p>
-            <div className="flex items-center gap-2 justify-center">
+        <div className="absolute inset-0 bg-white dark:bg-slate-800 flex items-center justify-between gap-3 px-4 z-20">
+          <p className="min-w-0 truncate text-sm font-semibold text-gray-800 dark:text-slate-200">&quot;{title}&quot; silinsin mi?</p>
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 onClick={() => setShowConfirm(false)}
                 className="px-4 py-2 text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors min-h-[44px]"
@@ -283,7 +237,6 @@ export default function SwipeableHomeworkCard({
                 {isPending ? 'Siliniyor…' : 'Sil'}
               </button>
             </div>
-          </div>
         </div>
       )}
       {deleteError && (

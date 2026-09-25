@@ -1,5 +1,5 @@
 import HomeworkCard from './HomeworkCard'
-import SectionHeader from './SectionHeader'
+import { LISTE } from './SectionHeader'
 import type { HW, StatusCounts } from './types'
 
 export default function PastDoneSection({ pastDone, canWrite, userId, statusMap, classStudentMap }: {
@@ -19,25 +19,21 @@ export default function PastDoneSection({ pastDone, canWrite, userId, statusMap,
   }
   const avgPct = totalPossible > 0 ? Math.round((totalYapildi / totalPossible) * 100) : null
 
+  // Varsayılan kapalı: biten ödevler listeyi kalabalıklaştırıyordu; açınca hepsi görünür
   return (
-    <section>
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <SectionHeader label="Geçmiş" count={pastDone.length} color="bg-slate-300 dark:bg-slate-600" />
+    <details className="group">
+      <summary className="flex items-center justify-between gap-2 mb-2 px-1 cursor-pointer list-none select-none">
+        <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+          <span className="inline-block mr-1 text-gray-400 transition-transform group-open:rotate-90" aria-hidden>›</span>
+          Geçmiş <span className="font-normal text-gray-500 dark:text-slate-400">· {pastDone.length}</span>
+        </span>
         {avgPct !== null && (
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-            avgPct >= 75
-              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-              : avgPct >= 50
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
-          }`}>
-            Ort. %{avgPct} tamamlandı
-          </span>
+          <span className="text-xs text-gray-500 dark:text-slate-400">ortalama %{avgPct} yapıldı</span>
         )}
+      </summary>
+      <div className={LISTE}>
+        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite && hw.teacher_id === userId} userId={userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
       </div>
-      <div className="space-y-3 opacity-80">
-        {pastDone.map(hw => <HomeworkCard key={hw.id} hw={hw} overdue={true} canWrite={canWrite && hw.teacher_id === userId} statusMap={statusMap} classStudentMap={classStudentMap} />)}
-      </div>
-    </section>
+    </details>
   )
 }

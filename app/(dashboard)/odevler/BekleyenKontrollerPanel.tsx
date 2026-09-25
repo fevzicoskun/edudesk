@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import SectionHeader from './SectionHeader'
 
 type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
 
@@ -33,23 +34,11 @@ function daysSinceDue(due: string | null, now: Date): number {
 export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, classStudentMap, now }: Props) {
   if (!pendingCheck.length) return null
   return (
-    <div className="mb-6 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-2xl overflow-hidden">
-      <div className="flex items-start gap-3 px-4 py-3.5 border-b border-amber-200 dark:border-amber-800/60">
-        <div className="w-7 h-7 bg-amber-100 dark:bg-amber-900/40 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-          <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-        <div>
-          <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
-            {pendingCheck.length} ödev kontrol bekliyor
-          </p>
-          <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-0.5">
-            Son tarihi geçti ve öğrencilerin yarısından azı girildi.
-          </p>
-        </div>
-      </div>
-      <div className="divide-y divide-amber-100 dark:divide-amber-900/40">
+    <section className="mb-6">
+      <SectionHeader label="Kontrol bekliyor" count={pendingCheck.length}>
+        <span className="text-xs text-gray-500 dark:text-slate-400">son tarihi geçti, işaretlenmedi</span>
+      </SectionHeader>
+      <div className="bg-white dark:bg-slate-800 border border-amber-300 dark:border-amber-700 rounded-2xl overflow-hidden divide-y divide-gray-100 dark:divide-slate-700/60">
         {pendingCheck.map(hw => {
           const days    = daysSinceDue(hw.due_date, now)
           const counts  = statusMap.get(hw.id)
@@ -62,14 +51,14 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
             <Link
               key={hw.id}
               href={`/odevler/${hw.id}`}
-              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-amber-100/50 dark:hover:bg-amber-900/20 transition-colors group"
+              className="flex items-center justify-between gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
             >
               <div className="min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate group-hover:text-amber-700 dark:group-hover:text-amber-300 transition-colors">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">
                   {hw.title}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-                  {hw.classes?.name ?? '—'} · Son: {dueDateStr(hw.due_date)} · {progressLabel}
+                  {hw.classes?.name ?? '—'} · {dueDateStr(hw.due_date)} · {progressLabel}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -80,7 +69,7 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
                 }`}>
                   {days === 0 ? 'Bugün bitti' : `${days}g önce`}
                 </span>
-                <svg className="w-4 h-4 text-amber-400 dark:text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg className="w-4 h-4 text-gray-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                 </svg>
               </div>
@@ -88,6 +77,6 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
           )
         })}
       </div>
-    </div>
+    </section>
   )
 }

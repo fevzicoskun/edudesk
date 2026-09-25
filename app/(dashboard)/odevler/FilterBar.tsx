@@ -3,7 +3,6 @@
 import { useRouter, usePathname } from 'next/navigation'
 import { useCallback, useState, useEffect, useRef } from 'react'
 
-type ClassItem = { id: string; name: string; grade: number }
 type TeacherItem = { id: string; full_name: string }
 
 type FilterParams = {
@@ -16,13 +15,12 @@ type FilterParams = {
 const selectCls =
   'px-3 py-2 bg-white border border-gray-200 rounded-xl text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500/15 focus:border-blue-400 hover:border-gray-300 transition-all cursor-pointer'
 
+// Sınıf seçimi listenin üstündeki sınıf çiplerinde (SinifChipBar); burada yalnız ders/öğretmen/arama
 export default function OdevlerFilterBar({
-  classes,
   subjects,
   teachers,
   currentParams,
 }: {
-  classes: ClassItem[]
   subjects: string[]
   teachers: TeacherItem[]
   currentParams: FilterParams
@@ -81,7 +79,6 @@ export default function OdevlerFilterBar({
   )
 
   const activeFilterCount = [
-    currentParams.sinif,
     currentParams.ders,
     currentParams.ogretmen,
   ].filter(Boolean).length
@@ -90,17 +87,6 @@ export default function OdevlerFilterBar({
 
   const filterPanel = (
     <div className="flex flex-wrap gap-2 items-center">
-      <select
-        value={currentParams.sinif ?? ''}
-        onChange={(e) => update('sinif', e.target.value)}
-        className={selectCls}
-      >
-        <option value="">Tüm sınıflar</option>
-        {classes.map((c) => (
-          <option key={c.id} value={c.id}>{c.name}</option>
-        ))}
-      </select>
-
       <select
         value={currentParams.ders ?? ''}
         onChange={(e) => update('ders', e.target.value)}
@@ -128,7 +114,7 @@ export default function OdevlerFilterBar({
       {hasFilters && (
         <button
           type="button"
-          onClick={() => { router.replace(pathname); setShowFilters(false) }}
+          onClick={() => { router.replace(currentParams.sinif ? `${pathname}?sinif=${currentParams.sinif}` : pathname); setShowFilters(false) }}
           className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:border-gray-300 transition-all"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -141,9 +127,9 @@ export default function OdevlerFilterBar({
   )
 
   return (
-    <div className="mb-5 space-y-2">
+    <div className="mb-4 flex flex-col sm:flex-row gap-2">
       {/* Arama + mobil toggle */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 sm:flex-1">
         <div className="relative flex-1">
           <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
@@ -176,7 +162,7 @@ export default function OdevlerFilterBar({
       </div>
 
       {/* Filtreler — masaüstünde her zaman, mobilde toggle ile */}
-      <div className={`sm:block ${showFilters ? 'block' : 'hidden'}`}>
+      <div className={`sm:block sm:shrink-0 ${showFilters ? 'block' : 'hidden'}`}>
         {filterPanel}
       </div>
     </div>
