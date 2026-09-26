@@ -1,3 +1,4 @@
+import type { SubmissionStatus } from '@/src/shared/types'
 // src/domains/dashboard/types.ts
 import type { RiskLevel } from './risk'
 
@@ -17,15 +18,15 @@ export type WeeklyStats = {
 }
 
 export type OdevTamamlanmaItem = {
-  id:           string   // homework id — /odevler/[id] linki için
-  title:        string   // maks 14 karakter, truncated
-  classId:      string   // client tab filtresi için
-  className:    string   // tab label için
-  yapildi:      number   // % (0-100)
-  eksik:        number   // %
-  diger:        number   // %
-  yapildiCount: number   // gerçek tamamlayan öğrenci sayısı
-  total:        number   // toplam submission sayısı
+  id:        string   // homework id — /odevler/[id] linki için
+  title:     string   // tam başlık (arayüz satır sonunda kırpar)
+  classId:   string   // sınıf filtresi için
+  className: string
+  dueDate:   string   // YYYY-MM-DD
+  /** Yalnız işaretli satırlar; her durum ayrı */
+  sayim:     Record<SubmissionStatus, number>
+  /** 0 = henüz kontrol edilmedi */
+  isaretli:  number
 }
 
 export type YoklamaDurumItem = {

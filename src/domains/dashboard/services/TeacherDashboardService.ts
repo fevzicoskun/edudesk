@@ -1,3 +1,4 @@
+import { tamamlanmaSatirlari } from '@/src/domains/dashboard/lib/tamamlanma'
 import { DashboardRepository } from '../repositories/DashboardRepository'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
@@ -50,44 +51,7 @@ export const TeacherDashboardService = {
       ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
       : 0
 
-    const pastHwByClass = new Map<string, HwRow[]>()
-    for (const hw of homeworks) {
-      if (hw.due_date > today) continue
-      const list = pastHwByClass.get(hw.class_id) ?? []
-      if (list.length < 6) {
-        list.push(hw)
-        pastHwByClass.set(hw.class_id, list)
-      }
-    }
-    const pastHws: HwRow[] = [...pastHwByClass.values()].flat()
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))
-
-    const subByHw = new Map<string, { yapildi: number; eksik: number; diger: number; toplam: number }>()
-    for (const hw of pastHws) subByHw.set(hw.id, { yapildi: 0, eksik: 0, diger: 0, toplam: 0 })
-    for (const s of submissions) {
-      const e = subByHw.get(s.homework_id)
-      if (!e) continue
-      e.toplam++
-      if      (s.status === 'yapildi') e.yapildi++
-      else if (s.status === 'eksik')   e.eksik++
-      else                             e.diger++
-    }
-    const tamamlanmaData: OdevTamamlanmaItem[] = pastHws.map(hw => {
-      const s = subByHw.get(hw.id) ?? { yapildi: 0, eksik: 0, diger: 0, toplam: 0 }
-      const t = s.toplam
-      const title = hw.title.length > 14 ? hw.title.slice(0, 13) + '…' : hw.title
-      return {
-        id:           hw.id,
-        title,
-        classId:      hw.class_id,
-        className:    hw.classes?.name ?? '—',
-        yapildi:      t > 0 ? Math.round((s.yapildi / t) * 100) : 0,
-        eksik:        t > 0 ? Math.round((s.eksik   / t) * 100) : 0,
-        diger:        t > 0 ? Math.round((s.diger   / t) * 100) : 0,
-        yapildiCount: s.yapildi,
-        total:        t,
-      }
-    })
+    const tamamlanmaData = tamamlanmaSatirlari(homeworks, submissions, today)
 
     const seenClasses = new Map<string, { classId: string; className: string; grade: number }>()
     for (const hw of homeworks) {

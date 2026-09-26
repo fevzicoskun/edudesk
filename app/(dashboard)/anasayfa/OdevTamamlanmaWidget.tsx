@@ -1,22 +1,24 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import dynamic from 'next/dynamic'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import Link from 'next/link'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { format, parseISO } from '@/src/shared/date'
+import type { SubmissionStatus } from '@/src/shared/types'
 import type { OdevTamamlanmaItem } from '@/src/domains/dashboard/types'
 
-const OdevTamamlanmaChart = dynamic(() => import('./OdevTamamlanmaChart'), { ssr: false })
+/** Yazdırma raporuyla aynı renk dili: mavi yapıldı, sarı eksik, kırmızı yapılmadı */
+const SERIT: { kod: SubmissionStatus; cls: string }[] = [
+  { kod: 'yapildi',   cls: 'bg-blue-500' },
+  { kod: 'gec',       cls: 'bg-orange-400' },
+  { kod: 'eksik',     cls: 'bg-yellow-400' },
+  { kod: 'yapilmadi', cls: 'bg-red-500' },
+  { kod: 'mazeretli', cls: 'bg-gray-300 dark:bg-slate-500' },
+]
+const GOSTERILEN = 6
 
-function TabButton({
-  id,
-  label,
-  selected,
-  onSelect,
-}: {
-  id: string
-  label: string
-  selected: string
-  onSelect: (id: string) => void
+function TabButton({ id, label, selected, onSelect }: {
+  id: string; label: string; selected: string; onSelect: (id: string) => void
 }) {
   const active = selected === id
   return (
@@ -34,68 +36,77 @@ function TabButton({
   )
 }
 
+function Satir({ o }: { o: OdevTamamlanmaItem }) {
+  const yuzde = o.isaretli > 0 ? Math.round((o.sayim.yapildi / o.isaretli) * 100) : null
+  return (
+    <li>
+      <Link href={`/odevler/${o.id}`} className="block px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">{o.title}</span>
+          {yuzde !== null && (
+            <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-slate-200 shrink-0">%{yuzde}</span>
+          )}
+        </div>
+        <div className="flex items-baseline justify-between gap-3 text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+          <span className="truncate">{o.className} · {format(parseISO(o.dueDate), 'd MMM')}</span>
+          <span className="shrink-0 tabular-nums">
+            {yuzde === null ? 'Henüz kontrol edilmedi' : <>
+              {o.sayim.yapildi}/{o.isaretli} yaptı
+              {o.sayim.yapilmadi > 0 && <span className="text-red-600 dark:text-red-400"> · {o.sayim.yapilmadi} yapmadı</span>}
+            </>}
+          </span>
+        </div>
+        {yuzde !== null && (
+          <div className="flex h-1.5 mt-1.5 rounded-full overflow-hidden bg-gray-100 dark:bg-slate-700" aria-hidden>
+            {SERIT.filter(s => o.sayim[s.kod] > 0).map(s => (
+              <div key={s.kod} className={s.cls} style={{ width: `${(o.sayim[s.kod] / o.isaretli) * 100}%` }} />
+            ))}
+          </div>
+        )}
+      </Link>
+    </li>
+  )
+}
+
 export default function OdevTamamlanmaWidget({ data }: { data: OdevTamamlanmaItem[] }) {
   const [selectedClass, setSelectedClass] = useState('')
 
   const classes = useMemo(() => {
     const seen = new Map<string, string>()
-    for (const d of data) {
-      if (!seen.has(d.classId)) seen.set(d.classId, d.className)
-    }
-    return Array.from(seen.entries())
-      .map(([classId, className]) => ({ classId, className }))
-      .sort((a, b) => a.className.localeCompare(b.className, 'tr'))
+    for (const d of data) if (!seen.has(d.classId)) seen.set(d.classId, d.className)
+    return [...seen].map(([classId, className]) => ({ classId, className }))
+      .sort((a, b) => a.className.localeCompare(b.className, 'tr', { numeric: true }))
   }, [data])
 
-  const filteredData = useMemo(() => {
-    if (selectedClass === '') return data.slice(-8)
-    return data.filter(d => d.classId === selectedClass)
-  }, [data, selectedClass])
-
-  const subtitle = useMemo(() => {
-    const count = filteredData.length
-    if (count === 0) return 'Geçmiş ödev bulunamadı'
-    const classLabel = selectedClass === '' ? 'Tüm sınıflar' : (classes.find(c => c.classId === selectedClass)?.className ?? '')
-    const totalStudents = filteredData.reduce((s, d) => s + d.total, 0)
-    if (totalStudents === 0) return `Son ${count} ödev · ${classLabel}`
-    const avgPct = Math.round(filteredData.reduce((s, d) => s + d.yapildi, 0) / count)
-    const totalDone = filteredData.reduce((s, d) => s + d.yapildiCount, 0)
-    return `Son ${count} ödev · ${classLabel} · ort. %${avgPct} · ${totalDone}/${totalStudents} öğrenci`
-  }, [filteredData, selectedClass, classes])
+  // data en yeni teslim üstte gelir
+  const liste = useMemo(
+    () => (selectedClass === '' ? data : data.filter(d => d.classId === selectedClass)).slice(0, GOSTERILEN),
+    [data, selectedClass],
+  )
 
   return (
-    <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
-      <CardHeader className="pb-1">
-        <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">
-          Ödev Tamamlanma Oranları
-        </CardTitle>
-        <p className="text-xs text-gray-500 dark:text-slate-400">{subtitle}</p>
+    <Card className="border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden gap-0 pt-4 pb-0">
+      <CardHeader className="px-4 pb-2">
+        <CardTitle className="text-sm font-semibold text-gray-700 dark:text-slate-300">Ödev Tamamlanma</CardTitle>
+        <p className="text-xs text-gray-500 dark:text-slate-400">Teslim tarihi geçen son ödevler</p>
       </CardHeader>
 
       {classes.length > 1 && (
         <div className="px-4 pb-2 flex gap-1 flex-wrap">
           <TabButton id="" label="Tümü" selected={selectedClass} onSelect={setSelectedClass} />
           {classes.map(c => (
-            <TabButton
-              key={c.classId}
-              id={c.classId}
-              label={c.className}
-              selected={selectedClass}
-              onSelect={setSelectedClass}
-            />
+            <TabButton key={c.classId} id={c.classId} label={c.className} selected={selectedClass} onSelect={setSelectedClass} />
           ))}
         </div>
       )}
 
-      <CardContent className="pt-2 pb-4">
-        {filteredData.length === 0 ? (
-          <div className="h-40 flex items-center justify-center text-sm text-gray-500 dark:text-slate-400">
-            Geçmiş ödev bulunamadı.
-          </div>
-        ) : (
-          <OdevTamamlanmaChart data={filteredData} />
-        )}
-      </CardContent>
+      {liste.length === 0 ? (
+        <p className="px-4 py-8 text-center text-sm text-gray-500 dark:text-slate-400">Teslim tarihi geçmiş ödev yok.</p>
+      ) : (
+        <ul className="divide-y divide-gray-100 dark:divide-slate-700 border-t border-gray-100 dark:border-slate-700">
+          {liste.map(o => <Satir key={o.id} o={o} />)}
+        </ul>
+      )}
     </Card>
   )
 }
