@@ -11,6 +11,8 @@ type BulkCtx = {
   setBulkMode: (v: boolean) => void
   /** Tekli silme sonrası da aynı "Geri al" bildirimi gösterilsin */
   bildirSilindi: (ids: string[]) => void
+  /** Silinip henüz geri alınmamış ödevler — kart gizliliğinin TEK kaynağı (geri al burayı temizler) */
+  gizli: Set<string>
 }
 
 const BulkContext = createContext<BulkCtx | null>(null)
@@ -27,6 +29,7 @@ export function BulkProvider({ children }: { children: ReactNode }) {
   const [result, setResult] = useState<{ deleted: number; skipped: number; ids: string[] } | null>(null)
   const [geriAliniyor, setGeriAliniyor] = useState(false)
   const [geriAlHata, setGeriAlHata] = useState<string | null>(null)
+  const [gizli, setGizli] = useState<Set<string>>(new Set())
   const router = useRouter()
 
   useEffect(() => {
@@ -73,6 +76,7 @@ export function BulkProvider({ children }: { children: ReactNode }) {
 
   function bildirSilindi(ids: string[]) {
     setGeriAlHata(null)
+    setGizli(prev => new Set([...prev, ...ids]))
     setResult({ deleted: ids.length, skipped: 0, ids })
   }
 
@@ -87,13 +91,14 @@ export function BulkProvider({ children }: { children: ReactNode }) {
         setGeriAlHata(res.restored > 0 ? `${res.restored} ödev geri alındı, bazıları alınamadı.` : 'Geri alınamadı.')
       } else {
         setResult(null)
+        setGizli(prev => new Set([...prev].filter(id => !ids.includes(id))))
       }
       router.refresh()
     })
   }
 
   return (
-    <BulkContext.Provider value={{ bulkMode, selected, toggle, setBulkMode, bildirSilindi }}>
+    <BulkContext.Provider value={{ bulkMode, selected, toggle, setBulkMode, bildirSilindi, gizli }}>
       {children}
 
       {/* Silme sonucu — kaç ödev silindi, kaçı atlandı */}

@@ -53,7 +53,8 @@ export default function SwipeableHomeworkCard({
   const [swiping, setSwiping] = useState(false)
   const [swipeDir, setSwipeDir] = useState<'left' | 'right' | null>(null)
   const [isPending, startTransition] = useTransition()
-  const [isDeleted, setIsDeleted] = useState(false)
+  // Yalnız sunucu yanıtı beklenirken gizler; sonrası BulkContext.gizli'de (geri al kartı geri getirsin)
+  const [siliniyor, setSiliniyor] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -102,7 +103,7 @@ export default function SwipeableHomeworkCard({
   const bulk = useBulk()
   const isSelected = bulk?.bulkMode && bulk.selected.has(id)
 
-  if (isDeleted) return null
+  if (siliniyor || bulk?.gizli.has(id)) return null
 
   // Bulk select mode: simplified card with checkbox.
   // Başkasının ödevi seçilemez — silinemeyecek bir ödevi seçtirmek sessiz kayba yol açıyordu.
@@ -224,11 +225,11 @@ export default function SwipeableHomeworkCard({
                 onClick={() => {
                   setShowConfirm(false)
                   setDeleteError(null)
-                  setIsDeleted(true)
+                  setSiliniyor(true)
                   startTransition(async () => {
                     const result = await onDelete()
+                    setSiliniyor(false)
                     if (result && 'error' in result && result.error) {
-                      setIsDeleted(false)
                       setDeleteError(result.error)
                     } else {
                       bulk?.bildirSilindi([id]) // 10 sn "Geri al"
