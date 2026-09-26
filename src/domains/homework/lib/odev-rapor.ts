@@ -70,7 +70,7 @@ export function raporOzeti(
 export function durumListesi(satirlar: RaporSatiri[], kodlar: SubmissionStatus[]): string[] {
   return satirlar
     .filter(s => s.durumKodu !== null && kodlar.includes(s.durumKodu))
-    .map(s => s.numara ? `${s.ad} (${s.numara})` : s.ad)
+    .map(s => s.ad) // numara basılmaz: kağıtta yalnız ad yeter (kullanıcı kararı 2026-09-26)
 }
 
 /** Raporun tek A4 sayfaya sığması için satırları sütunlara böler (sütun sütun, numara sırası korunur).

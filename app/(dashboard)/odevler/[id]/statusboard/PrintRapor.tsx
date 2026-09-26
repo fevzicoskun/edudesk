@@ -121,8 +121,7 @@ export default function PrintRapor({
           <table key={i} className={`w-full border-collapse self-start ${tekSutun ? 'text-[10.5pt]' : sutunlar.length === 2 ? 'text-[9.5pt]' : 'text-[8.5pt]'}`}>
             <thead>
               <tr className="border-b-2 border-gray-800 text-[0.85em] uppercase tracking-wide text-gray-600">
-                <th className={`text-left font-semibold py-1 pl-1 ${tekSutun ? 'w-12' : 'w-9'}`}>No</th>
-                <th className="text-left font-semibold py-1">Ad Soyad</th>
+                <th className="text-left font-semibold py-1 pl-1">Ad Soyad</th>
                 <th className={`text-left font-semibold py-1 ${tekSutun ? 'w-28' : 'w-[5.5rem]'}`}>Durum</th>
                 {tekSutun && <th className="text-left font-semibold py-1 w-1/3">Not</th>}
               </tr>
@@ -132,8 +131,7 @@ export default function PrintRapor({
                 const r = renk(s.durumKodu)
                 return (
                   <tr key={s.sira} className={`border-b border-gray-200 break-inside-avoid ${r.satir}`}>
-                    <td className="py-[3px] pl-1 tabular-nums align-top text-gray-600">{s.numara || '—'}</td>
-                    <td className="py-[3px] align-top leading-tight">
+                    <td className="py-[3px] pl-1 align-top leading-tight">
                       {s.ad}
                       {!tekSutun && s.not && <span className="block text-[8pt] text-gray-600 italic">{s.not}</span>}
                     </td>
@@ -150,7 +148,7 @@ export default function PrintRapor({
       </div>
 
       <div className="flex items-end justify-between mt-6 break-inside-avoid">
-        <span className="text-[8pt] text-gray-500">Yazdırma: {uzunTarih(new Date())} · EduDesk</span>
+        <span className="text-[8pt] text-gray-500">Yazdırma: {uzunTarih(new Date())} · myedudesk.com.tr</span>
         <div className="text-center text-[10pt] w-56">
           <div className="border-b border-gray-800 h-8" />
           <div className="mt-1 font-semibold">{ogretmenAdi || 'Ders Öğretmeni'}</div>

@@ -104,20 +104,20 @@ describe('durumListesi()', () => {
   ] as never
 
   it('yalnız istenen durumdakileri döker', () => {
-    expect(durumListesi(sinif, ['yapilmadi'])).toEqual(['Ayşe (202)', 'Selin (208)'])
+    expect(durumListesi(sinif, ['yapilmadi'])).toEqual(['Ayşe', 'Selin'])
   })
 
   it('eksik bırakanlar yapmayanlardan AYRI listelenir — özetteki sayılarla tutsun diye', () => {
-    expect(durumListesi(sinif, ['eksik'])).toEqual(['Deniz (209)'])
+    expect(durumListesi(sinif, ['eksik'])).toEqual(['Deniz'])
   })
 
   it('birden çok durum aynı anda süzülebilir', () => {
     expect(durumListesi(sinif, ['yapilmadi', 'eksik']))
-      .toEqual(['Ayşe (202)', 'Selin (208)', 'Deniz (209)'])
+      .toEqual(['Ayşe', 'Selin', 'Deniz'])
   })
 
-  it('numarası olmayan öğrenci parantezsiz yazılır', () => {
-    expect(durumListesi([satir('Ayşe', '', 'yapilmadi')] as never, ['yapilmadi'])).toEqual(['Ayşe'])
+  it('çıktıda öğrenci numarası basılmaz — yalnız ad', () => {
+    expect(durumListesi([satir('Ayşe', '202', 'yapilmadi')] as never, ['yapilmadi'])).toEqual(['Ayşe'])
   })
 
   it('işaretlenmemiş öğrenci listeye girmez — bilgi yok, suçlama yok', () => {
