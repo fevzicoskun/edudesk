@@ -21,16 +21,16 @@ type Props = {
 /** Çıktı veliyle/öğrenciyle paylaşılıyor: durum bir bakışta renkten okunmalı.
  *  Kırmızı = yapılmadı, sarı = eksik, mavi = yapıldı.
  *  Olağan durum (Yapıldı) zeminsiz sade yazı: sayfaya istisnalar hâkim olsun. Saf sarı metin kağıtta okunmuyor → sorunlu durumlar zeminli rozet; ✓/✗ siyah-beyaz baskıda da ayırt ettirir. */
-type Renk = { rozet: string; satir: string; kutu: string; cubuk: string; isaret: string }
+type Renk = { rozet: string; satir: string; yazi: string; isaret: string }
 const RENK: Record<SubmissionStatus, Renk> = {
-  yapildi:   { rozet: 'text-blue-700',                 satir: '',            kutu: 'border-blue-600 text-blue-800',     cubuk: 'bg-blue-600',   isaret: '✓ ' },
-  gec:       { rozet: 'bg-orange-100 text-orange-900', satir: '',            kutu: 'border-orange-500 text-orange-800', cubuk: 'bg-orange-500', isaret: '' },
-  eksik:     { rozet: 'bg-yellow-200 text-yellow-900', satir: 'bg-yellow-50', kutu: 'border-yellow-400 text-yellow-900', cubuk: 'bg-yellow-400', isaret: '' },
-  yapilmadi: { rozet: 'bg-red-100 text-red-800',       satir: 'bg-red-50',    kutu: 'border-red-600 text-red-800',       cubuk: 'bg-red-600',    isaret: '✗ ' },
-  mazeretli: { rozet: 'bg-gray-100 text-gray-700',     satir: '',            kutu: 'border-gray-400 text-gray-700',     cubuk: 'bg-gray-400',   isaret: '' },
+  yapildi:   { rozet: 'text-blue-700',                 satir: '',            yazi: 'text-blue-800',   isaret: '✓ ' },
+  gec:       { rozet: 'bg-orange-100 text-orange-900', satir: '',            yazi: 'text-orange-600', isaret: '' },
+  eksik:     { rozet: 'bg-yellow-200 text-yellow-900', satir: 'bg-yellow-50', yazi: 'text-yellow-600', isaret: '' },
+  yapilmadi: { rozet: 'bg-red-100 text-red-800',       satir: 'bg-red-50',    yazi: 'text-red-800',    isaret: '✗ ' },
+  mazeretli: { rozet: 'bg-gray-100 text-gray-700',     satir: '',            yazi: 'text-gray-700',   isaret: '' },
 }
 /** kod yok = "Girilmedi": durum değil, kayıt yokluğu — nötr basılır */
-const GIRILMEDI: Renk = { rozet: 'text-gray-500', satir: '', kutu: 'border-gray-300 text-gray-500', cubuk: 'bg-gray-200', isaret: '' }
+const GIRILMEDI: Renk = { rozet: 'text-gray-500', satir: '', yazi: 'text-gray-500', isaret: '' }
 const renk = (kod: SubmissionStatus | null) => (kod ? RENK[kod] : GIRILMEDI)
 
 const uzunTarih = (d: Date) => d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -80,26 +80,18 @@ export default function PrintRapor({
       </div>
 
       {ozet.length > 0 && (
-        <div className="mt-3 break-inside-avoid">
-          <div className="flex gap-2">
-            {ozet.map(o => (
-              <div key={o.etiket} className={`flex-1 border-l-4 bg-gray-50 rounded-r px-2 py-1 ${renk(o.kod).kutu}`}>
-                <div className="text-[17pt] font-bold leading-none tabular-nums">{o.sayi}</div>
-                <div className="text-[9pt] font-semibold mt-0.5">{o.etiket}</div>
-              </div>
-            ))}
-            <div className="flex-1 border-l-4 border-black bg-gray-50 rounded-r px-2 py-1">
-              <div className="text-[17pt] font-bold leading-none tabular-nums">{toplam}</div>
-              <div className="text-[9pt] font-semibold mt-0.5">Mevcut</div>
-            </div>
+        // Sade şerit: renk yalnız rakamda — kağıtta resmi belge gibi dursun
+        <div className="mt-3 flex border border-gray-300 rounded-md break-inside-avoid">
+          <div className="px-3 py-1.5">
+            <div className="text-[15pt] font-bold leading-none tabular-nums">{toplam}</div>
+            <div className="text-[8.5pt] text-gray-600 mt-0.5">öğrenci</div>
           </div>
-          {toplam > 0 && (
-            <div className="flex h-2 mt-2 rounded-full overflow-hidden">
-              {ozet.map(o => (
-                <div key={o.etiket} className={renk(o.kod).cubuk} style={{ width: `${(o.sayi / toplam) * 100}%` }} />
-              ))}
+          {ozet.map(o => (
+            <div key={o.etiket} className="flex-1 px-3 py-1.5 border-l border-gray-300">
+              <div className={`text-[15pt] font-bold leading-none tabular-nums ${renk(o.kod).yazi}`}>{o.sayi}</div>
+              <div className="text-[8.5pt] text-gray-600 mt-0.5">{o.etiket}</div>
             </div>
-          )}
+          ))}
         </div>
       )}
 
