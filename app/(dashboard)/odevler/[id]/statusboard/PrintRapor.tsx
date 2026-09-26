@@ -24,7 +24,7 @@ type Props = {
 type Renk = { rozet: string; satir: string; yazi: string; isaret: string }
 const RENK: Record<SubmissionStatus, Renk> = {
   yapildi:   { rozet: 'text-blue-700',                 satir: '',            yazi: 'text-blue-800',   isaret: '✓ ' },
-  gec:       { rozet: 'bg-orange-100 text-orange-900', satir: '',            yazi: 'text-orange-600', isaret: '' },
+  gec:       { rozet: 'bg-orange-100 text-orange-900', satir: '',            yazi: 'text-amber-600', isaret: '' },
   eksik:     { rozet: 'bg-yellow-200 text-yellow-900', satir: 'bg-yellow-50', yazi: 'text-yellow-600', isaret: '' },
   yapilmadi: { rozet: 'bg-red-100 text-red-800',       satir: 'bg-red-50',    yazi: 'text-red-800',    isaret: '✗ ' },
   mazeretli: { rozet: 'bg-gray-100 text-gray-700',     satir: '',            yazi: 'text-gray-700',   isaret: '' },
@@ -99,11 +99,11 @@ export default function PrintRapor({
         <div className="mt-3 break-inside-avoid">
           <div className="grid grid-cols-2 gap-2">
             {[
-              { baslik: 'Ödevi yapmayanlar', adlar: yapmayanlar, cls: 'border-red-300 bg-red-50', baslikCls: 'text-red-800', eksik: false },
-              { baslik: 'Eksik bırakanlar',  adlar: eksikler,    cls: 'border-yellow-400 bg-yellow-50', baslikCls: 'text-yellow-900', eksik: true },
+              { baslik: 'Ödevi yapmayanlar', adlar: yapmayanlar, cls: 'border-l-red-600', baslikCls: 'text-red-800', eksik: false },
+              { baslik: 'Eksik bırakanlar',  adlar: eksikler,    cls: 'border-l-yellow-500', baslikCls: 'text-yellow-800', eksik: true },
             ].filter(k => k.adlar.length > 0).map(k => (
-              <div key={k.baslik} className={`border rounded-md px-2.5 py-1.5 ${k.cls} ${yapmayanlar.length && eksikler.length ? '' : 'col-span-2'}`}>
-                <p className={`text-[10pt] font-bold ${k.baslikCls}`}>{k.baslik} ({k.adlar.length})</p>
+              <div key={k.baslik} className={`border border-gray-300 border-l-[3px] rounded-md px-3 py-1.5 ${k.cls} ${yapmayanlar.length && eksikler.length ? '' : 'col-span-2'}`}>
+                <p className={`text-[9.5pt] font-bold ${k.baslikCls}`}>{k.baslik} <span className="font-normal text-gray-500">· {k.adlar.length} öğrenci</span></p>
                 <p className="text-[10pt] leading-relaxed mt-0.5">
                   {/* En çok tekrarlayan başa: mentör önce alışkanlığı görsün */}
                   {[...k.adlar].sort((a, b) => b.kez - a.kez).map((o, i) => (
@@ -113,7 +113,7 @@ export default function PrintRapor({
                     <span className="whitespace-nowrap">
                       {o.ad}
                       {o.kez >= 2 && (k.eksik
-                        ? <span className="ml-1 text-[8.5pt] italic text-yellow-900">({o.kez}. kez)</span>
+                        ? <span className="ml-1 text-[8.5pt] italic text-yellow-800">({o.kez}. kez)</span>
                         : <span className="ml-1 px-1 rounded bg-red-600 text-white text-[8pt] font-bold">{o.kez}. kez</span>)}
                     </span>
                     </Fragment>
@@ -123,7 +123,7 @@ export default function PrintRapor({
             ))}
           </div>
           {[...yapmayanlar, ...eksikler].some(o => o.kez >= 2) && (
-            <p className="text-[8pt] text-gray-500 mt-1">
+            <p className="text-[7.5pt] text-gray-500 mt-1 text-right">
               Kez sayısı: bu dönem, bu öğretmenin bu sınıfa verdiği ödevler içinde.
             </p>
           )}
@@ -161,18 +161,21 @@ export default function PrintRapor({
         ))}
       </div>
 
-      <div className="mt-5 border border-gray-300 rounded-md px-3 pt-1.5 pb-2 break-inside-avoid">
-        <p className="text-[9pt] font-semibold text-gray-600">Öğretmen / mentör notu</p>
-        {[0, 1, 2].map(i => <div key={i} className="border-b border-dotted border-gray-400 h-6" />)}
-      </div>
-
-      <div className="flex items-end justify-between mt-6 break-inside-avoid">
-        <span className="text-[8pt] text-gray-500">Yazdırma: {uzunTarih(new Date())} · myedudesk.com.tr</span>
-        <div className="text-center text-[10pt] w-56">
-          <div className="border-b border-gray-800 h-8" />
+      <div className="mt-6 flex gap-6 items-stretch break-inside-avoid">
+        <div className="flex-1 border border-gray-300 rounded-md px-3 pt-1.5 pb-2">
+          <p className="text-[9pt] font-semibold text-gray-600">Öğretmen / mentör notu</p>
+          {[0, 1, 2].map(i => <div key={i} className="border-b border-dotted border-gray-400 h-6" />)}
+        </div>
+        <div className="w-52 flex flex-col justify-end text-center text-[10pt]">
+          <div className="border-b border-gray-800" />
           <div className="mt-1 font-semibold">{ogretmenAdi || 'Ders Öğretmeni'}</div>
           <div className="text-[8.5pt] text-gray-600">Ders Öğretmeni · İmza</div>
         </div>
+      </div>
+
+      <div className="mt-4 pt-1 border-t border-gray-300 flex justify-between text-[7.5pt] text-gray-500">
+        <span>Yazdırma: {uzunTarih(new Date())}</span>
+        <span>myedudesk.com.tr</span>
       </div>
     </div>
   )
