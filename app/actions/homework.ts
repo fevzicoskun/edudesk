@@ -13,6 +13,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { weekRange, buildClassWeekLoad, type ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { turkeyDate } from '@/src/lib/email-utils'
+import { odevTarihHatasi } from '@/src/domains/homework/lib/odev-tarih'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
@@ -55,6 +56,7 @@ export async function createHomework(_: unknown, formData: FormData) {
       description: parsed.data.description ?? null,
       source_id:   parsed.data.source_id ?? null,
       due_date:    null,
+      assigned_date: undefined, // şablonun verildiği günü yok
     })
     if (result.error) return result
     revalidatePath('/odevler')
@@ -72,13 +74,16 @@ export async function createHomework(_: unknown, formData: FormData) {
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
     due_date:    formData.get('due_date') || null,
+    assigned_date: formData.get('assigned_date') || null,
     source_id:   kaynak.id,
     is_template: false,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
   if (!parsed.data.due_date) return { error: 'Son teslim tarihi gerekli' }
-  const today = turkeyDate()
-  if (parsed.data.due_date < today) return { error: 'Son teslim tarihi bugün veya sonrası olmalı' }
+  // Ödev sonradan da girilebilir (ör. WhatsApp'tan geç görülen): verildiği gün geçmiş olabilir
+  const assignedDate = parsed.data.assigned_date ?? turkeyDate()
+  const tarihHatasi = odevTarihHatasi(assignedDate, parsed.data.due_date, turkeyDate())
+  if (tarihHatasi) return { error: tarihHatasi }
 
   const results = await Promise.allSettled(
     classIds.map(classId =>
@@ -88,6 +93,8 @@ export async function createHomework(_: unknown, formData: FormData) {
         description: parsed.data.description ?? null,
         subject:     parsed.data.subject,
         due_date:    parsed.data.due_date ?? null,
+        // Açıkça İstanbul günü yazılır — DB varsayılanı CURRENT_DATE UTC'dir (gece 00-03 kayar)
+        assigned_date: assignedDate,
         source_id:   parsed.data.source_id ?? null,
         is_template: false,
       })
@@ -208,15 +215,21 @@ export async function updateHomework(_: unknown, formData: FormData) {
     description: formData.get('description') || null,
     subject:     formData.get('subject'),
     due_date:    formData.get('due_date') || null,
+    assigned_date: formData.get('assigned_date') || null,
     source_id:   formData.get('source_id') || null,
   })
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+  if (!is_template && parsed.data.assigned_date && parsed.data.due_date) {
+    const tarihHatasi = odevTarihHatasi(parsed.data.assigned_date, parsed.data.due_date, turkeyDate())
+    if (tarihHatasi) return { error: tarihHatasi }
+  }
 
   const result = await HomeworkService.updateHomework(id, {
     title:       parsed.data.title,
     subject:     parsed.data.subject,
     description: parsed.data.description ?? null,
     due_date:    parsed.data.due_date ?? null,
+    ...(parsed.data.assigned_date ? { assigned_date: parsed.data.assigned_date } : {}),
     source_id:   parsed.data.source_id ?? null,
     class_id,
   })

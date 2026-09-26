@@ -22,7 +22,7 @@ export default async function OdevDuzenle({
   const [hwRes, sourcesRes, classesRes, subCountRes] = await Promise.all([
     supabase
       .from('homeworks')
-      .select('id, title, subject, description, due_date, teacher_id, source_id, class_id, is_template')
+      .select('id, title, subject, description, due_date, assigned_date, teacher_id, source_id, class_id, is_template')
       .eq('id', id)
       .eq('school_id', profile.school_id)
       .is('deleted_at', null)
@@ -80,6 +80,7 @@ export default async function OdevDuzenle({
             subject: hw.subject ?? '',
             description: hw.description,
             due_date: hw.due_date,
+            assigned_date: hw.assigned_date,
             source_id: hw.source_id,
             class_id: hw.class_id as string,
             is_template: hw.is_template ?? false,

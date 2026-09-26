@@ -25,6 +25,7 @@ export const HomeworkService = {
     description: string | null
     subject:     string
     due_date:    string | null
+    assigned_date?: string
     source_id?:  string | null
     is_template?: boolean
   }): Promise<{ error?: string; id?: string }> {
@@ -177,7 +178,7 @@ export const HomeworkService = {
 
   async updateHomework(
     id: string,
-    data: { title: string; subject: string; description: string | null; due_date: string | null; source_id: string | null; class_id: string }
+    data: { title: string; subject: string; description: string | null; due_date: string | null; assigned_date?: string; source_id: string | null; class_id: string }
   ): Promise<{ error?: string }> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

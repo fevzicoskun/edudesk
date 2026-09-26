@@ -12,6 +12,7 @@ type HwData = {
   subject: string
   description: string | null
   due_date: string | null
+  assigned_date: string
   source_id: string | null
   class_id: string
   is_template: boolean
@@ -50,6 +51,7 @@ export default function OdevDuzenleForm({
 
   const [selectedClass, setSelectedClass] = useState(hw.class_id)
   const [dueDate, setDueDate]             = useState(hw.due_date ?? '')
+  const [verildigi, setVerildigi]         = useState(hw.assigned_date)
   const [weekLoad, setWeekLoad]           = useState<ClassWeekLoad[]>([])
   const [loadingLoad, setLoadingLoad]     = useState(!!hw.due_date)
 
@@ -135,13 +137,29 @@ export default function OdevDuzenleForm({
                 className={field}
                 value={dueDate}
                 onChange={e => setDueDate(e.target.value)}
-                min={hw.due_date && hw.due_date < todayLocal() ? undefined : todayLocal()}
+                min={hw.is_template ? undefined : verildigi}
               />
               {hw.due_date && hw.due_date < todayLocal() && (
                 <p className="text-xs text-amber-600">Geçmiş tarih — değiştirmek zorunda değilsiniz.</p>
               )}
             </div>
           </div>
+
+          {!hw.is_template && (
+            <div className="space-y-2">
+              <label htmlFor="hw-verildigi" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Verildiği Tarih</label>
+              <input
+                id="hw-verildigi"
+                name="assigned_date"
+                type="date"
+                required
+                max={todayLocal()}
+                className={field}
+                value={verildigi}
+                onChange={e => setVerildigi(e.target.value)}
+              />
+            </div>
+          )}
 
           <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} />
 

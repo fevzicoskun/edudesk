@@ -110,6 +110,7 @@ export const HomeworkRepository = {
       subject: string
       description: string | null
       due_date: string | null
+      assigned_date?: string
       source_id: string | null
       class_id: string
     }

@@ -37,6 +37,8 @@ export const createHomeworkSchema = z.object({
   description: z.string().max(2000).optional().nullable(),
   subject:     z.string().min(1, 'Ders gerekli').max(100),
   due_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı').optional().nullable(),
+  /** Verildiği gün — boşsa bugün; geçmiş olabilir (sonradan girilen ödev) */
+  assigned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih formatı').optional().nullable(),
   source_id:   UUID.optional().nullable(),
   is_template: z.preprocess(v => v === 'true' || v === true, z.boolean()).default(false),
 })

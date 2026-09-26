@@ -1,14 +1,14 @@
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { istanbulLocalToUtc, todayLocalISO, format, parseISO } from '@/src/shared/date'
+import { todayLocalISO, format, parseISO } from '@/src/shared/date'
 import { gunlukOdevMetni } from '@/src/domains/homework/lib/gunlukOdevMetni'
 import KopyalaButonu from './KopyalaButonu'
 
 /** Öğretmenin bugün (İstanbul günü) oluşturduğu ödevler — gün sonunda başka kanallara iletmek için. */
 export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { teacherId: string; schoolId: string }) {
   const supabase = await createClient()
-  // assigned_date DB'de CURRENT_DATE (UTC) — gece 00-03 arası kayar; created_at + İstanbul gün başı kullanılır
-  const gunBasi = istanbulLocalToUtc(todayLocalISO(), '00:00').toISOString()
+  // Verildiği gün (assigned_date) — sonradan girilen geçmiş tarihli ödev "bugün verdiğim"e karışmasın.
+  // Form artık İstanbul gününü açıkça yazıyor (DB varsayılanı UTC CURRENT_DATE'ti).
   const { data, error } = await supabase
     .from('homeworks')
     .select('id, title, subject, due_date, classes(name)')
@@ -16,7 +16,7 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
     .eq('school_id', schoolId)
     .eq('is_template', false)
     .is('deleted_at', null)
-    .gte('created_at', gunBasi)
+    .eq('assigned_date', todayLocalISO())
     .order('created_at')
 
   const odevler = (data ?? []).map(h => ({

@@ -20,6 +20,8 @@ export default function ClassWeekLoadSection({
   initialDueDate?: string
 }) {
   const [dueDate, setDueDate] = useState(initialDueDate)
+  // Verildiği gün: varsayılan bugün; WhatsApp'tan geç görülen ödev için geçmiş gün seçilebilir
+  const [verildigi, setVerildigi] = useState(todayISO)
   const [weekLoad, setWeekLoad] = useState<ClassWeekLoad[]>([])
   const [loadingLoad, setLoadingLoad] = useState(false)
 
@@ -37,18 +39,39 @@ export default function ClassWeekLoadSection({
 
   return (
     <>
-      <div className="space-y-2">
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
-        <input
-          name="due_date"
-          type="date"
-          required={!isTemplate}
-          min={todayISO()}
-          className={field}
-          value={dueDate}
-          onChange={e => setDueDate(e.target.value)}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <label htmlFor="hw-verildigi" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Verildiği Tarih</label>
+          <input
+            id="hw-verildigi"
+            name="assigned_date"
+            type="date"
+            required
+            max={todayISO()}
+            className={field}
+            value={verildigi}
+            onChange={e => setVerildigi(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2">
+          <label htmlFor="hw-son-teslim" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
+          <input
+            id="hw-son-teslim"
+            name="due_date"
+            type="date"
+            required={!isTemplate}
+            min={verildigi}
+            className={field}
+            value={dueDate}
+            onChange={e => setDueDate(e.target.value)}
+          />
+        </div>
       </div>
+      {verildigi < todayISO() && (
+        <p className="text-xs text-amber-700 dark:text-amber-400 -mt-2">
+          Geçmiş tarihli ödev — sonradan giriliyor. Verildiği gün olarak {verildigi.split('-').reverse().join('.')} kaydedilir.
+        </p>
+      )}
       <WeekLoadBanner loads={weekLoad} loading={loadingLoad} dueDate={dueDate} isCreating />
     </>
   )
