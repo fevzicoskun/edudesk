@@ -19,10 +19,10 @@ type Props = {
 
 /** Çıktı veliyle/öğrenciyle paylaşılıyor: durum bir bakışta renkten okunmalı.
  *  Kırmızı = yapılmadı, sarı = eksik, mavi = yapıldı.
- *  Saf sarı metin beyaz kağıtta okunmuyor → zeminli rozet; ✓/✗ siyah-beyaz baskıda da ayırt ettirir. */
+ *  Olağan durum (Yapıldı) zeminsiz sade yazı: sayfaya istisnalar hâkim olsun. Saf sarı metin kağıtta okunmuyor → sorunlu durumlar zeminli rozet; ✓/✗ siyah-beyaz baskıda da ayırt ettirir. */
 type Renk = { rozet: string; satir: string; kutu: string; cubuk: string; isaret: string }
 const RENK: Record<SubmissionStatus, Renk> = {
-  yapildi:   { rozet: 'bg-blue-100 text-blue-800',     satir: '',            kutu: 'border-blue-600 text-blue-800',     cubuk: 'bg-blue-600',   isaret: '✓ ' },
+  yapildi:   { rozet: 'text-blue-700',                 satir: '',            kutu: 'border-blue-600 text-blue-800',     cubuk: 'bg-blue-600',   isaret: '✓ ' },
   gec:       { rozet: 'bg-orange-100 text-orange-900', satir: '',            kutu: 'border-orange-500 text-orange-800', cubuk: 'bg-orange-500', isaret: '' },
   eksik:     { rozet: 'bg-yellow-200 text-yellow-900', satir: 'bg-yellow-50', kutu: 'border-yellow-400 text-yellow-900', cubuk: 'bg-yellow-400', isaret: '' },
   yapilmadi: { rozet: 'bg-red-100 text-red-800',       satir: 'bg-red-50',    kutu: 'border-red-600 text-red-800',       cubuk: 'bg-red-600',    isaret: '✗ ' },
