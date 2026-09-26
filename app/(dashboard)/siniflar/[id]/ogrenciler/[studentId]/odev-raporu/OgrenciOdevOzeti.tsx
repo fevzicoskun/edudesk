@@ -46,8 +46,6 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
       <dl className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 gap-y-0.5 text-[10.5pt] mb-3">
         <dt className="font-semibold">Öğrenci</dt>
         <dd>{ogrenci.full_name}</dd>
-        <dt className="font-semibold">No</dt>
-        <dd>{ogrenci.student_number || '—'}</dd>
         <dt className="font-semibold">Sınıf</dt>
         <dd>{sinifAdi || '—'}</dd>
         <dt className="font-semibold">Yazdırma tarihi</dt>

@@ -50,7 +50,7 @@ export default function MatrisTable({ sortedStudents, homeworks, subMap, statsMa
                   <td className={`sticky left-0 z-10 border-r border-b border-gray-200 dark:border-slate-700 px-3 py-2 font-medium text-gray-800 dark:text-slate-200 ${si % 2 === 0 ? 'bg-white dark:bg-slate-800' : 'bg-gray-50/70 dark:bg-slate-800/80'}`}>
                     <div className="flex items-center gap-2 min-w-0">
                       {student.student_number && (
-                        <span className="text-[10px] text-gray-500 dark:text-slate-400 shrink-0 w-6 text-right">{student.student_number}</span>
+                        <span className="text-[10px] text-gray-500 dark:text-slate-400 shrink-0 w-6 text-right print:hidden">{student.student_number}</span>
                       )}
                       <span className="truncate max-w-[130px]">{student.full_name}</span>
                     </div>

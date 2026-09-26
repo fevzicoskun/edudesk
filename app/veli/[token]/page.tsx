@@ -147,7 +147,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
             <div className="text-right">
               <p className="text-sm font-semibold text-gray-700">{cls?.name ?? '—'}</p>
               {student.student_number && (
-                <p className="text-xs text-gray-400 mt-0.5">No: {student.student_number}</p>
+                <p className="text-xs text-gray-500 mt-0.5 print:hidden">No: {student.student_number}</p>
               )}
             </div>
             <PrintButton />
