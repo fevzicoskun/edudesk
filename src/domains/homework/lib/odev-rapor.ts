@@ -15,6 +15,21 @@ export type RaporSatiri = {
   /** Henüz işaretlenmemiş öğrencide null — renk/vurgu uygulanmaz */
   durumKodu: SubmissionStatus | null
   not: string
+  /** Bu dönem bu durumu kaçıncı kez aldığı (yalnız yapılmadı/eksik; diğerlerinde 0) */
+  kez: number
+}
+
+/** Bu ödev HARİÇ önceki işaretli ödevlerdeki sayılar; bu ödevin canlı durumu +1 olarak eklenir */
+export type OncekiSayilar = Record<string, { yapilmadi: number; eksik: number }>
+
+export function oncekiSayilar(rows: { student_id: string; status: string }[]): OncekiSayilar {
+  const out: OncekiSayilar = {}
+  for (const r of rows) {
+    if (r.status !== 'yapilmadi' && r.status !== 'eksik') continue
+    const o = (out[r.student_id] ??= { yapilmadi: 0, eksik: 0 })
+    o[r.status]++
+  }
+  return out
 }
 
 type SatirGirdisi = {
@@ -23,9 +38,10 @@ type SatirGirdisi = {
   notes: Record<string, string>
   /** Gerçekten kaydedilmiş öğrenciler; dışındakiler "—" basılır */
   recordedIds: Set<string>
+  onceki?: OncekiSayilar
 }
 
-export function raporSatirlari({ items, statuses, notes, recordedIds }: SatirGirdisi): RaporSatiri[] {
+export function raporSatirlari({ items, statuses, notes, recordedIds, onceki = {} }: SatirGirdisi): RaporSatiri[] {
   return items.map((item, i) => {
     const islendi = recordedIds.has(item.student_id)
     const kod     = islendi ? statuses[item.student_id] ?? null : null
@@ -36,6 +52,7 @@ export function raporSatirlari({ items, statuses, notes, recordedIds }: SatirGir
       durum:     kod ? ETIKET[kod] : '—',
       durumKodu: kod,
       not:       notes[item.student_id] ?? '',
+      kez:       kod === 'yapilmadi' || kod === 'eksik' ? (onceki[item.student_id]?.[kod] ?? 0) + 1 : 0,
     }
   })
 }
@@ -67,10 +84,10 @@ export function raporOzeti(
  *  "Yapmayanlar" ve "Eksik bırakanlar" AYRI listelenir: tek listede toplanınca
  *  özetteki sayılarla ("10 Yapılmadı" ama "Yapmayanlar (11)") tutmuyordu.
  *  İşaretlenmemiş öğrenci (durumKodu null) hiçbir listeye GİRMEZ: bilgi yokken suçlama olmaz. */
-export function durumListesi(satirlar: RaporSatiri[], kodlar: SubmissionStatus[]): string[] {
+export function durumListesi(satirlar: RaporSatiri[], kodlar: SubmissionStatus[]): { ad: string; kez: number }[] {
   return satirlar
     .filter(s => s.durumKodu !== null && kodlar.includes(s.durumKodu))
-    .map(s => s.ad) // numara basılmaz: kağıtta yalnız ad yeter (kullanıcı kararı 2026-09-26)
+    .map(s => ({ ad: s.ad, kez: s.kez })) // numara basılmaz: kağıtta yalnız ad yeter (kullanıcı kararı 2026-09-26)
 }
 
 /** Raporun tek A4 sayfaya sığması için satırları sütunlara böler (sütun sütun, numara sırası korunur).

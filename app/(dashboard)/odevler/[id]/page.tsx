@@ -162,6 +162,7 @@ export default async function OdevDetayPage({
         <StatusBoardLoader
           homeworkId={id}
           classId={hw.class_id}
+          teacherId={hw.teacher_id}
           dueDate={hw.due_date ?? null}
           assignedDate={hw.assigned_date ?? null}
           schoolId={profile.school_id}

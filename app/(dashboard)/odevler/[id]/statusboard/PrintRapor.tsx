@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { durumListesi, sutunlaraBol } from '@/src/domains/homework/lib/odev-rapor'
 import type { RaporSatiri, OzetKalemi } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -103,16 +104,37 @@ export default function PrintRapor({
       )}
 
       {(yapmayanlar.length > 0 || eksikler.length > 0) && (
-        <div className="mt-3 grid grid-cols-2 gap-2 break-inside-avoid">
-          {[
-            { baslik: 'Ödevi yapmayanlar', adlar: yapmayanlar, cls: 'border-red-300 bg-red-50', baslikCls: 'text-red-800' },
-            { baslik: 'Eksik bırakanlar',  adlar: eksikler,    cls: 'border-yellow-400 bg-yellow-50', baslikCls: 'text-yellow-900' },
-          ].filter(k => k.adlar.length > 0).map(k => (
-            <div key={k.baslik} className={`border rounded-md px-2.5 py-1.5 ${k.cls} ${yapmayanlar.length && eksikler.length ? '' : 'col-span-2'}`}>
-              <p className={`text-[10pt] font-bold ${k.baslikCls}`}>{k.baslik} ({k.adlar.length})</p>
-              <p className="text-[10pt] leading-snug mt-0.5">{k.adlar.join(', ')}</p>
-            </div>
-          ))}
+        <div className="mt-3 break-inside-avoid">
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { baslik: 'Ödevi yapmayanlar', adlar: yapmayanlar, cls: 'border-red-300 bg-red-50', baslikCls: 'text-red-800', eksik: false },
+              { baslik: 'Eksik bırakanlar',  adlar: eksikler,    cls: 'border-yellow-400 bg-yellow-50', baslikCls: 'text-yellow-900', eksik: true },
+            ].filter(k => k.adlar.length > 0).map(k => (
+              <div key={k.baslik} className={`border rounded-md px-2.5 py-1.5 ${k.cls} ${yapmayanlar.length && eksikler.length ? '' : 'col-span-2'}`}>
+                <p className={`text-[10pt] font-bold ${k.baslikCls}`}>{k.baslik} ({k.adlar.length})</p>
+                <p className="text-[10pt] leading-relaxed mt-0.5">
+                  {/* En çok tekrarlayan başa: mentör önce alışkanlığı görsün */}
+                  {[...k.adlar].sort((a, b) => b.kez - a.kez).map((o, i) => (
+                    <Fragment key={o.ad}>
+                    {i > 0 && ', '}
+                    {/* nowrap yalnız ad+etiket: ayırıcı dışarıda kalmalı yoksa satır hiç kırılmaz */}
+                    <span className="whitespace-nowrap">
+                      {o.ad}
+                      {o.kez >= 2 && (k.eksik
+                        ? <span className="ml-1 text-[8.5pt] italic text-yellow-900">({o.kez}. kez)</span>
+                        : <span className="ml-1 px-1 rounded bg-red-600 text-white text-[8pt] font-bold">{o.kez}. kez</span>)}
+                    </span>
+                    </Fragment>
+                  ))}
+                </p>
+              </div>
+            ))}
+          </div>
+          {[...yapmayanlar, ...eksikler].some(o => o.kez >= 2) && (
+            <p className="text-[8pt] text-gray-500 mt-1">
+              Kez sayısı: bu dönem, bu öğretmenin bu sınıfa verdiği ödevler içinde.
+            </p>
+          )}
         </div>
       )}
 
@@ -145,6 +167,11 @@ export default function PrintRapor({
             </tbody>
           </table>
         ))}
+      </div>
+
+      <div className="mt-5 border border-gray-300 rounded-md px-3 pt-1.5 pb-2 break-inside-avoid">
+        <p className="text-[9pt] font-semibold text-gray-600">Öğretmen / mentör notu</p>
+        {[0, 1, 2].map(i => <div key={i} className="border-b border-dotted border-gray-400 h-6" />)}
       </div>
 
       <div className="flex items-end justify-between mt-6 break-inside-avoid">

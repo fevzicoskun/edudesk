@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { raporSatirlari, raporOzeti, durumListesi, sutunlaraBol } from '@/src/domains/homework/lib/odev-rapor'
+import { raporSatirlari, raporOzeti, durumListesi, sutunlaraBol, oncekiSayilar } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 const ogrenci = (id: string, ad: string, no: string | null = null) => ({
@@ -15,7 +15,7 @@ describe('raporSatirlari()', () => {
       recordedIds: new Set(['s1']),
     })
     expect(satirlar).toEqual([
-      { sira: 1, numara: '142', ad: 'Ahmet Yılmaz', durum: 'Yapıldı', durumKodu: 'yapildi', not: '' },
+      { sira: 1, numara: '142', ad: 'Ahmet Yılmaz', durum: 'Yapıldı', durumKodu: 'yapildi', not: '', kez: 0 },
     ])
   })
 
@@ -90,9 +90,10 @@ describe('raporOzeti()', () => {
 })
 
 describe('durumListesi()', () => {
-  const satir = (ad: string, numara: string, durumKodu: string | null) => ({
-    sira: 1, numara, ad, durum: '', durumKodu, not: '',
+  const satir = (ad: string, numara: string, durumKodu: string | null, kez = 1) => ({
+    sira: 1, numara, ad, durum: '', durumKodu, not: '', kez,
   })
+  const adlar = (l: { ad: string }[]) => l.map(x => x.ad)
 
   const sinif = [
     satir('Ahmet', '201', 'yapildi'),
@@ -104,20 +105,20 @@ describe('durumListesi()', () => {
   ] as never
 
   it('yalnız istenen durumdakileri döker', () => {
-    expect(durumListesi(sinif, ['yapilmadi'])).toEqual(['Ayşe', 'Selin'])
+    expect(adlar(durumListesi(sinif, ['yapilmadi']))).toEqual(['Ayşe', 'Selin'])
   })
 
   it('eksik bırakanlar yapmayanlardan AYRI listelenir — özetteki sayılarla tutsun diye', () => {
-    expect(durumListesi(sinif, ['eksik'])).toEqual(['Deniz'])
+    expect(adlar(durumListesi(sinif, ['eksik']))).toEqual(['Deniz'])
   })
 
   it('birden çok durum aynı anda süzülebilir', () => {
-    expect(durumListesi(sinif, ['yapilmadi', 'eksik']))
+    expect(adlar(durumListesi(sinif, ['yapilmadi', 'eksik'])))
       .toEqual(['Ayşe', 'Selin', 'Deniz'])
   })
 
   it('çıktıda öğrenci numarası basılmaz — yalnız ad', () => {
-    expect(durumListesi([satir('Ayşe', '202', 'yapilmadi')] as never, ['yapilmadi'])).toEqual(['Ayşe'])
+    expect(durumListesi([satir('Ayşe', '202', 'yapilmadi', 4)] as never, ['yapilmadi'])).toEqual([{ ad: 'Ayşe', kez: 4 }])
   })
 
   it('işaretlenmemiş öğrenci listeye girmez — bilgi yok, suçlama yok', () => {
@@ -151,5 +152,47 @@ describe('sutunlaraBol() — rapor tek A4 sayfaya sığsın', () => {
 
   it('boş liste → tek boş sütun', () => {
     expect(sutunlaraBol([])).toEqual([[]])
+  })
+})
+
+describe('tekrar sayısı (kaçıncı kez)', () => {
+  const tek = (status: SubmissionStatus, onceki: Record<string, { yapilmadi: number; eksik: number }> = {}) =>
+    raporSatirlari({
+      items: [ogrenci('s1', 'Ayşe')], statuses: { s1: status }, notes: {}, recordedIds: new Set(['s1']), onceki,
+    })[0].kez
+
+  it('önceki kaydı olmayan yapmayan: 1. kez', () => {
+    expect(tek('yapilmadi')).toBe(1)
+  })
+
+  it('yapılmadı sayısı yalnız önceki yapılmadılardan gelir — eksikler karışmaz', () => {
+    expect(tek('yapilmadi', { s1: { yapilmadi: 3, eksik: 5 } })).toBe(4)
+  })
+
+  it('eksik bırakanın sayısı yalnız önceki eksiklerden gelir', () => {
+    expect(tek('eksik', { s1: { yapilmadi: 3, eksik: 1 } })).toBe(2)
+  })
+
+  it('yapan / geç / mazeretli öğrencide sayı yok', () => {
+    expect(tek('yapildi', { s1: { yapilmadi: 3, eksik: 1 } })).toBe(0)
+    expect(tek('gec', { s1: { yapilmadi: 3, eksik: 1 } })).toBe(0)
+  })
+
+  it('işaretlenmemiş öğrencide sayı yok — bilgi yokken suçlama olmaz', () => {
+    const s = raporSatirlari({
+      items: [ogrenci('s1', 'Ayşe')], statuses: { s1: 'yapilmadi' }, notes: {}, recordedIds: new Set(),
+      onceki: { s1: { yapilmadi: 3, eksik: 0 } },
+    })[0]
+    expect(s.kez).toBe(0)
+  })
+
+  it('oncekiSayilar: öğrenci başına yapılmadı ve eksik ayrı sayılır, diğer durumlar yok sayılır', () => {
+    expect(oncekiSayilar([
+      { student_id: 's1', status: 'yapilmadi' },
+      { student_id: 's1', status: 'yapilmadi' },
+      { student_id: 's1', status: 'eksik' },
+      { student_id: 's2', status: 'eksik' },
+      { student_id: 's2', status: 'yapildi' },
+    ])).toEqual({ s1: { yapilmadi: 2, eksik: 1 }, s2: { yapilmadi: 0, eksik: 1 } })
   })
 })

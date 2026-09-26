@@ -12,6 +12,7 @@ import StatusBoardBar from './statusboard/StatusBoardBar'
 import StudentRow from './statusboard/StudentRow'
 import PrintRapor from './statusboard/PrintRapor'
 import { raporSatirlari, raporOzeti } from '@/src/domains/homework/lib/odev-rapor'
+import type { OncekiSayilar } from '@/src/domains/homework/lib/odev-rapor'
 import { STATUS_OPTIONS } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
 import { useExcelExport } from './useExcelExport'
@@ -34,6 +35,7 @@ export default function StatusBoard({
   okulAdi = '',
   ders = '',
   ogretmenAdi = '',
+  onceki = {},
 }: {
   homeworkId: string
   items: StatusItem[]
@@ -52,6 +54,8 @@ export default function StatusBoard({
   okulAdi?: string
   ders?: string
   ogretmenAdi?: string
+  /** Yazdırma raporundaki "kaçıncı kez" için bu dönemin önceki sayıları */
+  onceki?: OncekiSayilar
 }) {
   const [statuses, setStatuses] = useState<Record<string, SubmissionStatus>>(() =>
     Object.fromEntries(items.map(i => [i.student_id, i.status]))
@@ -283,8 +287,8 @@ export default function StatusBoard({
   }
 
   const satirlar = useMemo(
-    () => raporSatirlari({ items, statuses, notes, recordedIds }),
-    [items, statuses, notes, recordedIds],
+    () => raporSatirlari({ items, statuses, notes, recordedIds, onceki }),
+    [items, statuses, notes, recordedIds, onceki],
   )
   const ozet = useMemo(
     () => raporOzeti(statuses, recordedIds, totalStudents),

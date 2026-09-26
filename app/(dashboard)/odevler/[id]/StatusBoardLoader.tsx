@@ -4,10 +4,15 @@ import { format, parseISO, formatIstanbulGun } from '@/src/shared/date'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import type { SubmissionStatus } from '@/src/shared/types'
 import StatusBoard, { type StatusItem } from './StatusBoard'
+import { fetchAllResult } from '@/src/shared/utils/fetchAll'
+import { donemBasi } from '@/src/shared/utils'
+import { oncekiSayilar } from '@/src/domains/homework/lib/odev-rapor'
 
 interface Props {
   homeworkId: string
   classId: string
+  /** Ödevin sahibi — raporun "kaçıncı kez" sayımı bu öğretmenin ödevleriyle sınırlı */
+  teacherId: string
   dueDate: string | null
   /** Ödevin verildiği gün — yazdırma raporunda gösterilir */
   assignedDate?: string | null
@@ -23,6 +28,7 @@ interface Props {
 export default async function StatusBoardLoader({
   homeworkId,
   classId,
+  teacherId,
   dueDate,
   assignedDate = null,
   schoolId,
@@ -35,7 +41,7 @@ export default async function StatusBoardLoader({
 }: Props) {
   const supabase = await createClient()
 
-  const [studentsResult, subsResult, cumulativeRes, weekLoadResult] = await Promise.all([
+  const [studentsResult, subsResult, cumulativeRes, weekLoadResult, oncekiRes] = await Promise.all([
     supabase
       .from('students')
       .select('id, full_name, student_number, veli_telefon, veli_ad, veli_email')
@@ -58,7 +64,27 @@ export default async function StatusBoardLoader({
     dueDate
       ? getClassWeekLoad([classId], dueDate)
       : Promise.resolve([] as ClassWeekLoad[]),
+    // Yazdırma raporu "4. kez": bu dönem, bu öğretmenin bu sınıfa verdiği DİĞER ödevlerde
+    // işaretlenmiş yapılmadı/eksikler. Otomatik açılan satırlar varsayılan 'yapilmadi' → marked_at şart.
+    fetchAllResult<{ student_id: string; status: string }>((from, to) =>
+      supabase
+        .from('homework_submissions')
+        .select('student_id, status, homeworks!inner(id)')
+        .eq('school_id', schoolId)
+        .in('status', ['yapilmadi', 'eksik'])
+        .not('marked_at', 'is', null)
+        .neq('homework_id', homeworkId)
+        .eq('homeworks.class_id', classId)
+        .eq('homeworks.teacher_id', teacherId)
+        .eq('homeworks.is_template', false)
+        .is('homeworks.deleted_at', null)
+        .gte('homeworks.assigned_date', donemBasi())
+        .order('id')
+        .range(from, to)),
   ])
+  // Tamamlayıcı bilgi: okunamazsa rapor sayısız basılır (yanlış sayı basmaktan iyidir)
+  if (oncekiRes.error) console.error('[StatusBoardLoader] önceki sayılar okunamadı:', oncekiRes.error.message)
+  const onceki = oncekiSayilar(oncekiRes.data ?? [])
 
   const weekLoad: ClassWeekLoad | null = weekLoadResult[0] ?? null
 
@@ -120,6 +146,7 @@ export default async function StatusBoardLoader({
       okulAdi={okulAdi}
       ders={ders}
       ogretmenAdi={ogretmenAdi}
+      onceki={onceki}
     />
   )
 }
