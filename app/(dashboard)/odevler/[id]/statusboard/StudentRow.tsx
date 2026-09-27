@@ -116,7 +116,8 @@ export default function StudentRow({
               onClick={() => onToggleNote(item.student_id)}
               aria-expanded={expandedNote === item.student_id}
               aria-label={hasNote ? `${item.full_name} notunu düzenle` : `${item.full_name} için not ekle`}
-              className={`text-[11px] px-1.5 rounded-full border transition-colors ${
+              // görünür rozet küçük kalır; after: katmanı telefonda parmak hedefini büyütür
+              className={`relative after:absolute after:-inset-x-2 after:-inset-y-1.5 after:content-[''] text-[11px] px-1.5 rounded-full border transition-colors ${
                 noteSaved
                   ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                   : hasNote

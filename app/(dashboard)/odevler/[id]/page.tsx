@@ -106,11 +106,12 @@ export default async function OdevDetayPage({
           Ödev başarıyla güncellendi.
         </div>
       )}
-      <div className="flex items-center justify-between mb-3 print:hidden">
-        <Link href="/odevler" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200">
+      {/* Telefonda 5 eylem tek satıra sığmıyor → alta kayar (kesilmesin: Paylaş/Yazdır sağda kayboluyordu) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 print:hidden">
+        <Link href="/odevler" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 whitespace-nowrap py-1.5">
           ← Ödevler
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 whitespace-nowrap">
           <Link
             href={`/odevler/sinif/${hw.class_id}`}
             className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-2.5 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
