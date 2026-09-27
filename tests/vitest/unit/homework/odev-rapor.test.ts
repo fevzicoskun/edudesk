@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { raporSatirlari, raporOzeti, durumListesi, sutunlaraBol, oncekiSayilar } from '@/src/domains/homework/lib/odev-rapor'
+import { raporSatirlari, raporOzeti, durumListesi, sutunlaraBol, oncekiSayilar, kontrolTamamlandi } from '@/src/domains/homework/lib/odev-rapor'
 import type { SubmissionStatus } from '@/src/shared/types'
 
 const ogrenci = (id: string, ad: string, no: string | null = null) => ({
@@ -194,5 +194,17 @@ describe('tekrar sayısı (kaçıncı kez)', () => {
       { student_id: 's2', status: 'eksik' },
       { student_id: 's2', status: 'yapildi' },
     ])).toEqual({ s1: { yapilmadi: 2, eksik: 1 }, s2: { yapilmadi: 0, eksik: 1 } })
+  })
+})
+
+describe('kontrolTamamlandi — kontrol edilmiş ödev kilitli açılır', () => {
+  it('herkes işaretliyse true', () => {
+    expect(kontrolTamamlandi([{ hasRecord: true }, { hasRecord: true }])).toBe(true)
+  })
+  it('tek bir işaretsiz öğrenci varsa false (kontrol yarım, kaldığı yerden devam)', () => {
+    expect(kontrolTamamlandi([{ hasRecord: true }, { hasRecord: false }])).toBe(false)
+  })
+  it('öğrencisiz ödev kilitlenmez', () => {
+    expect(kontrolTamamlandi([])).toBe(false)
   })
 })

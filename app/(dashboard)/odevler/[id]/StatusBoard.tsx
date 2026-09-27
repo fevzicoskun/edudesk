@@ -11,7 +11,7 @@ import VeliIletisimPaneli from './VeliIletisimPaneli'
 import StatusBoardBar from './statusboard/StatusBoardBar'
 import StudentRow from './statusboard/StudentRow'
 import PrintRapor from './statusboard/PrintRapor'
-import { raporSatirlari, raporOzeti } from '@/src/domains/homework/lib/odev-rapor'
+import { raporSatirlari, raporOzeti, kontrolTamamlandi } from '@/src/domains/homework/lib/odev-rapor'
 import type { OncekiSayilar } from '@/src/domains/homework/lib/odev-rapor'
 import { STATUS_OPTIONS } from './statusboard/types'
 import type { StatusItem } from './statusboard/types'
@@ -31,7 +31,7 @@ export default function StatusBoard({
   kontrolTarihi = '',
   className = '',
   weekLoad = null,
-  readOnly = false,
+  readOnly: yazamaz = false,
   okulAdi = '',
   ders = '',
   ogretmenAdi = '',
@@ -80,6 +80,12 @@ export default function StatusBoard({
   /** Rapordaki "kontrol edildiği tarih": sunucudan gelen son işaretleme günü,
    *  bu oturumda işaretleme yapılırsa bugüne çekilir (sayfa yenilenmeden yazdırılabiliyor) */
   const [kontrolGunu, setKontrolGunu]       = useState(kontrolTarihi)
+  /** Kontrolü bitmiş ödev kilitli açılır; açmak için bir kez onay istenir (yalnız bu ziyaret) */
+  const [kilit, setKilit] = useState<'kilitli' | 'soruyor' | 'acik'>(
+    () => !yazamaz && kontrolTamamlandi(items) ? 'kilitli' : 'acik'
+  )
+  // Başkasının ödevi ya da kilitli kontrol: tüm yazma yolları aynı korumadan geçer
+  const readOnly = yazamaz || kilit !== 'acik'
   const [openBadge, setOpenBadge]           = useState<boolean>(false)
   const [historyOpenId, setHistoryOpenId]   = useState<string | null>(null)
   const [historyMap, setHistoryMap]         = useState<Record<string, SubmissionLogEntry[]>>({})
@@ -300,12 +306,53 @@ export default function StatusBoard({
   return (
     <>
     <div className="print:hidden">
-      {readOnly && (
+      {yazamaz && (
         <div className="mb-4 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 text-sm px-4 py-3 rounded-xl">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
           Bu ödev size ait değil — durumları görüntüleyebilir, değiştiremezsiniz.
+        </div>
+      )}
+      {!yazamaz && kilit !== 'acik' && (
+        <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-sm px-4 py-3 rounded-xl">
+          {kilit === 'kilitli' ? (
+            <>
+              <span className="flex items-center gap-2">
+                <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                ✓ Bu ödev kontrol edildi
+              </span>
+              <button
+                type="button"
+                onClick={() => setKilit('soruyor')}
+                className="min-h-[40px] px-3 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+              >
+                Değişiklik yap
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="font-medium">Kontrol edilmiş ödevi değiştireceksin. Emin misin?</span>
+              <span className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setKilit('acik')}
+                  className="min-h-[40px] px-3 rounded-lg bg-emerald-700 text-white font-semibold hover:bg-emerald-800 transition-colors"
+                >
+                  Evet, değiştir
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKilit('kilitli')}
+                  className="min-h-[40px] px-3 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors"
+                >
+                  Vazgeç
+                </button>
+              </span>
+            </>
+          )}
         </div>
       )}
       {openBadge && (

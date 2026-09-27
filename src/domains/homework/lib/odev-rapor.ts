@@ -98,3 +98,9 @@ export function sutunlaraBol<T>(satirlar: T[]): T[][] {
   if (boy === 0) return [[]]
   return Array.from({ length: sutun }, (_, i) => satirlar.slice(i * boy, (i + 1) * boy)).filter(s => s.length > 0)
 }
+
+/** Tüm öğrenciler işaretlendiyse kontrol bitmiştir → ekran kilitli açılır
+ *  (çıktı almaya girerken yanlış dokunuş kontrolü bozmasın). Boş sınıf kilitlenmez. */
+export function kontrolTamamlandi(items: { hasRecord: boolean }[]): boolean {
+  return items.length > 0 && items.every(i => i.hasRecord)
+}
