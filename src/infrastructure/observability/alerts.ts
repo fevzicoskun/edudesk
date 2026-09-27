@@ -5,7 +5,8 @@
  *   diğer ortamlarda logger.error ile yetinir.
  * - Rate limit: aynı hata parmak izi için saatte en fazla 1,
  *   global toplam saatte en fazla 5 e-posta (bkz. alert-rate-limiter.ts).
- * - Gönderim fire-and-forget: kendi hatası asla yukarı fırlamaz.
+ * - Kendi hatası asla yukarı fırlamaz; promise kayıt + e-posta bitince resolve olur.
+ *   Çağıran BEKLEMELİ (serverless'ta beklenmeyen iş cevaptan sonra kesilebilir).
  * - Alıcı: ALERT_EMAIL → yoksa FEEDBACK_TO → ikisi de yoksa logger.warn.
  */
 import { mailer } from '@/src/lib/mailer'
@@ -30,7 +31,7 @@ export interface CriticalAlertInput {
 // Modül seviyesinde tek instance — aynı server process içinde paylaşılır.
 const limiter = new AlertRateLimiter()
 
-export function sendCriticalAlert(err: CriticalAlertInput): void {
+export async function sendCriticalAlert(err: CriticalAlertInput): Promise<void> {
   // Her durumda logla
   logger.error(
     { event: 'critical_error', name: err.name, message: err.message, digest: err.digest, context: err.context },
@@ -39,7 +40,7 @@ export function sendCriticalAlert(err: CriticalAlertInput): void {
 
   // Kalıcı kayıt — e-posta rate limit'inden bağımsız: e-posta susturulsa bile
   // /platform'da hatanın kaç kez tekrarlandığı görünmeli.
-  kaydetHata({
+  const kayit = kaydetHata({
     name:     err.name,
     message:  err.message,
     source:   err.source ?? 'server',
@@ -48,6 +49,10 @@ export function sendCriticalAlert(err: CriticalAlertInput): void {
     schoolId: err.schoolId,
   })
 
+  await Promise.allSettled([kayit, epostaGonder(err)])
+}
+
+async function epostaGonder(err: CriticalAlertInput): Promise<void> {
   // Sadece production'da e-posta gönder
   if (process.env.NODE_ENV !== 'production') return
 
@@ -71,8 +76,8 @@ export function sendCriticalAlert(err: CriticalAlertInput): void {
 
   const subject = `[EduDesk ALERT] ${err.name}: ${err.message.slice(0, 80)}`
 
-  // Fire-and-forget — gönderim hatası asla yukarı fırlamaz
-  mailer
+  // Gönderim hatası asla yukarı fırlamaz
+  await mailer
     .sendMail({ to, subject, html: buildAlertHtml(err, fingerprint) })
     .catch(sendErr => {
       logger.error(

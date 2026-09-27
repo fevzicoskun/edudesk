@@ -33,7 +33,7 @@ export async function reportClientError(input: {
     // anonim istek — userId olmadan raporla
   }
 
-  sendCriticalAlert({
+  await sendCriticalAlert({
     name:    'ClientError',
     message: parsed.data.message,
     digest:  parsed.data.digest,

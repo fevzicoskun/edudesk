@@ -25,7 +25,7 @@ export const cronHataBildirimiFn = inngest.createFunction(
     const fonksiyon = data.function_id ?? 'bilinmeyen-fonksiyon'
     const mesaj     = data.error?.message ?? 'Hata mesajı yok'
 
-    sendCriticalAlert({
+    await sendCriticalAlert({
       name:    `CronFailed: ${fonksiyon}`,
       message: mesaj,
       source:  'cron',
