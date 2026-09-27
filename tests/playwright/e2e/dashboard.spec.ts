@@ -13,13 +13,15 @@ test.describe('Öğretmen Dashboard', () => {
     await expect(page.locator('h1').first()).toBeVisible({ timeout: 8_000 })
   })
 
-  test('SummaryCard\'lar görünür — Bugünkü ödev, Toplam eksik, Aktif risk', async ({ page }) => {
+  test('sade ana sayfa: asıl bölümler var, tekrar eden özet kartları yok', async ({ page }) => {
     await page.goto('/anasayfa')
     await expect(page).not.toHaveURL(/login/)
-    // SummaryCard label'ları
-    await expect(page.locator('text=Bugünkü ödev').first()).toBeVisible({ timeout: 8_000 })
-    await expect(page.locator('text=Toplam eksik').first()).toBeVisible({ timeout: 8_000 })
-    await expect(page.locator('text=Aktif risk').first()).toBeVisible({ timeout: 8_000 })
+    await expect(page.getByText('Yapılacaklarım').first()).toBeVisible({ timeout: 8_000 })
+    await expect(page.getByText('Ödev Tamamlanma').first()).toBeVisible({ timeout: 8_000 })
+    // 2026-09-27: 3 renkli kart + "Bu Hafta" şeridi kaldırıldı — aynı bilgiler sayfada zaten vardı
+    for (const eski of ['Bugünkü ödev', 'Toplam eksik', 'Aktif risk', 'Bu Hafta']) {
+      await expect(page.getByText(eski, { exact: true })).toHaveCount(0)
+    }
   })
 
   test('"Bugün Yapılacaklar" veya "Hızlı Aksiyonlar" bölümü render edilir', async ({ page }) => {

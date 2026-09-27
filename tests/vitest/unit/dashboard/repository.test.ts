@@ -52,18 +52,6 @@ describe('DashboardRepository — boş dizi guard\'ları', () => {
     expect(createClient).not.toHaveBeenCalled()
   })
 
-  it('getWeeklySubmissionStats([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getWeeklySubmissionStats([], '2026-01-01')
-    expect(result).toEqual({ data: [] })
-    expect(createClient).not.toHaveBeenCalled()
-  })
-
-  it('getTodayClassAttendance([],...): createClient çağrılmaz, { data: [] } döner', async () => {
-    const result = await DashboardRepository.getTodayClassAttendance([], '2026-06-07', SCHOOL_ID)
-    expect(result).toEqual({ data: [] })
-    expect(createClient).not.toHaveBeenCalled()
-  })
-
 })
 
 // ─── getClassSubmissions — iki aşamalı sorgu mantığı ─────────

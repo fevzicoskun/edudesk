@@ -21,12 +21,6 @@ import { BeklemeWidget } from './IlkAdimlarWidget'
 import BaslangicKartiOgretmen from './BaslangicKartiOgretmen'
 import { SetupService } from '@/src/domains/onboarding/services/SetupService'
 
-type Tone = 'blue' | 'orange' | 'rose'
-const TONE: Record<Tone, string> = {
-  blue:   'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800',
-  orange: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800',
-  rose:   'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/30 dark:text-rose-300 dark:border-rose-800',
-}
 
 const DUTY_DAYS: Record<number, string> = { 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma' }
 
@@ -65,19 +59,6 @@ function NobetBanner({ duties, todayDow }: { duties: DutyLite[]; todayDow: numbe
     </Link>
   )
 }
-
-function SummaryCard({ label, value, tone, href }: { label: string; value: number; tone: Tone; href?: string }) {
-  const cls = `border rounded-xl p-4 transition-opacity ${TONE[tone]} ${href ? 'hover:opacity-80 cursor-pointer' : ''}`
-  const inner = (
-    <>
-      <p className="text-3xl font-bold">{value}</p>
-      <p className="text-xs mt-1 opacity-90">{label}</p>
-    </>
-  )
-  if (href) return <Link href={href} className={cls}>{inner}</Link>
-  return <div className={cls}>{inner}</div>
-}
-
 
 export default async function OgretmenDashboard() {
   const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
@@ -164,32 +145,6 @@ export default async function OgretmenDashboard() {
         <Suspense fallback={<div className="h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
           <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
         </Suspense>
-      </div>
-
-      {/* 3 Ana Kart */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-        <SummaryCard label="Bugünkü ödev"   value={metrics.todayHomeworkCount} tone="blue"   href="/odevler" />
-        <SummaryCard label="Toplam eksik"   value={metrics.totalMissingCount}  tone="orange" href="/odevler?durum=yapilmadi" />
-        <SummaryCard label="Aktif risk"     value={metrics.activeRiskCount}    tone="rose"   href="#risk-uyarilari" />
-      </div>
-
-      {/* Haftalık Özet Şeridi */}
-      <div className="bg-gray-50 dark:bg-slate-800/50 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4 flex items-center justify-between">
-        <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Bu Hafta</span>
-        <div className="flex gap-6">
-          <div className="text-center">
-            <p className="text-sm font-bold text-gray-800 dark:text-slate-200">{metrics.weekly.submittedCount}</p>
-            <p className="text-[10px] text-gray-400">Teslim edilen</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-gray-800 dark:text-slate-200">%{metrics.weekly.avgCompletionPct}</p>
-            <p className="text-[10px] text-gray-400">Ort. tamamlanma</p>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-bold text-rose-600">{metrics.weekly.activeRiskCount}</p>
-            <p className="text-[10px] text-gray-400">Aktif risk</p>
-          </div>
-        </div>
       </div>
 
       {/* Ödev Tamamlanma Widget */}

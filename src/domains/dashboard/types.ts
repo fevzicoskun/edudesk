@@ -11,12 +11,6 @@ export type HomeworkLite = {
   classes: { name: string; grade: number } | null
 }
 
-export type WeeklyStats = {
-  submittedCount: number
-  avgCompletionPct: number
-  activeRiskCount: number
-}
-
 export type OdevTamamlanmaItem = {
   id:        string   // homework id — /odevler/[id] linki için
   title:     string   // tam başlık (arayüz satır sonunda kırpar)
@@ -29,21 +23,9 @@ export type OdevTamamlanmaItem = {
   isaretli:  number
 }
 
-export type YoklamaDurumItem = {
-  classId:   string
-  className: string
-  grade:     number
-  alindi:    boolean
-}
-
 export type DashboardMetrics = {
-  todayHomeworkCount: number
-  totalMissingCount: number
-  activeRiskCount: number
-  weekly: WeeklyStats
   homeworks: HomeworkLite[]
   tamamlanmaData: OdevTamamlanmaItem[]
-  yoklamaDurumu: YoklamaDurumItem[]
   kontrolEdilenHwIds: string[]
   riskAlerts: RiskAlert[]
 }

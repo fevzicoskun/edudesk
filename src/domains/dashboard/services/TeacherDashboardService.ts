@@ -3,10 +3,9 @@ import { DashboardRepository } from '../repositories/DashboardRepository'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
-import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem, YoklamaDurumItem } from '../types'
+import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem } from '../types'
 import {
   mondayOf as _mondayOf,
-  getWeekStart,
   buildHwMissMap,
   buildAbsenceMap,
   computeAlerts,
@@ -22,66 +21,21 @@ export { buildHwMissMap, buildAbsenceMap, computeAlerts } from '../lib/riskEngin
 
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
-    const today     = todayLocalISO()
-    const weekStart = getWeekStart()
+    const today = todayLocalISO()
 
     const profile  = await getCurrentProfile()
     if (!profile?.school_id) throw new Error('Profil bulunamadı')
     const schoolId = profile.school_id
 
-    const { homeworks, hwIds, classIds, submissions, attendanceRows, students } =
+    const { homeworks, submissions, attendanceRows, students } =
       await fetchRiskInputs(teacherId, schoolId)
 
-    const [weeklyResult, todayAttResult] = await Promise.all([
-      DashboardRepository.getWeeklySubmissionStats(hwIds, weekStart),
-      DashboardRepository.getTodayClassAttendance(classIds, today, schoolId),
-    ])
-
-    const classesWithAttToday = new Set((todayAttResult.data ?? []).map(a => (a as { class_id: string }).class_id))
-    const weeklySubmissions   = (weeklyResult.data ?? []) as SubmissionRow[]
-
-    const todayHomeworkCount = homeworks.filter(h => h.due_date === today).length
-    const totalMissingCount  = submissions.filter(s => s.status === 'eksik').length
-
-    const alerts = computeAlerts(homeworks, submissions, attendanceRows, students)
-    const activeRiskCount = alerts.filter(a => a.riskLevel !== 'low').length
-
-    const weeklyDoneCount = weeklySubmissions.filter(s => s.status === 'yapildi').length
-    const avgCompletionPct = weeklySubmissions.length > 0
-      ? Math.round((weeklyDoneCount / weeklySubmissions.length) * 100)
-      : 0
-
-    const tamamlanmaData = tamamlanmaSatirlari(homeworks, submissions, today)
-
-    const seenClasses = new Map<string, { classId: string; className: string; grade: number }>()
-    for (const hw of homeworks) {
-      if (!seenClasses.has(hw.class_id)) {
-        seenClasses.set(hw.class_id, {
-          classId:   hw.class_id,
-          className: hw.classes?.name ?? '—',
-          grade:     hw.classes?.grade ?? 0,
-        })
-      }
-    }
-    const yoklamaDurumu: YoklamaDurumItem[] = [...seenClasses.values()]
-      .sort((a, b) => a.grade - b.grade || a.className.localeCompare(b.className, 'tr'))
-      .map(c => ({ ...c, alindi: classesWithAttToday.has(c.classId) }))
-
     return {
-      todayHomeworkCount,
-      totalMissingCount,
-      activeRiskCount,
-      weekly: {
-        submittedCount: weeklyDoneCount,
-        avgCompletionPct,
-        activeRiskCount: activeRiskCount,
-      },
       homeworks: homeworks as HomeworkLite[],
-      tamamlanmaData,
-      yoklamaDurumu,
+      tamamlanmaData: tamamlanmaSatirlari(homeworks, submissions, today),
       // en az bir öğrencisi işaretlenmiş ödevler = kontrol edilmiş
       kontrolEdilenHwIds: [...new Set(submissions.map(s => s.homework_id))],
-      riskAlerts: alerts,
+      riskAlerts: computeAlerts(homeworks, submissions, attendanceRows, students),
     }
   },
 

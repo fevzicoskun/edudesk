@@ -55,19 +55,6 @@ export const DashboardRepository = {
       .limit(500)
   },
 
-  async getWeeklySubmissionStats(hwIds: string[], weekStart: string) {
-    if (hwIds.length === 0) return { data: [] }
-    const supabase = await createClient()
-    return fetchAllResult((f, t) => supabase
-      .from('homework_submissions')
-      .select('homework_id, status')
-      .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
-      .in('homework_id', hwIds)
-      .gte('updated_at', weekStart)
-      .order('id')
-      .range(f, t))
-  },
-
   async insertActivityLog(row: {
     teacher_id: string
     school_id: string
@@ -76,17 +63,6 @@ export const DashboardRepository = {
   }) {
     const supabase = await createClient()
     await supabase.from('teacher_activity_log').insert({ ...row, meta: row.meta as Json | undefined })
-  },
-
-  async getTodayClassAttendance(classIds: string[], todayStr: string, schoolId: string) {
-    if (classIds.length === 0) return { data: [] }
-    const supabase = await createClient()
-    return supabase
-      .from('attendance')
-      .select('class_id')
-      .in('class_id', classIds)
-      .eq('school_id', schoolId)
-      .eq('date', todayStr)
   },
 
 

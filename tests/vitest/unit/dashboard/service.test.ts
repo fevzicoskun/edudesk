@@ -6,10 +6,8 @@ vi.mock('@/src/domains/dashboard/repositories/DashboardRepository', () => ({
     getSubmissions:           vi.fn(),
     getAttendanceRows:        vi.fn(),
     getStudentsByClasses:     vi.fn(),
-    getWeeklySubmissionStats: vi.fn(),
     insertActivityLog:        vi.fn(),
     getClassSubmissions:      vi.fn(),
-    getTodayClassAttendance:  vi.fn(),
   },
 }))
 
@@ -20,7 +18,6 @@ vi.mock('@/src/shared/auth', () => ({
 const { DashboardRepository } = await import('@/src/domains/dashboard/repositories/DashboardRepository')
 const { getCurrentProfile }   = await import('@/src/shared/auth')
 const { TeacherDashboardService } = await import('@/src/domains/dashboard/services/TeacherDashboardService')
-const { todayLocalISO } = await import('@/src/shared/date')
 
 const TEACHER_ID = 'teacher-1'
 const SCHOOL_ID  = 'school-1'
@@ -34,42 +31,7 @@ beforeEach(() => {
 })
 
 describe('getDashboardMetrics', () => {
-  it('bugün teslim ödev sayısını doğru sayar', async () => {
-    const today = todayLocalISO()
-    ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [{ id: HW_ID, title: 'Test', subject: 'Mat', due_date: today, class_id: CLASS_ID, classes: { name: '10-A', grade: 10 } }],
-    })
-    ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-
-    const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
-    expect(metrics.todayHomeworkCount).toBe(1)
-  })
-
-  it('eksik submission toplamını doğru sayar', async () => {
-    const pastDate = '2020-01-01'
-    ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [{ id: HW_ID, title: 'Test', subject: 'Mat', due_date: pastDate, class_id: CLASS_ID, classes: null }],
-    })
-    ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: [
-        { homework_id: HW_ID, student_id: STUDENT_ID, status: 'eksik' },
-        { homework_id: HW_ID, student_id: 'student-2', status: 'yapildi' },
-      ],
-    })
-    ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-
-    const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
-    expect(metrics.totalMissingCount).toBe(1)
-  })
-
-  it('aktif risk sayısını doğru hesaplar (3 miss → high risk)', async () => {
+  it('3 kaçırma → risk uyarısı (low olmayan) üretir', async () => {
     const pastDate = '2020-01-01'
     ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: Array.from({ length: 5 }, (_, i) => ({
@@ -85,11 +47,9 @@ describe('getDashboardMetrics', () => {
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [{ id: STUDENT_ID, full_name: 'Ahmet', class_id: CLASS_ID, classes: { name: '10-A' } }],
     })
-    ;(DashboardRepository.getWeeklySubmissionStats as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
-    ;(DashboardRepository.getTodayClassAttendance as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
 
     const metrics = await TeacherDashboardService.getDashboardMetrics(TEACHER_ID)
-    expect(metrics.activeRiskCount).toBe(1)
+    expect(metrics.riskAlerts.filter(a => a.riskLevel !== 'low')).toHaveLength(1)
   })
 })
 
