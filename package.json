@@ -29,6 +29,7 @@
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
     "lucide-react": "^1.16.0",
+    "modern-screenshot": "^4.7.0",
     "next": "^16.2.7",
     "pdfjs-dist": "^6.0.227",
     "pino": "^10.3.1",

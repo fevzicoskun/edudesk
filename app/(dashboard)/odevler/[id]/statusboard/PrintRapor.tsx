@@ -54,7 +54,7 @@ export default function PrintRapor({
   ].filter(([, v]) => v)
 
   return (
-    <div className="hidden print:block text-black">
+    <div data-odev-rapor className="hidden print:block text-black">
       {/* not: <header> kullanma — globals.css print kuralı tüm header'ları gizliyor */}
       <div className="flex items-center justify-between text-[9pt] uppercase tracking-wider text-gray-600 border-b border-gray-300 pb-1">
         <span className="font-semibold">{okulAdi}</span>

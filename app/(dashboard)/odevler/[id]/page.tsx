@@ -6,6 +6,7 @@ import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import PrintButton from '@/components/PrintButton'
+import RaporPaylasButton from './RaporPaylasButton'
 import { format, parseISO } from '@/src/shared/date'
 import { isTeachingRole } from '@/src/shared/types'
 import StatusBoardLoader from './StatusBoardLoader'
@@ -141,6 +142,7 @@ export default async function OdevDetayPage({
               </Link>
             </>
           )}
+          <RaporPaylasButton sinif={cls?.name ?? ''} />
           <PrintButton />
         </div>
       </div>
