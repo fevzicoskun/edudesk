@@ -25,6 +25,10 @@ export async function reportClientError(input: {
   const parsed = reportSchema.safeParse(input)
   if (!parsed.success) return { ok: false }
 
+  // digest'li hata sunucuda doğdu: instrumentation.ts onRequestError onu gerçek
+  // mesajıyla zaten kaydetti; buraya gelen kopya Next'in gizlenmiş mesajını taşır.
+  if (parsed.data.digest) return { ok: true }
+
   // Kullanıcı oturumu varsa context'e ekle; anonimse sessizce devam et
   let userId: string | undefined
   try {
