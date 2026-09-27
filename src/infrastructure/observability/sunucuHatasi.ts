@@ -27,3 +27,14 @@ export function sunucuHatasiAlarmi(
     },
   }
 }
+
+/** Kullanıcı sayfa yüklenirken ayrıldı (geri tuşu, uygulamayı kapatma) — sunucu hatası değil.
+ *  Kaydedilirse Hatalar paneli ve alarm e-postası gürültüyle dolar, gerçek hata kaybolur. */
+const KOPMA_MESAJLARI = new Set(['aborted', 'The destination stream closed early.'])
+const KOPMA_KODLARI   = new Set(['ECONNRESET', 'ERR_STREAM_PREMATURE_CLOSE', 'ABORT_ERR'])
+
+export function istemciKoptu(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const kod = (err as { code?: unknown }).code
+  return KOPMA_MESAJLARI.has(err.message) || (typeof kod === 'string' && KOPMA_KODLARI.has(kod))
+}
