@@ -39,8 +39,6 @@ const BADGE: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
-type HomeworkRel = { id: string; title: string; subject: string; due_date: string; teacher_id: string } | null
-type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; studentId: string }> }) {
@@ -71,13 +69,12 @@ export default async function OgrenciDetayPage({
 
   const schoolId = currentProfile.school_id
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
-  // Ödev geçmişi (2026-09-28): okuldaki öğretmen öğrencinin TÜM ödevlerini görür; kapsam dışı olanlar salt okunur
-  const submissionsQuery = supabase.from('homework_submissions').select('id, status, updated_at, homeworks!inner(id, title, subject, due_date, teacher_id)').eq('student_id', studentId).eq('school_id', schoolId).not('marked_at', 'is', null)
-
-  const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
+  const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
     supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
-    submissionsQuery,
+    // 2026-09-28: okuldaki öğretmen öğrencinin TÜM ödevlerini salt-okunur görür. Yazdırılabilir özetle
+    // AYNI kaynak — sayılar ve tamamlama oranı iki ekranda birebir tutar.
+    HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true }),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
     supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
@@ -107,13 +104,12 @@ export default async function OgrenciDetayPage({
 
   const cls = classResult.data
   const student = studentResult.data
-  const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
-    (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
-  )
+  if ('error' in odevRes) throw new Error(odevRes.error)
+  const odevler = odevRes.homeworks
+  const odevStats = odevRes.stats
   const studentNotesTableExists = notesResult.error?.code !== '42P01'
   const notes = (notesResult.data ?? []) as NoteRow[]
 
-  const statusCounts = submissions.reduce((acc, s) => ({ ...acc, [s.status]: (acc[s.status] ?? 0) + 1 }), {} as Record<SubmissionStatus, number>)
 
   const attendanceTableExists = attendanceRes.error?.code !== '42P01'
   const attendanceRecords = (attendanceRes.data ?? []) as { date: string; status: string }[]
@@ -127,11 +123,11 @@ export default async function OgrenciDetayPage({
   const absenceWarn   = absentDays >= ATTENDANCE_WARN_DAYS && !absenceDanger
 
   // Performans skoru
-  const totalSubmissions = submissions.length
-  const completedCount   = (statusCounts['yapildi'] ?? 0) + (statusCounts['gec'] ?? 0) * 0.5
-  const completionRate   = totalSubmissions > 0 ? completedCount / totalSubmissions : 1
-  const isRisk   = absenceDanger || completionRate < 0.4
-  const isWarn   = !isRisk && (absenceWarn || completionRate < 0.6)
+  // Özetle aynı tanım: yapıldı / (kontrol edilen − mazeretli). Değerlendirilecek ödev yoksa oran yok (risk sayılmaz).
+  const degerlendirilen = odevStats.total - odevStats.mazeretli - odevStats.kontrolEdilmedi
+  const completionRate  = degerlendirilen > 0 ? odevStats.completionRate / 100 : null
+  const isRisk   = absenceDanger || (completionRate !== null && completionRate < 0.4)
+  const isWarn   = !isRisk && (absenceWarn || (completionRate !== null && completionRate < 0.6))
   const riskLabel = isRisk ? 'Risk' : isWarn ? 'Dikkat' : 'İyi'
   const riskColor = isRisk
     ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
@@ -154,9 +150,7 @@ export default async function OgrenciDetayPage({
   // Öğrenci 360: zaman çizelgesi — sayfanın zaten çektiği verilerden derlenir.
   const timelineEvents = buildStudentTimeline({
     attendance: attendanceRecords,
-    submissions: submissions.map(su => ({
-      status: su.status, dueDate: su.homeworks?.due_date ?? null, title: su.homeworks?.title ?? null,
-    })),
+    submissions: odevler.flatMap(h => h.status ? [{ status: h.status, dueDate: h.due_date, title: h.title }] : []),
     grades: grades.map(g => ({
       examDate: g.grade_columns.exam_date, title: g.grade_columns.title,
       score: g.score, maxScore: g.grade_columns.max_score,
@@ -202,15 +196,19 @@ export default async function OgrenciDetayPage({
           <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-xs text-gray-500 dark:text-slate-400">Ödev Tamamlanma</p>
-              <p className="text-xs font-bold text-gray-700 dark:text-slate-200">{Math.round(completionRate * 100)}%</p>
+              <p className="text-xs font-bold text-gray-700 dark:text-slate-200">{completionRate === null ? '—' : `%${odevStats.completionRate}`}</p>
             </div>
             <div className="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full ${completionRate >= 0.8 ? 'bg-green-400' : completionRate >= 0.6 ? 'bg-yellow-400' : 'bg-red-400'}`}
-                style={{ width: `${Math.round(completionRate * 100)}%` }}
-              />
+              {completionRate !== null && (
+                <div
+                  className={`h-full rounded-full ${completionRate >= 0.8 ? 'bg-green-400' : completionRate >= 0.6 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                  style={{ width: `${odevStats.completionRate}%` }}
+                />
+              )}
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">{totalSubmissions} ödev kaydı</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
+              {odevStats.total} ödev{odevStats.kontrolEdilmedi > 0 ? ` · ${odevStats.kontrolEdilmedi} kontrol edilmedi` : ''}
+            </p>
           </div>
           {/* Devamsızlık */}
           <div>
@@ -240,7 +238,7 @@ export default async function OgrenciDetayPage({
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5">
         {(['yapildi', 'eksik', 'yapilmadi', 'gec', 'mazeretli'] as SubmissionStatus[]).map((status) => (
           <div key={status} className={`border rounded-xl p-3 ${BADGE[status]}`}>
-            <p className="text-2xl font-bold">{statusCounts[status] ?? 0}</p>
+            <p className="text-2xl font-bold">{odevStats[status]}</p>
             <p className="text-xs mt-0.5">{LABELS[status]}</p>
           </div>
         ))}
@@ -256,7 +254,7 @@ export default async function OgrenciDetayPage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <OdevGecmisiSection submissions={submissions.map(s => ({ ...s, acilabilir: !!s.homeworks && kapsamdaMi(kapsam, s.homeworks.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
+        <OdevGecmisiSection odevler={odevler.map(h => ({ ...h, acilabilir: kapsamdaMi(kapsam, h.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>

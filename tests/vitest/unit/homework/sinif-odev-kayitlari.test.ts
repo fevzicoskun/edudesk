@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { sinifOdevKayitlari } from '@/src/domains/homework/lib/stats'
 
-const hw = (id: string) => ({ id, title: `Ödev ${id}`, subject: 'Matematik', due_date: '2026-09-20' })
+const hw = (id: string) => ({ id, title: `Ödev ${id}`, subject: 'Matematik', due_date: '2026-09-20', teacher_id: 't1' })
 const sub = (homework_id: string, student_id: string, status: string, note: string | null = null) =>
   ({ homework_id, student_id, status, note })
 

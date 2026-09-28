@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { computeStudentHomeworkStats } from '@/src/domains/homework/lib/stats'
 import type { SubmissionStatus } from '@/src/shared/types'
 
-type Record = { id: string; title: string; subject: string; due_date: string; status: SubmissionStatus | null; note: string | null }
+type Record = { id: string; title: string; subject: string; due_date: string; status: SubmissionStatus | null; note: string | null; teacher_id: string }
 
 const hw = (id: string, status: SubmissionStatus | null): Record =>
-  ({ id, title: `Ödev ${id}`, subject: 'Mat', due_date: '2026-06-01', status, note: null })
+  ({ id, title: `Ödev ${id}`, subject: 'Mat', due_date: '2026-06-01', status, note: null, teacher_id: 't1' })
 
 describe('computeStudentHomeworkStats()', () => {
   it('boş liste → sıfır istatistik, rate=0', () => {

@@ -299,6 +299,7 @@ export const HomeworkService = {
         title: hw.title,
         subject: hw.subject,
         due_date: hw.due_date,
+        teacher_id: hw.teacher_id,
         status: (sub?.status ?? null) as HomeworkRecord['status'], // satır yok = işaretlenmedi
         note: sub?.note ?? null,
       }

@@ -1,6 +1,6 @@
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
-import type { HomeworkRecord, StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
+import { dersOzeti, type HomeworkRecord, type StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
 
 const ETIKET: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı', gec: 'Geç', eksik: 'Eksik', yapilmadi: 'Yapılmadı', mazeretli: 'Mazeretli',
@@ -34,6 +34,7 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
     { etiket: 'Mazeretli', sayi: stats.mazeretli, cls: 'text-gray-600' },
     { etiket: 'Kontrol edilmedi', sayi: stats.kontrolEdilmedi, cls: 'text-gray-500' },
   ].filter(o => o.sayi > 0)
+  const dersler = dersOzeti(homeworks)
 
   return (
     <div className="bg-white text-black rounded-xl border border-gray-200 p-5 print:border-0 print:p-0 print:rounded-none">
@@ -62,6 +63,12 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
         ))}
         {stats.total - stats.kontrolEdilmedi - stats.mazeretli > 0 && (
           <span className="text-gray-700"> — tamamlama %{stats.completionRate}</span>
+        )}
+        {dersler.length > 1 && (
+          <span className="block mt-0.5 text-[9.5pt] text-gray-800">
+            <span className="font-semibold">Derslere göre (yapılan/kontrol edilen): </span>
+            {dersler.map(d => `${d.ders} ${d.degerlendirilen > 0 ? `${d.yapildi}/${d.degerlendirilen}` : '—'}`).join('  ·  ')}
+          </span>
         )}
       </p>
 

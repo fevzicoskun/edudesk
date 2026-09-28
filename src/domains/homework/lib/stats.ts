@@ -8,6 +8,8 @@ export type HomeworkRecord = {
   /** null = öğretmen henüz işaretlemedi (kontrol edilmedi) */
   status: SubmissionStatus | null
   note: string | null
+  /** ödevi veren — öğrenci sayfasında satırın açılabilirliği (kapsam) için */
+  teacher_id: string
 }
 
 export type StudentHomeworkStats = {
@@ -31,7 +33,25 @@ export function computeStudentHomeworkStats(homeworks: HomeworkRecord[]): Studen
   return { total: homeworks.length, ...counts, completionRate }
 }
 
-type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null }
+export type DersOzeti = { ders: string; yapildi: number; degerlendirilen: number; toplam: number }
+
+/** Ders bazlı durum. "yapildi / degerlendirilen" completionRate ile aynı tanım:
+ *  mazeretli ve kontrol edilmemiş ödev paydaya girmez. Ders adı harf/boşluk farkıyla bölünmez. */
+export function dersOzeti(homeworks: HomeworkRecord[]): DersOzeti[] {
+  const m = new Map<string, DersOzeti>()
+  for (const hw of homeworks) {
+    const ad = hw.subject.trim() || 'Diğer'
+    const anahtar = ad.toLocaleLowerCase('tr-TR')
+    const d = m.get(anahtar) ?? { ders: ad, yapildi: 0, degerlendirilen: 0, toplam: 0 }
+    d.toplam++
+    if (hw.status && hw.status !== 'mazeretli') d.degerlendirilen++
+    if (hw.status === 'yapildi') d.yapildi++
+    m.set(anahtar, d)
+  }
+  return [...m.values()].sort((a, b) => a.ders.localeCompare(b.ders, 'tr'))
+}
+
+type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null; teacher_id: string }
 type TeslimSatiri = { homework_id: string; student_id: string; status: string; note: string | null }
 
 /** Sınıfın ödevlerini + işaretli teslimleri öğrenci başına HomeworkRecord listesine çevirir.
@@ -45,7 +65,7 @@ export function sinifOdevKayitlari(
   return new Map(ogrenciIds.map(sid => [sid, odevler.map(hw => {
     const t = teslim.get(`${sid}:${hw.id}`)
     return {
-      id: hw.id, title: hw.title, subject: hw.subject, due_date: hw.due_date,
+      id: hw.id, title: hw.title, subject: hw.subject, due_date: hw.due_date, teacher_id: hw.teacher_id,
       status: (t?.status ?? null) as SubmissionStatus | null,
       note: t?.note ?? null,
     }

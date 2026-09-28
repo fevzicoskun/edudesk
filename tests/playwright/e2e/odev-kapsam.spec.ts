@@ -215,4 +215,35 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
     await expect(gecmis.getByRole('link', { name: new RegExp(baslik.zb) })).toHaveCount(0)
     await expect(gecmis.getByRole('link', { name: new RegExp(baslik.ogr) })).toHaveAttribute('href', `/odevler/${ids.ogr}`)
   })
+
+  test('öğrenci sayfası ile yazdırılabilir özet aynı sayıyı ve ders satırını gösterir', async ({ page }) => {
+    await page.goto(`/siniflar/${classId}/ogrenciler/${ogrenci.id}/odev-raporu`)
+    const toplamMetni = await page.getByText(/^Toplam \d+ ödev:/).textContent({ timeout: 20_000 })
+    const toplam = Number(toplamMetni!.match(/Toplam (\d+) ödev/)![1])
+    const oranOzet = (await page.locator('p', { hasText: /^Toplam \d+ ödev:/ }).textContent())!.match(/tamamlama %(\d+)/)?.[1]
+
+    await page.goto(`/siniflar/${classId}/ogrenciler/${ogrenci.id}`)
+    const perf = page.locator('div', { has: page.getByRole('heading', { name: 'Performans Özeti' }) }).last()
+    await expect(perf.getByText(new RegExp(`^${toplam} ödev`))).toBeVisible({ timeout: 20_000 })
+    await expect(perf.getByText(oranOzet ? `%${oranOzet}` : '—', { exact: true })).toBeVisible()
+    const gecmis = page.locator('section', { has: page.getByRole('heading', { name: 'Ödev Geçmişi' }) })
+    await expect(gecmis.getByLabel('Derslere göre')).toContainText('Test')
+  })
+
+  test.describe('zümre başkanı (silinmiş ödev)', () => {
+    test.use({ storageState: auth('zumre_baskani') })
+    test('silinmiş ödev öğrenci sayfasında görünmez (RLS silineni zümre başkanına gösterse bile)', async ({ page }) => {
+      await db.from('homework_submissions').update({ status: 'yapildi', marked_at: new Date().toISOString() })
+        .eq('homework_id', ids.mudur).eq('student_id', ogrenci.id)
+      await db.from('homeworks').update({ deleted_at: new Date().toISOString() }).eq('id', ids.mudur)
+      try {
+        await page.goto(`/siniflar/${classId}/ogrenciler/${ogrenci.id}`)
+        const gecmis = page.locator('section', { has: page.getByRole('heading', { name: 'Ödev Geçmişi' }) })
+        await expect(gecmis.getByText(baslik.ogr)).toBeVisible({ timeout: 20_000 })
+        await expect(gecmis.getByText(baslik.mudur)).toHaveCount(0)
+      } finally {
+        await db.from('homeworks').update({ deleted_at: null }).eq('id', ids.mudur)
+      }
+    })
+  })
 })

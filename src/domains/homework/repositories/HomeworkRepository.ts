@@ -1,5 +1,5 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { fetchAll } from '@/src/shared/utils/fetchAll'
+import { fetchAll, fetchAllResult } from '@/src/shared/utils/fetchAll'
 import type { SubmissionStatus } from '../types'
 
 export type SubmissionLogEntry = {
@@ -207,49 +207,36 @@ export const HomeworkRepository = {
     const supabase = await createClient()
     let homeworksQuery = supabase
       .from('homeworks')
-      .select('id, title, subject, due_date')
+      .select('id, title, subject, due_date, teacher_id')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
       .eq('is_template', false)
       .is('deleted_at', null)
       .order('due_date', { ascending: false })
+      .order('id')
     if (teacherIds) homeworksQuery = homeworksQuery.in('teacher_id', teacherIds)
-    const [studentRes, homeworksRes] = await Promise.all([
+    // Teslimler öğrenci id'siyle süzülür — ödev id listesi .in()'e verilirse yıl içinde URL şişer (414).
+    // Başka sınıfın/silinmiş ödevin teslimi homeworks listesinde eşleşmez, yok sayılır.
+    const [studentRes, homeworksRes, subsRes] = await Promise.all([
       supabase
         .from('students')
         .select('full_name, student_number, veli_ad, veli_telefon')
         .eq('id', studentId)
         .eq('school_id', schoolId)
-        .single(),
-      homeworksQuery,
+        .maybeSingle(), // yok → student null → servis 'Öğrenci bulunamadı'
+      fetchAllResult((from, to) => homeworksQuery.range(from, to)),
+      fetchAllResult((from, to) => supabase
+        .from('homework_submissions')
+        .select('homework_id, status, note')
+        .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi, "yapılmadı" değil
+        .eq('student_id', studentId)
+        .eq('school_id', schoolId)
+        .order('id')
+        .range(from, to)),
     ])
 
-    if (studentRes.error || homeworksRes.error) {
-      return {
-        error: studentRes.error?.message ?? homeworksRes.error?.message,
-        student: null, homeworks: [], submissions: [],
-      }
-    }
-
-    const homeworkIds = (homeworksRes.data ?? []).map(h => h.id)
-    const subsRes = homeworkIds.length > 0
-      ? await supabase
-          .from('homework_submissions')
-          .select('homework_id, status, note')
-          .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi, "yapılmadı" değil
-          .in('homework_id', homeworkIds)
-          .eq('student_id', studentId)
-          .eq('school_id', schoolId)
-      : { data: [] as { homework_id: string; status: string; note: string | null }[], error: null }
-
-    if (subsRes.error) {
-      return {
-        error: subsRes.error.message,
-        student: null,
-        homeworks: [],
-        submissions: [],
-      }
-    }
+    const error = studentRes.error ?? homeworksRes.error ?? subsRes.error
+    if (error) return { error: error.message, student: null, homeworks: [], submissions: [] }
 
     return {
       student: studentRes.data as { full_name: string; student_number: string | null; veli_ad: string | null; veli_telefon: string | null } | null,
@@ -263,7 +250,7 @@ export const HomeworkRepository = {
     const supabase = await createClient()
     let homeworksQuery = supabase
       .from('homeworks')
-      .select('id, title, subject, due_date')
+      .select('id, title, subject, due_date, teacher_id')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
       .eq('is_template', false)
