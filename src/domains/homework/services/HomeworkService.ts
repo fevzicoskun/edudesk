@@ -264,9 +264,12 @@ export const HomeworkService = {
     return data ?? []
   },
 
+  /** tumOdevler: öğrenci bazlı ekranlarda (öğrenci sayfası/özeti) okuldaki öğretmen öğrencinin tüm ödevlerini
+   *  salt-okunur görür (2026-09-28). /odevler ve ödev detayındaki modal kapsama bağlı kalır. */
   async getStudentHomeworkProfile(
     studentId: string,
     classId: string,
+    { tumOdevler = false }: { tumOdevler?: boolean } = {},
   ): Promise<
     | { error: string }
     | {
@@ -282,7 +285,7 @@ export const HomeworkService = {
     const kapsam = await HomeworkService.getOdevKapsami()
     if (!kapsam) return { error: 'Giriş gerekli' }
     const profileData = await HomeworkRepository.findStudentHomeworkProfile(
-      studentId, classId, ability.schoolId, kapsam.tumu ? undefined : kapsam.ogretmenIds,
+      studentId, classId, ability.schoolId, tumOdevler || kapsam.tumu ? undefined : kapsam.ogretmenIds,
     )
 
     if ('error' in profileData && profileData.error) return { error: profileData.error }

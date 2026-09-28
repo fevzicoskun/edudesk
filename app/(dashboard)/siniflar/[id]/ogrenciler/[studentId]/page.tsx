@@ -11,6 +11,7 @@ import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
+import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
 import NotGecmisiSection from './NotGecmisiSection'
 import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
 import { TaskService } from '@/src/domains/tasks/services/TaskService'
@@ -38,7 +39,7 @@ const BADGE: Record<SubmissionStatus, string> = {
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
 
-type HomeworkRel = { id: string; title: string; subject: string; due_date: string } | null
+type HomeworkRel = { id: string; title: string; subject: string; due_date: string; teacher_id: string } | null
 type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
 type NoteRow = { id: string; body: string; created_at: string }
 
@@ -70,9 +71,8 @@ export default async function OgrenciDetayPage({
 
   const schoolId = currentProfile.school_id
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
-  // Ödev geçmişi: öğretmen kendi ödevlerini, zümre başkanı zümresini, yönetim hepsini görür
-  let submissionsQuery = supabase.from('homework_submissions').select('id, status, updated_at, homeworks!inner(id, title, subject, due_date)').eq('student_id', studentId).eq('school_id', schoolId).not('marked_at', 'is', null)
-  if (!kapsam.tumu) submissionsQuery = submissionsQuery.in('homeworks.teacher_id', kapsam.ogretmenIds)
+  // Ödev geçmişi (2026-09-28): okuldaki öğretmen öğrencinin TÜM ödevlerini görür; kapsam dışı olanlar salt okunur
+  const submissionsQuery = supabase.from('homework_submissions').select('id, status, updated_at, homeworks!inner(id, title, subject, due_date, teacher_id)').eq('student_id', studentId).eq('school_id', schoolId).not('marked_at', 'is', null)
 
   const [classResult, studentResult, submissionsResult, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
     supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
@@ -256,7 +256,7 @@ export default async function OgrenciDetayPage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <OdevGecmisiSection submissions={submissions} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
+        <OdevGecmisiSection submissions={submissions.map(s => ({ ...s, acilabilir: !!s.homeworks && kapsamdaMi(kapsam, s.homeworks.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>

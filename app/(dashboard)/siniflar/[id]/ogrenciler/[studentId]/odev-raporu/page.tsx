@@ -8,7 +8,7 @@ import OgrenciOdevOzeti from './OgrenciOdevOzeti'
 
 export const metadata = { title: 'Öğrenci Ödev Özeti' }
 
-/** Öğrencinin (görüntüleyenin kapsamındaki) tüm ödevleri — veliyle paylaşılabilir tek sayfa. */
+/** Öğrencinin tüm ödevleri (kim verdiyse) — veliyle paylaşılabilir tek sayfa. */
 export default async function OgrenciOdevRaporuPage({
   params,
 }: {
@@ -20,7 +20,7 @@ export default async function OgrenciOdevRaporuPage({
 
   const supabase = await createClient()
   const [sonuc, clsRes] = await Promise.all([
-    HomeworkService.getStudentHomeworkProfile(studentId, classId),
+    HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true }),
     supabase.from('classes').select('name').eq('id', classId).eq('school_id', profile.school_id).single(),
   ])
   if ('error' in sonuc) {

@@ -4,7 +4,8 @@ import type { SubmissionStatus } from '@/src/shared/types'
 import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
 
 type HomeworkRel = { id: string; title: string; subject: string; due_date: string } | null
-type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel }
+/** acilabilir: ödev görüntüleyenin kapsamında mı — değilse satır salt okunur (başka öğretmenin ödevi). */
+type SubmissionRow = { id: string; status: SubmissionStatus; updated_at: string; homeworks: HomeworkRel; acilabilir: boolean }
 
 const BADGE: Record<SubmissionStatus, string> = {
   yapildi:   'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800',
@@ -27,12 +28,8 @@ export default function OdevGecmisiSection({ submissions, raporHref }: { submiss
         <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-10">Henüz ödev kaydı yok.</p>
       ) : (
         <div className="space-y-2">
-          {submissions.map((s) => (
-            <Link
-              key={s.id}
-              href={s.homeworks?.id ? `/odevler/${s.homeworks.id}` : '#'}
-              className="border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3 hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors"
-            >
+          {submissions.map((s) => {
+            const icerik = (<>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-slate-100 truncate">{s.homeworks?.title ?? 'Ödev'}</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
@@ -43,8 +40,16 @@ export default function OdevGecmisiSection({ submissions, raporHref }: { submiss
               <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${BADGE[s.status]}`}>
                 {LABELS[s.status]}
               </span>
-            </Link>
-          ))}
+            </>)
+            const satir = 'border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3'
+            return s.acilabilir && s.homeworks ? (
+              <Link key={s.id} href={`/odevler/${s.homeworks.id}`} className={`${satir} hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors`}>
+                {icerik}
+              </Link>
+            ) : (
+              <div key={s.id} className={satir}>{icerik}</div>
+            )
+          })}
         </div>
       )}
     </section>

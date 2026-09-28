@@ -199,8 +199,20 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
     await expect(page.getByText('Öğrenci Ödev Özeti')).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText(ogrenci.full_name).first()).toBeVisible()
     await expect(page.getByRole('button', { name: /Yazdır/ })).toBeVisible()
-    // öğretmenin kendi ödevi var, zümre başkanınınki yok (kapsam)
+    // 2026-09-28: öğrenci bazlı ekranlarda öğretmen öğrencinin TÜM ödevlerini görür
     await expect(page.getByText(baslik.ogr)).toBeVisible()
-    await expect(page.getByText(baslik.zb)).toHaveCount(0)
+    await expect(page.getByText(baslik.zb)).toBeVisible()
+  })
+
+  test('öğrenci sayfası: başkasının ödevi Ödev Geçmişinde görünür ama tıklanamaz (salt okunur)', async ({ page }) => {
+    // Ödev Geçmişi yalnız işaretlenmiş satırları gösterir
+    await db.from('homework_submissions')
+      .update({ status: 'yapildi', marked_at: new Date().toISOString() })
+      .in('homework_id', [ids.ogr, ids.zb]).eq('student_id', ogrenci.id)
+    await page.goto(`/siniflar/${classId}/ogrenciler/${ogrenci.id}`)
+    const gecmis = page.locator('section', { has: page.getByRole('heading', { name: 'Ödev Geçmişi' }) })
+    await expect(gecmis.getByText(baslik.zb)).toBeVisible({ timeout: 20_000 })
+    await expect(gecmis.getByRole('link', { name: new RegExp(baslik.zb) })).toHaveCount(0)
+    await expect(gecmis.getByRole('link', { name: new RegExp(baslik.ogr) })).toHaveAttribute('href', `/odevler/${ids.ogr}`)
   })
 })
