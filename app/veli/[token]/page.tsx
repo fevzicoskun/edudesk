@@ -19,7 +19,7 @@ type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
 function TokenExpiredPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 print:bg-white flex items-center justify-center p-4">
       <div className="max-w-sm w-full bg-white rounded-2xl border border-gray-200 p-8 text-center">
         <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
           <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -134,11 +134,11 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const past = submissions.filter(s => (s.homeworks?.due_date ?? '') < today)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 print:bg-white">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">EduDesk · Veli Görünümü</p>
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide"><span className="normal-case">myedudesk.com.tr</span> · Veli Görünümü</p>
             <p className="text-base font-bold text-gray-900 mt-0.5">{student.full_name}</p>
             {expiryText && (
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border mt-1 inline-block ${expiryColor}`}>
@@ -208,8 +208,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
           </section>
         )}
 
-        <footer className="text-center text-xs text-gray-400 py-4 space-y-1">
-          <p>Bu sayfa yalnızca bilgi amaçlıdır · EduDesk</p>
+        <footer className="text-center text-xs text-gray-500 py-4 space-y-1">
+          <p>Bu sayfa yalnızca bilgi amaçlıdır · myedudesk.com.tr</p>
           <p>
             <a href="/gizlilik" target="_blank" className="hover:underline">
               Gizlilik Politikası &amp; KVKK Aydınlatma Metni

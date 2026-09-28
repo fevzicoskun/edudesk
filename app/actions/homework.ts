@@ -163,6 +163,8 @@ export async function quickCreateHomework(
         description: parsed.data.description ?? null,
         subject:     parsed.data.subject,
         due_date:    parsed.data.due_date!,
+        // Açıkça İstanbul günü — DB varsayılanı CURRENT_DATE UTC'dir (gece 00-03 önceki güne kayıyordu)
+        assigned_date: today,
         source_id:   null,
         is_template: false,
       })

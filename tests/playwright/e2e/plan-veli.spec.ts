@@ -1,8 +1,20 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
+import { createClient } from '@supabase/supabase-js'
 
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 const MADDE = `PW Veli Plan ${Date.now()}`
+const BASLANGIC = new Date().toISOString()
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+
+// Test her koşuda yeni bir veli bağlantısı üretir — silinmezse test öğrencisinde birikiyordu (2026-09-28: 39 adet)
+test.afterAll(async () => {
+  const { data: u } = await db.auth.admin.listUsers({ perPage: 1000 })
+  const ogr = u.users.find(x => x.email === (process.env.TEST_EMAIL_OGRETMEN ?? 'test_ogretmen@test.example'))?.id
+  if (!ogr) return
+  await db.from('veli_tokens').delete().eq('issued_by', ogr).gte('created_at', BASLANGIC)
+  await db.from('study_plan_items').delete().eq('description', MADDE)
+})
 
 test.describe('Haftalık Çalışma Planı — veli portalı', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json'), permissions: ['clipboard-read', 'clipboard-write'] })
@@ -49,6 +61,9 @@ test.describe('Haftalık Çalışma Planı — veli portalı', () => {
       await expect(section.getByRole('heading', { name: 'Bu Hafta' })).toBeVisible()
       // yazdırınca tarayıcı başlığı kağıda basar — adres görünsün (2026-09-28)
       await expect(veli).toHaveTitle(/myedudesk\.com\.tr$/)
+      // sayfa içeriğinde de EduDesk değil adres (kağıda basılır)
+      await expect(veli.getByText('Bu sayfa yalnızca bilgi amaçlıdır · myedudesk.com.tr')).toBeVisible()
+      await expect(veli.locator('body')).not.toContainText('EduDesk')
       const item = section.locator('li', { hasText: MADDE })
       await expect(item).toBeVisible()
       await expect(item).toContainText('Planlandı')

@@ -45,7 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <ToastProvider>
       <UsageTracker />
-      <div className="flex h-full bg-gray-50 dark:bg-slate-950">
+      <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         <div className="print:hidden">
           <Sidebar profile={profile} email={user.email ?? ''} />
         </div>

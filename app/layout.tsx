@@ -22,8 +22,10 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const nonce = (await headers()).get('x-nonce') ?? ''
 
+  // suppressHydrationWarning: tema betiği hydration öncesi <html>'e "dark" sınıfını ekler (bilinçli);
+  // yalnız bu öğenin nitelik farkını susturur, alt ağaç denetlenmeye devam eder.
   return (
-    <html lang="tr" className="h-full">
+    <html lang="tr" className="h-full" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#4361ee" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
