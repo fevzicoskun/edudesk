@@ -6,6 +6,7 @@ import { computeStudentHomeworkStats, sinifOdevKayitlari, type HomeworkRecord } 
 import { logger } from '@/src/infrastructure/observability/logger'
 import { odevKapsami, type OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { todayLocalISO } from '@/src/shared/date'
 
 export const HomeworkService = {
   /** Oturumdaki kullanıcının görebileceği ödev sahipleri. Profil yoksa null. */
@@ -291,19 +292,11 @@ export const HomeworkService = {
     if ('error' in profileData && profileData.error) return { error: profileData.error }
     if (!profileData.student) return { error: 'Öğrenci bulunamadı' }
 
-    const subMap = new Map(profileData.submissions.map(s => [s.homework_id, s]))
-    const records: HomeworkRecord[] = profileData.homeworks.map(hw => {
-      const sub = subMap.get(hw.id)
-      return {
-        id: hw.id,
-        title: hw.title,
-        subject: hw.subject,
-        due_date: hw.due_date,
-        teacher_id: hw.teacher_id,
-        status: (sub?.status ?? null) as HomeworkRecord['status'], // satır yok = işaretlenmedi
-        note: sub?.note ?? null,
-      }
-    })
+    // Sınıf toplu özetiyle AYNI kurucu — "bekliyor"/"kontrol edilmedi" kararı tek yerde
+    const records = sinifOdevKayitlari(
+      [studentId], profileData.homeworks,
+      profileData.submissions.map(s => ({ ...s, student_id: studentId })), todayLocalISO(),
+    ).get(studentId) ?? []
 
     return { student: profileData.student, homeworks: records, stats: computeStudentHomeworkStats(records) }
   },
@@ -322,7 +315,7 @@ export const HomeworkService = {
     const { students, homeworks, submissions } = await HomeworkRepository.findClassHomeworkProfiles(
       classId, ability.schoolId, kapsam.tumu ? undefined : kapsam.ogretmenIds,
     )
-    const kayitlar = sinifOdevKayitlari(students.map(s => s.id), homeworks, submissions)
+    const kayitlar = sinifOdevKayitlari(students.map(s => s.id), homeworks, submissions, todayLocalISO())
     const ogrenciler = [...students]
       .sort((a, b) =>
         (a.student_number ?? '￿').localeCompare(b.student_number ?? '￿', 'tr', { numeric: true }) ||

@@ -84,3 +84,31 @@ test('ders satırı eksik ve geçi ayrıca gösterir; öğrenci sayfası ile öz
   const ozetMetni = (await ozet.textContent())!.replace('Derslere göre (yapılan/kontrol edilen):', '')
   expect(norm(ozetMetni)).toEqual(norm(sayfaMetni))
 })
+
+test('işaretsiz ödev: teslimi gelmemişse "Bekliyor", geçmişse "Kontrol edilmedi" — iki ekranda aynı', async ({ page }) => {
+  const gun = (d: number) => new Date(Date.now() + d * 864e5).toLocaleDateString('en-CA', { timeZone: 'Europe/Istanbul' })
+  const { data, error } = await db.from('homeworks').insert([
+    { title: `${ETIKET} ileri`, due_date: gun(3), assigned_date: gun(0) },
+    { title: `${ETIKET} gecmis`, due_date: gun(-2), assigned_date: gun(-5) },
+  ].map(h => ({ ...h, teacher_id: ogretmenId, school_id: schoolId, class_id: classId, subject: 'Biyoloji', is_template: false }))).select('id')
+  if (error) throw error
+  hwIds.push(...data!.map(h => h.id as string))
+
+  await page.goto(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  const gecmis = page.locator('section', { has: page.getByRole('heading', { name: 'Ödev Geçmişi' }) })
+  // satır kapsayıcısı: kendi ödeviyse <a>, değilse <div> — ikisi de .rounded-lg
+  const satir = (ad: string) => gecmis.locator('.rounded-lg', { hasText: `${ETIKET} ${ad}` })
+  await expect(satir('ileri')).toContainText('Bekliyor', { timeout: 20_000 })
+  await expect(satir('gecmis')).toContainText('Kontrol edilmedi')
+  const perf = page.locator('div', { has: page.getByRole('heading', { name: 'Performans Özeti' }) }).last()
+  await expect(perf.getByText(/· 1 bekliyor · 1 kontrol edilmedi$/)).toBeVisible()
+  // işaretsiz ödev ders satırının paydasına girmez
+  await expect(page.getByLabel('Derslere göre')).toContainText('Biyoloji —')
+
+  await page.goto(`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`)
+  const tablo = page.locator('table')
+  await expect(tablo.locator('tr', { hasText: `${ETIKET} ileri` })).toContainText('Bekliyor', { timeout: 20_000 })
+  await expect(tablo.locator('tr', { hasText: `${ETIKET} gecmis` })).toContainText('Kontrol edilmedi')
+  await expect(page.getByText('1 Bekliyor', { exact: true })).toBeVisible()
+  await expect(page.getByText('1 Kontrol edilmedi', { exact: true })).toBeVisible()
+})

@@ -135,7 +135,7 @@ export default async function OgrenciDetayPage({
 
   // Performans skoru
   // Özetle aynı tanım: yapıldı / (kontrol edilen − mazeretli). Değerlendirilecek ödev yoksa oran yok (risk sayılmaz).
-  const degerlendirilen = odevStats.total - odevStats.mazeretli - odevStats.kontrolEdilmedi
+  const degerlendirilen = odevStats.degerlendirilen
   const completionRate  = degerlendirilen > 0 ? odevStats.completionRate / 100 : null
   const durum = genelDurum({ degerlendirilen, oran: odevStats.completionRate, devamsizlikUyari: absenceWarn, devamsizlikSinir: absenceDanger })
   const { etiket: riskLabel, renk: riskColor } = DURUM_ROZET[durum]
@@ -214,7 +214,7 @@ export default async function OgrenciDetayPage({
               )}
             </div>
             <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">
-              {odevStats.total} ödev{odevStats.kontrolEdilmedi > 0 ? ` · ${odevStats.kontrolEdilmedi} kontrol edilmedi` : ''}
+              {[`${odevStats.total} ödev`, odevStats.bekliyor > 0 && `${odevStats.bekliyor} bekliyor`, odevStats.kontrolEdilmedi > 0 && `${odevStats.kontrolEdilmedi} kontrol edilmedi`].filter(Boolean).join(' · ')}
             </p>
           </div>
           {/* Devamsızlık */}

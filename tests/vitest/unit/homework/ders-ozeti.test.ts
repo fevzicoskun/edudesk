@@ -3,7 +3,7 @@ import { computeStudentHomeworkStats, dersOzeti, dersOzetiMetni, type HomeworkRe
 
 let n = 0
 const r = (subject: string, status: HomeworkRecord['status']): HomeworkRecord =>
-  ({ id: `h${++n}`, title: 't', subject, due_date: '2026-09-20', status, note: null, teacher_id: 'x' })
+  ({ id: `h${++n}`, title: 't', subject, due_date: '2026-09-20', status, note: null, teacher_id: 'x', bekliyor: false })
 
 describe('dersOzeti() — öğrencinin ders bazlı ödev durumu', () => {
   it('ders başına yapıldı / değerlendirilen; tamamlama oranıyla aynı tanım (mazeretli ve kontrol edilmemiş paydada yok)', () => {

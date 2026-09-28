@@ -14,6 +14,7 @@ const BADGE: Record<SubmissionStatus, string> = {
   gec:       'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-800',
   mazeretli: 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600',
 }
+const BEKLIYOR = 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-300 dark:border-sky-800'
 const KONTROL_EDILMEDI = 'bg-white text-gray-500 border-gray-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-600'
 const SATIR = 'border border-gray-200 dark:border-slate-600 rounded-lg px-3 py-2 flex items-center justify-between gap-3'
 
@@ -52,8 +53,8 @@ export default function OdevGecmisiSection({ odevler, raporHref }: { odevler: Od
                     {h.subject || '—'} · {h.due_date ? format(parseISO(h.due_date), 'd MMM yyyy') : 'Tarih yok'}
                   </p>
                 </div>
-                <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${h.status ? BADGE[h.status] : KONTROL_EDILMEDI}`}>
-                  {h.status ? LABELS[h.status] : 'Kontrol edilmedi'}
+                <span className={`border rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${h.status ? BADGE[h.status] : h.bekliyor ? BEKLIYOR : KONTROL_EDILMEDI}`}>
+                  {h.status ? LABELS[h.status] : h.bekliyor ? 'Bekliyor' : 'Kontrol edilmedi'}
                 </span>
               </>)
               return h.acilabilir ? (

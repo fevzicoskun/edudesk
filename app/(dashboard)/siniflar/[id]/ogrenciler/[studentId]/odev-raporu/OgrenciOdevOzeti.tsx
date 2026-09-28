@@ -33,6 +33,7 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
     { etiket: 'Yapılmadı', sayi: stats.yapilmadi, cls: 'text-red-700' },
     { etiket: 'Mazeretli', sayi: stats.mazeretli, cls: 'text-gray-600' },
     { etiket: 'Kontrol edilmedi', sayi: stats.kontrolEdilmedi, cls: 'text-gray-500' },
+    { etiket: 'Bekliyor', sayi: stats.bekliyor, cls: 'text-gray-600 italic' },
   ].filter(o => o.sayi > 0)
   const dersler = dersOzeti(homeworks)
 
@@ -61,7 +62,7 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
             <span className={`font-bold ${o.cls}`}>{o.sayi} {o.etiket}</span>
           </span>
         ))}
-        {stats.total - stats.kontrolEdilmedi - stats.mazeretli > 0 && (
+        {stats.degerlendirilen > 0 && (
           <span className="text-gray-700"> — tamamlama %{stats.completionRate}</span>
         )}
         {dersler.length > 0 && (
@@ -94,8 +95,8 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
                   {hw.note && <span className="block text-[8.5pt] text-gray-700">Not: {hw.note}</span>}
                 </td>
                 <td className="py-1 align-top">
-                  <span className={`inline-block px-1.5 rounded font-bold whitespace-nowrap ${hw.status ? ROZET[hw.status] : 'bg-gray-50 text-gray-600'}`}>
-                    {hw.status ? ETIKET[hw.status] : 'Kontrol edilmedi'}
+                  <span className={`inline-block px-1.5 rounded font-bold whitespace-nowrap ${hw.status ? ROZET[hw.status] : hw.bekliyor ? 'text-gray-600 italic font-normal' : 'bg-gray-50 text-gray-600'}`}>
+                    {hw.status ? ETIKET[hw.status] : hw.bekliyor ? 'Bekliyor' : 'Kontrol edilmedi'}
                   </span>
                 </td>
               </tr>

@@ -10,6 +10,14 @@ export type HomeworkRecord = {
   note: string | null
   /** ödevi veren — öğrenci sayfasında satırın açılabilirliği (kapsam) için */
   teacher_id: string
+  /** işaretsiz ve son teslimi bugün/ileride — "kontrol edilmedi" değil, henüz kontrol edilemez.
+   *  Kayıt kurulurken bekliyorMu ile TEK noktada hesaplanır; ekranlar yalnız bu alanı okur. */
+  bekliyor: boolean
+}
+
+/** İşaretsiz ödevin teslimi gelmedi mi? bugun = İstanbul günü (todayLocalISO). Son teslimi yoksa false. */
+export function bekliyorMu(status: SubmissionStatus | null, dueDate: string | null, bugun: string): boolean {
+  return status === null && dueDate !== null && dueDate >= bugun
 }
 
 export type StudentHomeworkStats = {
@@ -19,18 +27,23 @@ export type StudentHomeworkStats = {
   yapilmadi: number
   gec: number
   mazeretli: number
+  /** işaretsiz ve son teslimi geçmiş — öğretmenin atladığı */
   kontrolEdilmedi: number
+  /** işaretsiz ve son teslimi gelmemiş */
+  bekliyor: number
+  /** işaretli ve mazeretli olmayan — completionRate'in paydası; formül YALNIZ burada */
+  degerlendirilen: number
   completionRate: number
 }
 
 export function computeStudentHomeworkStats(homeworks: HomeworkRecord[]): StudentHomeworkStats {
-  const counts = { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, kontrolEdilmedi: 0 }
+  const counts = { yapildi: 0, eksik: 0, yapilmadi: 0, gec: 0, mazeretli: 0, kontrolEdilmedi: 0, bekliyor: 0 }
   for (const hw of homeworks) {
-    counts[hw.status ?? 'kontrolEdilmedi']++
+    counts[hw.status ?? (hw.bekliyor ? 'bekliyor' : 'kontrolEdilmedi')]++
   }
-  const eligible = homeworks.length - counts.mazeretli - counts.kontrolEdilmedi
-  const completionRate = eligible === 0 ? 0 : Math.round((counts.yapildi / eligible) * 100)
-  return { total: homeworks.length, ...counts, completionRate }
+  const degerlendirilen = homeworks.length - counts.mazeretli - counts.kontrolEdilmedi - counts.bekliyor
+  const completionRate = degerlendirilen === 0 ? 0 : Math.round((counts.yapildi / degerlendirilen) * 100)
+  return { total: homeworks.length, ...counts, degerlendirilen, completionRate }
 }
 
 export type DersOzeti = { ders: string; yapildi: number; eksik: number; gec: number; degerlendirilen: number; toplam: number }
@@ -70,14 +83,15 @@ export function sinifOdevKayitlari(
   ogrenciIds: string[],
   odevler: OdevSatiri[],
   teslimler: TeslimSatiri[],
+  bugun: string,
 ): Map<string, HomeworkRecord[]> {
   const teslim = new Map(teslimler.map(t => [`${t.student_id}:${t.homework_id}`, t]))
   return new Map(ogrenciIds.map(sid => [sid, odevler.map(hw => {
     const t = teslim.get(`${sid}:${hw.id}`)
+    const status = (t?.status ?? null) as SubmissionStatus | null
     return {
       id: hw.id, title: hw.title, subject: hw.subject, due_date: hw.due_date, teacher_id: hw.teacher_id,
-      status: (t?.status ?? null) as SubmissionStatus | null,
-      note: t?.note ?? null,
+      status, note: t?.note ?? null, bekliyor: bekliyorMu(status, hw.due_date, bugun),
     }
   })]))
 }
