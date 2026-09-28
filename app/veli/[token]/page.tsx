@@ -10,6 +10,9 @@ import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
 import VeliDevamsizlikSection from './VeliDevamsizlikSection'
 import VeliPlanSection from './VeliPlanSection'
 import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
+import { yazdirmaBasligi } from '@/src/shared/utils'
+
+export const metadata = { title: yazdirmaBasligi('Veli Görünümü') }
 
 type NoteRow = { id: string; body: string; created_at: string }
 type AttendanceRow = { date: string; status: 'absent' | 'late' }

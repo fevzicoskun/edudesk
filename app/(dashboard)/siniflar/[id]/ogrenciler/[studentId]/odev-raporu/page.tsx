@@ -1,3 +1,4 @@
+import { yazdirmaBasligi } from '@/src/shared/utils'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -6,7 +7,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import PrintButton from '@/components/PrintButton'
 import OgrenciOdevOzeti from './OgrenciOdevOzeti'
 
-export const metadata = { title: 'Öğrenci Ödev Özeti' }
+export const metadata = { title: yazdirmaBasligi('Öğrenci Ödev Özeti') }
 
 /** Öğrencinin tüm ödevleri (kim verdiyse) — veliyle paylaşılabilir tek sayfa. */
 export default async function OgrenciOdevRaporuPage({

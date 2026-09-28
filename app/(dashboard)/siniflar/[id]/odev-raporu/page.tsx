@@ -1,3 +1,4 @@
+import { yazdirmaBasligi } from '@/src/shared/utils'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -6,7 +7,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import PrintButton from '@/components/PrintButton'
 import OgrenciOdevOzeti from '../ogrenciler/[studentId]/odev-raporu/OgrenciOdevOzeti'
 
-export const metadata = { title: 'Sınıf Ödev Özetleri' }
+export const metadata = { title: yazdirmaBasligi('Sınıf Ödev Özetleri') }
 
 /** Sınıftaki her öğrencinin ödev özeti alt alta; yazdırınca her öğrenci ayrı sayfa. */
 export default async function SinifOdevRaporuPage({ params }: { params: Promise<{ id: string }> }) {

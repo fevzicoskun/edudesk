@@ -47,6 +47,8 @@ test.describe('Haftalık Çalışma Planı — veli portalı', () => {
       const section = veli.getByRole('region', { name: 'Haftalık Çalışma Planı' })
       await expect(section).toBeVisible({ timeout: 15_000 })
       await expect(section.getByRole('heading', { name: 'Bu Hafta' })).toBeVisible()
+      // yazdırınca tarayıcı başlığı kağıda basar — adres görünsün (2026-09-28)
+      await expect(veli).toHaveTitle(/myedudesk\.com\.tr$/)
       const item = section.locator('li', { hasText: MADDE })
       await expect(item).toBeVisible()
       await expect(item).toContainText('Planlandı')
