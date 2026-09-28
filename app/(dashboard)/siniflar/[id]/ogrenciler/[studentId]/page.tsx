@@ -11,6 +11,7 @@ import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
+import { genelDurum, odevSeviyesi, MIN_DEGERLENDIRILEN, type GenelDurum } from '@/src/domains/classes/lib/genelDurum'
 import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
 import NotGecmisiSection from './NotGecmisiSection'
 import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
@@ -40,6 +41,16 @@ const BADGE: Record<SubmissionStatus, string> = {
 }
 
 type NoteRow = { id: string; body: string; created_at: string }
+
+const DURUM_ROZET: Record<GenelDurum, { etiket: string; renk: string }> = {
+  risk:   { etiket: 'Risk',   renk: 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800' },
+  dikkat: { etiket: 'Dikkat', renk: 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800' },
+  iyi:    { etiket: 'İyi',    renk: 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800' },
+  az:     { etiket: 'Henüz az ödev', renk: 'bg-gray-50 text-gray-600 border-gray-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600' },
+}
+const CUBUK_RENK: Record<GenelDurum, string> = {
+  risk: 'bg-red-400', dikkat: 'bg-yellow-400', iyi: 'bg-green-400', az: 'bg-gray-400 dark:bg-slate-500',
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string; studentId: string }> }) {
   const { studentId } = await params
@@ -126,14 +137,8 @@ export default async function OgrenciDetayPage({
   // Özetle aynı tanım: yapıldı / (kontrol edilen − mazeretli). Değerlendirilecek ödev yoksa oran yok (risk sayılmaz).
   const degerlendirilen = odevStats.total - odevStats.mazeretli - odevStats.kontrolEdilmedi
   const completionRate  = degerlendirilen > 0 ? odevStats.completionRate / 100 : null
-  const isRisk   = absenceDanger || (completionRate !== null && completionRate < 0.4)
-  const isWarn   = !isRisk && (absenceWarn || (completionRate !== null && completionRate < 0.6))
-  const riskLabel = isRisk ? 'Risk' : isWarn ? 'Dikkat' : 'İyi'
-  const riskColor = isRisk
-    ? 'bg-red-100 text-red-700 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-800'
-    : isWarn
-      ? 'bg-yellow-100 text-yellow-700 border-yellow-300 dark:bg-yellow-900/30 dark:text-yellow-300 dark:border-yellow-800'
-      : 'bg-green-100 text-green-700 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-800'
+  const durum = genelDurum({ degerlendirilen, oran: odevStats.completionRate, devamsizlikUyari: absenceWarn, devamsizlikSinir: absenceDanger })
+  const { etiket: riskLabel, renk: riskColor } = DURUM_ROZET[durum]
 
   // Not defteri
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
@@ -190,7 +195,9 @@ export default async function OgrenciDetayPage({
           {/* Risk skoru */}
           <div className="flex flex-col items-center justify-center text-center">
             <span className={`text-xs font-bold px-3 py-1.5 rounded-full border mb-1 ${riskColor}`}>{riskLabel}</span>
-            <p className="text-[11px] text-gray-500 dark:text-slate-400">Genel Durum</p>
+            <p className="text-[11px] text-gray-500 dark:text-slate-400">
+              {durum === 'az' ? `${MIN_DEGERLENDIRILEN} ödev kontrol edilince değerlendirilir` : 'Genel Durum'}
+            </p>
           </div>
           {/* Ödev tamamlanma */}
           <div>
@@ -201,7 +208,7 @@ export default async function OgrenciDetayPage({
             <div className="w-full h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
               {completionRate !== null && (
                 <div
-                  className={`h-full rounded-full ${completionRate >= 0.8 ? 'bg-green-400' : completionRate >= 0.6 ? 'bg-yellow-400' : 'bg-red-400'}`}
+                  className={`h-full rounded-full ${CUBUK_RENK[odevSeviyesi(degerlendirilen, odevStats.completionRate)]}`}
                   style={{ width: `${odevStats.completionRate}%` }}
                 />
               )}
