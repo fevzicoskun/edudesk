@@ -1,6 +1,6 @@
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
-import { dersOzeti, type HomeworkRecord, type StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
+import { dersOzeti, dersOzetiMetni, type HomeworkRecord, type StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
 
 const ETIKET: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı', gec: 'Geç', eksik: 'Eksik', yapilmadi: 'Yapılmadı', mazeretli: 'Mazeretli',
@@ -64,10 +64,10 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
         {stats.total - stats.kontrolEdilmedi - stats.mazeretli > 0 && (
           <span className="text-gray-700"> — tamamlama %{stats.completionRate}</span>
         )}
-        {dersler.length > 1 && (
+        {dersler.length > 0 && (
           <span className="block mt-0.5 text-[9.5pt] text-gray-800">
             <span className="font-semibold">Derslere göre (yapılan/kontrol edilen): </span>
-            {dersler.map(d => `${d.ders} ${d.degerlendirilen > 0 ? `${d.yapildi}/${d.degerlendirilen}` : '—'}`).join('  ·  ')}
+            {dersler.map(dersOzetiMetni).join('  ·  ')}
           </span>
         )}
       </p>

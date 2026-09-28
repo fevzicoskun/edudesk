@@ -33,7 +33,7 @@ export function computeStudentHomeworkStats(homeworks: HomeworkRecord[]): Studen
   return { total: homeworks.length, ...counts, completionRate }
 }
 
-export type DersOzeti = { ders: string; yapildi: number; degerlendirilen: number; toplam: number }
+export type DersOzeti = { ders: string; yapildi: number; eksik: number; gec: number; degerlendirilen: number; toplam: number }
 
 /** Ders bazlı durum. "yapildi / degerlendirilen" completionRate ile aynı tanım:
  *  mazeretli ve kontrol edilmemiş ödev paydaya girmez. Ders adı harf/boşluk farkıyla bölünmez. */
@@ -42,13 +42,23 @@ export function dersOzeti(homeworks: HomeworkRecord[]): DersOzeti[] {
   for (const hw of homeworks) {
     const ad = hw.subject.trim() || 'Diğer'
     const anahtar = ad.toLocaleLowerCase('tr-TR')
-    const d = m.get(anahtar) ?? { ders: ad, yapildi: 0, degerlendirilen: 0, toplam: 0 }
+    const d = m.get(anahtar) ?? { ders: ad, yapildi: 0, eksik: 0, gec: 0, degerlendirilen: 0, toplam: 0 }
     d.toplam++
     if (hw.status && hw.status !== 'mazeretli') d.degerlendirilen++
     if (hw.status === 'yapildi') d.yapildi++
+    if (hw.status === 'eksik') d.eksik++
+    if (hw.status === 'gec') d.gec++
     m.set(anahtar, d)
   }
   return [...m.values()].sort((a, b) => a.ders.localeCompare(b.ders, 'tr'))
+}
+
+/** "Matematik 2/3 (1 eksik)" — öğrenci sayfası ve yazdırılabilir özetin ORTAK metni (iki ekran ayrışmasın).
+ *  Eksik/geç paya girmez ama görünür kalır: "2/3" okuyan "biri hiç yapılmamış" sanmasın (2026-09-28). */
+export function dersOzetiMetni(d: DersOzeti): string {
+  if (d.degerlendirilen === 0) return `${d.ders} —`
+  const ek = [d.eksik && `${d.eksik} eksik`, d.gec && `${d.gec} geç`].filter(Boolean).join(', ')
+  return `${d.ders} ${d.yapildi}/${d.degerlendirilen}${ek ? ` (${ek})` : ''}`
 }
 
 type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null; teacher_id: string }

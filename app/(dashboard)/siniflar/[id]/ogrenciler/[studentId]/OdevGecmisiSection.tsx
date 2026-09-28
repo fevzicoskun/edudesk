@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
-import { dersOzeti, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import { dersOzeti, dersOzetiMetni, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
 
 /** acilabilir: ödev görüntüleyenin kapsamında mı — değilse satır salt okunur (başka öğretmenin ödevi). */
@@ -38,7 +38,7 @@ export default function OdevGecmisiSection({ odevler, raporHref }: { odevler: Od
               {dersler.map((d, i) => (
                 <span key={d.ders} className="whitespace-nowrap">
                   {i > 0 && <span className="text-gray-300 dark:text-slate-600" aria-hidden="true"> · </span>}
-                  {d.ders} <span className="font-semibold tabular-nums">{d.degerlendirilen > 0 ? `${d.yapildi}/${d.degerlendirilen}` : '—'}</span>
+                  {dersOzetiMetni(d)}
                 </span>
               ))}
             </p>

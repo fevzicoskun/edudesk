@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeStudentHomeworkStats, dersOzeti, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import { computeStudentHomeworkStats, dersOzeti, dersOzetiMetni, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 let n = 0
 const r = (subject: string, status: HomeworkRecord['status']): HomeworkRecord =>
@@ -13,15 +13,15 @@ describe('dersOzeti() — öğrencinin ders bazlı ödev durumu', () => {
       r('Fizik', 'gec'), r('Fizik', 'yapilmadi'),
     ])
     expect(o).toEqual([
-      { ders: 'Fizik', yapildi: 0, degerlendirilen: 2, toplam: 2 },
-      { ders: 'Matematik', yapildi: 2, degerlendirilen: 3, toplam: 5 },
+      { ders: 'Fizik', yapildi: 0, eksik: 0, gec: 1, degerlendirilen: 2, toplam: 2 },
+      { ders: 'Matematik', yapildi: 2, eksik: 1, gec: 0, degerlendirilen: 3, toplam: 5 },
     ])
   })
 
   it('ders başlıkları büyük/küçük harf ve boşluk farkıyla bölünmez; Türkçe sıralanır; boş ders "Diğer"', () => {
     const o = dersOzeti([r(' matematik', 'yapildi'), r('Matematik ', 'eksik'), r('Çözümlü', null), r('Biyoloji', null), r('  ', 'yapildi')])
     expect(o.map(d => d.ders)).toEqual(['Biyoloji', 'Çözümlü', 'Diğer', 'matematik'])
-    expect(o.find(d => d.ders === 'matematik')).toEqual({ ders: 'matematik', yapildi: 1, degerlendirilen: 2, toplam: 2 })
+    expect(o.find(d => d.ders === 'matematik')).toEqual({ ders: 'matematik', yapildi: 1, eksik: 1, gec: 0, degerlendirilen: 2, toplam: 2 })
   })
 
   it('dersler toplandığında genel istatistikle tutarlıdır', () => {
@@ -35,5 +35,21 @@ describe('dersOzeti() — öğrencinin ders bazlı ödev durumu', () => {
 
   it('ödev yoksa boş', () => {
     expect(dersOzeti([])).toEqual([])
+  })
+})
+
+describe('dersOzetiMetni() — iki ekranın ortak metni', () => {
+  const m = (yapildi: number, eksik: number, gec: number, degerlendirilen: number) =>
+    dersOzetiMetni({ ders: 'Matematik', yapildi, eksik, gec, degerlendirilen, toplam: degerlendirilen })
+
+  it('eksik ve geç parantezde; hesap değişmez (2/3 kalır)', () => {
+    expect(m(2, 1, 0, 3)).toBe('Matematik 2/3 (1 eksik)')
+    expect(m(1, 0, 1, 2)).toBe('Matematik 1/2 (1 geç)')
+    expect(m(1, 2, 1, 4)).toBe('Matematik 1/4 (2 eksik, 1 geç)')
+  })
+
+  it('eksik/geç yoksa parantez yok; değerlendirilen yoksa tire', () => {
+    expect(m(3, 0, 0, 3)).toBe('Matematik 3/3')
+    expect(m(0, 0, 0, 0)).toBe('Matematik —')
   })
 })
