@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeStudentHomeworkStats, dersOzeti, dersOzetiMetni, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import { computeStudentHomeworkStats, dersOzeti, dersOzetiMetni, derseGore, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 let n = 0
 const r = (subject: string, status: HomeworkRecord['status']): HomeworkRecord =>
@@ -51,5 +51,27 @@ describe('dersOzetiMetni() — iki ekranın ortak metni', () => {
   it('eksik/geç yoksa parantez yok; değerlendirilen yoksa tire', () => {
     expect(m(3, 0, 0, 3)).toBe('Matematik 3/3')
     expect(m(0, 0, 0, 0)).toBe('Matematik —')
+  })
+})
+
+describe('derseGore() — Ödev Geçmişi süzmesi', () => {
+  const kayitlar = [r('Matematik', 'yapildi'), r(' matematik ', 'eksik'), r('Fizik', null), r('  ', 'yapildi')]
+
+  it('ders özetiyle aynı normalleştirme: harf/boşluk farkı süzmeden düşürmez', () => {
+    expect(derseGore(kayitlar, 'Matematik').map(k => k.subject)).toEqual(['Matematik', ' matematik '])
+    expect(derseGore(kayitlar, 'MATEMATİK').length).toBe(2) // Türkçe büyük İ → i (tr-TR küçültme)
+  })
+
+  it('boş ders adı "Diğer" ile süzülür (satırda öyle görünüyor)', () => {
+    expect(derseGore(kayitlar, 'Diğer').map(k => k.subject)).toEqual(['  '])
+  })
+
+  it('süzme yoksa ya da eşleşen ders yoksa tüm liste (bozuk adres boş ekran göstermez)', () => {
+    expect(derseGore(kayitlar, null)).toEqual(kayitlar)
+    expect(derseGore(kayitlar, 'Kimya')).toEqual(kayitlar)
+  })
+
+  it('ders özetindeki her ders adı süzmede en az bir kayıt bulur ve toplamlar tutar', () => {
+    for (const d of dersOzeti(kayitlar)) expect(derseGore(kayitlar, d.ders).length).toBe(d.toplam)
   })
 })

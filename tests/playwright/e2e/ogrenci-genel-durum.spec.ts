@@ -112,3 +112,37 @@ test('işaretsiz ödev: teslimi gelmemişse "Bekliyor", geçmişse "Kontrol edil
   await expect(page.getByText('1 Bekliyor', { exact: true })).toBeVisible()
   await expect(page.getByText('1 Kontrol edilmedi', { exact: true })).toBeVisible()
 })
+
+test('ders satırına tıklayınca Ödev Geçmişi o derse süzülür; Tümünü göster, geri tuşu ve bozuk adres', async ({ page }) => {
+  await odevEkle(['yapildi'], 'Coğrafya')
+  await odevEkle(['eksik'], 'Tarih')
+  const sayfa = `/siniflar/${classId}/ogrenciler/${studentId}`
+  const gecmis = page.locator('section', { has: page.getByRole('heading', { name: 'Ödev Geçmişi' }) })
+  const nav = page.getByRole('navigation', { name: 'Derslere göre' })
+  // satırın ders alanı "Tarih · …" — başlıksız ödevde tarih alanı "Tarih yok" yazdığı için ders adına ' · ' ile bağlan
+  const satir = (ders: string) => gecmis.locator('.rounded-lg', { hasText: `${ders} · ` })
+
+  await page.goto(sayfa)
+  await expect(satir('Tarih')).toBeVisible({ timeout: 20_000 })
+  await nav.getByRole('link', { name: 'Coğrafya 1/1' }).click()
+  await expect(page).toHaveURL(/[?&]ders=Co%C4%9Frafya/)
+  await expect(satir('Tarih')).toHaveCount(0)
+  await expect(satir('Coğrafya')).toBeVisible()
+  await expect(nav.getByRole('link', { name: 'Coğrafya 1/1' })).toHaveAttribute('aria-current', 'true')
+  // diğer dersler satırda kalır — başka derse doğrudan geçilebilir
+  await expect(nav.getByRole('link', { name: 'Tarih 0/1 (1 eksik)' })).toBeVisible()
+
+  await gecmis.getByRole('link', { name: 'Tümünü göster' }).click()
+  await expect(page).toHaveURL(new RegExp(`${sayfa}$`))
+  await expect(satir('Tarih')).toBeVisible()
+
+  await page.goBack()
+  await expect(page).toHaveURL(/[?&]ders=Co%C4%9Frafya/)
+  await expect(satir('Tarih')).toHaveCount(0)
+
+  // bozuk adres: eşleşmeyen ders → tüm liste, "Tümünü göster" yok
+  await page.goto(`${sayfa}?ders=Yok`)
+  await expect(satir('Tarih')).toBeVisible({ timeout: 20_000 })
+  await expect(satir('Coğrafya')).toBeVisible()
+  await expect(gecmis.getByRole('link', { name: 'Tümünü göster' })).toHaveCount(0)
+})

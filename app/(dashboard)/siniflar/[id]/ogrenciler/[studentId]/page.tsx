@@ -69,10 +69,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function OgrenciDetayPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; studentId: string }>
+  searchParams: Promise<{ ders?: string | string[] }>
 }) {
   const { id: classId, studentId } = await params
+  const dersParam = (await searchParams).ders
+  const ders = typeof dersParam === 'string' ? dersParam : null // ?ders=a&ders=b gibi bozuk adres → süzme yok
   const supabase = await createClient()
 
   const currentProfile = await getCurrentProfile()
@@ -261,7 +265,7 @@ export default async function OgrenciDetayPage({
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <OdevGecmisiSection odevler={odevler.map(h => ({ ...h, acilabilir: kapsamdaMi(kapsam, h.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} />
+        <OdevGecmisiSection odevler={odevler.map(h => ({ ...h, acilabilir: kapsamdaMi(kapsam, h.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} sayfaHref={`/siniflar/${classId}/ogrenciler/${studentId}`} ders={ders} />
 
         <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Öğretmen Notları</h2>

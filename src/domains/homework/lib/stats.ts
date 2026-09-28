@@ -54,7 +54,7 @@ export function dersOzeti(homeworks: HomeworkRecord[]): DersOzeti[] {
   const m = new Map<string, DersOzeti>()
   for (const hw of homeworks) {
     const ad = hw.subject.trim() || 'Diğer'
-    const anahtar = ad.toLocaleLowerCase('tr-TR')
+    const anahtar = dersAnahtari(hw.subject)
     const d = m.get(anahtar) ?? { ders: ad, yapildi: 0, eksik: 0, gec: 0, degerlendirilen: 0, toplam: 0 }
     d.toplam++
     if (hw.status && hw.status !== 'mazeretli') d.degerlendirilen++
@@ -64,6 +64,19 @@ export function dersOzeti(homeworks: HomeworkRecord[]): DersOzeti[] {
     m.set(anahtar, d)
   }
   return [...m.values()].sort((a, b) => a.ders.localeCompare(b.ders, 'tr'))
+}
+
+/** Ders gruplama anahtarı — dersOzeti ve derseGore AYNI anahtarı kullanır (satırda görünen ders = süzülen ders). */
+export function dersAnahtari(subject: string): string {
+  return (subject.trim() || 'Diğer').toLocaleLowerCase('tr-TR')
+}
+
+/** Ödev Geçmişi ders süzmesi. Süzme yoksa ya da ders eşleşmiyorsa (bozuk adres) tüm liste — boş ekran değil. */
+export function derseGore<T extends { subject: string }>(homeworks: T[], ders: string | null): T[] {
+  if (!ders) return homeworks
+  const anahtar = dersAnahtari(ders)
+  const secili = homeworks.filter(h => dersAnahtari(h.subject) === anahtar)
+  return secili.length > 0 ? secili : homeworks
 }
 
 /** "Matematik 2/3 (1 eksik)" — öğrenci sayfası ve yazdırılabilir özetin ORTAK metni (iki ekran ayrışmasın).
