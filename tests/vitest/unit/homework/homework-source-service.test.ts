@@ -56,6 +56,7 @@ describe('HomeworkSourceService.createSource()', () => {
 
   it('yetkili kullanıcı → insert çağrılır, data döner', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(['homework:create']) as never)
+    vi.mocked(HomeworkSourceRepository.findByTeacher).mockResolvedValue({ data: [], error: null } as never)
     vi.mocked(HomeworkSourceRepository.insert).mockResolvedValue({
       data: { id: 'src-1', name: 'Kaynak', subject: 'Matematik' },
       error: null,
@@ -67,6 +68,58 @@ describe('HomeworkSourceService.createSource()', () => {
     expect(HomeworkSourceRepository.insert).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Kaynak', subject: 'Matematik', teacher_id: TEACHER_ID })
     )
+  })
+})
+
+// ─── Mükerrer kaynak (2026-09-28) ─────────────────────────────
+
+const MAT = { id: 'mat', name: 'Mikro Orjinal', subject: 'Matematik' }
+const GEO = { id: 'geo', name: 'Mikro Orjinal', subject: 'Geometri' }
+
+describe('createSource() — aynı ad + aynı ders zaten varsa yeni kayıt açılmaz', () => {
+  beforeEach(() => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(['homework:create']) as never)
+    vi.mocked(HomeworkSourceRepository.findByTeacher).mockResolvedValue({ data: [MAT], error: null } as never)
+    vi.mocked(HomeworkSourceRepository.insert).mockResolvedValue({ data: { id: 'yeni' }, error: null } as never)
+  })
+
+  it('harf/boşluk farkıyla aynı ad + aynı ders → "zaten var", insert yok', async () => {
+    const r = await HomeworkSourceService.createSource('  mikro   ORJİNAL ', 'matematik')
+    expect(r.error).toMatch(/zaten kaynaklarınızda var/i)
+    expect(HomeworkSourceRepository.insert).not.toHaveBeenCalled()
+  })
+
+  it('aynı ad, farklı ders → ayrı kitap, eklenir; ad düzeltilmiş kaydedilir', async () => {
+    const r = await HomeworkSourceService.createSource('Mikro   Orjinal', 'Geometri')
+    expect(r.error).toBeNull()
+    expect(HomeworkSourceRepository.insert).toHaveBeenCalledWith(expect.objectContaining({ name: 'Mikro Orjinal', subject: 'Geometri' }))
+  })
+
+  it('ikisinin de dersi boşsa aynı sayılır', async () => {
+    vi.mocked(HomeworkSourceRepository.findByTeacher).mockResolvedValue({ data: [{ id: 'g', name: 'Palme', subject: null }], error: null } as never)
+    const r = await HomeworkSourceService.createSource('palme', null)
+    expect(r.error).toMatch(/zaten kaynaklarınızda var/i)
+    expect(HomeworkSourceRepository.insert).not.toHaveBeenCalled()
+  })
+})
+
+describe('findOrCreateByName() — ödev formundan yazılan kaynak', () => {
+  beforeEach(() => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(['homework:create']) as never)
+    vi.mocked(HomeworkSourceRepository.findByTeacher).mockResolvedValue({ data: [MAT, GEO], error: null } as never)
+    vi.mocked(HomeworkSourceRepository.insert).mockResolvedValue({ data: { id: 'yeni' }, error: null } as never)
+  })
+
+  it('aynı adlı iki kitaptan ödevin dersine uyan seçilir', async () => {
+    expect((await HomeworkSourceService.findOrCreateByName('Mikro Orjinal', 'Geometri')).id).toBe('geo')
+    expect((await HomeworkSourceService.findOrCreateByName('mikro orjinal', 'Matematik')).id).toBe('mat')
+    expect(HomeworkSourceRepository.insert).not.toHaveBeenCalled()
+  })
+
+  it('listede olmayan ad → düzeltilmiş adla oluşturulur', async () => {
+    const r = await HomeworkSourceService.findOrCreateByName('  Palme   Yayınları ', 'Matematik')
+    expect(r.id).toBe('yeni')
+    expect(HomeworkSourceRepository.insert).toHaveBeenCalledWith(expect.objectContaining({ name: 'Palme Yayınları', subject: null }))
   })
 })
 

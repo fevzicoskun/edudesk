@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, onerilenBaslik, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
+import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
 
 const BUGUN = new Date('2026-09-19T12:00:00+03:00')
 
@@ -97,5 +97,46 @@ describe('onerilenBaslik', () => {
 
   it('ikisi de boşsa boş döndürür', () => {
     expect(onerilenBaslik('  ', '')).toBe('')
+  })
+})
+
+describe('ayniKaynak — kelime arası boşluk (2026-09-28)', () => {
+  it('kelime arasındaki fazla boşluk ayrı kaynak yapmaz', () => {
+    expect(ayniKaynak('Mikro  Orjinal', 'mikro orjinal')).toBe(true)
+    expect(ayniKaynak(' MİKRO	ORJİNAL ', 'mikro orjinal')).toBe(true)
+  })
+  it('yazım farkı ayrı kaynaktır (tahmin edilmez)', () => {
+    expect(ayniKaynak('Mikro Orjinal', 'Mikro Orijinal')).toBe(false)
+  })
+})
+
+describe('kaynakAdiDuzelt — kaydedilen ad', () => {
+  it('baş/son boşluk atılır, kelime arası tek boşluğa iner; harfler korunur', () => {
+    expect(kaynakAdiDuzelt('  Mikro   Orjinal ')).toBe('Mikro Orjinal')
+  })
+})
+
+describe('kaynakSec — aynı adlı birden çok kitap (ör. Mikro Orjinal Matematik / Geometri)', () => {
+  // liste veritabanından ad + oluşturma sırasıyla gelir: ilk = en eski
+  const mat  = { id: 'mat', name: 'Mikro Orjinal', subject: 'Matematik' }
+  const geo  = { id: 'geo', name: 'Mikro Orjinal', subject: 'Geometri' }
+  const gen  = { id: 'gen', name: 'Mikro Orjinal', subject: null }
+  const baska = { id: 'bas', name: 'Başarıyorum', subject: null }
+
+  it('adı eşleşen yoksa null (yeni kaynak açılır)', () => {
+    expect(kaynakSec([mat, baska], 'Palme', 'Matematik')).toBeNull()
+  })
+  it('tek eşleşme varsa ders ne olursa olsun o (eski davranış korunur)', () => {
+    expect(kaynakSec([mat, baska], 'mikro orjinal', 'Fizik')?.id).toBe('mat')
+  })
+  it('birden çok eşleşmede ödevin dersiyle eşleşen kitap seçilir (harf/boşluk farkı önemsiz)', () => {
+    expect(kaynakSec([mat, geo], 'Mikro Orjinal', 'Geometri')?.id).toBe('geo')
+    expect(kaynakSec([mat, geo], 'Mikro Orjinal', ' geometri ')?.id).toBe('geo')
+    expect(kaynakSec([geo, mat], 'Mikro Orjinal', 'Matematik')?.id).toBe('mat')
+  })
+  it('ders eşleşmezse dersi boş (genel) kitap, o da yoksa en eski — rastgele değil', () => {
+    expect(kaynakSec([mat, gen, geo], 'Mikro Orjinal', 'Fizik')?.id).toBe('gen')
+    expect(kaynakSec([mat, geo], 'Mikro Orjinal', 'Fizik')?.id).toBe('mat')
+    expect(kaynakSec([mat, geo], 'Mikro Orjinal', null)?.id).toBe('mat')
   })
 })

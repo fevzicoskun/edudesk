@@ -10,6 +10,8 @@ export const HomeworkSourceRepository = {
       .eq('school_id', schoolId)
       .eq('active', true)
       .order('name')
+      .order('created_at') // aynı adlılar arasında en eski önce — kaynakSec'in "rastgele değil" kuralı buna dayanır
+      .order('id')
   },
 
   async insert(data: {

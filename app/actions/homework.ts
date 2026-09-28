@@ -22,14 +22,16 @@ import { TeacherDashboardService } from '@/src/domains/dashboard/services/Teache
  * Form kaynağı ad olarak gönderir (yazarak ekleme). Boşsa kaynak seçilmemiştir.
  * Ad, kaynak şemasıyla doğrulanır — serbest metin doğrudan DB'ye gitmez.
  */
-async function kaynakIdCoz(raw: FormDataEntryValue | null): Promise<{ id: string | null; error?: string }> {
+async function kaynakIdCoz(raw: FormDataEntryValue | null, dersRaw: FormDataEntryValue | null): Promise<{ id: string | null; error?: string }> {
   const ad = typeof raw === 'string' ? raw.trim() : ''
   if (!ad) return { id: null }
 
   const parsed = createHomeworkSourceSchema.safeParse({ name: ad, subject: null })
   if (!parsed.success) return { id: null, error: parsed.error.issues[0]?.message ?? 'Geçersiz kaynak adı' }
 
-  const { id, error } = await HomeworkSourceService.findOrCreateByName(parsed.data.name)
+  // ders: aynı adlı iki kitaptan (Matematik/Geometri) doğrusunu seçmek için
+  const ders = typeof dersRaw === 'string' && dersRaw.trim() ? dersRaw.trim() : null
+  const { id, error } = await HomeworkSourceService.findOrCreateByName(parsed.data.name, ders)
   if (error) return { id: null, error }
   return { id }
 }
@@ -37,7 +39,7 @@ async function kaynakIdCoz(raw: FormDataEntryValue | null): Promise<{ id: string
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
 
-  const kaynak = await kaynakIdCoz(formData.get('source_name'))
+  const kaynak = await kaynakIdCoz(formData.get('source_name'), formData.get('subject'))
   if (kaynak.error) return { error: kaynak.error }
 
   if (isTemplate) {

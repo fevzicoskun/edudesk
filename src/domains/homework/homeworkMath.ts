@@ -43,9 +43,28 @@ export function hicIsaretlenmedi(submissions: { marked_at: string | null }[]): b
   return submissions.every(s => !s.marked_at)
 }
 
-/** Kaynak adlarını karşılaştırır. Türkçe kıyas şart: 'İLKE'.toLowerCase() → 'i̇lke' (bozuk). */
+/** Kaydedilen kaynak adı: baş/son boşluk atılır, kelime arası tek boşluk. Harfler korunur. */
+export function kaynakAdiDuzelt(ad: string): string {
+  return ad.trim().replace(/\s+/g, ' ')
+}
+
+/** Kaynak adlarını karşılaştırır. Türkçe kıyas şart: 'İLKE'.toLowerCase() → 'i̇lke' (bozuk).
+ *  Kelime arası fazla boşluk fark sayılmaz; yazım farkı ("Orjinal"/"Orijinal") sayılır. */
 export function ayniKaynak(a: string, b: string): boolean {
-  return a.trim().toLocaleLowerCase('tr') === b.trim().toLocaleLowerCase('tr')
+  return kaynakAdiDuzelt(a).toLocaleLowerCase('tr') === kaynakAdiDuzelt(b).toLocaleLowerCase('tr')
+}
+
+type KaynakAday = { id: string; name: string; subject: string | null }
+
+/** Yazılan ada karşılık gelen kaynak. Aynı adlı birden çok kitap olabilir (ör. Mikro Orjinal
+ *  Matematik / Geometri): önce ödevin dersiyle eşleşen, sonra dersi boş (genel) olan, sonra
+ *  listedeki ilk (repo en eskiyi önce verir) — rastgele değil. Eşleşme yoksa null (yeni açılır). */
+export function kaynakSec<T extends KaynakAday>(kaynaklar: T[], ad: string, ders: string | null): T | null {
+  const adaylar = kaynaklar.filter(k => ayniKaynak(k.name, ad))
+  if (adaylar.length <= 1) return adaylar[0] ?? null
+  return (ders ? adaylar.find(k => k.subject && ayniKaynak(k.subject, ders)) : undefined)
+    ?? adaylar.find(k => !k.subject?.trim())
+    ?? adaylar[0]
 }
 
 /**

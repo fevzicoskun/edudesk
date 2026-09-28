@@ -1,5 +1,5 @@
 import { HomeworkSourceRepository } from '../repositories/HomeworkSourceRepository'
-import { ayniKaynak } from '../homeworkMath'
+import { ayniKaynak, kaynakAdiDuzelt, kaynakSec } from '../homeworkMath'
 import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { turkeyDate } from '@/src/lib/email-utils'
@@ -22,11 +22,20 @@ export const HomeworkSourceService = {
     if (!ability) return { error: 'Giriş gerekli', data: null }
     if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.', data: null }
 
+    // Aynı ad + aynı ders zaten varsa ikinci kayıt açılmaz (Ayarlar'dan ekleme de buradan geçer).
+    // Aynı ad + farklı ders = ayrı kitap (ör. Mikro Orjinal Matematik / Geometri).
+    const mevcut = await HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId)
+    if (mevcut.error) return { error: mevcut.error.message, data: null }
+    const ders = subject?.trim() || null
+    const ayni = (mevcut.data ?? []).find(k =>
+      ayniKaynak(k.name, name) && (k.subject?.trim() ? !!ders && ayniKaynak(k.subject, ders) : !ders))
+    if (ayni) return { error: `"${ayni.name}"${ayni.subject ? ` (${ayni.subject})` : ''} zaten kaynaklarınızda var.`, data: null }
+
     const { data, error } = await HomeworkSourceRepository.insert({
       teacher_id: ability.userId,
       school_id:  ability.schoolId,
-      name,
-      subject,
+      name:       kaynakAdiDuzelt(name),
+      subject:    ders,
     })
     if (error) return { error: error.message, data: null }
     return { data, error: null }
@@ -37,17 +46,18 @@ export const HomeworkSourceService = {
    * Öğretmen kitabın adını yazabilsin diye var — eskiden yalnız dropdown vardı ve
    * listede olmayan kitap ödev başlığına kaçıyordu (17 ödevin 15'inde source_id boştu).
    */
-  async findOrCreateByName(name: string) {
+  async findOrCreateByName(name: string, ders: string | null) {
     const ability = await getAbility()
     if (!ability) return { id: null, error: 'Giriş gerekli' }
 
     const { data: mevcutlar, error } = await HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId)
     if (error) return { id: null, error: error.message }
 
-    const eslesme = (mevcutlar ?? []).find(k => ayniKaynak(k.name, name))
+    // Aynı adlı birden çok kitap varsa ödevin dersine uyan seçilir (kaynakSec)
+    const eslesme = kaynakSec(mevcutlar ?? [], name, ders)
     if (eslesme) return { id: eslesme.id, error: null }
 
-    const olusan = await this.createSource(name.trim(), null)
+    const olusan = await this.createSource(name, null)
     if (olusan.error) return { id: null, error: olusan.error }
     return { id: olusan.data?.id ?? null, error: null }
   },
