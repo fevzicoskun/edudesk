@@ -33,3 +33,34 @@ describe('isMeaningfulText', () => {
     expect(isMeaningfulText('AaAaA')).toBe(false) // lowercase aaaaa → mash, çöp sayılır
   })
 })
+
+// 2026-09-28: kural rakam/noktalama/Romen rakamını da "mash" sayıyordu — "Ünite III", "sayfa 1000"
+// reddediliyordu (e2e başlığındaki zaman damgası "111" içerdiğinde de → kararsız test).
+describe('isMeaningfulText — meşru tekrarlar (yanlış alarm yok)', () => {
+  it('rakam tekrarı meşrudur', () => {
+    expect(isMeaningfulText('sayfa 1000')).toBe(true)
+    expect(isMeaningfulText('Test 111')).toBe(true)
+    expect(isMeaningfulText('2000 soru')).toBe(true)
+    expect(isMeaningfulText('E2EGECMIS1790625111222')).toBe(true)
+  })
+
+  it('noktalama tekrarı meşrudur', () => {
+    expect(isMeaningfulText('Tekrar...')).toBe(true)
+    expect(isMeaningfulText('Önemli!!!')).toBe(true)
+    expect(isMeaningfulText('s. 12---18')).toBe(true)
+  })
+
+  it('Romen rakamı meşrudur (büyük/küçük, noktalı)', () => {
+    expect(isMeaningfulText('Ünite III')).toBe(true)
+    expect(isMeaningfulText('III. Bölüm')).toBe(true)
+    expect(isMeaningfulText('Bölüm XXX')).toBe(true)
+    expect(isMeaningfulText('ünite iii')).toBe(true)
+  })
+
+  it('harf mash yine yakalanır — rakam/Romen muafiyeti bunu delmez', () => {
+    expect(isMeaningfulText('Ünite 3 kkkk')).toBe(false)
+    expect(isMeaningfulText('Sayfa 1000 aaaa')).toBe(false)
+    expect(isMeaningfulText('şşşş')).toBe(false) // Türkçe harf
+    expect(isMeaningfulText('İİİİ ödev')).toBe(false) // Türkçe büyük İ
+  })
+})

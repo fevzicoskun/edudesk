@@ -10,6 +10,13 @@ import { createClient } from '@supabase/supabase-js'
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 test.use({ storageState: path.join(process.cwd(), 'tests/playwright/.auth/ogretmen.json') })
 
+/** Sunucudan gelen form görünür ve düğmesi aktif olsa da React devralmadan (hydration) yazılan
+ *  değerler sıfırlanır — alan React'e bağlanana dek bekle (tam pakette yavaş hydration'da yakalandı). */
+async function formHazir(page: import('@playwright/test').Page) {
+  await expect.poll(() => page.locator('input[name="title"]').evaluate(el =>
+    Object.keys(el).some(k => k.startsWith('__reactProps'))), { timeout: 30_000 }).toBe(true)
+}
+
 const ETIKET = `E2EKAYNAK${Date.now()}`
 const KITAP = `${ETIKET} Mikro Orjinal`
 let ogretmenId = '', schoolId = '', matId = '', geoId = ''
@@ -48,6 +55,7 @@ test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', a
     await page.getByRole('button', { name: /9-A/ }).first().click({ timeout: 2_000 })
     await expect(gonder).toBeEnabled({ timeout: 2_000 })
   }).toPass({ timeout: 30_000 })
+  await formHazir(page)
 
   await page.locator('input[name="subject"]').fill('Geometri')
   // harf ve boşluk farkıyla yazılır — yine aynı kitap olmalı
@@ -55,6 +63,8 @@ test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', a
   await page.locator('input[name="title"]').fill(baslik)
   const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.getByLabel('Son Teslim Tarihi').fill(bugun)
+  await expect(page.locator('input[name="subject"]')).toHaveValue('Geometri')
+  await expect(page.locator('input[name="title"]')).toHaveValue(baslik)
 
   await gonder.click()
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
@@ -83,4 +93,25 @@ test('Ayarlar: aynı ad + aynı ders ikinci kez eklenemez; listede hayalet kopya
   expect(count).toBe(2)
   // iyimser eklenen satır geri alınmış olmalı: kitap listede yalnız 2 kez (Matematik + Geometri)
   await expect(bolum.getByText(KITAP, { exact: true })).toHaveCount(2)
+})
+
+test('Romen rakamı ve rakam tekrarı içeren başlık kaydedilir ("Ünite III · sayfa 1000")', async ({ page }) => {
+  const baslik = `${ETIKET} Ünite III · sayfa 1000...`
+  await page.goto('/odevler/yeni')
+  const gonder = page.locator('button[type="submit"]').last()
+  await expect(async () => {
+    await page.getByRole('button', { name: /9-A/ }).first().click({ timeout: 2_000 })
+    await expect(gonder).toBeEnabled({ timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
+  await formHazir(page)
+  await page.locator('input[name="title"]').fill(baslik)
+  await page.locator('input[name="subject"]').fill('Matematik')
+  const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  await page.getByLabel('Son Teslim Tarihi').fill(bugun)
+  await expect(page.locator('input[name="title"]')).toHaveValue(baslik)
+
+  await gonder.click()
+  await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
+  const { data } = await db.from('homeworks').select('title').eq('title', baslik).single()
+  expect(data?.title).toBe(baslik)
 })

@@ -10,6 +10,13 @@ import { createClient } from '@supabase/supabase-js'
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 test.use({ storageState: path.join(process.cwd(), 'tests/playwright/.auth/ogretmen.json') })
 
+/** Sunucudan gelen form görünür ve düğmesi aktif olsa da React devralmadan (hydration) yazılan
+ *  değerler sıfırlanır — alan React'e bağlanana dek bekle (tam pakette yavaş hydration'da yakalandı). */
+async function formHazir(page: import('@playwright/test').Page) {
+  await expect.poll(() => page.locator('input[name="title"]').evaluate(el =>
+    Object.keys(el).some(k => k.startsWith('__reactProps'))), { timeout: 30_000 }).toBe(true)
+}
+
 const BASLIK = `E2EGECMIS${Date.now()}`
 const istanbulGun = (gunOnce: number) =>
   new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() - gunOnce * 864e5))
@@ -33,12 +40,14 @@ test('geçmişte verilmiş, teslimi geçmiş ödev sonradan girilir', async ({ p
     await page.getByRole('button', { name: /9-A/ }).first().click({ timeout: 2_000 })
     await expect(gonder).toBeEnabled({ timeout: 2_000 })
   }).toPass({ timeout: 30_000 })
+  await formHazir(page)
 
   await page.locator('input[name="title"]').fill(BASLIK)
   await page.locator('input[name="subject"]').fill('Fizik')
   await page.getByLabel('Verildiği Tarih').fill(verildigi)
   await page.getByLabel('Son Teslim Tarihi').fill(sonTeslim)
   await expect(page.getByText('Geçmiş tarihli ödev — sonradan giriliyor.')).toBeVisible()
+  await expect(page.locator('input[name="title"]')).toHaveValue(BASLIK)
 
   await gonder.click()
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
