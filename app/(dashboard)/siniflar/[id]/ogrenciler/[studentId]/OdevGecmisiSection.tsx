@@ -47,7 +47,8 @@ export default function OdevGecmisiSection({ odevler, raporHref, sayfaHref, ders
                 </Link>
               )}
             </div>
-            <p className="leading-relaxed">
+            {/* flex-wrap: dersler arasında kırılma noktası — nowrap span'lar arasında boşluk yoktu, telefonda son ders taşıyordu */}
+            <p className="leading-relaxed flex flex-wrap">
               {dersler.map((d, i) => {
                 const aktif = secili?.ders === d.ders
                 return (

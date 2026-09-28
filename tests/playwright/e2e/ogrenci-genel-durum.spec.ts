@@ -146,3 +146,21 @@ test('ders satırına tıklayınca Ödev Geçmişi o derse süzülür; Tümünü
   await expect(satir('Coğrafya')).toBeVisible()
   await expect(gecmis.getByRole('link', { name: 'Tümünü göster' })).toHaveCount(0)
 })
+
+test('telefonda uzun ders satırı alt satıra geçer, taşmaz (390px)', async ({ page }) => {
+  await odevEkle(['yapildi'], 'Edebiyat')
+  await odevEkle(['eksik'], 'Fizik')
+  await odevEkle(['gec'], 'Matematik')
+  await odevEkle(['yapildi'], 'Kimya')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto(`/siniflar/${classId}/ogrenciler/${studentId}`)
+  const nav = page.getByRole('navigation', { name: 'Derslere göre' })
+  await expect(nav.getByRole('link', { name: /^Matematik / })).toBeVisible({ timeout: 20_000 })
+  // hiçbir ders bağlantısı satırın sağ kenarını aşmamalı
+  const { tasma } = await nav.evaluate(el => {
+    const sag = el.getBoundingClientRect().right
+    const enSag = Math.max(...[...el.querySelectorAll('a')].map(a => a.getBoundingClientRect().right))
+    return { tasma: enSag - sag }
+  })
+  expect(tasma).toBeLessThanOrEqual(1)
+})
