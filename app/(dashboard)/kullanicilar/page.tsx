@@ -4,7 +4,8 @@ import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { isMudurOrAbove, type Role } from '@/src/shared/types'
 import { UserRepository } from '@/src/domains/users/repositories/UserRepository'
 import InviteUserForm from './InviteUserForm'
-import KullaniciFiltreli, { type UserRow, type SessionSummary, type ClassRow } from './KullaniciFiltreli'
+import KullaniciFiltreli, { type UserRow, type KullanimOzeti, type ClassRow } from './KullaniciFiltreli'
+import { getOkulKullanim } from '@/src/domains/dashboard/queries/schoolStats'
 import SchoolCodeCard from './SchoolCodeCard'
 
 export const revalidate = 60
@@ -25,9 +26,9 @@ export default async function KullanicilarPage() {
   let profilesQuery = supabase.from('profiles').select('id, full_name, subject, role').eq('school_id', profile.school_id).order('full_name')
   if (isMY) profilesQuery = profilesQuery.neq('role', 'mudur')
 
-  const [{ data }, { data: sessionsRaw }, { data: schoolData }, { data: classesData }] = await Promise.all([
+  const [{ data }, kullanimMap, { data: schoolData }, { data: classesData }] = await Promise.all([
     profilesQuery,
-    supabase.from('user_sessions').select('user_id, login_at, last_seen_at, logout_at, duration_minutes').eq('school_id', profile.school_id),
+    getOkulKullanim(), // usage_daily — yalnız müdür/MY'ye döner (RLS); diğer rollerde boş
     (isMudur || isMY) && profile.school_id
       ? supabase.from('schools').select('slug').eq('id', profile.school_id).single()
       : Promise.resolve({ data: null }),
@@ -45,18 +46,8 @@ export default async function KullanicilarPage() {
     teacherAssignments[row.teacher_id].push(row.class_id)
   }
 
-  // Kullanıcı başına oturum özeti — plain object olarak geçir (client component için serialize edilebilir)
-  const sessions: Record<string, SessionSummary> = {}
-  for (const s of (sessionsRaw ?? [])) {
-    const prev = sessions[s.user_id] ?? { count: 0, totalMinutes: 0, lastSeen: null }
-    prev.count += 1
-    const mins = s.duration_minutes ?? Math.round(
-      (new Date(s.last_seen_at).getTime() - new Date(s.login_at).getTime()) / 60000
-    )
-    prev.totalMinutes += Math.max(mins, 1)
-    if (!prev.lastSeen || s.last_seen_at > prev.lastSeen) prev.lastSeen = s.last_seen_at
-    sessions[s.user_id] = prev
-  }
+  // Son 30 gün kullanım özeti — plain object (client component'e serialize edilebilir)
+  const kullanim: Record<string, KullanimOzeti> = Object.fromEntries(kullanimMap)
 
   const canAssign = isMudur || isMY
   const assignableRoles = (isMudur
@@ -81,7 +72,7 @@ export default async function KullanicilarPage() {
 
       <KullaniciFiltreli
         users={users}
-        sessions={sessions}
+        kullanim={kullanim}
         currentUserId={user.id}
         isMudur={isMudur}
         canAssign={canAssign}

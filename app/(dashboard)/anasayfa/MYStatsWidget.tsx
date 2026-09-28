@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
-import { subDays, todayLocalISO } from '@/src/shared/date'
+import { todayLocalISO } from '@/src/shared/date'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
-import { getAbsenceScores, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { getAbsenceScores, getOkulKullanim, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { aktifMi } from '@/src/domains/dashboard/lib/aktiflik'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -28,18 +29,16 @@ function statColor(ok: boolean, warn: boolean) {
 export default async function MYStatsWidget() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
-  const today       = new Date()
   const todayStr    = todayLocalISO()
-  const twoWeeksAgo = subDays(today, 14).toISOString()
   const yearStart   = schoolYearStart()
 
-  const [teachers, classesRes, studentsRes, todayAttRes, absenceScores, sessionRows] = await Promise.all([
+  const [teachers, classesRes, studentsRes, todayAttRes, absenceScores, kullanim] = await Promise.all([
     getSchoolTeachers(school_id),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
     getAbsenceScores(school_id, yearStart),
-    getSessionRows(school_id),
+    getOkulKullanim(),
   ])
 
   const classCount    = classesRes.count  ?? 0
@@ -51,12 +50,7 @@ export default async function MYStatsWidget() {
 
   const riskCount = absenceScores.filter(r => r.absences >= ATTENDANCE_WARN_DAYS).length
 
-  const lastSeenMap = new Map<string, string>()
-  for (const s of sessionRows) {
-    const prev = lastSeenMap.get(s.user_id)
-    if (!prev || s.last_seen_at > prev) lastSeenMap.set(s.user_id, s.last_seen_at)
-  }
-  const activeCount   = teachers.filter(t => (lastSeenMap.get(t.id) ?? '') >= twoWeeksAgo).length
+  const activeCount   = teachers.filter(t => aktifMi(kullanim.get(t.id)?.sonGun, todayStr)).length
   const inactiveCount = teachers.length - activeCount
 
   const alerts: { text: string; type: AlertType }[] = []
@@ -102,7 +96,7 @@ export default async function MYStatsWidget() {
             {activeCount}<span className="text-base font-medium opacity-90">/{teachers.length}</span>
           </p>
           <p className="text-sm font-medium mt-1.5">Aktif Öğretmen</p>
-          <p className="text-[11px] opacity-90 mt-0.5">son 2 hafta içinde giriş</p>
+          <p className="text-[11px] opacity-90 mt-0.5">son 2 haftada uygulamayı kullanan</p>
         </div>
       </div>
     </>

@@ -1,24 +1,24 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { requireSchoolId } from '@/src/shared/auth'
 import Link from 'next/link'
-import { subDays } from '@/src/shared/date'
+import { format, parseISO, todayLocalISO } from '@/src/shared/date'
+import { aktifMi } from '@/src/domains/dashboard/lib/aktiflik'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
-import { getAbsenceScores, getSessionRows, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { getAbsenceScores, getOkulKullanim, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 
 export default async function MYSolSutunWidget() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
-  const today       = new Date()
-  const twoWeeksAgo = subDays(today, 14).toISOString()
-  const yearStart   = schoolYearStart()
+  const bugun     = todayLocalISO()
+  const yearStart = schoolYearStart()
 
-  const [studentsRes, classesRes, teachers, absenceScores, sessionRows] = await Promise.all([
+  const [studentsRes, classesRes, teachers, absenceScores, kullanim] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null).order('grade').order('name'),
     getSchoolTeachers(school_id),
     getAbsenceScores(school_id, yearStart),
-    getSessionRows(school_id),
+    getOkulKullanim(),
   ])
 
   const students = studentsRes.data ?? []
@@ -33,11 +33,6 @@ export default async function MYSolSutunWidget() {
 
   const classMap = new Map(classes.map(c => [c.id, c]))
 
-  const sessionMap = new Map<string, string>()
-  for (const s of sessionRows) {
-    const prev = sessionMap.get(s.user_id)
-    if (!prev || s.last_seen_at > prev) sessionMap.set(s.user_id, s.last_seen_at)
-  }
 
   return (
     <div className="space-y-4">
@@ -80,8 +75,8 @@ export default async function MYSolSutunWidget() {
         ) : (
           <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
             {teachers.slice(0, 12).map(t => {
-              const lastSeen = sessionMap.get(t.id)
-              const inactive = !lastSeen || lastSeen < twoWeeksAgo
+              const sonGun   = kullanim.get(t.id)?.sonGun
+              const inactive = !aktifMi(sonGun, bugun)
               return (
                 <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
                   <span className={`w-2 h-2 rounded-full shrink-0 ${inactive ? 'bg-red-400' : 'bg-emerald-500'}`} />
@@ -89,7 +84,7 @@ export default async function MYSolSutunWidget() {
                     <p className="text-xs font-medium text-gray-900 dark:text-slate-100 truncate">{t.full_name}</p>
                     <p className="text-[11px] text-gray-500 dark:text-slate-400">
                       {t.subject ?? '—'}
-                      {lastSeen && <> · {new Date(lastSeen).toLocaleDateString('tr-TR')}</>}
+                      {sonGun && <> · son {format(parseISO(sonGun), 'd MMM')}</>}
                     </p>
                   </div>
                   <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${inactive ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'}`}>

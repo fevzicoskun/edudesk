@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { ROLE_LABELS, type Role } from '@/src/shared/types'
+import { format, parseISO } from '@/src/shared/date'
 import RoleSelector from './RoleSelector'
 import DeleteButton from './DeleteButton'
 import SinifAtamaMatrisi from './SinifAtamaMatrisi'
@@ -13,10 +14,10 @@ export type UserRow = {
   role: Role
 }
 
-export type SessionSummary = {
-  count: number
-  totalMinutes: number
-  lastSeen: string | null
+/** Son 30 günde uygulamanın kullanıldığı gün sayısı ve son kullanım günü (usage_daily) */
+export type KullanimOzeti = {
+  gunSayisi: number
+  sonGun: string
 }
 
 export type ClassRow = { id: string; name: string; grade: number | null }
@@ -30,7 +31,7 @@ const ROLE_BADGE: Record<string, string> = {
 
 export default function KullaniciFiltreli({
   users,
-  sessions,
+  kullanim,
   currentUserId,
   isMudur,
   canAssign,
@@ -39,7 +40,7 @@ export default function KullaniciFiltreli({
   teacherAssignments,
 }: {
   users: UserRow[]
-  sessions: Record<string, SessionSummary>
+  kullanim: Record<string, KullanimOzeti>
   currentUserId: string
   isMudur: boolean
   canAssign: boolean
@@ -192,8 +193,7 @@ export default function KullaniciFiltreli({
                 const canEditThis = canAssign && !isSelf && (
                   isMudur ? u.role !== 'mudur' : ['ogretmen', 'zumre_baskani'].includes(u.role)
                 )
-                const stats      = sessions[u.id]
-                const totalHours = stats ? (stats.totalMinutes / 60).toFixed(1) : null
+                const stats      = kullanim[u.id]
 
                 return (
                   <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
@@ -218,12 +218,10 @@ export default function KullaniciFiltreli({
                     <td className="px-3 py-2 sm:px-4 sm:py-3 hidden md:table-cell">
                       {stats ? (
                         <div>
-                          <p className="text-xs font-medium text-gray-900 dark:text-slate-100">{stats.count} giriş · {totalHours} saat</p>
-                          {stats.lastSeen && (
-                            <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
-                              Son: {new Date(stats.lastSeen).toLocaleDateString('tr-TR')}
-                            </p>
-                          )}
+                          <p className="text-xs font-medium text-gray-900 dark:text-slate-100">Son 30 günde {stats.gunSayisi} gün</p>
+                          <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-0.5">
+                            Son: {format(parseISO(stats.sonGun), 'd MMM yyyy')}
+                          </p>
                         </div>
                       ) : (
                         <span className="text-xs text-gray-400">—</span>

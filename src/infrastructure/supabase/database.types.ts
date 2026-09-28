@@ -3779,6 +3779,14 @@ export type Database = {
       is_yonetici_in_school: { Args: never; Returns: boolean }
       is_zumre_baskani: { Args: never; Returns: boolean }
       is_zumre_baskani_in_school: { Args: never; Returns: boolean }
+      okul_son_kullanim: {
+        Args: { p_since: string }
+        Returns: {
+          gun_sayisi: number
+          son_gun: string
+          user_id: string
+        }[]
+      }
       permission_scope: {
         Args: {
           p_action: string

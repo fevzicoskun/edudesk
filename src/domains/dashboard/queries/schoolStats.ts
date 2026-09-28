@@ -1,6 +1,8 @@
 import { cache } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { todayLocalISO } from '@/src/shared/date'
+import { gunOnce } from '@/src/domains/dashboard/lib/aktiflik'
 
 // Her iki widget de bu iki sorguyu çekiyor — cache() ile request içi dedup sağlanır
 
@@ -28,16 +30,12 @@ export const getSchoolTeachers = cache(async (schoolId: string) => {
   return data ?? []
 })
 
-export const getSessionRows = cache(async (schoolId: string) => {
+/** Öğretmen başına son kullanım günü ve son 30 günde kullanılan gün sayısı (usage_daily).
+ *  okul_son_kullanim RLS'e tabi: yalnız müdür/MY kendi okulunu görür — başka rolde boş Map.
+ *  (Önceki kaynak user_sessions 2026-06-02'den beri beslenmiyordu → herkes "Pasif" görünüyordu.) */
+export const getOkulKullanim = cache(async (): Promise<Map<string, { sonGun: string; gunSayisi: number }>> => {
   const db = await createClient()
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
-  const { data, error } = await db
-    .from('user_sessions')
-    .select('user_id, last_seen_at')
-    .eq('school_id', schoolId)
-    .gte('last_seen_at', since)
-    .order('last_seen_at', { ascending: false })
-    .limit(500)
-  if (error) logger.error({ event: 'db_query_failed', query: 'getSessionRows', school_id: schoolId, message: error.message }, 'Oturum sorgusu başarısız')
-  return data ?? []
+  const { data, error } = await db.rpc('okul_son_kullanim', { p_since: gunOnce(todayLocalISO(), 29) })
+  if (error) logger.error({ event: 'db_query_failed', query: 'getOkulKullanim', message: error.message }, 'Kullanım sorgusu başarısız')
+  return new Map((data ?? []).map(r => [r.user_id, { sonGun: r.son_gun, gunSayisi: r.gun_sayisi }]))
 })
