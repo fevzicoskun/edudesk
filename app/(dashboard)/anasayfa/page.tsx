@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import { format, parseISO, todayLocalISO } from '@/src/shared/date'
@@ -40,18 +41,32 @@ function DashboardSkeleton() {
   )
 }
 
+function OdevTakibiLink() {
+  return (
+    <Link
+      href="/yonetim/odevler"
+      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
+    >
+      Ödev Takibi →
+    </Link>
+  )
+}
+
 async function MudurWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   const setup = await SetupService.getSetupStatus()
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-          {getGreeting(fullName)}
-        </h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+            {getGreeting(fullName)}
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
+          </p>
+        </div>
+        <OdevTakibiLink />
       </div>
 
       {setup?.kind === 'mudur'
@@ -78,11 +93,14 @@ async function MudurWidgets({ fullName, classCount }: { fullName: string; classC
 async function MYWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-      <div>
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{getGreeting(fullName)}</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-          {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{getGreeting(fullName)}</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
+            {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
+          </p>
+        </div>
+        <OdevTakibiLink />
       </div>
 
       {firstRunState('mudur_yardimcisi', classCount) === 'setup' && <KurulumWidget />}

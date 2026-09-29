@@ -12,7 +12,7 @@ type NavItem = {
   roles: Role[] | null
 }
 
-export default function MobileNavDrawer({ items, role }: { items: NavItem[]; role: Role | undefined }) {
+export default function MobileNavDrawer({ items, role, aktif }: { items: NavItem[]; role: Role | undefined; aktif: string | null }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -50,7 +50,7 @@ export default function MobileNavDrawer({ items, role }: { items: NavItem[]; rol
         </div>
         <nav className="px-4 pb-safe-or-4 grid grid-cols-4 gap-1 pt-3">
           {visible.map(item => {
-            const active = pathname.startsWith(item.href)
+            const active = item.href === aktif
             return (
               <Link
                 key={item.href}

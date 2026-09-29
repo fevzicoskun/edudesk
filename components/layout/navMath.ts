@@ -55,3 +55,15 @@ export function mobilNavSec<T extends Pick<NavKayit, 'mobile' | 'roles'>>(
     drawer: [...mobilAdaylar.slice(yuva), ...digerleri],
   }
 }
+
+/**
+ * Aktif menü bağlantısı: pathname'i segment sınırında kapsayan EN UZUN href.
+ * /yonetim/odevler açıkken /yonetim de yanmasın diye — çağıran TÜM menüyü verir (alt bar + çekmece ortak).
+ */
+export function aktifHref(pathname: string, hrefs: string[]): string | null {
+  let enIyi: string | null = null
+  for (const h of hrefs) {
+    if ((pathname === h || pathname.startsWith(h + '/')) && h.length > (enIyi?.length ?? 0)) enIyi = h
+  }
+  return enIyi
+}

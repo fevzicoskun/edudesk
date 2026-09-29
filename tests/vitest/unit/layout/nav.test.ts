@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { gorunurNav, gruplaNav, mobilNavSec, type NavKayit } from '@/components/layout/navMath'
+import { aktifHref, gorunurNav, gruplaNav, mobilNavSec, type NavKayit } from '@/components/layout/navMath'
 
 const item = (href: string, over: Partial<NavKayit> = {}): NavKayit => ({
   href,
@@ -90,5 +90,21 @@ describe('mobilNavSec()', () => {
       item('/odevler', { mobile: true, roles: ['ogretmen'] }),
     ], 'mudur')
     expect(altBar).toEqual([])
+  })
+})
+
+describe('aktifHref — iç içe menü bağlantılarında en uzun eşleşen kazanır', () => {
+  const hrefs = ['/anasayfa', '/yonetim', '/yonetim/odevler', '/odevler']
+
+  it('alt sayfada yalnız alt bağlantı aktif (üst bağlantı değil)', () => {
+    expect(aktifHref('/yonetim/odevler', hrefs)).toBe('/yonetim/odevler')
+  })
+  it('üst sayfanın menüde olmayan alt sayfası üst bağlantıyı yakar', () => {
+    expect(aktifHref('/yonetim/ogrenciler', hrefs)).toBe('/yonetim')
+    expect(aktifHref('/odevler/123', hrefs)).toBe('/odevler')
+  })
+  it('yalnız tam segment eşleşir; hiç eşleşme yoksa null', () => {
+    expect(aktifHref('/odevlerx', hrefs)).toBeNull()
+    expect(aktifHref('/profil', hrefs)).toBeNull()
   })
 })

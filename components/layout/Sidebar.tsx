@@ -13,7 +13,7 @@ import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
 import EduDeskLogo from '@/components/EduDeskLogo'
 import Avatar from '@/app/components/Avatar'
-import { gorunurNav, gruplaNav, mobilNavSec, type NavGrup } from '@/components/layout/navMath'
+import { aktifHref, gorunurNav, gruplaNav, mobilNavSec, type NavGrup } from '@/components/layout/navMath'
 
 type SidebarProfile = Pick<Profile, 'id' | 'full_name' | 'subject' | 'role'> & { avatar_url?: string | null }
 
@@ -44,6 +44,14 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     roles: ['mudur', 'mudur_yardimcisi'],
     grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
+  },
+  {
+    href: '/yonetim/odevler',
+    label: 'Ödev Takibi',
+    mobile: true,
+    roles: ['mudur', 'mudur_yardimcisi'],
+    grup: 'gunluk',
+    icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
   },
   {
     href: '/nobet',
@@ -148,9 +156,8 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
 
 /** Menü bağlantısı — günlük grup, "Diğer" grubu ve daraltılmış menü aynı görünümü paylaşır */
 function NavLink({
-  href, label, icon, collapsed, pathname,
-}: { href: string; label: string; icon: ReactNode; collapsed: boolean; pathname: string }) {
-  const active = pathname.startsWith(href)
+  href, label, icon, collapsed, active,
+}: { href: string; label: string; icon: ReactNode; collapsed: boolean; active: boolean }) {
   return (
     <Link
       href={href}
@@ -184,7 +191,9 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
 
   const filteredNav = gorunurNav(navItems, role)
   const { gunluk, diger } = gruplaNav(filteredNav)
-  const aktifDigerde = diger.some(i => pathname.startsWith(i.href))
+  // iç içe bağlantılar (/yonetim ↔ /yonetim/odevler) için tüm menü üzerinden tek hesap
+  const aktif = aktifHref(pathname, navItems.map(i => i.href))
+  const aktifDigerde = diger.some(i => i.href === aktif)
 
   useEffect(() => {
     if (localStorage.getItem('sidebar-collapsed') === 'true') setCollapsed(true)
@@ -255,7 +264,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
             Daraltılmış menüde gruplama anlamsız: tüm ikonlar düz listelenir. */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
           {(collapsed ? filteredNav : gunluk).map(({ href, label, icon }) => (
-            <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} pathname={pathname} />
+            <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} active={href === aktif} />
           ))}
 
           {!collapsed && diger.length > 0 && (
@@ -279,7 +288,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                 </svg>
               </button>
               {digerAcik && diger.map(({ href, label, icon }) => (
-                <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} pathname={pathname} />
+                <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} active={href === aktif} />
               ))}
             </>
           )}
@@ -356,7 +365,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
           return (
             <>
               {altBar.map(({ href, label, icon }) => {
-                const active = pathname.startsWith(href)
+                const active = href === aktif
                 return (
                   <Link
                     key={href}
@@ -371,7 +380,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
                 )
               })}
               {showDrawer && (
-                <MobileNavDrawer items={drawer} role={role} />
+                <MobileNavDrawer items={drawer} role={role} aktif={aktif} />
               )}
             </>
           )
