@@ -18,18 +18,23 @@ export default function GizlilikPage() {
             Gizlilik Politikası & KVKK Aydınlatma Metni
           </h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">
-            Son güncelleme: Haziran 2026
+            Son güncelleme: Eylül 2026
           </p>
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-gray-200 dark:border-slate-700 p-8 space-y-8 text-sm text-gray-700 dark:text-slate-300 leading-relaxed">
 
           <section>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">1. Veri Sorumlusu</h2>
+            <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">1. Veri Sorumlusu ve Veri İşleyen</h2>
             <p>
-              Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında
-              <strong className="text-gray-900 dark:text-slate-100"> EduDesk</strong> (myedudesk.com.tr) tarafından
-              hazırlanmıştır. Kişisel verileriniz, veri sorumlusu sıfatıyla EduDesk tarafından işlenmektedir.
+              Bu aydınlatma metni, 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında hazırlanmıştır.
+              EduDesk&apos;i kullanan <strong className="text-gray-900 dark:text-slate-100">okul, veri sorumlusudur</strong>:
+              hangi öğrenci ve kullanıcı verilerinin hangi amaçla sisteme girileceğine okul karar verir.
+            </p>
+            <p className="mt-2">
+              <strong className="text-gray-900 dark:text-slate-100">EduDesk</strong> (myedudesk.com.tr) ise
+              <strong className="text-gray-900 dark:text-slate-100"> veri işleyendir</strong>: verileri yalnızca okul adına,
+              okulun talimatları doğrultusunda ve okul yönetim hizmetini sağlamak için işler; kendi amacı için kullanmaz.
             </p>
             <p className="mt-2">İletişim: <a href="mailto:info@myedudesk.com.tr" className="text-blue-600 hover:underline">info@myedudesk.com.tr</a></p>
           </section>
@@ -66,9 +71,9 @@ export default function GizlilikPage() {
           <section>
             <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">4. Veri Saklama Süresi</h2>
             <p>
-              Kişisel verileriniz, hizmet ilişkisi süresince ve hizmet sonrası <strong>2 yıl</strong> boyunca saklanır.
+              Veriler, okul EduDesk&apos;i kullandığı sürece saklanır. Okul hizmeti sonlandırdığında veriler,
+              okulun talebi üzerine okula dışa aktarılarak teslim edilir ve sistemden silinir.
               Yasal yükümlülük gerektiren veriler ilgili mevzuatta öngörülen süreler boyunca tutulur.
-              Süre sonunda veriler güvenli şekilde silinir veya anonimleştirilir.
             </p>
           </section>
 
@@ -83,6 +88,10 @@ export default function GizlilikPage() {
               <li><strong>Vercel Inc.</strong> — Uygulama barındırma (GDPR uyumlu)</li>
               <li><strong>Resend Inc.</strong> — E-posta bildirimleri</li>
             </ul>
+            <p className="mt-2">
+              Bu sağlayıcıların sunucuları <strong>yurt dışındadır</strong> (veritabanı ve uygulama Almanya/Frankfurt;
+              e-posta hizmeti ABD merkezli). Bu nedenle verileriniz KVKK&apos;nın 9. maddesi kapsamında yurt dışına aktarılmaktadır.
+            </p>
           </section>
 
           <section>
@@ -99,11 +108,12 @@ export default function GizlilikPage() {
               <li>Kanuna aykırı işlenmesi nedeniyle zarara uğramanız halinde zararın giderilmesini talep etme</li>
             </ul>
             <p className="mt-3">
-              Haklarınızı kullanmak için{' '}
+              Haklarınızı kullanmak için öncelikle veri sorumlusu olan okulunuza başvurabilirsiniz.
+              EduDesk&apos;e{' '}
               <a href="mailto:info@myedudesk.com.tr" className="text-blue-600 hover:underline">
                 info@myedudesk.com.tr
               </a>{' '}
-              adresine e-posta gönderebilirsiniz. Talepleriniz en geç 30 gün içinde yanıtlanır.
+              adresinden ulaşan talepler okula iletilir ve okulla birlikte en geç 30 gün içinde yanıtlanır.
             </p>
           </section>
 
@@ -111,14 +121,15 @@ export default function GizlilikPage() {
             <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">7. Çerezler (Cookies)</h2>
             <p>
               EduDesk yalnızca oturum yönetimi için zorunlu çerezler kullanır. Reklam veya izleme
-              amaçlı çerez kullanılmamaktadır. Oturum çerezi tarayıcınızı kapattığınızda sona erer.
+              amaçlı çerez kullanılmamaktadır. Oturum çerezi, her girişte şifre sorulmasın diye tarayıcınızda
+              saklanır; çıkış yaptığınızda silinir.
             </p>
           </section>
 
           <section>
             <h2 className="text-base font-semibold text-gray-900 dark:text-slate-100 mb-3">8. Değişiklikler</h2>
             <p>
-              Bu metin gerektiğinde güncellenebilir. Önemli değişiklikler e-posta ile bildirilir.
+              Bu metin gerektiğinde güncellenebilir. Önemli değişiklikler okul yönetimine bildirilir.
               Güncel metne her zaman myedudesk.com.tr/gizlilik adresinden ulaşabilirsiniz.
             </p>
           </section>
