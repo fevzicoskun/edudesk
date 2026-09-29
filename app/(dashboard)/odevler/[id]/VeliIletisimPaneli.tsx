@@ -9,7 +9,8 @@ type VeliItem = {
   student_id: string
   full_name: string
   student_number: string | null
-  status: SubmissionStatus
+  /** null = öğretmen henüz işaretlemedi — hiçbir eksik süzgecine girmez */
+  status: SubmissionStatus | null
   veli_telefon: string | null
   veli_ad: string | null
   veli_email: string | null
@@ -56,7 +57,7 @@ export default function VeliIletisimPaneli({
   const { toast }                    = useToast()
 
   const filtered = items.filter(i => {
-    if (filter === 'tum') return MISSING_STATUSES.includes(i.status)
+    if (filter === 'tum') return (i.status !== null && MISSING_STATUSES.includes(i.status))
     return i.status === filter
   })
 
@@ -74,7 +75,7 @@ export default function VeliIletisimPaneli({
     })
   }
 
-  const missingTotal = items.filter(i => MISSING_STATUSES.includes(i.status)).length
+  const missingTotal = items.filter(i => (i.status !== null && MISSING_STATUSES.includes(i.status))).length
 
   if (missingTotal === 0) {
     return (

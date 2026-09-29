@@ -132,22 +132,29 @@ export default function StatusBoard({
     new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
   )
 
+  /** Ekrana giden durum: işaretlenmemiş öğrenci null (statuses'taki varsayılan 'yapilmadi' kullanıcıya gösterilmez) */
+  const gorunenDurum = (studentId: string): SubmissionStatus | null =>
+    recordedIds.has(studentId) ? statuses[studentId] ?? null : null
+
   const recordedCount  = recordedIds.size
   const totalStudents  = items.length
 
   function setStatus(studentId: string, next: SubmissionStatus) {
     if (readOnly || pendingIds.has(studentId)) return
     const oldStatus = statuses[studentId] ?? 'yapilmadi'
+    const oncedenKayitli = recordedIds.has(studentId)
+    // durum ve "işaretli" birlikte, iyimser: satır dokunulduğu an doğru görünür; hata olursa ikisi de geri alınır
     setStatuses(s => ({ ...s, [studentId]: next }))
+    setRecordedIds(cur => new Set([...cur, studentId]))
     setPendingIds(cur => new Set([...cur, studentId]))
     startTransition(async () => {
       const result = await updateSubmissionStatus(homeworkId, studentId, next)
       setPendingIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
       if (result?.error) {
         setStatuses(s => ({ ...s, [studentId]: oldStatus }))
+        if (!oncedenKayitli) setRecordedIds(cur => { const s = new Set(cur); s.delete(studentId); return s })
         setErrorMsg(result.error)
       } else {
-        setRecordedIds(cur => new Set([...cur, studentId]))
         damgala()
       }
     })
@@ -220,14 +227,16 @@ export default function StatusBoard({
     if (readOnly || selectedIds.size === 0) return
     const ids = [...selectedIds]
     const prevStatuses = { ...statuses }
+    const prevKayitli  = new Set(recordedIds)
     setStatuses(s => ({ ...s, ...Object.fromEntries(ids.map(id => [id, next])) }))
+    setRecordedIds(cur => new Set([...cur, ...ids]))
     startTransition(async () => {
       const result = await updateAllSubmissionStatuses(homeworkId, ids, next)
       if (result?.error) {
         setStatuses(prevStatuses)
+        setRecordedIds(prevKayitli)
         setErrorMsg(result.error)
       } else {
-        setRecordedIds(cur => new Set([...cur, ...ids]))
         damgala()
       }
     })
@@ -241,13 +250,14 @@ export default function StatusBoard({
     const prevKayitli = new Set(recordedIds)
     const studentIds = items.map(i => i.student_id)
     setStatuses(Object.fromEntries(studentIds.map(id => [id, next])))
+    setRecordedIds(new Set(studentIds))
     startTransition(async () => {
       const result = await updateAllSubmissionStatuses(homeworkId, studentIds, next)
       if (result?.error) {
         setStatuses(prevAll)
+        setRecordedIds(prevKayitli)
         setErrorMsg(result.error)
       } else {
-        setRecordedIds(new Set(studentIds))
         damgala()
         // Geri alma yalnız daha önce işaretlenmemiş öğrenci varsa anlamlı
         if (prevKayitli.size < studentIds.length) setGeriAl({ onceki: prevAll, onceKayitli: prevKayitli })
@@ -389,7 +399,7 @@ export default function StatusBoard({
           <StudentRow
             key={item.student_id}
             item={item}
-            status={statuses[item.student_id] ?? 'yapilmadi'}
+            status={gorunenDurum(item.student_id)}
             note={notes[item.student_id] ?? ''}
             totalHomeworks={totalHomeworks}
             isPending={pendingIds.has(item.student_id)}
@@ -457,7 +467,7 @@ export default function StatusBoard({
           student_id:     i.student_id,
           full_name:      i.full_name,
           student_number: i.student_number,
-          status:         statuses[i.student_id] ?? i.status,
+          status:         gorunenDurum(i.student_id),
           veli_telefon:   i.veli_telefon,
           veli_ad:        i.veli_ad,
           veli_email:     i.veli_email,

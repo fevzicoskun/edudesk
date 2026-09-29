@@ -7,10 +7,13 @@ import type { StatusItem } from './types'
 /** Satırda doğrudan gösterilen durumlar; kalanlar ⋯ menüsünde */
 const BIRINCIL: SubmissionStatus[] = ['yapildi', 'eksik', 'yapilmadi']
 const IKINCIL:  SubmissionStatus[] = ['gec', 'mazeretli']
+/** İşaretlenmemiş öğrenci: nötr, kesik çizgili — 'Yapılmadı' gibi görünmesin */
+const ISARETSIZ_STIL = 'border-dashed border-gray-300 bg-white text-gray-600 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300'
 
 type Props = {
   item: StatusItem
-  status: SubmissionStatus
+  /** null = öğretmen henüz işaretlemedi */
+  status: SubmissionStatus | null
   note: string
   totalHomeworks: number
   isPending: boolean
@@ -58,9 +61,10 @@ export default function StudentRow({
   onToggleSelect,
 }: Props) {
   const hasNote       = !!note
-  const next          = nextInCycle(status)
+  // işaretsiz öğrencide ilk dokunuş en sık durum: Yapıldı
+  const next          = status ? nextInCycle(status) : 'yapildi'
   const menuAcik      = menuOpenId === item.student_id
-  const ikincilSecili = IKINCIL.includes(status)
+  const ikincilSecili = status !== null && IKINCIL.includes(status)
   const menuRef       = useRef<HTMLDivElement>(null)
 
   // Esc ile kapat; açıldığında ilk seçeneğe odaklan
@@ -176,9 +180,9 @@ export default function StudentRow({
       <button
         disabled={isPending || readOnly}
         onClick={() => onSetStatus(item.student_id, next)}
-        className={`md:hidden mt-2 w-full flex items-center justify-between gap-2 px-4 min-h-[48px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${STYLES[status]}`}
+        className={`md:hidden mt-2 w-full flex items-center justify-between gap-2 px-4 min-h-[48px] rounded-xl border-2 transition-all active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed ${status ? STYLES[status] : ISARETSIZ_STIL}`}
       >
-        <span className="font-bold text-sm">{LABELS[status]}</span>
+        <span className="font-bold text-sm">{status ? LABELS[status] : 'İşaretlenmedi'}</span>
         <span className="flex items-center gap-1 text-[11px] font-medium opacity-70">
           <svg className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -275,7 +279,7 @@ export default function StudentRow({
  *  o satırın durum butonları sola kayıp diğer satırlarla hizasını bozuyor. */
 function MenuButton({
   open, ikincilSecili, status, onClick,
-}: { open: boolean; ikincilSecili: boolean; status: SubmissionStatus; onClick: () => void }) {
+}: { open: boolean; ikincilSecili: boolean; status: SubmissionStatus | null; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -283,14 +287,14 @@ function MenuButton({
       aria-haspopup="menu"
       aria-label="Diğer işlemler"
       className={`flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] md:min-h-0 md:min-w-0 md:h-[34px] md:w-[84px] px-2 rounded-lg border text-xs font-medium transition-colors ${
-        ikincilSecili
+        ikincilSecili && status
           ? `${STYLES[status]} font-bold`
           : open
             ? 'border-blue-300 bg-blue-50 text-blue-600 dark:border-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
             : 'border-gray-200 dark:border-slate-600 text-gray-500 dark:text-slate-400 hover:border-gray-300 dark:hover:border-slate-500'
       }`}
     >
-      {ikincilSecili ? LABELS[status] : (
+      {ikincilSecili && status ? LABELS[status] : (
         <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="5" cy="12" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="19" cy="12" r="1.75" />
         </svg>

@@ -42,10 +42,23 @@ export async function sendHomeworkReminderEmails(
     return { error: 'Bu ödev için yetkiniz yok' }
   }
 
+  // İstemcinin listesine güvenme: yalnız bu ödevde gerçekten işaretlenmiş (marked_at) ve eksik durumdaki
+  // öğrenciler. İşaretsiz satır varsayılan 'yapilmadi' taşır — kontrol edilmemiş ödevde velilere yanlış hatırlatma gider.
+  const { data: eksikler, error: eksikHata } = await supabase
+    .from('homework_submissions')
+    .select('student_id')
+    .eq('homework_id', homeworkId)
+    .in('student_id', studentIds)
+    .not('marked_at', 'is', null)
+    .in('status', ['yapilmadi', 'eksik', 'gec'])
+  if (eksikHata) return { error: 'Öğrenci durumları okunamadı' }
+  const dogrulanmis = (eksikler ?? []).map(e => e.student_id)
+  if (dogrulanmis.length === 0) return { sent: 0 }
+
   const { data: students } = await supabase
     .from('students')
     .select('id, full_name, veli_email, veli_ad')
-    .in('id', studentIds)
+    .in('id', dogrulanmis)
     .eq('school_id', ability.schoolId)
     .not('veli_email', 'is', null)
     .eq('veli_email_opt_out', false)
