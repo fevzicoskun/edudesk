@@ -56,7 +56,6 @@ export default async function SinifDetayPage({
       .eq('class_id', id)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
-      .order('student_number', { nullsFirst: false })
       .order('full_name'),
     fetchAllResult((f, t) => supabase
       .from('attendance')
@@ -81,15 +80,8 @@ export default async function SinifDetayPage({
   const cls      = clsResult.data
   const egitimYili = getEgitimYili()
 
-  // Sayısal sıralama: text alanda '9' > '100' olur, JS'de parseInt ile düzeltiyoruz
-  const students = (studentsResult.data ?? []).sort((a, b) => {
-    const na = parseInt(a.student_number ?? '', 10)
-    const nb = parseInt(b.student_number ?? '', 10)
-    if (!isNaN(na) && !isNaN(nb)) return na - nb
-    if (!isNaN(na)) return -1
-    if (!isNaN(nb)) return 1
-    return a.full_name.localeCompare(b.full_name, 'tr')
-  })
+  // Sınıf içinde öğrenciler ad sırasıyla (Türkçe harf sırası: Ç, Ş, İ doğru yerde)
+  const students = (studentsResult.data ?? []).sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
 
   const absenceCounts: Record<string, number> = {}
   for (const a of absenceResult.data ?? []) {

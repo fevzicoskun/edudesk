@@ -68,6 +68,9 @@ test('not açılınca odak alana gelir, yazılan metin eksiksiz ve bir kez kayde
     return data?.map(r => r.note)
   }).toEqual([metin])
   expect(istek.n).toBe(1)
+  // 2026-09-30 "yine her seferinde kayıt oldu diyor": başarılı kayıtta yazı yok, rozet "Not" olur
+  await expect(page.getByText('✓ kaydedildi')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /notunu düzenle$/ })).toHaveText('Not')
 })
 
 test('değişmeyen not odaktan çıkınca yeniden kaydedilmez, "kaydedildi" görünmez', async ({ page }) => {
@@ -99,4 +102,22 @@ test('telefonda başka uygulamaya geçince (sayfa gizlenince) yazılan not odak 
     const { data } = await db.from('homework_submissions').select('note').eq('homework_id', hwId).not('note', 'is', null)
     return data?.map(r => r.note)
   }).toEqual([metin])
+})
+
+test('⋯ menüsünden "Sınıfta yok": durum mazeretli (veliye yapmadı gitmez) ve not boşsa "Sınıfta yok" yazılır', async ({ page }) => {
+  await page.goto(`/odevler/${hwId}`)
+  // not eklenmemiş ilk öğrencinin satırı
+  const satir = page.locator('div.rounded-xl.px-3.py-2').filter({ has: page.getByRole('button', { name: /için not ekle$/ }) }).first()
+  const ad = (await satir.getByRole('button', { name: /için not ekle$/ }).getAttribute('aria-label'))!.replace(/ için not ekle$/, '')
+  const { data: hw } = await db.from('homeworks').select('class_id').eq('id', hwId).single()
+  const { data: ogr } = await db.from('students').select('id').eq('class_id', hw!.class_id).eq('full_name', ad).limit(1).single()
+
+  await satir.getByRole('button', { name: 'Diğer işlemler' }).click()
+  await satir.getByRole('menuitem', { name: 'Sınıfta yok' }).click()
+
+  await expect.poll(async () => {
+    const { data } = await db.from('homework_submissions').select('status, note, marked_at')
+      .eq('homework_id', hwId).eq('student_id', ogr!.id).maybeSingle()
+    return data && { status: data.status, note: data.note, isaretli: !!data.marked_at }
+  }).toEqual({ status: 'mazeretli', note: 'Sınıfta yok', isaretli: true })
 })

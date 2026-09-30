@@ -18,7 +18,6 @@ type Props = {
   totalHomeworks: number
   isPending: boolean
   readOnly?: boolean
-  noteSaved: boolean
   expandedNote: string | null
   historyOpenId: string | null
   historyLoadingIds: Set<string>
@@ -26,6 +25,7 @@ type Props = {
   menuOpenId: string | null
   onToggleMenu: (studentId: string) => void
   onSetStatus: (studentId: string, status: SubmissionStatus) => void
+  onSinifaYok: (studentId: string) => void
   onToggleNote: (studentId: string) => void
   onNoteChange: (studentId: string, value: string) => void
   onNoteBlur: (studentId: string, value: string) => void
@@ -43,7 +43,6 @@ export default function StudentRow({
   totalHomeworks,
   isPending,
   readOnly = false,
-  noteSaved,
   expandedNote,
   historyOpenId,
   historyLoadingIds,
@@ -51,6 +50,7 @@ export default function StudentRow({
   menuOpenId,
   onToggleMenu,
   onSetStatus,
+  onSinifaYok,
   onToggleNote,
   onNoteChange,
   onNoteBlur,
@@ -122,14 +122,12 @@ export default function StudentRow({
               aria-label={hasNote ? `${item.full_name} notunu düzenle` : `${item.full_name} için not ekle`}
               // görünür rozet küçük kalır; after: katmanı telefonda parmak hedefini büyütür
               className={`relative after:absolute after:-inset-x-2 after:-inset-y-1.5 after:content-[''] text-[11px] px-1.5 rounded-full border transition-colors ${
-                noteSaved
-                  ? 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                  : hasNote
+                hasNote
                     ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
                     : 'border-transparent text-gray-500 dark:text-slate-400 hover:border-gray-300 hover:text-gray-700 dark:hover:text-slate-200'
               }`}
             >
-              {noteSaved ? '✓ kaydedildi' : hasNote ? 'Not' : '+ not'}
+              {hasNote ? 'Not' : '+ not'}
             </button>
             {isPending && (
               <svg className="w-3 h-3 text-blue-500 animate-spin shrink-0" fill="none" viewBox="0 0 24 24" aria-label="Kaydediliyor">
@@ -199,6 +197,16 @@ export default function StudentRow({
           aria-label={`${item.full_name} için diğer işlemler`}
           className="mt-2 pt-2 border-t border-gray-100 dark:border-slate-700 flex flex-wrap gap-1.5"
         >
+          {!readOnly && (
+            <button
+              role="menuitem"
+              disabled={isPending}
+              onClick={() => { onSinifaYok(item.student_id); onToggleMenu(item.student_id) }}
+              className="text-xs px-3 py-1.5 rounded-lg border font-medium text-gray-500 border-gray-200 dark:text-slate-400 dark:border-slate-600 hover:border-gray-300 disabled:cursor-not-allowed"
+            >
+              Sınıfta yok
+            </button>
+          )}
           {!readOnly && IKINCIL.map(option => (
             <button
               key={option}

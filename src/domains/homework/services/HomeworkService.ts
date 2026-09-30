@@ -317,9 +317,7 @@ export const HomeworkService = {
     )
     const kayitlar = sinifOdevKayitlari(students.map(s => s.id), homeworks, submissions, todayLocalISO())
     const ogrenciler = [...students]
-      .sort((a, b) =>
-        (a.student_number ?? '￿').localeCompare(b.student_number ?? '￿', 'tr', { numeric: true }) ||
-        a.full_name.localeCompare(b.full_name, 'tr'))
+      .sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
       .map(s => {
         const hws = kayitlar.get(s.id) ?? []
         return { ...s, homeworks: hws, stats: computeStudentHomeworkStats(hws) }

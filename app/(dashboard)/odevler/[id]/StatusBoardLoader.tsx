@@ -119,7 +119,7 @@ export default async function StatusBoardLoader({
       }
     })
     .sort((a, b) =>
-      (a.student_number ?? '').localeCompare(b.student_number ?? '', 'tr', { numeric: true })
+      a.full_name.localeCompare(b.full_name, 'tr')
     )
 
   if (items.length === 0) {

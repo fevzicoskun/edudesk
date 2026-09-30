@@ -1,4 +1,4 @@
-type SortBy = 'number' | 'pct_desc' | 'pct_asc'
+type SortBy = 'ad' | 'pct_desc' | 'pct_asc'
 
 type Props = {
   showControls: boolean
@@ -54,7 +54,7 @@ export default function MatrisToolbar({
             onChange={e => onSortChange(e.target.value as SortBy)}
             className="py-2 px-3 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-sm text-gray-700 dark:text-slate-300 focus:outline-none focus:border-blue-400 transition-all"
           >
-            <option value="number">Numara sırası</option>
+            <option value="ad">Ad sırası</option>
             <option value="pct_desc">Tamamlanma ↓ (en başarılı)</option>
             <option value="pct_asc">Tamamlanma ↑ (en riskli)</option>
           </select>

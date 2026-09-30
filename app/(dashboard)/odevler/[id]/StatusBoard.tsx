@@ -70,7 +70,6 @@ export default function StatusBoard({
   )
   const [isPending, startTransition]        = useTransition()
   const [pendingIds, setPendingIds]         = useState<Set<string>>(new Set())
-  const [noteSavedId, setNoteSavedId]       = useState<string | null>(null)
   const [errorMsg, setErrorMsg]             = useState<string | null>(null)
   const [search, setSearch]                 = useState('')
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null)
@@ -169,14 +168,19 @@ export default function StatusBoard({
     kayitliNotlar.current[studentId] = note
     startTransition(async () => {
       const result = await updateSubmissionNote(homeworkId, studentId, note)
+      // Başarıda sessiz: rozet zaten "Not" oluyor; her notta "kaydedildi" yazısı kullanıcıyı yoruyordu
       if (result?.error) {
         kayitliNotlar.current[studentId] = onceki // kaydedilmedi say — bir sonraki odak kaybında yeniden denensin
         setErrorMsg(result.error)
-      } else {
-        setNoteSavedId(studentId)
-        setTimeout(() => setNoteSavedId(id => id === studentId ? null : id), 2000)
       }
     })
+  }
+
+  /** Sınıfta olmayan öğrencinin ödevi kontrol edilemez: 'mazeretli' — veliye "yapmadı" gitmez,
+   *  tamamlanma oranının paydasına girmez. Not boşsa sebebi nota yazılır. */
+  function sinifaYok(studentId: string) {
+    setStatus(studentId, 'mazeretli')
+    if (!(notes[studentId] ?? '').trim()) saveNote(studentId, 'Sınıfta yok')
   }
 
   // Telefonda not yazarken başka uygulamaya geçilince blur OLUŞMAZ; tarayıcı sekmeyi
@@ -404,7 +408,6 @@ export default function StatusBoard({
             totalHomeworks={totalHomeworks}
             isPending={pendingIds.has(item.student_id)}
             readOnly={readOnly}
-            noteSaved={noteSavedId === item.student_id}
             expandedNote={expandedNote}
             historyOpenId={historyOpenId}
             historyLoadingIds={historyLoadingIds}
@@ -412,6 +415,7 @@ export default function StatusBoard({
             menuOpenId={menuOpenId}
             onToggleMenu={id => setMenuOpenId(cur => cur === id ? null : id)}
             onSetStatus={setStatus}
+            onSinifaYok={sinifaYok}
             onToggleNote={id => setExpandedNote(expandedNote === id ? null : id)}
             onNoteChange={(id, val) => setNotes(prev => ({ ...prev, [id]: val }))}
             onNoteBlur={saveNote}

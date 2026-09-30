@@ -9,7 +9,7 @@ import type { MatrisProps, StatEntry } from './matris/types'
 
 export default function MatrisClient({ students, homeworks, subMap, className }: MatrisProps) {
   const [search, setSearch]         = useState('')
-  const [sortBy, setSortBy]         = useState<'number' | 'pct_desc' | 'pct_asc'>('number')
+  const [sortBy, setSortBy]         = useState<'ad' | 'pct_desc' | 'pct_asc'>('ad')
   const [exportMenu, setExportMenu] = useState(false)
 
   // Her iki Map tek geçişte, aynı bağımlılık dizisiyle hesaplanıyor — render'da sıfır hesap.
@@ -48,9 +48,9 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
     const safeClassName = (className ?? 'Sinif').replace(/[*?:\\/[\]]/g, '-')
     const ws = wb.addWorksheet(safeClassName)
 
-    // Tüm öğrenciler numara sırasıyla — filtre/sıralama dışında
+    // Tüm öğrenciler ad sırasıyla — filtre/sıralama dışında
     const allByNumber = [...students].sort((a, b) =>
-      (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
+      a.full_name.localeCompare(b.full_name, 'tr')
     )
 
     const headerRow = ws.addRow([
@@ -133,7 +133,7 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
     const fontB64 = btoa(binary)
 
     const allByNumber = [...students].sort((a, b) =>
-      (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
+      a.full_name.localeCompare(b.full_name, 'tr')
     )
     const safeClassName = (className ?? 'Sinif').replace(/[*?:\\/[\]]/g, '-')
 
@@ -246,8 +246,8 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
     : students
 
   const sortedStudents = [...filteredStudents].sort((a, b) => {
-    if (sortBy === 'number') {
-      return (a.student_number ?? '').localeCompare(b.student_number ?? '', undefined, { numeric: true })
+    if (sortBy === 'ad') {
+      return a.full_name.localeCompare(b.full_name, 'tr')
     }
     const ap = statsMap[a.id].pct
     const bp = statsMap[b.id].pct

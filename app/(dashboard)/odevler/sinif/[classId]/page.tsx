@@ -59,7 +59,7 @@ export default async function SinifMatrisPage({
       .eq('class_id', classId)
       .eq('school_id', sid)
       .is('deleted_at', null)
-      .order('student_number'),
+      .order('full_name'),
     homeworksQuery,
   ])
 

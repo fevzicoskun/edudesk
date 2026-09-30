@@ -251,15 +251,8 @@ async function fetchSinifOgrencileri(params: Record<string, string>, schoolId: s
     student_number: s.student_number,
   }))
 
-  // Sınıf adına göre grupla, grup içinde numara sırasına göre sırala
-  rows.sort((a, b) => {
-    const cls = a.className.localeCompare(b.className, 'tr')
-    if (cls !== 0) return cls
-    const na = parseInt(a.student_number ?? '', 10)
-    const nb = parseInt(b.student_number ?? '', 10)
-    if (!isNaN(na) && !isNaN(nb)) return na - nb
-    return a.full_name.localeCompare(b.full_name, 'tr')
-  })
+  // Sınıf adına göre grupla, grup içinde ad sırasına göre sırala
+  rows.sort((a, b) => a.className.localeCompare(b.className, 'tr') || a.full_name.localeCompare(b.full_name, 'tr'))
 
   return rows.map(s => ({
     'Sınıf':    s.className || '—',

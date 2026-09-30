@@ -41,7 +41,8 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
     grade: cls.grade,
     students: ((cls.students ?? []) as (Student & { deleted_at: string | null })[])
       .filter(s => !s.deleted_at)
-      .map(({ deleted_at: _omit, ...s }) => s),
+      .map(({ deleted_at: _omit, ...s }) => s)
+      .sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr')),
   }))
 
   // "Sınıflarım" = ders verdiğim sınıflar (teacher_classes). Rehberlik (mentor_teacher_id)
