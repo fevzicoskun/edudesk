@@ -35,6 +35,8 @@ export async function raporuPaylas(sinif: string): Promise<void> {
   kopya.classList.remove('hidden')
   // Telefonda boş not satırları/imza/"Yazdırma" alt bilgisi kalabalık yapıyordu (kullanıcı 2026-09-30)
   kopya.querySelectorAll('[data-kagit]').forEach(el => el.remove())
+  // Herkes yaptıysa tablo yalnız başlıktan ibaret kalır — o sütun hiç çizilmesin
+  kopya.querySelectorAll('table').forEach(t => { if (!t.querySelector('tbody tr')) t.remove() })
   const kap = document.createElement('div')
   kap.style.cssText = `position:fixed;left:-10000px;top:0;width:${A4_PX}px;padding:32px;background:#fff`
   kap.appendChild(kopya)

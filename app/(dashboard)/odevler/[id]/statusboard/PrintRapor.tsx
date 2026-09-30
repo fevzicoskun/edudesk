@@ -36,7 +36,8 @@ const renk = (kod: SubmissionStatus | null) => (kod ? RENK[kod] : GIRILMEDI)
 const uzunTarih = (d: Date) => d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
 
 /** Yalnızca yazdırmada görünür; ekranda hiç yer kaplamaz.
- *  data-kagit: yalnız kağıtta anlamlı (el yazısı notu, imza, dipnot) — paylaşılan resimden çıkarılır. */
+ *  data-kagit: yalnız kağıtta anlamlı (el yazısı notu, imza, dipnot, notsuz "Yapıldı" satırları) —
+ *  paylaşılan resimden çıkarılır; resimde Yapıldı yalnız özetteki sayı olarak kalır. */
 export default function PrintRapor({
   okulAdi, odevBasligi, sinif, ders, verilisTarihi, sonTeslim, kontrolTarihi,
   ogretmenAdi, satirlar, ozet,
@@ -145,7 +146,7 @@ export default function PrintRapor({
               {sutun.map(s => {
                 const r = renk(s.durumKodu)
                 return (
-                  <tr key={s.sira} className={`border-b border-gray-200 break-inside-avoid ${r.satir}`}>
+                  <tr key={s.sira} data-kagit={s.durumKodu === 'yapildi' && !s.not ? '' : undefined} className={`border-b border-gray-200 break-inside-avoid ${r.satir}`}>
                     <td className="py-[3px] pl-1 align-top leading-tight">
                       {s.ad}
                       {!tekSutun && s.not && <span className="block text-[8pt] text-gray-600 italic">{s.not}</span>}
