@@ -193,7 +193,19 @@ describe('audit_logs WORM kısıtlaması', () => {
     expect([e1, e2, e3].every(e => e?.message.includes('WORM'))).toBe(true)
   })
 
-  // 2026-10-03: FK (ON DELETE SET NULL) ile WORM trigger'ı çakışıyor → audit kaydı olan kullanıcı silinemiyor
-  // ("Database error deleting user"). Trigger'a dar istisna gerekiyor; karar kullanıcıda.
-  it.todo('audit kaydı olan kullanıcı silinebilir; kayıt durur, yalnız user_id boşalır')
+  // 2026-10-03: FK (ON DELETE SET NULL) ile WORM trigger'ı çakışıyordu → audit kaydı olan kullanıcı HİÇ
+  // silinemiyordu ("Database error deleting user"). Migration 20261003000000 dar istisna ekledi.
+  it('audit kaydı olan kullanıcı silinebilir; kayıt durur, yalnız user_id boşalır', async () => {
+    const gecici = await createTestUser({ role: 'ogretmen', schoolId: school.id })
+    const { data: log } = await serviceDb
+      .from('audit_logs')
+      .insert({ user_id: gecici.id, action: 'login', school_id: school.id })
+      .select('id').single()
+
+    const { error } = await serviceDb.auth.admin.deleteUser(gecici.id)
+    expect(error).toBeNull()
+
+    const { data: kalan } = await serviceDb.from('audit_logs').select('user_id, action').eq('id', log!.id).single()
+    expect(kalan).toEqual({ user_id: null, action: 'login' })
+  })
 })
