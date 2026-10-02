@@ -43,10 +43,14 @@ export default function SinifDetay({
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{cls.name}</span>
-                <span className={`text-sm font-bold ${pctTextColor(cls.completionPct)}`}>%{cls.completionPct}</span>
+                {cls.completionPct === null
+                  ? <span className="text-xs text-gray-500 dark:text-slate-400">Henüz kontrol edilmedi</span>
+                  : <span className={`text-sm font-bold ${pctTextColor(cls.completionPct)}`}>%{cls.completionPct}</span>}
               </div>
               <div className="h-2 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${barColor(cls.completionPct)}`} style={{ width: `${cls.completionPct}%` }} />
+                {cls.completionPct !== null && (
+                  <div className={`h-full rounded-full transition-all ${barColor(cls.completionPct)}`} style={{ width: `${cls.completionPct}%` }} />
+                )}
               </div>
               <p className="text-xs text-gray-500 dark:text-slate-400 mt-1.5">
                 {cls.totalHomeworks} ödev · {cls.studentCount} öğrenci

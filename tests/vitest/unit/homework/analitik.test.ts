@@ -21,14 +21,14 @@ function student(id: string, classId: string): AnalitikStudent {
 
 // --- computeClassStats ---
 describe('computeClassStats()', () => {
-  it('ödev yok → sıfır döner', () => {
+  it('ödev yok → oran yok (null), sayılar sıfır', () => {
     expect(computeClassStats('c1', [], [], 5)).toEqual({
-      classId: 'c1', completionPct: 0, totalHomeworks: 0, studentCount: 5, pendingReview: 0,
+      classId: 'c1', completionPct: null, totalHomeworks: 0, studentCount: 5, pendingReview: 0,
     })
   })
 
-  it('öğrenci yok → completionPct=0, crash yok', () => {
-    expect(computeClassStats('c1', [hw('h1', 'c1')], [], 0).completionPct).toBe(0)
+  it('öğrenci yok → completionPct=null, crash yok', () => {
+    expect(computeClassStats('c1', [hw('h1', 'c1')], [], 0).completionPct).toBeNull()
   })
 
   it('tüm yapıldı → 100%', () => {
@@ -115,30 +115,30 @@ describe('computeRiskyStudents()', () => {
 // --- computeWeeklyTrend ---
 describe('computeWeeklyTrend()', () => {
   it('ödev yok → boş dizi', () => {
-    expect(computeWeeklyTrend([], [], [])).toEqual([])
+    expect(computeWeeklyTrend([], [])).toEqual([])
   })
 
   it('hafta anahtarı haftanın pazartesisidir (sunucu saat diliminden bağımsız)', () => {
     // 2026-05-01 Cuma → hafta 2026-04-27 Pazartesi. Eski kod toISOString() ile UTC'ye
     // çevirdiği için TR saat dilimli makinede 2026-04-26 (Pazar) üretiyordu.
-    const [bucket] = computeWeeklyTrend([hw('h1', 'c1', '2026-05-01')], [], [student('s1', 'c1')])
+    const [bucket] = computeWeeklyTrend([hw('h1', 'c1', '2026-05-01')], [sub('h1', 's1', 'yapildi')])
     expect(bucket.weekKey).toBe('2026-04-27')
   })
 
   it('due_date null → atlanır', () => {
-    expect(computeWeeklyTrend([hw('h1', 'c1', null)], [], [student('s1','c1')])).toEqual([])
+    expect(computeWeeklyTrend([hw('h1', 'c1', null)], [])).toEqual([])
   })
 
   it('aynı haftaki iki ödev → tek bucket', () => {
     const homeworks = [hw('h1','c1','2026-06-02'), hw('h2','c1','2026-06-03')]
-    expect(computeWeeklyTrend(homeworks, [], [student('s1','c1')])).toHaveLength(1)
+    expect(computeWeeklyTrend(homeworks, [sub('h1', 's1', 'yapildi'), sub('h2', 's1', 'eksik')])).toHaveLength(1)
   })
 
   it('tamamlanma oranı doğru: 1/2 yapıldı → pct=50', () => {
     const homeworks = [hw('h1','c1','2026-06-02')]
     const submissions = [sub('h1','s1','yapildi'), sub('h1','s2','yapilmadi')]
     const students = [student('s1','c1'), student('s2','c1')]
-    const result = computeWeeklyTrend(homeworks, submissions, students)
+    const result = computeWeeklyTrend(homeworks, submissions)
     expect(result).toHaveLength(1)
     expect(result[0].pct).toBe(50)
   })
@@ -149,7 +149,8 @@ describe('computeWeeklyTrend()', () => {
       d.setDate(d.getDate() + i * 7)
       return hw(`h${i}`, 'c1', d.toISOString().slice(0, 10))
     })
-    expect(computeWeeklyTrend(homeworks, [], [student('s1','c1')]).length).toBeLessThanOrEqual(8)
+    const subs = homeworks.map(h => sub(h.id, 's1', 'yapildi'))
+    expect(computeWeeklyTrend(homeworks, subs)).toHaveLength(8)
   })
 })
 
@@ -212,7 +213,7 @@ describe('computeClassWeekHeatmap()', () => {
   const classes = [{ id: 'c1', name: '9-A' }, { id: 'c2', name: '9-B' }]
 
   it('boş veri → satır yok, hafta yok', () => {
-    const res = computeClassWeekHeatmap([], [], [], classes)
+    const res = computeClassWeekHeatmap([], [], classes)
     expect(res.weeks).toEqual([])
     expect(res.rows).toEqual([])
   })
@@ -221,7 +222,7 @@ describe('computeClassWeekHeatmap()', () => {
     const homeworks = [hw('h1', 'c1', '2026-05-04')] // Pazartesi
     const submissions = [sub('h1', 's1', 'yapildi'), sub('h1', 's2', 'yapildi')]
     const students = [student('s1', 'c1'), student('s2', 'c1')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.weeks).toHaveLength(1)
     const row = res.rows.find(r => r.classId === 'c1')!
     expect(row.className).toBe('9-A')
@@ -233,7 +234,7 @@ describe('computeClassWeekHeatmap()', () => {
     const homeworks = [hw('h1', 'c1', '2026-05-04'), hw('h2', 'c2', '2026-05-11')]
     const submissions = [sub('h1', 's1', 'yapildi'), sub('h2', 's2', 'yapildi')]
     const students = [student('s1', 'c1'), student('s2', 'c2')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.weeks).toHaveLength(2)
     const rowC2 = res.rows.find(r => r.classId === 'c2')!
     expect(rowC2.cells[0]).toBeNull()        // hafta-1: c2'nin ödevi yok
@@ -244,7 +245,7 @@ describe('computeClassWeekHeatmap()', () => {
     const homeworks = [hw('h1', 'c1', '2026-05-04')]
     const submissions = [sub('h1', 's1', 'yapildi'), sub('h1', 's2', 'mazeretli')]
     const students = [student('s1', 'c1'), student('s2', 'c1')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.rows.find(r => r.classId === 'c1')!.cells[0]).toEqual({ pct: 100, level: 'high' })
   })
 
@@ -252,7 +253,7 @@ describe('computeClassWeekHeatmap()', () => {
     const homeworks = [hw('h1', 'c1', null)]
     const submissions = [sub('h1', 's1', 'yapildi')]
     const students = [student('s1', 'c1')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.weeks).toEqual([])
   })
 
@@ -260,7 +261,7 @@ describe('computeClassWeekHeatmap()', () => {
     const homeworks = [hw('h1', 'c1', '2026-05-04')]
     const submissions = [sub('h1', 's1', 'yapildi')]
     const students = [student('s1', 'c1')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.rows.some(r => r.classId === 'c2')).toBe(false)
   })
 
@@ -275,7 +276,36 @@ describe('computeClassWeekHeatmap()', () => {
       submissions.push(sub(id, 's1', 'yapildi'))
     }
     const students = [student('s1', 'c1')]
-    const res = computeClassWeekHeatmap(homeworks, submissions, students, classes)
+    const res = computeClassWeekHeatmap(homeworks, submissions, classes)
     expect(res.weeks.length).toBeLessThanOrEqual(8)
+  })
+})
+
+// --- işaretsiz ≠ yapılmadı (2026-10-02) ---
+// Girdi yalnız İŞARETLİ gönderilerdir. Payda sınıf mevcudu değil işaretli (mazeretsiz) gönderi sayısıdır:
+// kontrol edilmemiş ödev ya da yarım kontrol oranı düşürmez (stats.ts completionRate ile aynı tanım).
+describe('tamamlanma paydası: kontrol edilmemiş öğrenci sayılmaz', () => {
+  const students = [student('s1', 'c1'), student('s2', 'c1'), student('s3', 'c1'), student('s4', 'c1')]
+  // h1: 4 öğrenciden 2'si işaretli, ikisi de yapmış · h2: hiç kontrol edilmemiş
+  const homeworks = [hw('h1', 'c1', '2026-05-04'), hw('h2', 'c1', '2026-05-05')]
+  const submissions = [sub('h1', 's1', 'yapildi'), sub('h1', 's2', 'yapildi')]
+
+  it('computeClassStats → %100 (eskiden 2/8 = %25)', () => {
+    expect(computeClassStats('c1', homeworks, submissions, 4).completionPct).toBe(100)
+  })
+  it('computeClassStats: hiç kontrol edilmemiş sınıf → null (%0 değil)', () => {
+    expect(computeClassStats('c1', homeworks, [], 4).completionPct).toBeNull()
+  })
+  it('computeKpiCards → kontrol edilmemiş ödev ortalamaya girmez: %100', () => {
+    expect(computeKpiCards(homeworks, submissions, students, 0).avgCompletionPct).toBe(100)
+  })
+  it('computeWeeklyTrend → %100; hiç kontrol edilmemiş hafta listede yok', () => {
+    expect(computeWeeklyTrend(homeworks, submissions)).toEqual([{ weekKey: '2026-05-04', pct: 100 }])
+    expect(computeWeeklyTrend(homeworks, [])).toEqual([])
+  })
+  it('computeClassWeekHeatmap → %100; hiç kontrol edilmemiş hücre null', () => {
+    const sinif = [{ id: 'c1', name: '9-A' }]
+    expect(computeClassWeekHeatmap(homeworks, submissions, sinif).rows[0].cells[0]).toEqual({ pct: 100, level: 'high' })
+    expect(computeClassWeekHeatmap(homeworks, [], sinif).rows[0].cells[0]).toBeNull()
   })
 })

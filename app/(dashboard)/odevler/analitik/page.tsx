@@ -99,13 +99,13 @@ export default async function AnalitikPage() {
     : { data: [] as { id: string; full_name: string }[] }
 
   const teacherStats: TeacherStat[] = isManager
-    ? computeTeacherStats(teacherProfilesRes.data ?? [], homeworks, submissions, students)
+    ? computeTeacherStats(teacherProfilesRes.data ?? [], homeworks, submissions)
     : []
 
   const riskyStudents = computeRiskyStudents(students, homeworks, submissions)
   const kpi           = computeKpiCards(homeworks, submissions, students, riskyStudents.length)
-  const weeklyTrend   = computeWeeklyTrend(homeworks, submissions, students)
-  const heatmap       = computeClassWeekHeatmap(homeworks, submissions, students, activeClasses)
+  const weeklyTrend   = computeWeeklyTrend(homeworks, submissions)
+  const heatmap       = computeClassWeekHeatmap(homeworks, submissions, activeClasses)
 
   const classStats = activeClasses.map(c => {
     const studentCount = students.filter(s => s.class_id === c.id).length

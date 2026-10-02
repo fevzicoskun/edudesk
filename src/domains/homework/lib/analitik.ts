@@ -13,6 +13,7 @@ export type AnalitikHomework = {
   title: string
 }
 
+/** YALNIZ öğretmenin işaretlediği (marked_at dolu) gönderiler verilir — ödevle otomatik açılan boş satır değil. */
 export type AnalitikSubmission = {
   homework_id: string
   student_id: string
@@ -28,7 +29,8 @@ export type AnalitikStudent = {
 
 export type ClassStat = {
   classId: string
-  completionPct: number
+  /** null = bu sınıfta henüz kontrol edilmiş ödev yok */
+  completionPct: number | null
   totalHomeworks: number
   studentCount: number
   pendingReview: number
@@ -55,6 +57,13 @@ export type KpiCards = {
   pendingReviewCount: number
 }
 
+/** Tamamlanma %'si — stats.ts completionRate ile aynı tanım: payda yalnız işaretli ve mazeretli olmayan gönderi.
+ *  Sınıf mevcudu payda DEĞİL: kontrol edilmemiş öğrenci "yapmadı" sayılmaz. Hiç değerlendirilmemişse null. */
+function oran(yapildi: number, isaretli: number, mazeretli: number): number | null {
+  const payda = isaretli - mazeretli
+  return payda <= 0 ? null : Math.round((yapildi / payda) * 100)
+}
+
 export function computeClassStats(
   classId: string,
   homeworks: AnalitikHomework[],
@@ -65,11 +74,9 @@ export function computeClassStats(
   const classHwIds = new Set(classHws.map(h => h.id))
   const classSubs  = submissions.filter(s => classHwIds.has(s.homework_id))
 
-  const totalSlots = classHws.length * studentCount
   const yapildi    = classSubs.filter(s => s.status === 'yapildi').length
   const mazeretli  = classSubs.filter(s => s.status === 'mazeretli').length
-  const eligible   = totalSlots - mazeretli
-  const completionPct = eligible === 0 ? 0 : Math.round((yapildi / eligible) * 100)
+  const completionPct = oran(yapildi, classSubs.length, mazeretli)
 
   const today = todayTR()
   const subCountByHw = new Map<string, number>()
@@ -129,13 +136,7 @@ export function computeRiskyStudents(
 export function computeWeeklyTrend(
   homeworks: AnalitikHomework[],
   submissions: AnalitikSubmission[],
-  students: AnalitikStudent[],
 ): WeekBucket[] {
-  const studentsByClass = new Map<string, number>()
-  for (const s of students) {
-    studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
-  }
-
   const weekMap = new Map<string, AnalitikHomework[]>()
   for (const hw of homeworks) {
     if (!hw.due_date) continue
@@ -146,23 +147,22 @@ export function computeWeeklyTrend(
 
   return [...weekMap.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .slice(-8)
     .map(([weekKey, weekHws]) => {
       const hwIds    = new Set(weekHws.map(h => h.id))
       const weekSubs = submissions.filter(s => hwIds.has(s.homework_id))
 
-      let totalSlots = 0
       let yapildi    = 0
       let mazeretli  = 0
-      for (const hw of weekHws) totalSlots += studentsByClass.get(hw.class_id) ?? 0
       for (const s of weekSubs) {
         if (s.status === 'yapildi')        yapildi++
         else if (s.status === 'mazeretli') mazeretli++
       }
 
-      const eligible = totalSlots - mazeretli
-      return { weekKey, pct: eligible === 0 ? 0 : Math.round((yapildi / eligible) * 100) }
+      return { weekKey, pct: oran(yapildi, weekSubs.length, mazeretli) }
     })
+    // hiç kontrol edilmemiş hafta %0 çubuğu olarak görünmesin
+    .filter((b): b is WeekBucket => b.pct !== null)
+    .slice(-8)
 }
 
 // riskyStudentCount dışarıdan geçirilir — analitik/page.tsx zaten computeRiskyStudents çağırıyor,
@@ -193,11 +193,9 @@ export function computeKpiCards(
   let completionSum = 0
   let counted       = 0
   for (const hw of homeworks) {
-    const count = studentsByClass.get(hw.class_id) ?? 0
-    if (count === 0) continue
-    const { yapildi = 0, mazeretli = 0 } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
-    const eligible = count - mazeretli
-    if (eligible > 0) { completionSum += Math.round((yapildi / eligible) * 100); counted++ }
+    const { yapildi, mazeretli, total } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+    const pct = oran(yapildi, total, mazeretli)
+    if (pct !== null) { completionSum += pct; counted++ }
   }
   const avgCompletionPct = counted === 0 ? 0 : Math.round(completionSum / counted)
 
@@ -224,20 +222,14 @@ export function heatLevel(pct: number): HeatLevel {
   return 'low'
 }
 
-// Girdi: ödevler + gönderiler + öğrenciler + sınıflar (id/ad).
+// Girdi: ödevler + (işaretli) gönderiler + sınıflar (id/ad).
 // Çıktı: sınıf satırları × hafta sütunları; her hücre o sınıfın o haftaki tamamlanma %'si
-// (yapildi / (slot - mazeretli)), o hafta ödevi yoksa null. En fazla son 8 hafta.
+// (yapildi / (işaretli - mazeretli)), o hafta ödevi ya da kontrol edilmiş ödevi yoksa null. En fazla son 8 hafta.
 export function computeClassWeekHeatmap(
   homeworks: AnalitikHomework[],
   submissions: AnalitikSubmission[],
-  students: AnalitikStudent[],
   classes: { id: string; name: string }[],
 ): ClassWeekHeatmap {
-  const studentsByClass = new Map<string, number>()
-  for (const s of students) {
-    studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
-  }
-
   // Her ödeve hafta anahtarı ekle (due_date'i olmayanlar atlanır).
   const datedHws = homeworks
     .filter(h => h.due_date !== null)
@@ -251,9 +243,10 @@ export function computeClassWeekHeatmap(
   if (weeks.length === 0) return { weeks: [], rows: [] }
 
   // submission'ları ödev bazında topla (tek geçiş).
-  const subsByHw = new Map<string, { yapildi: number; mazeretli: number }>()
+  const subsByHw = new Map<string, { yapildi: number; mazeretli: number; total: number }>()
   for (const s of submissions) {
-    const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0 }
+    const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+    cur.total++
     if (s.status === 'yapildi') cur.yapildi++
     else if (s.status === 'mazeretli') cur.mazeretli++
     subsByHw.set(s.homework_id, cur)
@@ -275,20 +268,18 @@ export function computeClassWeekHeatmap(
     const hasAny = weeks.some(w => cellHws.has(`${cls.id}|${w}`))
     if (!hasAny) continue
 
-    const studentCount = studentsByClass.get(cls.id) ?? 0
     const cells = weeks.map((w): HeatCell | null => {
       const list = cellHws.get(`${cls.id}|${w}`)
       if (!list || list.length === 0) return null
-      const totalSlots = list.length * studentCount
       let yapildi = 0
       let mazeretli = 0
+      let isaretli = 0
       for (const h of list) {
         const c = subsByHw.get(h.id)
-        if (c) { yapildi += c.yapildi; mazeretli += c.mazeretli }
+        if (c) { yapildi += c.yapildi; mazeretli += c.mazeretli; isaretli += c.total }
       }
-      const eligible = totalSlots - mazeretli
-      const pct = eligible <= 0 ? 0 : Math.round((yapildi / eligible) * 100)
-      return { pct, level: heatLevel(pct) }
+      const pct = oran(yapildi, isaretli, mazeretli)
+      return pct === null ? null : { pct, level: heatLevel(pct) }
     })
     rows.push({ classId: cls.id, className: cls.name, cells })
   }
@@ -308,13 +299,7 @@ export function computeTeacherStats(
   teachers: { id: string; full_name: string }[],
   homeworks: AnalitikHomework[],
   submissions: AnalitikSubmission[],
-  students: AnalitikStudent[],
 ): TeacherStat[] {
-  const studentsByClass = new Map<string, number>()
-  for (const s of students) {
-    studentsByClass.set(s.class_id, (studentsByClass.get(s.class_id) ?? 0) + 1)
-  }
-
   return teachers
     .map(t => {
       const teacherHws    = homeworks.filter(h => h.teacher_id === t.id)
@@ -323,10 +308,11 @@ export function computeTeacherStats(
 
       const teacherHwIds = new Set(teacherHws.map(h => h.id))
 
-      const subsByHw = new Map<string, { yapildi: number; mazeretli: number }>()
+      const subsByHw = new Map<string, { yapildi: number; mazeretli: number; total: number }>()
       for (const s of submissions) {
         if (!teacherHwIds.has(s.homework_id)) continue
-        const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0 }
+        const cur = subsByHw.get(s.homework_id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+        cur.total++
         if (s.status === 'yapildi')        cur.yapildi++
         else if (s.status === 'mazeretli') cur.mazeretli++
         subsByHw.set(s.homework_id, cur)
@@ -334,11 +320,9 @@ export function computeTeacherStats(
       let completionSum = 0
       let counted = 0
       for (const hw of teacherHws) {
-        const count = studentsByClass.get(hw.class_id) ?? 0
-        if (count === 0) continue
-        const { yapildi = 0, mazeretli = 0 } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0 }
-        const eligible = count - mazeretli
-        if (eligible > 0) { completionSum += Math.round((yapildi / eligible) * 100); counted++ }
+        const { yapildi, mazeretli, total } = subsByHw.get(hw.id) ?? { yapildi: 0, mazeretli: 0, total: 0 }
+        const pct = oran(yapildi, total, mazeretli)
+        if (pct !== null) { completionSum += pct; counted++ }
       }
       const avgCompletionPct = counted === 0 ? 0 : Math.round(completionSum / counted)
 
