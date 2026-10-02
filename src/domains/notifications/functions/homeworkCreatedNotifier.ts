@@ -28,13 +28,15 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
 
     const hw = await step.run('fetch-homework', async () => {
       const supabase = createServiceClient()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('homeworks')
         .select('id, title, due_date, is_template, teacher_id')
         .eq('id', homeworkId)
         .eq('school_id', schoolId)
         .is('deleted_at', null)
-        .single()
+        .maybeSingle()
+      // Bulunamadı (silinmiş) = atla; gerçek okuma hatası = yeniden dene, yoksa veliler habersiz kalır
+      if (error) throw new Error(`Ödev okunamadı: ${error.message}`)
       return data
     })
 
@@ -42,7 +44,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
 
     const targets = await step.run('fetch-veliler', async () => {
       const supabase = createServiceClient()
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('students')
         .select('id, full_name, veli_email, veli_ad')
         .eq('class_id', classId)
@@ -50,6 +52,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
         .is('deleted_at', null)
         .not('veli_email', 'is', null)
         .eq('veli_email_opt_out', false)
+      if (error) throw new Error(`Veliler okunamadı: ${error.message}`)
       return filterEligibleVeliler((data ?? []) as StudentRow[])
     })
 
@@ -60,7 +63,7 @@ export const homeworkCreatedNotifierFn = inngest.createFunction(
 
     const dueDateStr = hw.due_date ? formatDateTR(hw.due_date) : ''
 
-    await step.run('send-emails', async () => {
+    const gonderilen = await step.run('send-emails', async () => {
       const results = await Promise.allSettled(
         targets.slice(0, 50).map((s: StudentRow) =>
           mailer.sendMail({
@@ -85,20 +88,21 @@ ${dueDateStr ? `<p>Son teslim tarihi: <strong>${esc(dueDateStr)}</strong></p>` :
       )
       const failed = results.filter(r => r.status === 'rejected').length
       if (failed) logger.error({ event: 'veli_mail_failed', homework_id: homeworkId, failed, total: targets.length }, 'Veli bildirimi e-postaları gönderilemedi')
+      return results.length - failed
     })
 
     // Öğretmene push: veliler bildirildi
-    if (hw.teacher_id) {
+    // Sayı gerçekten giden e-postadan — gönderim çökse de "30 veliye gönderildi" demesin
+    if (hw.teacher_id && gonderilen > 0) {
       await step.run('send-push', async () => {
-        const veliCount = Math.min(targets.length, 50)
         await sendPushToUser(hw.teacher_id, {
           title: 'Veliler bildirildi',
-          body: `"${hw.title}" ödevi için ${veliCount} veliye e-posta gönderildi.`,
+          body: `"${hw.title}" ödevi için ${gonderilen} veliye e-posta gönderildi.`,
           url: '/odevler',
         })
       })
     }
 
-    return { sent: Math.min(targets.length, 50) }
+    return { sent: gonderilen }
   }
 )

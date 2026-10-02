@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentUser } from '@/src/shared/auth'
 import { z } from 'zod'
+import { addDaysISO, todayLocalISO } from '@/src/shared/date'
 
 async function requirePlatformAdmin() {
   const user = await getCurrentUser()
@@ -78,7 +79,7 @@ export async function updateSchoolStatus(schoolId: string, status: 'active' | 't
   const patch: { status: string; trial_ends_at?: string | null; access_until?: string } = { status }
   if (status === 'trial') {
     // Panelde tarih sorusu yok — default 30 gün; incelik Ödemeler/SQL ile. ponytail: yeterli.
-    const end = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10)
+    const end = addDaysISO(todayLocalISO(), 30) // İstanbul günü — UTC 21:00-24:00 arası bir gün erken bitiyordu
     patch.trial_ends_at = `${end}T23:59:59+03:00`
     patch.access_until = end
   } else {

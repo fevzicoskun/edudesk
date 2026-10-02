@@ -5,6 +5,7 @@ import { saveSchedule } from '@/app/actions/schedule'
 import { parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextItem } from '@/src/domains/schedule/parseSchedulePdf'
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 import { classColor } from '@/src/domains/schedule/classColor'
+import { todayLocalISO } from '@/src/shared/date'
 
 const DAYS = [
   { n: 1, label: 'Pazartesi', short: 'Pzt' },
@@ -34,7 +35,8 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   const fileRef = useRef<HTMLInputElement>(null)
 
   const classNameById = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes])
-  const todayN = new Date().getDay() // 0=Paz … 6=Cmt; DAYS.n 1..5 ile eşleşir
+  // İstanbul günü — SSR (UTC) ile tarayıcı aynı günü görsün; 0=Paz … 6=Cmt; DAYS.n 1..5 ile eşleşir
+  const todayN = new Date(`${todayLocalISO()}T12:00:00Z`).getUTCDay()
 
   function applyPage(items: PdfTextItem[], title: string) {
     const { slots: found, reason, unmatched } = parseSchedulePdf(items, classes)

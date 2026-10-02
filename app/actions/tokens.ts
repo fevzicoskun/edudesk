@@ -88,15 +88,16 @@ export async function generateBulkVeliTokens(classId: string): Promise<BulkToken
     students.map(async (s) => {
       const token = await createPublicToken('veli', s.id, ttlDays, { school_id: schoolId })
       const jti   = extractJti(token)
-      if (jti) {
-        await TokenRepository.insertVeliToken({
-          student_id: s.id,
-          school_id:  schoolId,
-          issued_by:  userId,
-          jti,
-          expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
-        })
-      }
+      // Kayıt yazılamazsa link izlenemez ve iptal edilemez → link verme
+      if (!jti) throw new Error('Bağlantı oluşturulamadı')
+      const { error } = await TokenRepository.insertVeliToken({
+        student_id: s.id,
+        school_id:  schoolId,
+        issued_by:  userId,
+        jti,
+        expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
+      })
+      if (error) throw new Error('Bağlantı kaydedilemedi')
       return {
         studentId:   s.id,
         studentName: s.full_name,

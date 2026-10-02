@@ -3,6 +3,7 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { revalidatePath } from 'next/cache'
+import { VARSAYILAN_TERCIH } from '@/src/domains/notifications/lib/hatirlatmaAdaylari'
 
 export async function getNotifications() {
   const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
@@ -58,7 +59,7 @@ export async function getNotificationPreferences() {
     .select('days_before, email_on')
     .eq('user_id', user.id)
     .single()
-  return data ?? { days_before: 1, email_on: true }
+  return data ?? VARSAYILAN_TERCIH // cron da kaydı olmayan öğretmene bunu uygular
 }
 
 export async function saveNotificationPreferences(formData: FormData): Promise<{ error?: string }> {

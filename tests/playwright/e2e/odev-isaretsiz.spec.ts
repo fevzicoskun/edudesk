@@ -24,8 +24,8 @@ test.beforeAll(async () => {
   const { data, error } = await db.from('homeworks').insert({
     teacher_id: ogretmenId, school_id: p!.school_id, class_id: st!.class_id, title: BASLIK,
     subject: 'Test', is_template: false,
-    assigned_date: new Date(Date.now() - 5 * 86_400_000).toISOString().slice(0, 10),
-    due_date: new Date(Date.now() - 2 * 86_400_000).toISOString().slice(0, 10),
+    assigned_date: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() - 5 * 86_400_000)),
+    due_date: new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() - 2 * 86_400_000)), // İstanbul günü
   }).select('id').single()
   if (error) throw error
   hwId = data!.id

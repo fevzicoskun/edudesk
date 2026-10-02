@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   const { data: p } = await db.from('profiles').select('school_id').eq('id', ogretmenId).single()
   const { data: st } = await db.from('students').select('class_id')
     .eq('school_id', p!.school_id).is('deleted_at', null).limit(1).single()
-  const due = new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10)
+  const due = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() + 3 * 86_400_000)) // İstanbul günü
   const { data: hw, error } = await db.from('homeworks').insert({
     teacher_id: ogretmenId, title: BASLIK, school_id: p!.school_id,
     class_id: st!.class_id, subject: 'Test', is_template: false, due_date: due,

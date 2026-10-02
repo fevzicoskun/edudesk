@@ -48,6 +48,9 @@ export const haftalikYedekFn = inngest.createFunction(
       })
       if (error) throw new Error(`Yedek yüklenemedi: ${error.message}`)
 
+      // Eksik tablolu yedek "başarılı" görünmesin: kısmi dosya yine yazılır (hiç yoktan iyi) ama
+      // fonksiyon hata verir → cronHataBildirimi app_errors'a yazar, /platform'da görünür
+      if (basarisiz.length) throw new Error(`Yedek eksik: ${basarisiz.join(', ')} okunamadı (${dosya} kısmi yazıldı)`)
       return { dosya, boyut: govde.length, basarisiz }
     })
 

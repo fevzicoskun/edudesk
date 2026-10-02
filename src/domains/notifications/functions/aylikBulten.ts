@@ -22,10 +22,11 @@ export const aylikBultenFn = inngest.createFunction(
     // 1. Tüm okulları ve müdürleri çek
     const schools = await step.run('fetch-schools', async () => {
       const db = createServiceClient()
-      const { data } = await db
+      const { data, error } = await db
         .from('profiles')
         .select('id, full_name, school_id')
         .eq('role', 'mudur')
+      if (error) throw new Error(`Müdürler okunamadı: ${error.message}`)
       return data ?? []
     })
 
@@ -40,7 +41,8 @@ export const aylikBultenFn = inngest.createFunction(
       const allUsers: { id: string; email?: string }[] = []
       let page = 1
       for (;;) {
-        const { data } = await db.auth.admin.listUsers({ perPage: 1000, page })
+        const { data, error } = await db.auth.admin.listUsers({ perPage: 1000, page })
+        if (error) throw new Error(`Kullanıcılar okunamadı: ${error.message}`)
         const batch = data?.users ?? []
         allUsers.push(...batch)
         if (batch.length < 1000) break
@@ -61,14 +63,7 @@ export const aylikBultenFn = inngest.createFunction(
         const db = createServiceClient()
         const sid = mudur.school_id!
 
-        const [
-          { count: studentCount },
-          { count: teacherCount },
-          { data: classes },
-          { data: attendanceRates },
-          { count: completedCount },
-          { data: meetings },
-        ] = await Promise.all([
+        const sonuclar = await Promise.all([
           db.from('students').select('id', { count: 'exact', head: true }).eq('school_id', sid).is('deleted_at', null),
           db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
@@ -76,7 +71,18 @@ export const aylikBultenFn = inngest.createFunction(
           // Sayım DB'de: satır çekip JS'te saymak max_rows=1000'de sessizce keserdi
           db.from('homework_submissions').select('id', { count: 'exact', head: true }).eq('school_id', sid).not('marked_at', 'is', null).eq('status', 'yapildi').gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
           db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
-        ])
+        ] as const)
+        // Bir sorgu bile hata verirse müdüre "0 öğrenci, 0 ödev" bülteni gitmesin
+        const hata = sonuclar.find(r => r.error)?.error
+        if (hata) throw new Error(`Bülten istatistiği okunamadı: ${hata.message}`)
+        const [
+          { count: studentCount },
+          { count: teacherCount },
+          { data: classes },
+          { data: attendanceRates },
+          { count: completedCount },
+          { data: meetings },
+        ] = sonuclar
 
         // Tamamlanan ödev sayısı
         const completedHomeworks = completedCount ?? 0

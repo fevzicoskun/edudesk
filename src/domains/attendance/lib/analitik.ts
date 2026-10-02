@@ -1,6 +1,7 @@
 import { countAbsences, isWeekendISO } from './attendanceMath'
 import type { AttendanceRow } from '../types'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
+import { todayLocalISO } from '@/src/shared/date'
 
 export interface AbsenceRowA { student_id: string; status: string; date: string }
 export interface StudentA { id: string; class_id: string; full_name: string; student_number: string | null }
@@ -68,10 +69,9 @@ function mondayISO(iso: string): string {
 export function computeWeeklyAbsenceTrend(
   rows: AbsenceRowA[], studentCount: number, weeks = 8,
 ): WeeklyAbsencePoint[] {
-  const today = new Date()
-  const todayDow = (today.getDay() + 6) % 7
-  const thisMon = new Date(today)
-  thisMon.setDate(today.getDate() - todayDow)
+  // Bu haftanın Pazartesi'si İstanbul gününden (sunucu UTC'de: Pazartesi 00-03 arası hâlâ Pazar sanıyordu)
+  const [my, mm, md] = mondayISO(todayLocalISO()).split('-').map(Number)
+  const thisMon = new Date(my, mm - 1, md)
 
   const buckets: { weekStart: string; unexcused: number }[] = []
   const index = new Map<string, number>()

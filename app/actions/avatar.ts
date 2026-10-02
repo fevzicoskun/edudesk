@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { getCurrentUser } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { avatarYolu } from '@/src/domains/users/lib/avatarYolu'
 
 // Kimlik getCurrentUser ile doğrulanır; tüm depolama/DB işlemleri user.id ile kapsanır
 // (kullanıcı yalnız kendi {uid}/ klasörüne yazar, yalnız kendi profilini günceller).
@@ -49,9 +50,10 @@ export async function removeAvatar(): Promise<{ error?: string }> {
 
   // Storage'dan dosyayı sil (best-effort; başarısız olsa da url=null yapılır, öksüz dosya tolere edilir).
   if (current) {
-    const path = current.split('/avatars/')[1]?.split('?')[0]
+    // Yalnız kendi klasörü — avatar_url'yi başkasının dosyasına çevirip sildirmesin
+    const path = avatarYolu(current, user.id)
     if (path) {
-      const { error: rmErr } = await supabase.storage.from('avatars').remove([decodeURIComponent(path)])
+      const { error: rmErr } = await supabase.storage.from('avatars').remove([path])
       if (rmErr) logger.error({ event: 'avatar_remove_failed', userId: user.id, err: rmErr.message }, 'Avatar dosyası silinemedi')
     }
   }

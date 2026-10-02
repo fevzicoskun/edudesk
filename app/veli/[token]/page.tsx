@@ -11,6 +11,7 @@ import VeliDevamsizlikSection from './VeliDevamsizlikSection'
 import VeliPlanSection from './VeliPlanSection'
 import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
 import { yazdirmaBasligi } from '@/src/shared/utils'
+import { addDaysISO } from '@/src/shared/date'
 
 export const metadata = { title: yazdirmaBasligi('Veli Görünümü') }
 
@@ -77,8 +78,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
 
   const schoolFilter = tokenSchoolId
-  const since90 = new Date(Date.now() - 90 * 86_400_000).toISOString().split('T')[0]
   const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  const since90 = addDaysISO(today, -90)
   const [studentResult, submissionsResult, notesResult, attendanceResult, planWeeks] = await Promise.all([
     studentQuery.single(),
     (() => {

@@ -20,15 +20,16 @@ export const TokenService = {
     const jti = extractJti(token)
     const expiresAt = new Date(Date.now() + 7 * 86400_000).toISOString()
 
-    if (jti) {
-      await TokenRepository.insertVeliToken({
-        student_id: studentId,
-        school_id,
-        issued_by:  user.id,
-        jti,
-        expires_at: expiresAt,
-      })
-    }
+    // Kayıt yazılamazsa link çalışır ama listede görünmez ve öğretmen iptal edemez → link verme
+    if (!jti) throw new Error('Bağlantı oluşturulamadı')
+    const { error } = await TokenRepository.insertVeliToken({
+      student_id: studentId,
+      school_id,
+      issued_by:  user.id,
+      jti,
+      expires_at: expiresAt,
+    })
+    if (error) throw new Error('Bağlantı kaydedilemedi')
 
     return token
   },

@@ -6,6 +6,7 @@ import { unsubscribeUrl } from '@/src/lib/unsubscribeToken'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
+import { hatirlatmaAdaylari } from '@/src/domains/notifications/lib/hatirlatmaAdaylari'
 
 export const homeworkReminderFn = inngest.createFunction(
   {
@@ -23,13 +24,14 @@ export const homeworkReminderFn = inngest.createFunction(
       const d7        = new Date(); d7.setDate(d7.getDate() + 7)
       const maxDateStr = turkeyDate(d7)
 
-      const { data: homeworks } = await supabase
+      const { data: homeworks, error: hwErr } = await supabase
         .from('homeworks')
         .select('id, title, due_date, school_id, teacher_id, class_id')
         .is('deleted_at', null)
         .not('due_date', 'is', null)
         .gte('due_date', todayStr)
         .lte('due_date', maxDateStr)
+      if (hwErr) throw new Error(`Ödevler okunamadı: ${hwErr.message}`)
 
       if (!homeworks?.length) return []
 
@@ -39,47 +41,27 @@ export const homeworkReminderFn = inngest.createFunction(
       const allAuthUsers: { id: string; email?: string }[] = []
       let page = 1
       for (;;) {
-        const { data } = await supabase.auth.admin.listUsers({ perPage: 1000, page })
+        const { data, error } = await supabase.auth.admin.listUsers({ perPage: 1000, page })
+        if (error) throw new Error(`Kullanıcılar okunamadı: ${error.message}`)
         const batch = data?.users ?? []
         allAuthUsers.push(...batch)
         if (batch.length < 1000) break
         page++
       }
 
-      const [{ data: prefs }] = await Promise.all([
+      const [{ data: prefs, error: prefErr }] = await Promise.all([
         supabase
           .from('notification_preferences')
           .select('user_id, days_before, email_on')
           .in('user_id', teacherIds),
       ])
 
+      if (prefErr) throw new Error(`Bildirim tercihleri okunamadı: ${prefErr.message}`)
       const prefMap = new Map(prefs?.map((p) => [p.user_id, p]) ?? [])
       const emailMap = new Map(allAuthUsers.map((u) => [u.id, u.email ?? '']))
 
-      return homeworks.flatMap((hw) => {
-        const pref = prefMap.get(hw.teacher_id)
-        if (!pref) return []
-
-        const targetDate = new Date()
-        targetDate.setDate(targetDate.getDate() + pref.days_before)
-        const targetStr = turkeyDate(targetDate)
-
-        if (hw.due_date.slice(0, 10) !== targetStr) return []
-
-        return [
-          {
-            homeworkId:   hw.id,
-            classId:      hw.class_id,
-            title:        hw.title,
-            dueDate:      hw.due_date.slice(0, 10),
-            schoolId:     hw.school_id,
-            teacherId:    hw.teacher_id,
-            teacherEmail: emailMap.get(hw.teacher_id) ?? '',
-            emailOn:      pref.email_on,
-            daysBefore:   pref.days_before,
-          },
-        ]
-      })
+      // Tercihi kaydedilmemiş öğretmen varsayılanla (1 gün önce, e-posta açık) — ekranda görünenle aynı
+      return hatirlatmaAdaylari(homeworks, prefMap, emailMap)
     })
 
     if (!candidates.length) return { sent: 0 }
@@ -150,7 +132,7 @@ export const homeworkReminderFn = inngest.createFunction(
       const uniqueSchoolIds = [...new Set(toSend.map((hw) => hw.schoolId))]
       const hwIds           = toSend.map((hw) => hw.homeworkId)
 
-      const [{ data: allStudents }, { data: doneSubs }] = await Promise.all([
+      const [{ data: allStudents, error: stErr }, { data: doneSubs, error: doneErr }] = await Promise.all([
         // Sayfalı: "yapanlar" 1000'de kesilirse ödevini yapmış öğrencinin velisine hatırlatma gider
         fetchAllResult((f, t) => supabase
           .from('students')
@@ -172,6 +154,8 @@ export const homeworkReminderFn = inngest.createFunction(
           .range(f, t)),
       ])
 
+      // "Yapanlar" okunamazsa ödevini yapmış öğrencinin velisine de hatırlatma giderdi
+      if (stErr || doneErr) throw new Error(`Veli listesi okunamadı: ${(stErr ?? doneErr)!.message}`)
       const doneKey = new Set((doneSubs ?? []).map((s) => `${s.homework_id}:${s.student_id}`))
       const studentsByClass = new Map<string, { id: string; full_name: string; veli_email: string }[]>()
       for (const s of allStudents ?? []) {

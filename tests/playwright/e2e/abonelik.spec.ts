@@ -11,7 +11,8 @@ async function testSchoolId(): Promise<string> {
 }
 
 function isoShift(days: number): string {
-  return new Date(Date.now() + days * 86_400_000).toISOString().slice(0, 10)
+  // İstanbul günü — uygulama da öyle hesaplıyor (UTC ile gece 00-03 arası bir gün kayıyordu)
+  return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() + days * 86_400_000))
 }
 
 test.describe('Abonelik enforcement', () => {
