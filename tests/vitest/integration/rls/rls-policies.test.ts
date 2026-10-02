@@ -146,7 +146,9 @@ describe('audit_logs WORM kısıtlaması', () => {
   beforeAll(async () => {
     const { data } = await serviceDb
       .from('audit_logs')
-      .insert({ user_id: ogretmen.id, action: 'login', school_id: school.id })
+      // user_id BOŞ: kayıt silinemez/değiştirilemez olduğu için kullanıcıya bağlı satır, FK'nin
+      // ON DELETE SET NULL güncellemesini de engelliyor → test kullanıcısı silinemeyip auth'ta yetim kalıyordu
+      .insert({ user_id: null, action: 'login', school_id: school.id })
       .select('id').single()
     logId = data!.id
   })
@@ -183,4 +185,15 @@ describe('audit_logs WORM kısıtlaması', () => {
       .from('audit_logs').select('id').eq('id', logId)
     expect(check).toHaveLength(1)
   })
+
+  it('servis anahtarı da değiştiremez — user_id\'yi elle boşaltmak dahil', async () => {
+    const { error: e1 } = await serviceDb.from('audit_logs').update({ action: 'tampered' }).eq('id', logId)
+    const { error: e2 } = await serviceDb.from('audit_logs').update({ user_id: null }).eq('id', logId)
+    const { error: e3 } = await serviceDb.from('audit_logs').delete().eq('id', logId)
+    expect([e1, e2, e3].every(e => e?.message.includes('WORM'))).toBe(true)
+  })
+
+  // 2026-10-03: FK (ON DELETE SET NULL) ile WORM trigger'ı çakışıyor → audit kaydı olan kullanıcı silinemiyor
+  // ("Database error deleting user"). Trigger'a dar istisna gerekiyor; karar kullanıcıda.
+  it.todo('audit kaydı olan kullanıcı silinebilir; kayıt durur, yalnız user_id boşalır')
 })

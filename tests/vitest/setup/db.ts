@@ -128,6 +128,7 @@ export async function cleanupTestData(ctx: {
   homeworkIds?: string[]
 }) {
   // Bağımlı tablolar önce temizlenmeli
+  const silinemeyen: string[] = []
 
   if (ctx.homeworkIds?.length) {
     await serviceDb.from('homework_submissions').delete().in('homework_id', ctx.homeworkIds)
@@ -147,11 +148,15 @@ export async function cleanupTestData(ctx: {
 
   if (ctx.userIds?.length) {
     for (const uid of ctx.userIds) {
-      await serviceDb.auth.admin.deleteUser(uid)
+      const { error } = await serviceDb.auth.admin.deleteUser(uid)
+      if (error) silinemeyen.push(`${uid}: ${error.message}`)
     }
   }
 
   if (ctx.schoolIds?.length) {
     await serviceDb.from('schools').delete().in('id', ctx.schoolIds)
   }
+
+  // Sessiz geçme: silinemeyen kullanıcı canlı auth'ta yetim kalır (2026-10-03'te 224 tane birikmişti)
+  if (silinemeyen.length) throw new Error(`cleanupTestData: kullanıcı silinemedi — ${silinemeyen.join('; ')}`)
 }
