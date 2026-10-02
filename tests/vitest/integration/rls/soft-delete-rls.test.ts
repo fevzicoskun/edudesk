@@ -64,7 +64,7 @@ beforeAll(async () => {
     .from('homeworks')
     .insert({
       teacher_id: ogretmen.id, class_id: classId, school_id: school.id,
-      title: 'Soft-Delete Ödevi', subject: 'Biyoloji', due_date: '2026-12-31', description: null,
+      title: 'Soft-Delete Ödevi', subject: 'Biyoloji', due_date: '2099-12-31', description: null,
     })
     .select('id').single()
   hwId = hw!.id

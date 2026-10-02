@@ -36,7 +36,7 @@ beforeAll(async () => {
     .insert({ name: 'Sil Test', grade: 9, academic_year: '2025-2026', school_id: school.id })
     .select('id').single()
   const { data: hw, error } = await serviceDb.from('homeworks')
-    .insert({ teacher_id: ogretmen.id, class_id: cls!.id, school_id: school.id, title: 'Silinecek', subject: 'Matematik', due_date: '2026-12-31' })
+    .insert({ teacher_id: ogretmen.id, class_id: cls!.id, school_id: school.id, title: 'Silinecek', subject: 'Matematik', due_date: '2099-12-31' })
     .select('id').single()
   if (error) throw error
   hwId = hw!.id

@@ -77,7 +77,7 @@ beforeAll(async () => {
     .from('homeworks')
     .insert({
       teacher_id: teacherA.id, class_id: classA_id, school_id: schoolA.id,
-      title: 'Attack Target Homework', subject: 'Kimya', due_date: '2026-12-31', description: null,
+      title: 'Attack Target Homework', subject: 'Kimya', due_date: '2099-12-31', description: null,
     })
     .select('id').single()
   homeworkA_id = hw!.id
@@ -107,7 +107,7 @@ describe('Saldırı 1: school_id spoofing — INSERT', () => {
       school_id:  schoolA.id,  // ← SAHTE school_id
       title:      'school_id spoof attack',
       subject:    'Saldırı',
-      due_date:   '2026-12-31',
+      due_date:   '2099-12-31',
       description: null,
     })
     expect(error, 'school_id spoofing engellenmiş olmalı').not.toBeNull()
@@ -154,7 +154,7 @@ describe('Saldırı 2: teacher_id forgery — başka öğretmen adına veri yazm
       school_id:   schoolA.id,
       title:       'teacher_id forgery attack',
       subject:     'Saldırı',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
       description: null,
     })
     expect(error, 'teacher_id forgery engellenmiş olmalı').not.toBeNull()
@@ -287,7 +287,7 @@ describe('Saldırı 5: NULL school_id injection', () => {
       school_id:   null,  // ← NULL injection
       title:       'null school_id attack',
       subject:     'X',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
       description: null,
     })
     expect(error, 'NULL school_id engellenmiş olmalı').not.toBeNull()

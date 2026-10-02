@@ -63,7 +63,7 @@ beforeAll(async () => {
       school_id:  schoolA.id,
       title:      'Okul A Ödevi',
       subject:    'Matematik',
-      due_date:   '2026-12-31',
+      due_date:   '2099-12-31',
       description: null,
     })
     .select('id').single()
@@ -136,7 +136,7 @@ describe('Okul B kullanıcısı Okul A verisine yazamaz', () => {
       school_id:   schoolA.id,       // Okul A'nın ID'si!
       title:       'Saldırı Ödevi',
       subject:     'Matematik',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
       description: null,
     })
 

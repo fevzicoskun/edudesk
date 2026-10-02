@@ -60,7 +60,7 @@ beforeAll(async () => {
       school_id:   school.id,
       title:       'RLS Test Ödevi',
       subject:     'Fen',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
       description: null,
     })
     .select('id').single()
@@ -92,7 +92,7 @@ describe('homeworks RLS', () => {
       school_id:   school.id,
       title:       'Yeni RLS Ödevi',
       subject:     'Tarih',
-      due_date:    '2026-11-01',
+      due_date:    '2099-12-31',
       description: null,
     })
     expect(error).toBeNull()
@@ -106,7 +106,7 @@ describe('homeworks RLS', () => {
       school_id:   school.id,
       title:       'Sahte Ödev',
       subject:     'Sahte',
-      due_date:    '2026-11-01',
+      due_date:    '2099-12-31',
       description: null,
     })
     expect(error).not.toBeNull()
@@ -116,7 +116,7 @@ describe('homeworks RLS', () => {
     // Önce sileceğimiz bir ödev oluştur
     const { data: hw } = await serviceDb.from('homeworks').insert({
       teacher_id: ogretmen.id, class_id: classId, school_id: school.id,
-      title: 'Silinecek Ödev', subject: 'X', due_date: '2026-10-01', description: null,
+      title: 'Silinecek Ödev', subject: 'X', due_date: '2099-12-31', description: null,
     }).select('id').single()
 
     const client = createUserClient(tokenOgretmen)
@@ -129,7 +129,7 @@ describe('homeworks RLS', () => {
     // mudur'un ID'siyle oluşturulmuş ödev — öğretmen silemez
     const { data: hw } = await serviceDb.from('homeworks').insert({
       teacher_id: mudur.id, class_id: classId, school_id: school.id,
-      title: 'Mudur Odevi', subject: 'Y', due_date: '2026-10-01', description: null,
+      title: 'Mudur Odevi', subject: 'Y', due_date: '2099-12-31', description: null,
     }).select('id').single()
 
     const { error } = await client.from('homeworks').delete().eq('id', hw!.id)

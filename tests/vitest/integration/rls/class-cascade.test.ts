@@ -41,7 +41,7 @@ beforeAll(async () => {
   const hw = async (anahtar: string, teacher: string, deleted_at: string | null = null) => {
     const { data, error: e } = await serviceDb.from('homeworks').insert({
       teacher_id: teacher, class_id: classId, school_id: school.id, title: anahtar, subject: 'Matematik',
-      due_date: '2026-12-31', deleted_at,
+      due_date: '2099-12-31', deleted_at,
     }).select('id').single()
     if (e) throw e
     id[anahtar] = data!.id

@@ -87,7 +87,7 @@ describe('HomeworkService.createHomework()', () => {
       title:       'Entegrasyon Test Ödevi',
       description: null,
       subject:     'Matematik',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
     })
 
     expect(result.error).toBeUndefined()
@@ -111,7 +111,7 @@ describe('HomeworkService.createHomework()', () => {
       title:       'İzinsiz Ödev',
       description: null,
       subject:     'X',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
     })
 
     expect(result.error).toBeTruthy()
@@ -127,7 +127,7 @@ describe('HomeworkService.createHomework()', () => {
       title:       'Anonim Ödev',
       description: null,
       subject:     'X',
-      due_date:    '2026-12-31',
+      due_date:    '2099-12-31',
     })
 
     expect(result.error).toBeTruthy()
@@ -142,7 +142,7 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
   beforeAll(async () => {
     const { data: hw } = await serviceDb.from('homeworks').insert({
       teacher_id: teacher.id, class_id: classId, school_id: school.id,
-      title: 'Submission Test', subject: 'Mat', due_date: '2026-12-31', description: null,
+      title: 'Submission Test', subject: 'Mat', due_date: '2099-12-31', description: null,
     }).select('id').single()
     hwId = hw!.id
     cleanup.push(hwId)
@@ -185,11 +185,11 @@ describe('HomeworkService.createHomework() — paralel çoklu çağrı', () => {
     const [r1, r2] = await Promise.all([
       HomeworkService.createHomework({
         class_id: classId, title: 'Paralel Ödev 1',
-        description: null, subject: 'Matematik', due_date: '2026-12-31',
+        description: null, subject: 'Matematik', due_date: '2099-12-31',
       }),
       HomeworkService.createHomework({
         class_id: classId, title: 'Paralel Ödev 2',
-        description: null, subject: 'Fizik', due_date: '2026-12-31',
+        description: null, subject: 'Fizik', due_date: '2099-12-31',
       }),
     ])
 
@@ -216,7 +216,7 @@ describe('HomeworkService.createHomework() — paralel çoklu çağrı', () => {
       title: 'Geçersiz Sınıf Ödevi',
       description: null,
       subject: 'Test',
-      due_date: '2026-12-31',
+      due_date: '2099-12-31',
     })
     expect(result.error).toBeTruthy()
   })

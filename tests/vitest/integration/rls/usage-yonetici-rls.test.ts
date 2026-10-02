@@ -29,10 +29,11 @@ beforeAll(async () => {
   mudur = await createTestUser({ role: 'mudur', schoolId: okul.id })
   ogretmen = await createTestUser({ role: 'ogretmen', schoolId: okul.id })
   digerMy = await createTestUser({ role: 'mudur_yardimcisi', schoolId: digerOkul.id })
-  ;[myToken, mudurToken, ogretmenToken, digerMyToken] = await Promise.all([
-    signInTestUser(my.email, my.password), signInTestUser(mudur.email, mudur.password),
-    signInTestUser(ogretmen.email, ogretmen.password), signInTestUser(digerMy.email, digerMy.password),
-  ])
+  // sırayla — paralel giriş Supabase auth hız sınırını tetikliyordu (tam pakette)
+  myToken = await signInTestUser(my.email, my.password)
+  mudurToken = await signInTestUser(mudur.email, mudur.password)
+  ogretmenToken = await signInTestUser(ogretmen.email, ogretmen.password)
+  digerMyToken = await signInTestUser(digerMy.email, digerMy.password)
   // Öğretmen: 3 farklı günde kullanım (biri 20 gün önce), bir günde iki ekran
   const { error } = await serviceDb.from('usage_daily').insert([
     { day: gun(1), school_id: okul.id, user_id: ogretmen.id, role: 'ogretmen', feature: 'odevler', count: 3 },
@@ -42,7 +43,7 @@ beforeAll(async () => {
     { day: gun(2), school_id: digerOkul.id, user_id: digerMy.id, role: 'mudur_yardimcisi', feature: 'anasayfa', count: 1 },
   ])
   if (error) throw error
-})
+}, 120_000) // giriş hız sınırında yeniden deneme payı (signInTestUser)
 
 afterAll(async () => {
   await serviceDb.from('usage_daily').delete().in('school_id', [okul.id, digerOkul.id])

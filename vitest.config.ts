@@ -29,7 +29,8 @@ export default defineConfig({
           include: ['tests/vitest/integration/**/*.test.ts'],
           pool: 'forks',
           testTimeout: 30_000,
-          hookTimeout: 30_000,
+          // signInTestUser auth hız sınırında 30 sn'ye kadar bekleyip yeniden dener; kurulumda birkaç giriş olur
+          hookTimeout: 120_000,
         },
       },
       {

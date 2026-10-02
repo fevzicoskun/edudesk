@@ -109,9 +109,16 @@ export async function createTestUser(params: {
 export async function signInTestUser(email: string, password: string): Promise<string> {
   // service client ile signInWithPassword desteği yok — anon client kullanıyoruz
   const client = createAnonClient()
-  const { data, error } = await client.auth.signInWithPassword({ email, password })
-  if (error) throw new Error(`signInTestUser hatası: ${error.message}`)
-  return data.session!.access_token
+  // Dosyalar paralel koşar; Supabase auth kısa süreli giriş sınırı aşılınca "rate limit" döner.
+  // Yalnız o hatada artan beklemeyle yeniden dene (2+4+8+16+32 sn); başka hata hemen fırlatılır.
+  // Tam paket ~33 giriş yapar. Ölçüm (2026-10-02): 2 dk içinde art arda 3 tam koşuda 429 başladı ve
+  // bekleme yetmedi; birkaç dakika sonra tek koşu beklemesiz geçti. Art arda koşacaksan ara ver.
+  for (let deneme = 0; ; deneme++) {
+    const { data, error } = await client.auth.signInWithPassword({ email, password })
+    if (!error) return data.session!.access_token
+    if (!/rate limit/i.test(error.message) || deneme >= 5) throw new Error(`signInTestUser hatası: ${error.message}`)
+    await new Promise(r => setTimeout(r, 2000 * 2 ** deneme))
+  }
 }
 
 /** Test verilerini temizle (her zaman çağır — test başarılı olsa da olmasa da) */
