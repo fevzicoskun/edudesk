@@ -107,4 +107,28 @@ describe('getClassSummary', () => {
     const result = await TeacherDashboardService.getClassSummary(CLASS_ID, TEACHER_ID)
     expect(result).toBeNull()
   })
+
+  // 2026-10-03: payda mazeretliyi de sayıyordu; hiç kontrol yokken %0 gösteriyordu (analitik ile aynı tanım)
+  const ogrenciler = { data: [{ id: 's1', full_name: 'A', class_id: CLASS_ID }, { id: 's2', full_name: 'B', class_id: CLASS_ID }] }
+
+  it('mazeretli paydaya girmez: 1 yapıldı + 1 mazeretli → %100', async () => {
+    ;(DashboardRepository.getClassSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [
+      { homework_id: 'h1', student_id: 's1', status: 'yapildi' },
+      { homework_id: 'h1', student_id: 's2', status: 'mazeretli' },
+    ] })
+    ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue(ogrenciler)
+
+    const result = await TeacherDashboardService.getClassSummary(CLASS_ID, TEACHER_ID)
+    expect(result!.avgCompletionPct).toBe(100)
+  })
+
+  it('hiç kontrol edilmiş ödev yoksa oran null (%0 değil)', async () => {
+    ;(DashboardRepository.getClassSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
+    ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue(ogrenciler)
+
+    const result = await TeacherDashboardService.getClassSummary(CLASS_ID, TEACHER_ID)
+    expect(result!.avgCompletionPct).toBeNull()
+  })
 })

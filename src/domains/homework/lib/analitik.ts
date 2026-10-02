@@ -59,7 +59,7 @@ export type KpiCards = {
 
 /** Tamamlanma %'si — stats.ts completionRate ile aynı tanım: payda yalnız işaretli ve mazeretli olmayan gönderi.
  *  Sınıf mevcudu payda DEĞİL: kontrol edilmemiş öğrenci "yapmadı" sayılmaz. Hiç değerlendirilmemişse null. */
-function oran(yapildi: number, isaretli: number, mazeretli: number): number | null {
+export function oran(yapildi: number, isaretli: number, mazeretli: number): number | null {
   const payda = isaretli - mazeretli
   return payda <= 0 ? null : Math.round((yapildi / payda) * 100)
 }

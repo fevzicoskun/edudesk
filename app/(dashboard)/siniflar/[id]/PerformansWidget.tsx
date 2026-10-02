@@ -32,7 +32,9 @@ export default async function PerformansWidget({ classId }: { classId: string })
       <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-sm text-gray-600 dark:text-slate-400">
         <span className="font-semibold text-gray-700 dark:text-slate-300">Sınıf Performansı</span>
         <span aria-hidden="true">·</span>
-        <span>Ortalama tamamlanma <b className="font-bold text-blue-700 dark:text-blue-300">%{summary.avgCompletionPct}</b></span>
+        <span>Ortalama tamamlanma {summary.avgCompletionPct === null
+          ? <span className="text-gray-500 dark:text-slate-400">— henüz kontrol edilmedi</span>
+          : <b className="font-bold text-blue-700 dark:text-blue-300">%{summary.avgCompletionPct}</b>}</span>
         <span aria-hidden="true">·</span>
         <span>Yüksek risk <b className="font-bold text-red-700 dark:text-red-400">{summary.highRiskCount}</b></span>
         <span aria-hidden="true">·</span>

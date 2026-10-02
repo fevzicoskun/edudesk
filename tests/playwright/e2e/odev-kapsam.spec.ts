@@ -174,6 +174,8 @@ test.describe('Öğretmen ana sayfası ve öğrenci', () => {
 
   test('sınıfın tüm öğrenci özetleri tek sayfada; yazdırınca her öğrenci ayrı sayfa', async ({ page }) => {
     await page.goto(`/siniflar/${classId}`)
+    // Sınıf Performansı şeridi: oran ya "%N" ya da (hiç kontrol yoksa) "henüz kontrol edilmedi" — asla çökmez
+    await expect(page.getByText(/Ortalama tamamlanma (%\d+|— henüz kontrol edilmedi)/)).toBeVisible({ timeout: 20_000 })
     await page.getByRole('link', { name: 'Ödev Özetleri' }).click()
     await expect(page).toHaveURL(new RegExp(`/siniflar/${classId}/odev-raporu`), { timeout: 20_000 })
     await expect(page.getByRole('heading', { name: 'Tüm Öğrencilerin Ödev Özetleri' })).toBeVisible({ timeout: 20_000 })

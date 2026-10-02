@@ -42,7 +42,8 @@ export type RiskAlert = {
 }
 
 export type ClassSummary = {
-  avgCompletionPct: number
+  /** null = henüz kontrol edilmiş ödev yok */
+  avgCompletionPct: number | null
   highRiskCount: number
   totalMissingCount: number
   riskyStudents: RiskAlert[]

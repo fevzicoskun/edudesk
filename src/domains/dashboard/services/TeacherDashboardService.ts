@@ -1,4 +1,5 @@
 import { tamamlanmaSatirlari } from '@/src/domains/dashboard/lib/tamamlanma'
+import { oran } from '@/src/domains/homework/lib/analitik'
 import { DashboardRepository } from '../repositories/DashboardRepository'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
@@ -78,10 +79,12 @@ export const TeacherDashboardService = {
 
     if (students.length === 0) return null
 
-    const doneCount = submissions.filter(s => s.status === 'yapildi').length
-    const avgCompletionPct = submissions.length > 0
-      ? Math.round((doneCount / submissions.length) * 100)
-      : 0
+    // Tek tanım (analitik ile aynı): yapıldı / (işaretli − mazeretli); hiç kontrol yoksa null
+    const avgCompletionPct = oran(
+      submissions.filter(s => s.status === 'yapildi').length,
+      submissions.length,
+      submissions.filter(s => s.status === 'mazeretli').length,
+    )
     const totalMissingCount = submissions.filter(s => s.status === 'eksik').length
 
     const alerts = computeClassRisk(submissions, attendanceRows, students)
