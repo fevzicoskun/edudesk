@@ -143,6 +143,8 @@ export const ClassService = {
     contacted_at: string
   }) {
     const ability = await requireAbility()
+    const { data: student } = await ClassRepository.findStudentInSchool(studentId, ability.schoolId)
+    if (!student) throw new Error('Öğrenci bulunamadı')
     const { error } = await ClassRepository.insertParentContactLog({
       school_id:      ability.schoolId,
       student_id:     studentId,

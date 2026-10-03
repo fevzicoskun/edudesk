@@ -5,6 +5,8 @@ import { cacheRevocation } from '@/src/infrastructure/security/revocation'
 import type { TokenType } from '../types'
 
 const REVOKE_ROLES = ['zumre_baskani', 'mudur_yardimcisi', 'mudur'] as const
+// tokenType istemciden gelir; TS tipi çalışma anında korumaz
+const TOKEN_TURLERI = ['veli', 'yoklama', 'tutanak'] as const satisfies readonly TokenType[]
 
 export const TokenService = {
   async generateVeliToken(studentId: string): Promise<string> {
@@ -52,7 +54,8 @@ export const TokenService = {
     reason?:   string
   ): Promise<{ ok: boolean; error?: string }> {
     const [user, profile] = await Promise.all([getCurrentUser(), getCurrentProfile()])
-    if (!user || !profile) return { ok: false, error: 'Giriş gerekli' }
+    if (!user || !profile?.school_id) return { ok: false, error: 'Giriş gerekli' }
+    if (!(TOKEN_TURLERI as readonly string[]).includes(tokenType)) return { ok: false, error: 'Geçersiz bağlantı türü' }
 
     const jti = token.startsWith('v1.') ? extractJti(token) : token
     if (!jti) return { ok: false, error: 'Geçersiz token formatı' }
@@ -68,6 +71,7 @@ export const TokenService = {
 
     const { error } = await TokenRepository.insertRevokedToken({
       jti,
+      school_id:  profile.school_id,
       token_type: tokenType,
       revoked_by: user.id,
       reason:     reason?.slice(0, 200) ?? null,
@@ -99,9 +103,9 @@ export const TokenService = {
   async listRevokedTokens() {
     const profile = await getCurrentProfile()
     const hasManagerRole = REVOKE_ROLES.includes(profile?.role as typeof REVOKE_ROLES[number])
-    if (!hasManagerRole) return { data: null, error: 'Yetersiz yetki' }
+    if (!hasManagerRole || !profile?.school_id) return { data: null, error: 'Yetersiz yetki' }
 
-    const { data, error } = await TokenRepository.listRevokedTokens()
+    const { data, error } = await TokenRepository.listRevokedTokens(profile.school_id)
     return { data, error: error?.message }
   },
 }

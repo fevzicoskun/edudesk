@@ -50,7 +50,7 @@ export const gunlukOzetFn = inngest.createFunction(
         c => c.mentor_teacher_id && schoolsWithAttendance.has(c.school_id as string),
       )
       const missingByMentor = new Map<string, { name: string; school_id: string }[]>()
-      for (const c of findMissingClasses(mentorClasses as { id: string; name: string; school_id: string; mentor_teacher_id: string }[], (attendance.data ?? []) as { class_id: string }[])) {
+      for (const c of findMissingClasses(mentorClasses as { id: string; name: string; school_id: string; mentor_teacher_id: string }[], (attendance.data ?? []) as { class_id: string; school_id: string }[])) {
         const list = missingByMentor.get(c.mentor_teacher_id) ?? []
         list.push({ name: c.name, school_id: c.school_id })
         missingByMentor.set(c.mentor_teacher_id, list)

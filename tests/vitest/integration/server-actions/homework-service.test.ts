@@ -171,6 +171,72 @@ describe('HomeworkService.updateSubmissionStatus()', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
+// 2026-10-03: servis sınıfın okula, öğrencinin ödevin sınıfına ait olduğunu doğrulamıyordu.
+// Service client RLS'i atladığı için bu testler tam olarak servis kontrolünü ölçer.
+describe('HomeworkService — okul ve sınıf bağı doğrulaması', () => {
+  let digerOkul: TestSchool
+  let yabanciSinifId: string
+  let baskaSinifId: string
+  let hwId: string
+  let kendiOgrenci: string
+  let baskaSinifOgrenci: string
+
+  beforeAll(async () => {
+    digerOkul = await createTestSchool('_HW_DIGER')
+    const { data: ys } = await serviceDb.from('classes')
+      .insert({ name: 'Yabancı Sınıf', grade: 7, academic_year: '2025-2026', school_id: digerOkul.id }).select('id').single()
+    yabanciSinifId = ys!.id
+    const { data: bs } = await serviceDb.from('classes')
+      .insert({ name: 'Başka Sınıf', grade: 8, academic_year: '2025-2026', school_id: school.id }).select('id').single()
+    baskaSinifId = bs!.id
+    const { data: ogr } = await serviceDb.from('students').insert([
+      { full_name: 'Kendi Öğrenci', class_id: classId, school_id: school.id },
+      { full_name: 'Başka Sınıf Öğrenci', class_id: baskaSinifId, school_id: school.id },
+    ]).select('id, full_name')
+    kendiOgrenci = ogr!.find(o => o.full_name === 'Kendi Öğrenci')!.id
+    baskaSinifOgrenci = ogr!.find(o => o.full_name === 'Başka Sınıf Öğrenci')!.id
+    const { data: hw } = await serviceDb.from('homeworks').insert({
+      teacher_id: teacher.id, class_id: classId, school_id: school.id,
+      title: 'Bağ Testi', subject: 'Mat', due_date: '2099-12-31', description: null,
+    }).select('id').single()
+    hwId = hw!.id
+    cleanup.push(hwId)
+  })
+
+  afterAll(async () => {
+    await cleanupTestData({ schoolIds: [digerOkul.id] })
+  })
+
+  it('başka okulun sınıfına ödev açılamaz', async () => {
+    const result = await HomeworkService.createHomework({
+      class_id: yabanciSinifId, title: 'Yabancı Ödev', description: null, subject: 'X', due_date: '2099-12-31',
+    })
+    expect(result.error).toBeTruthy()
+    const { data } = await serviceDb.from('homeworks').select('id').eq('class_id', yabanciSinifId)
+    expect(data ?? []).toHaveLength(0)
+  })
+
+  it('başka sınıfın öğrencisi bu ödevde işaretlenemez (tekli)', async () => {
+    const result = await HomeworkService.updateSubmissionStatus(hwId, baskaSinifOgrenci, 'yapilmadi')
+    expect(result.error).toBeTruthy()
+    const { data } = await serviceDb.from('homework_submissions').select('id').eq('homework_id', hwId).eq('student_id', baskaSinifOgrenci)
+    expect(data ?? []).toHaveLength(0)
+  })
+
+  it('toplu işaretlemede tek bir yabancı öğrenci bile varsa hiçbiri yazılmaz', async () => {
+    const result = await HomeworkService.updateAllSubmissionStatuses(hwId, [kendiOgrenci, baskaSinifOgrenci], 'yapildi')
+    expect(result.error).toBeTruthy()
+    const { data } = await serviceDb.from('homework_submissions').select('student_id').eq('homework_id', hwId).not('marked_at', 'is', null)
+    expect(data ?? []).toHaveLength(0)
+  })
+
+  it('kendi sınıfının öğrencisi işaretlenir', async () => {
+    const result = await HomeworkService.updateSubmissionStatus(hwId, kendiOgrenci, 'yapildi')
+    expect(result.error).toBeUndefined()
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
 describe('HomeworkService.createHomework() — paralel çoklu çağrı', () => {
   const createdIds: string[] = []
 

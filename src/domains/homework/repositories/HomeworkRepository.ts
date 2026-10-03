@@ -39,7 +39,7 @@ export const HomeworkRepository = {
     const supabase = await createClient()
     return supabase
       .from('homeworks')
-      .select('teacher_id, due_date')
+      .select('teacher_id, due_date, class_id')
       .eq('id', homeworkId)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
@@ -87,6 +87,20 @@ export const HomeworkRepository = {
     return supabase
       .from('homework_submissions')
       .upsert(data, { onConflict: 'homework_id,student_id' })
+  },
+
+  /** Verilen öğrencilerin HEPSİ bu sınıfta (ve okulda, silinmemiş) mı? Okuma hatası = hayır (fail-closed). */
+  async studentsAllInClass(studentIds: string[], classId: string, schoolId: string): Promise<boolean> {
+    const supabase = await createClient()
+    const tekil = [...new Set(studentIds)]
+    const { count, error } = await supabase
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .in('id', tekil)
+      .eq('class_id', classId)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+    return !error && count === tekil.length
   },
 
   async classExistsInSchool(classId: string, schoolId: string): Promise<boolean> {

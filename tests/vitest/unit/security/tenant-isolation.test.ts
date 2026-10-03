@@ -21,7 +21,8 @@ vi.mock('@/src/domains/homework/repositories/HomeworkRepository', () => ({
   HomeworkRepository: {
     insertHomework:              vi.fn(),
     findHomeworkTeacher:         vi.fn(),
-    classExistsInSchool:         vi.fn(),
+    classExistsInSchool:         vi.fn().mockResolvedValue(true),
+    studentsAllInClass:          vi.fn().mockResolvedValue(true),
     upsertSubmissionStatus:      vi.fn(),
     findCurrentSubmissionStatus: vi.fn().mockResolvedValue({ data: null, error: null }),
     insertSubmissionLog:         vi.fn().mockResolvedValue({ error: null }),

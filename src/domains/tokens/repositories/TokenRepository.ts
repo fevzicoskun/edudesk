@@ -36,6 +36,7 @@ export const TokenRepository = {
 
   async insertRevokedToken(data: {
     jti: string
+    school_id: string
     token_type: TokenType
     revoked_by: string
     reason: string | null
@@ -72,11 +73,12 @@ export const TokenRepository = {
       .in('jti', jtis)
   },
 
-  async listRevokedTokens() {
+  async listRevokedTokens(schoolId: string) {
     const supabase = await createClient()
     return supabase
       .from('revoked_tokens')
       .select('jti, token_type, revoked_at, reason')
+      .eq('school_id', schoolId) // RLS de kısıtlar; açık filtre niyeti belgeler
       .order('revoked_at', { ascending: false })
       .limit(100)
   },

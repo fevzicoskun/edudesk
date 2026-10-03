@@ -1,8 +1,8 @@
 /**
  * Token revocation (revoked_tokens) RLS testleri.
  *
- * revoked_tokens tablosunun politikaları (v2 — 20260524100000_revoked_tokens_rls_v2):
- *   1. revoked_tokens_server_read   : authenticated → SELECT (anon erişimi kaldırıldı)
+ * revoked_tokens tablosunun politikaları (v3 — 20261003020000: okul bağı; v2 — 20260524100000):
+ *   1. revoked_tokens_okul_read     : authenticated + kendi okulu → SELECT (eskiden TÜM okullar)
  *   2. revoked_tokens_manager_insert: authenticated + can_revoke_tokens() → INSERT
  *   3. revoked_tokens_manager_delete: authenticated + can_revoke_tokens() → DELETE
  *
@@ -29,6 +29,9 @@ import {
 import { assertInsertBlocked } from './rls-assert'
 
 let school:   TestSchool
+let digerOkul: TestSchool
+let digerMudur: TestUser
+let tokenDigerMudur: string
 let ogretmen: TestUser
 let baskan:   TestUser
 let mudur:    TestUser
@@ -45,6 +48,8 @@ const insertedJtis: string[] = []
 
 beforeAll(async () => {
   school = await createTestSchool('_TOKEN')
+  digerOkul = await createTestSchool('_TOKEN2')
+  digerMudur = await createTestUser({ role: 'mudur', schoolId: digerOkul.id })
 
   ;[ogretmen, baskan, mudur, my] = await Promise.all([
     createTestUser({ role: 'ogretmen',         schoolId: school.id }),
@@ -53,20 +58,20 @@ beforeAll(async () => {
     createTestUser({ role: 'mudur_yardimcisi', schoolId: school.id }),
   ])
 
-  ;[tokenOg, tokenBaskan, tokenMudur, tokenMy] = await Promise.all([
-    signInTestUser(ogretmen.email, ogretmen.password),
-    signInTestUser(baskan.email,   baskan.password),
-    signInTestUser(mudur.email,    mudur.password),
-    signInTestUser(my.email,       my.password),
-  ])
-})
+  // sırayla — paralel giriş Supabase auth hız sınırını tetikliyordu
+  tokenOg     = await signInTestUser(ogretmen.email, ogretmen.password)
+  tokenBaskan = await signInTestUser(baskan.email,   baskan.password)
+  tokenMudur  = await signInTestUser(mudur.email,    mudur.password)
+  tokenMy     = await signInTestUser(my.email,       my.password)
+  tokenDigerMudur = await signInTestUser(digerMudur.email, digerMudur.password)
+}, 120_000)
 
 afterAll(async () => {
   // Eklenen test tokenlarını temizle
   if (insertedJtis.length) {
     await serviceDb.from('revoked_tokens').delete().in('jti', insertedJtis)
   }
-  await cleanupTestData({ userIds: [ogretmen.id, baskan.id, mudur.id, my.id], schoolIds: [school.id] })
+  await cleanupTestData({ userIds: [ogretmen.id, baskan.id, mudur.id, my.id, digerMudur.id], schoolIds: [school.id, digerOkul.id] })
 })
 
 // ─── SELECT: yalnızca authenticated ─────────────────────────────────────────
@@ -76,7 +81,7 @@ describe('revoked_tokens SELECT: yalnızca authenticated', () => {
   beforeAll(async () => {
     testJti = `${TEST_JTI_BASE}-read-test`
     await serviceDb.from('revoked_tokens').insert({
-      jti: testJti, token_type: 'veli', revoked_by: baskan.id, reason: 'test',
+      jti: testJti, school_id: school.id, token_type: 'veli', revoked_by: baskan.id, reason: 'test',
     })
     insertedJtis.push(testJti)
   })
@@ -96,6 +101,14 @@ describe('revoked_tokens SELECT: yalnızca authenticated', () => {
     expect(data ?? []).toHaveLength(1)
   })
 
+  // 2026-10-03: tabloda okul yoktu, SELECT her girişliye açıktı → başka okulun iptal kayıtları (gerekçe dahil) görünüyordu
+  it('başka okulun müdürü bu okulun iptal kaydını göremez', async () => {
+    const { data, error } = await createUserClient(tokenDigerMudur)
+      .from('revoked_tokens').select('jti').eq('jti', testJti)
+    expect(error).toBeNull()
+    expect(data ?? []).toHaveLength(0)
+  })
+
   it('authenticated müdür revoked_tokens okuyabilir', async () => {
     const client = createUserClient(tokenMudur)
     const { data, error } = await client
@@ -111,7 +124,7 @@ describe('revoked_tokens INSERT: can_revoke_tokens() rolleri', () => {
     const jti = `${TEST_JTI_BASE}-baskan-insert`
     const client = createUserClient(tokenBaskan)
     const { error } = await client.from('revoked_tokens').insert({
-      jti, token_type: 'veli', revoked_by: baskan.id, reason: 'test',
+      jti, school_id: school.id, token_type: 'veli', revoked_by: baskan.id, reason: 'test',
     })
     expect(error).toBeNull()
     insertedJtis.push(jti)
@@ -121,7 +134,7 @@ describe('revoked_tokens INSERT: can_revoke_tokens() rolleri', () => {
     const jti = `${TEST_JTI_BASE}-mudur-insert`
     const client = createUserClient(tokenMudur)
     const { error } = await client.from('revoked_tokens').insert({
-      jti, token_type: 'veli', revoked_by: mudur.id, reason: 'test',
+      jti, school_id: school.id, token_type: 'veli', revoked_by: mudur.id, reason: 'test',
     })
     expect(error).toBeNull()
     insertedJtis.push(jti)
@@ -131,7 +144,7 @@ describe('revoked_tokens INSERT: can_revoke_tokens() rolleri', () => {
     const jti = `${TEST_JTI_BASE}-my-insert`
     const client = createUserClient(tokenMy)
     const { error } = await client.from('revoked_tokens').insert({
-      jti, token_type: 'veli', revoked_by: my.id, reason: 'test',
+      jti, school_id: school.id, token_type: 'veli', revoked_by: my.id, reason: 'test',
     })
     expect(error).toBeNull()
     insertedJtis.push(jti)
@@ -142,8 +155,18 @@ describe('revoked_tokens INSERT: can_revoke_tokens() rolleri', () => {
     await assertInsertBlocked(
       createUserClient(tokenOg),
       'revoked_tokens',
-      { jti, token_type: 'veli', revoked_by: ogretmen.id, reason: 'attack' },
+      { jti, school_id: school.id, token_type: 'veli', revoked_by: ogretmen.id, reason: 'attack' },
       'ogretmen-insert'
+    )
+  })
+
+  it('müdür başka okul adına iptal kaydı yazamaz', async () => {
+    const jti = `${TEST_JTI_BASE}-yabanci-okul`
+    await assertInsertBlocked(
+      createUserClient(tokenMudur),
+      'revoked_tokens',
+      { jti, school_id: digerOkul.id, token_type: 'veli', revoked_by: mudur.id, reason: 'attack' },
+      'yabanci-okul-insert'
     )
   })
 
@@ -164,7 +187,7 @@ describe('revoked_tokens DELETE: yetkisiz kullanıcı restore saldırısı', () 
   beforeAll(async () => {
     protectedJti = `${TEST_JTI_BASE}-protected`
     await serviceDb.from('revoked_tokens').insert({
-      jti: protectedJti, token_type: 'yoklama', revoked_by: baskan.id, reason: 'protect test',
+      jti: protectedJti, school_id: school.id, token_type: 'yoklama', revoked_by: baskan.id, reason: 'protect test',
     })
     insertedJtis.push(protectedJti)
   })
@@ -190,7 +213,7 @@ describe('revoked_tokens DELETE: yetkisiz kullanıcı restore saldırısı', () 
   it('zumre_baskani token kaydını silebilir (can_revoke_tokens)', async () => {
     const jti = `${TEST_JTI_BASE}-baskan-delete`
     await serviceDb.from('revoked_tokens').insert({
-      jti, token_type: 'veli', revoked_by: baskan.id, reason: 'to be deleted',
+      jti, school_id: school.id, token_type: 'veli', revoked_by: baskan.id, reason: 'to be deleted',
     })
     const client = createUserClient(tokenBaskan)
     const { error } = await client.from('revoked_tokens').delete().eq('jti', jti)
@@ -199,10 +222,14 @@ describe('revoked_tokens DELETE: yetkisiz kullanıcı restore saldırısı', () 
     expect(data ?? []).toHaveLength(0)
   })
 
+  it('başka okulun müdürü bu okulun iptal kaydını silip linki diriltemez', async () => {
+    await assertJtiNotDeleted(createUserClient(tokenDigerMudur))
+  })
+
   it('mudur token kaydını silebilir (can_revoke_tokens)', async () => {
     const jti = `${TEST_JTI_BASE}-mudur-delete`
     await serviceDb.from('revoked_tokens').insert({
-      jti, token_type: 'veli', revoked_by: mudur.id, reason: 'to be deleted',
+      jti, school_id: school.id, token_type: 'veli', revoked_by: mudur.id, reason: 'to be deleted',
     })
     const client = createUserClient(tokenMudur)
     const { error } = await client.from('revoked_tokens').delete().eq('jti', jti)

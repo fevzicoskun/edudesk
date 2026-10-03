@@ -1,6 +1,7 @@
 import { requireAbility } from '@/src/shared/authorization/server'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { MeetingRepository } from '../repositories/MeetingRepository'
+import { ClassRepository } from '@/src/domains/classes/repositories/ClassRepository'
 import type { MeetingStatus } from '../parentMeetingMath'
 
 export interface Meeting {
@@ -59,6 +60,8 @@ export const MeetingService = {
 
   async create(input: { studentId: string; meetDate: string; period: number; note: string | null }): Promise<{ error?: string; id?: string }> {
     const ability = await requireAbility()
+    const { data: student } = await ClassRepository.findStudentInSchool(input.studentId, ability.schoolId)
+    if (!student) return { error: 'Öğrenci bulunamadı' }
     const { data, error } = await MeetingRepository.insert({
       teacher_id: ability.userId,
       school_id: ability.schoolId,

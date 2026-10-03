@@ -154,20 +154,28 @@ describe('findMissingClasses()', () => {
   ]
 
   it('tüm yoklamalar alınmışsa boş döner', () => {
-    expect(findMissingClasses(classes, [{ class_id: 'cls1' }, { class_id: 'cls2' }])).toHaveLength(0)
+    expect(findMissingClasses(classes, [{ class_id: 'cls1', school_id: 'sch1' }, { class_id: 'cls2', school_id: 'sch1' }])).toHaveLength(0)
   })
 
   it('yoklaması alınmayanlar listelenir', () => {
-    const result = findMissingClasses(classes, [{ class_id: 'cls1' }])
+    const result = findMissingClasses(classes, [{ class_id: 'cls1', school_id: 'sch1' }])
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe('cls2')
   })
 
-  it('hiç yoklama alınmamışsa hepsi listelenir', () => {
-    expect(findMissingClasses(classes, [])).toHaveLength(2)
+  // 2026-10-03: okulda bugün hiç yoklama yoksa (resmî tatil ya da okul yoklamayı kullanmıyor)
+  // her sınıfa "yoklama alınmadı" demek yanlış alarmdı → o okul atlanır
+  it('okulda bugün hiç yoklama yoksa o okul atlanır (tatil koruması)', () => {
+    expect(findMissingClasses(classes, [])).toHaveLength(0)
+  })
+
+  it('bir okul tatilde, diğeri çalışıyorsa yalnız çalışan okulun eksikleri listelenir', () => {
+    const ikiOkul = [...classes, { id: 'cls3', name: '10-A', school_id: 'sch2', mentor_teacher_id: null }]
+    const result = findMissingClasses(ikiOkul, [{ class_id: 'cls1', school_id: 'sch1' }])
+    expect(result.map(c => c.id)).toEqual(['cls2'])
   })
 
   it('boş sınıf listesi → boş döner', () => {
-    expect(findMissingClasses([], [{ class_id: 'cls1' }])).toHaveLength(0)
+    expect(findMissingClasses([], [{ class_id: 'cls1', school_id: 'sch1' }])).toHaveLength(0)
   })
 })

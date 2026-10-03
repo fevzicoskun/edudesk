@@ -33,6 +33,10 @@ export const HomeworkService = {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }
     if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.' }
+    // Service değil RLS'li client olsa da sınıfın bu okula ait olduğunu açıkça doğrula (updateHomework ile aynı)
+    if (!(await HomeworkRepository.classExistsInSchool(data.class_id, ability.schoolId))) {
+      return { error: 'Sınıf bulunamadı' }
+    }
 
     const { data: created, error } = await HomeworkRepository.insertHomework({
       teacher_id: ability.userId,
@@ -62,10 +66,15 @@ export const HomeworkService = {
     if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
+    // Öğrenci bu ödevin sınıfında olmalı — yoksa başka sınıfın öğrencisi işaretlenip velisine hatırlatma giderdi
+    if (!(await HomeworkRepository.studentsAllInClass([studentId], hw.class_id, ability.schoolId))) {
+      return { error: 'Öğrenci bu ödevin sınıfında değil' }
+    }
 
-    const { data: existing } = await HomeworkRepository.findCurrentSubmissionStatus(
+    const { data: existing, error: eskiHata } = await HomeworkRepository.findCurrentSubmissionStatus(
       homeworkId, studentId, ability.schoolId
     )
+    if (eskiHata) logger.error({ homeworkId, code: eskiHata.code }, 'Eski teslim durumu okunamadı — geçmiş kaydında önceki durum boş kalacak')
 
     const now = new Date().toISOString()
     const { error } = await HomeworkRepository.upsertSubmissionStatus({
@@ -79,7 +88,8 @@ export const HomeworkService = {
 
     if (error) return { error: error.message }
 
-    await HomeworkRepository.insertSubmissionLog({
+    // Geçmiş kaydı yazılamazsa işaretleme geri alınmaz (asıl iş yapıldı) ama sessiz de geçilmez
+    const { error: logHata } = await HomeworkRepository.insertSubmissionLog({
       homework_id: homeworkId,
       student_id:  studentId,
       school_id:   ability.schoolId,
@@ -88,6 +98,7 @@ export const HomeworkService = {
       new_status:  status,
       changed_at:  new Date().toISOString(),
     })
+    if (logHata) logger.error({ homeworkId, code: logHata.code }, 'Teslim durumu geçmişi yazılamadı')
 
     return { success: true }
   },
@@ -110,6 +121,9 @@ export const HomeworkService = {
     if (ability.cannot(P.HOMEWORK.UPDATE, hw.teacher_id)) {
       return { error: 'Bu ödev için yetkiniz yok' }
     }
+    if (studentIds.length && !(await HomeworkRepository.studentsAllInClass(studentIds, hw.class_id, ability.schoolId))) {
+      return { error: 'Listede bu ödevin sınıfında olmayan öğrenci var' }
+    }
 
     const islemZamani = new Date().toISOString()
     const rows = studentIds.map(studentId => ({
@@ -123,9 +137,10 @@ export const HomeworkService = {
 
     if (rows.length === 0) return { success: true }
 
-    const { data: existing } = await HomeworkRepository.findCurrentSubmissionStatuses(
+    const { data: existing, error: eskiHata } = await HomeworkRepository.findCurrentSubmissionStatuses(
       homeworkId, studentIds, ability.schoolId
     )
+    if (eskiHata) logger.error({ homeworkId, code: eskiHata.code }, 'Eski teslim durumları okunamadı — geçmiş kaydında önceki durum boş kalacak')
     const oldStatusMap = new Map((existing ?? []).map(r => [r.student_id, r.status]))
 
     const { error } = await HomeworkRepository.upsertSubmissionsStatus(rows)
@@ -144,7 +159,8 @@ export const HomeworkService = {
       new_status:  status,
       changed_at:  now,
     }))
-    await HomeworkRepository.insertSubmissionLogs(logs)
+    const { error: logHata } = await HomeworkRepository.insertSubmissionLogs(logs)
+    if (logHata) logger.error({ homeworkId, code: logHata.code, adet: logs.length }, 'Toplu teslim durumu geçmişi yazılamadı')
 
     return { success: true }
   },

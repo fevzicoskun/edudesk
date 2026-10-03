@@ -2015,6 +2015,7 @@ export type Database = {
           reason: string | null
           revoked_at: string
           revoked_by: string | null
+          school_id: string
           token_type: string
         }
         Insert: {
@@ -2022,6 +2023,7 @@ export type Database = {
           reason?: string | null
           revoked_at?: string
           revoked_by?: string | null
+          school_id: string
           token_type: string
         }
         Update: {
@@ -2029,9 +2031,18 @@ export type Database = {
           reason?: string | null
           revoked_at?: string
           revoked_by?: string | null
+          school_id?: string
           token_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "revoked_tokens_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
