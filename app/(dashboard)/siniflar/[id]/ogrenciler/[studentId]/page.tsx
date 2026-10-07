@@ -29,6 +29,8 @@ import ZamanCizelgesiSection from './ZamanCizelgesiSection'
 import { buildStudentTimeline } from '@/src/domains/classes/lib/timelineMath'
 import { donemBasi } from '@/src/shared/utils'
 import HaftalikPlanSection from './HaftalikPlanSection'
+import MentorlugumeEkle from './MentorlugumeEkle'
+import { isTeachingRole } from '@/src/shared/types'
 
 export const revalidate = 60
 
@@ -181,7 +183,9 @@ export default async function OgrenciDetayPage({
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             {cls.name} {student.student_number ? `· No: ${student.student_number}` : ''}
           </p>
-          {mentor && <p className="text-sm text-gray-500 dark:text-slate-400">Mentörü: {mentor.ad}</p>}
+          {mentor
+            ? <p className="text-sm text-gray-500 dark:text-slate-400">Mentörü: {mentor.ad}</p>
+            : isTeachingRole(currentProfile.role) && <MentorlugumeEkle studentId={studentId} />}
         </div>
         <CopyVeliLink
           studentId={studentId}
