@@ -11,6 +11,12 @@ describe('hucreMetni', () => {
   it('yapılan/değerlendirilen, eksik parantezde', () => {
     expect(hucreMetni({ ders: 'Fizik', yapildi: 2, eksik: 1, gec: 0, degerlendirilen: 3, toplam: 3 }).metin).toBe('2/3 (1e)')
   })
+  it('mazeretli ve kontrol edilmemiş ödev paydaya girmez (dersOzeti tanımı)', () => {
+    const t = mentorTablosu([{ id: 'a', full_name: 'Ali', class_name: null, homeworks: [
+      hw('Fizik', 'yapildi'), hw('Fizik', 'yapildi'), hw('Fizik', 'eksik'), hw('Fizik', 'mazeretli'), hw('Fizik', null),
+    ] }])
+    expect(t.satirlar[0].hucreler[0].metin).toBe('2/3 (1e)')
+  })
   it('hiç kontrol edilmemişse —', () => {
     expect(hucreMetni({ ders: 'Fizik', yapildi: 0, eksik: 0, gec: 0, degerlendirilen: 0, toplam: 2 }).metin).toBe('—')
   })

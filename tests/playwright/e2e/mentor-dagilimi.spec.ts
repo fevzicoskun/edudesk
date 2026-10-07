@@ -1,6 +1,15 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page, type Locator } from '@playwright/test'
 import path from 'path'
 const AUTH = (r: string) => path.join(process.cwd(), 'tests/playwright/.auth', `${r}.json`)
+
+/** Kutuları işaretler ve düğmenin etkinleşmesini bekler. SSR'da görünen kutu React bağlanmadan
+ *  işaretlenirse state'e geçmez, düğme pasif kalır → toPass ile yeniden dener. */
+async function secVeBekle(page: Page, kutular: Locator[], dugme: Locator) {
+  await expect(async () => {
+    for (const k of kutular) { await k.uncheck(); await k.check() }
+    await expect(dugme).toBeEnabled({ timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
+}
 
 test.describe.serial('Mentör dağılımı', () => {
   let sinifUrl = ''
@@ -12,16 +21,20 @@ test.describe.serial('Mentör dağılımı', () => {
     const page = await ctx.newPage()
     await page.goto('/siniflar')
     await page.locator('a[href^="/siniflar/"]').first().click()
+    await page.waitForURL(/\/siniflar\/[0-9a-f-]{36}$/)
     sinifUrl = page.url()
     await page.getByText('Mentör Dağılımı').click()
     const kutular = page.locator('details input[type=checkbox]')
-    for (const i of [0, 1]) await kutular.nth(i).check()
     ogrenciAdlari = await page.locator('details li span.flex-1').evaluateAll(els => els.slice(0, 2).map(e => e.textContent!.trim()))
     // e2e öğretmen hesabının adı ayarlardan değil select'ten seçilir: hesap adı test seed'inde sabit
     const secenek = page.locator('#mentor-sec option').filter({ hasText: 'PW Test ogretmen' }).first()
     ogretmenAdi = (await secenek.textContent())!.trim()
-    await page.selectOption('#mentor-sec', { label: ogretmenAdi })
-    await page.getByRole('button', { name: /Seçilenlere ata/ }).click()
+    const ata = page.getByRole('button', { name: /Seçilenlere ata/ })
+    await expect(async () => {
+      await page.selectOption('#mentor-sec', { label: ogretmenAdi })
+      await secVeBekle(page, [kutular.nth(0), kutular.nth(1)], ata)
+    }).toPass({ timeout: 40_000 })
+    await ata.click()
     await expect(page.getByRole('status')).toHaveText('Atandı')
     await expect(page.locator('details li').filter({ hasText: ogrenciAdlari[0] })).toContainText(ogretmenAdi)
     await ctx.close()
@@ -77,13 +90,16 @@ test.describe.serial('Mentör dağılımı', () => {
   })
 
   test.afterAll(async ({ browser }) => {
+    test.setTimeout(120_000)
+    if (!sinifUrl || ogrenciAdlari.length === 0) return
     // Temizlik: canlı veride atama bırakma
     const ctx = await browser.newContext({ storageState: AUTH('mudur_yardimcisi') })
     const page = await ctx.newPage()
     await page.goto(sinifUrl)
     await page.getByText('Mentör Dağılımı').click()
-    for (const ad of ogrenciAdlari) await page.locator('details li').filter({ hasText: ad }).locator('input').check()
-    await page.getByRole('button', { name: 'Mentörü kaldır' }).click()
+    const kaldir = page.getByRole('button', { name: 'Mentörü kaldır' })
+    await secVeBekle(page, ogrenciAdlari.map(ad => page.locator('details li').filter({ hasText: ad }).locator('input')), kaldir)
+    await kaldir.click()
     await expect(page.getByRole('status')).toHaveText('Mentör kaldırıldı')
     await ctx.close()
   })
