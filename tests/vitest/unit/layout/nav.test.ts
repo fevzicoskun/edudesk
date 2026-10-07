@@ -108,3 +108,24 @@ describe('aktifHref — iç içe menü bağlantılarında en uzun eşleşen kaza
     expect(aktifHref('/profil', hrefs)).toBeNull()
   })
 })
+
+describe('gorunurNav — yalnizMentor (Mentörlük yalnız mentörlüğü olana, 2026-10-07)', () => {
+  const items = [
+    item('/anasayfa'),
+    item('/mentorluk', { roles: ['ogretmen', 'zumre_baskani'], yalnizMentor: true }),
+  ]
+  it('mentörlüğü olmayan öğretmende gizli', () => {
+    expect(gorunurNav(items, 'ogretmen').map(i => i.href)).toEqual(['/anasayfa'])
+  })
+  it('mentörlüğü olan öğretmende görünür', () => {
+    expect(gorunurNav(items, 'ogretmen', { mentorMu: true }).map(i => i.href)).toEqual(['/anasayfa', '/mentorluk'])
+  })
+  it('rol uymuyorsa mentorMu yetmez', () => {
+    expect(gorunurNav(items, 'mudur', { mentorMu: true }).map(i => i.href)).toEqual(['/anasayfa'])
+  })
+  it('mobil seçim de aynı koşulu uygular', () => {
+    const mob = items.map(i => ({ ...i, mobile: true }))
+    expect(mobilNavSec(mob, 'ogretmen').altBar.map(i => i.href)).toEqual(['/anasayfa'])
+    expect(mobilNavSec(mob, 'ogretmen', { mentorMu: true }).altBar.map(i => i.href)).toEqual(['/anasayfa', '/mentorluk'])
+  })
+})

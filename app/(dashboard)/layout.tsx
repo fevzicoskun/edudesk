@@ -12,12 +12,22 @@ import AbonelikUyariSeridi from './AbonelikUyariSeridi'
 import { subscriptionState, kalanGun } from '@/src/domains/billing/subscriptionMath'
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
+import { createClient } from '@/src/infrastructure/supabase/server'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
   const profile = await getCurrentProfile()
+
+  // Mentörlük menüde yalnız en az bir öğrencisi olan öğretmende görünür (okuma hatası = gizli, sayfa yine açılır)
+  let mentorMu = false
+  if (isTeachingRole(profile?.role)) {
+    const supabase = await createClient()
+    const { count } = await supabase.from('mentorships')
+      .select('id', { count: 'exact', head: true }).eq('mentor_id', user.id)
+    mentorMu = (count ?? 0) > 0
+  }
 
   // Abonelik enforcement (fail-open: schools okunamazsa geçir — tahsilat güvenlik sınırı değil).
   let abonelikUyari: number | null = null
@@ -47,7 +57,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <UsageTracker />
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         <div className="print:hidden">
-          <Sidebar profile={profile} email={user.email ?? ''} />
+          <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} />
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="print:hidden">

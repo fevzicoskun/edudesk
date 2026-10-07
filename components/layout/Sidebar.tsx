@@ -28,7 +28,7 @@ function formatName(raw: string): string {
     .join(' ') || raw
 }
 
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; icon: ReactNode }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; yalnizMentor?: boolean; icon: ReactNode }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
@@ -78,8 +78,17 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
-  // ponytail: Veli Görüşmeleri (/randevular) ve Mentörlük (/mentorluk) menüden gizlendi (kullanıcı isteği 2026-09-30);
-  // sayfalar duruyor, geri açmak için girdileri git geçmişinden (bu commit) geri al.
+  // ponytail: Veli Görüşmeleri (/randevular) menüden gizli (kullanıcı isteği 2026-09-30); sayfa duruyor,
+  // geri açmak için girdiyi git geçmişinden geri al. Mentörlük 2026-10-07'den beri yalnız mentörlüğü olana görünür.
+  {
+    href: '/mentorluk',
+    label: 'Mentörlük',
+    mobile: false,
+    roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'gunluk',
+    yalnizMentor: true,
+    icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
+  },
   {
     href: '/takvim',
     label: 'Takvim',
@@ -163,7 +172,7 @@ function NavLink({
   )
 }
 
-export default function Sidebar({ profile, email }: { profile: SidebarProfile | null; email: string }) {
+export default function Sidebar({ profile, email, mentorMu = false }: { profile: SidebarProfile | null; email: string; mentorMu?: boolean }) {
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)
@@ -175,7 +184,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
   const [collapsed, setCollapsed] = useState(false)
   const [digerAcik, setDigerAcik] = useState(false)
 
-  const filteredNav = gorunurNav(navItems, role)
+  const filteredNav = gorunurNav(navItems, role, { mentorMu })
   const { gunluk, diger } = gruplaNav(filteredNav)
   // iç içe bağlantılar (/yonetim ↔ /yonetim/odevler) için tüm menü üzerinden tek hesap
   const aktif = aktifHref(pathname, navItems.map(i => i.href))
@@ -346,7 +355,7 @@ export default function Sidebar({ profile, email }: { profile: SidebarProfile | 
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {(() => {
-          const { altBar, drawer } = mobilNavSec(navItems, role)
+          const { altBar, drawer } = mobilNavSec(navItems, role, { mentorMu })
           const showDrawer = drawer.length > 0
           return (
             <>
