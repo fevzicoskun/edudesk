@@ -5,9 +5,10 @@ import { AUTH_PATHS } from '../setup/global-setup'
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 
 async function testSchoolId(): Promise<string> {
-  const { data } = await db.from('profiles').select('school_id').ilike('full_name', '%test%').not('school_id', 'is', null).limit(1).single()
-  if (!data?.school_id) throw new Error('Test okulu bulunamadı')
-  return data.school_id
+  // Ada göre BELİRLİ okul: '%test%' profili aramak integration kalıntılarında yanlış okulu seçiyordu (2026-10-07)
+  const { data } = await db.from('schools').select('id').eq('name', '__PW_TEST__ Okul').single()
+  if (!data?.id) throw new Error('Test okulu bulunamadı')
+  return data.id
 }
 
 function isoShift(days: number): string {
