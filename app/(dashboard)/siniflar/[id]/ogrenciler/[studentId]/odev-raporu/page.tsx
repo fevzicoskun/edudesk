@@ -6,22 +6,30 @@ import { HomeworkService } from '@/src/domains/homework/services/HomeworkService
 import { createClient } from '@/src/infrastructure/supabase/server'
 import PrintButton from '@/components/PrintButton'
 import OgrenciOdevOzeti from './OgrenciOdevOzeti'
+import { donemBasi } from '@/src/shared/utils'
+import { format, parseISO, todayLocalISO } from '@/src/shared/date'
+import { basTarihi } from '@/src/domains/mentor/lib/mentorTablosu'
 
 export const metadata = { title: yazdirmaBasligi('Öğrenci Ödev Özeti') }
 
 /** Öğrencinin tüm ödevleri (kim verdiyse) — veliyle paylaşılabilir tek sayfa. */
 export default async function OgrenciOdevRaporuPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; studentId: string }>
+  searchParams: Promise<{ bas?: string | string[] }>
 }) {
   const { id: classId, studentId } = await params
+  // ?bas= yalnız mentörlükten gelir; öğrenci sayfasından açılan rapor eskisi gibi tüm ödevler
+  const sp = await searchParams
+  const bas = sp.bas ? basTarihi(sp.bas, donemBasi(), todayLocalISO()) : undefined
   const profile = await getCurrentProfile()
   if (!profile?.school_id) redirect('/login')
 
   const supabase = await createClient()
   const [sonuc, clsRes] = await Promise.all([
-    HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true }),
+    HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true, bas }),
     supabase.from('classes').select('name').eq('id', classId).eq('school_id', profile.school_id).single(),
   ])
   if ('error' in sonuc) {
@@ -46,6 +54,7 @@ export default async function OgrenciOdevRaporuPage({
         ogrenci={sonuc.student}
         homeworks={sonuc.homeworks}
         stats={sonuc.stats}
+        kapsam={bas ? `${format(parseISO(bas), 'd MMM yyyy')} – bugün` : undefined}
       />
     </div>
   )

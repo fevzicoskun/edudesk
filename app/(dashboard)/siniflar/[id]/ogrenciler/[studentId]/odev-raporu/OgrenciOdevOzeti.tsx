@@ -22,10 +22,12 @@ type Props = {
   ogrenci: { full_name: string; student_number: string | null }
   homeworks: HomeworkRecord[]
   stats: StudentHomeworkStats
+  /** Raporun kapsadığı aralık / mentör satırı — yalnız süzülmüş çıktıda (mentörlük) */
+  kapsam?: string
 }
 
 /** Tek öğrencinin ödev özeti kağıdı — tekli ve toplu (sınıf) yazdırmada ortak. */
-export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks, stats }: Props) {
+export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks, stats, kapsam }: Props) {
   const ozet = [
     { etiket: 'Yapıldı', sayi: stats.yapildi, cls: 'text-blue-700' },
     { etiket: 'Geç', sayi: stats.gec, cls: 'text-orange-700' },
@@ -52,6 +54,12 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
         <dd>{sinifAdi || '—'}</dd>
         <dt className="font-semibold">Yazdırma tarihi</dt>
         <dd>{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' })}</dd>
+        {kapsam && (
+          <>
+            <dt className="font-semibold">Kapsam</dt>
+            <dd className="col-span-3">{kapsam}</dd>
+          </>
+        )}
       </dl>
 
       <p className="text-[10.5pt] mb-3 pb-2 border-b border-gray-400">
