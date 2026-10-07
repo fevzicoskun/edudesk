@@ -159,3 +159,17 @@ describe('MentorRepository.deleteMentorReport — sessiz silme yasak (gerçek DB
     expect(after ?? []).toHaveLength(1)
   })
 })
+
+describe('MentorRepository.countActiveMentorships — menü sayacı', () => {
+  it('silinmiş öğrencinin mentörlük satırını saymaz', async () => {
+    vi.mocked(createClient).mockResolvedValue(createUserClient(tokenOther) as never)
+    const { data: stu } = await serviceDb.from('students')
+      .insert({ full_name: 'Sayaç Öğrenci', student_number: null, class_id: classId, school_id: school.id })
+      .select('id').single()
+    await serviceDb.from('mentorships')
+      .insert({ mentor_id: otherTeacher.id, student_id: stu!.id, school_id: school.id, assigned_by: otherTeacher.id })
+    expect((await MentorRepository.countActiveMentorships(otherTeacher.id)).count).toBe(1)
+    await serviceDb.from('students').update({ deleted_at: new Date().toISOString() }).eq('id', stu!.id)
+    expect((await MentorRepository.countActiveMentorships(otherTeacher.id)).count).toBe(0)
+  })
+})

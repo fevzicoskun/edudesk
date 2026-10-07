@@ -49,10 +49,11 @@ export function mentorTablosu(ogrenciler: MentorOgrenci[]): MentorTablo {
   return { dersler: anahtarlar.map(k => sutun.get(k)!), satirlar, dikkat }
 }
 
-/** ?bas= ayrıştırma: yok/bozuk → dönem başı, ileri → bugün. */
+/** ?bas= ayrıştırma: yok/bozuk/2000 öncesi → dönem başı, ileri → bugün.
+ *  Alt sınır: 0000-01-01 gibi değerleri Postgres reddeder, sayfa hata ekranına düşerdi. */
 export function basTarihi(param: string | string[] | undefined, donemBasi: string, bugun: string): string {
   const v = Array.isArray(param) ? param[0] : param
-  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return donemBasi
+  if (!v || !/^\d{4}-\d{2}-\d{2}$/.test(v) || v < '2000-01-01') return donemBasi
   const d = new Date(`${v}T00:00:00Z`)
   if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== v) return donemBasi
   return v > bugun ? bugun : v

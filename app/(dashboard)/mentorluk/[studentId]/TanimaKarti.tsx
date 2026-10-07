@@ -23,7 +23,7 @@ const ALANLAR = [
   { ad: 'support_request',   etiket: 'İstediği destek / özel isteği' },
 ] as const
 
-export default function TanimaKarti({ studentId, profil }: { studentId: string; profil: Profil }) {
+export default function TanimaKarti({ studentId, profil, salt = false }: { studentId: string; profil: Profil; salt?: boolean }) {
   const [duzenle, setDuzenle] = useState(false)
   const [hata, setHata] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -41,7 +41,7 @@ export default function TanimaKarti({ studentId, profil }: { studentId: string; 
     <section className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <div className="flex items-center justify-between gap-3 mb-4">
         <h2 className="font-semibold text-gray-900 dark:text-slate-100">Tanıma kartı</h2>
-        {!duzenle && (
+        {!duzenle && !salt && (
           <button
             onClick={() => setDuzenle(true)}
             className="inline-flex items-center min-h-[44px] px-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"

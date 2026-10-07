@@ -83,6 +83,42 @@ export const MentorRepository = {
     return supabase.rpc('ogrenci_mentor_adlari')
   },
 
+  // ── Önceki mentörlük (salt okunur) ──────────────────────────────────────
+
+  async myProfileStudentIds(mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentor_profiles')
+      .select('student_id, goals_short, goals_long, interests, family_info, study_environment, special_note, support_request')
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+  },
+
+  async myReportStudentIds(mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('mentor_reports').select('student_id').eq('mentor_id', mentorId).eq('school_id', schoolId)
+  },
+
+  async findStudentsInSchool(studentIds: string[], schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('students')
+      .select('id, full_name, classes(name)')
+      .in('id', studentIds)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+  },
+
+  // Menü: silinmemiş öğrencisi olan mentörlük sayısı (listMentorships ile aynı süzme)
+  async countActiveMentorships(mentorId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentorships')
+      .select('id, students!inner(deleted_at)', { count: 'exact', head: true })
+      .eq('mentor_id', mentorId)
+      .is('students.deleted_at', null)
+  },
+
   // ── İdare: öğrenci bazlı atama ──────────────────────────────────────────
 
   // Mentör adayı: okulun öğretmeni ya da zümre başkanı (mentörlük ekranı yalnız bu rollere açık)

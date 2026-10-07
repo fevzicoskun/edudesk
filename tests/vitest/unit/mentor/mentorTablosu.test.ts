@@ -59,5 +59,6 @@ describe('basTarihi', () => {
   it('geçersiz takvim günü dönem başı', () => expect(basTarihi('2026-02-31', DB, BUGUN)).toBe(DB))
   it('ileriyse bugün', () => expect(basTarihi('2099-01-01', DB, BUGUN)).toBe(BUGUN))
   it('dizi gelirse ilki', () => expect(basTarihi(['2026-09-20', 'x'], DB, BUGUN)).toBe('2026-09-20'))
+  it('çok eski yıl (Postgres reddeder) dönem başı', () => expect(basTarihi('0000-01-01', DB, BUGUN)).toBe(DB))
   it('geçerliyse aynen', () => expect(basTarihi('2026-09-20', DB, BUGUN)).toBe('2026-09-20'))
 })

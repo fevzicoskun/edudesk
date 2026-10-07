@@ -22,6 +22,9 @@ vi.mock('@/src/domains/mentor/repositories/MentorRepository', () => ({
     countStudentsInSchool: vi.fn(),
     upsertMentorships: vi.fn(),
     deleteMentorshipsByStudents: vi.fn(),
+    myProfileStudentIds: vi.fn(),
+    myReportStudentIds: vi.fn(),
+    findStudentsInSchool: vi.fn(),
   },
 }))
 
@@ -214,6 +217,11 @@ describe('MentorService.assignMentors() — idare toplu atama', () => {
     expect(MentorRepository.upsertMentorships).not.toHaveBeenCalled()
   })
 
+  it('admin rolü reddedilir (RLS is_mudur_or_my ile hizalı)', async () => {
+    profil('admin')
+    expect(await MentorService.assignMentors([STUDENT_ID], 'm1')).toEqual({ error: 'Bu işlem için yetkiniz yok' })
+  })
+
   it('boş liste reddedilir', async () => {
     profil('mudur')
     expect(await MentorService.assignMentors([], 'm1')).toEqual({ error: 'Öğrenci seçilmedi' })
@@ -258,5 +266,44 @@ describe('MentorService.assignMentors() — idare toplu atama', () => {
     vi.mocked(MentorRepository.deleteMentorshipsByStudents).mockResolvedValue({ error: null } as never)
     expect(await MentorService.assignMentors([STUDENT_ID, STUDENT_2], null)).toEqual({})
     expect(MentorRepository.deleteMentorshipsByStudents).toHaveBeenCalledWith([STUDENT_ID, STUDENT_2], SCHOOL_ID)
+  })
+})
+
+describe('MentorService.getEskiOgrencilerim() — önceki mentörlük, salt okunur', () => {
+  it('notu ya da kartı olup artık listemde olmayan öğrenciler, tekil ve ada göre', async () => {
+    vi.mocked(MentorRepository.listMentorships).mockResolvedValue({ data: [{ student_id: 's1', assigned_by: TEACHER_ID, students: { full_name: 'Şu an', classes: { name: '9-A' } } }], error: null } as never)
+    vi.mocked(MentorRepository.lastReportDates).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.myProfileStudentIds).mockResolvedValue({ data: [
+      { student_id: 's1', goals_short: 'x' }, { student_id: 's2', interests: 'satranç' },
+      { student_id: 's4', goals_short: null, interests: '  ' }, // içi boş kart: okunacak bir şey yok → önceki sayılmaz
+    ], error: null } as never)
+    vi.mocked(MentorRepository.myReportStudentIds).mockResolvedValue({ data: [{ student_id: 's2' }, { student_id: 's3' }], error: null } as never)
+    vi.mocked(MentorRepository.findStudentsInSchool).mockResolvedValue({ data: [
+      { id: 's3', full_name: 'Zeynep', classes: { name: '10-B' } },
+      { id: 's2', full_name: 'Can', classes: null },
+    ], error: null } as never)
+
+    expect(await MentorService.getEskiOgrencilerim()).toEqual([
+      { student_id: 's2', full_name: 'Can', class_name: null },
+      { student_id: 's3', full_name: 'Zeynep', class_name: '10-B' },
+    ])
+    expect(MentorRepository.findStudentsInSchool).toHaveBeenCalledWith(['s2', 's3'], SCHOOL_ID)
+  })
+
+  it('eski öğrenci yoksa öğrenci sorgusu atılmaz', async () => {
+    vi.mocked(MentorRepository.listMentorships).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.lastReportDates).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.myProfileStudentIds).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.myReportStudentIds).mockResolvedValue({ data: [], error: null } as never)
+    expect(await MentorService.getEskiOgrencilerim()).toEqual([])
+    expect(MentorRepository.findStudentsInSchool).not.toHaveBeenCalled()
+  })
+
+  it('okuma hatası fırlatır', async () => {
+    vi.mocked(MentorRepository.listMentorships).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.lastReportDates).mockResolvedValue({ data: [], error: null } as never)
+    vi.mocked(MentorRepository.myProfileStudentIds).mockResolvedValue({ data: null, error: { message: 'boom' } } as never)
+    vi.mocked(MentorRepository.myReportStudentIds).mockResolvedValue({ data: [], error: null } as never)
+    await expect(MentorService.getEskiOgrencilerim()).rejects.toThrow('boom')
   })
 })

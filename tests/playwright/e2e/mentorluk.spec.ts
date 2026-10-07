@@ -18,7 +18,7 @@ async function ogrenciEkle(page: Page): Promise<string> {
   const ad = (await ilkOneri.locator('span').first().textContent())?.trim() ?? ''
   await ilkOneri.click()
 
-  const eklenenLink = page.getByRole('link', { name: new RegExp(ad) })
+  const eklenenLink = page.locator('table').getByRole('link', { name: new RegExp(ad) })
   await expect(eklenenLink).toBeVisible({ timeout: 10_000 })
   return ad
 }
@@ -49,12 +49,12 @@ test.describe('Mentörlük', () => {
     const ad = await ogrenciEkle(page)
 
     // Temizlik: eklenen öğrenciyi detay sayfasından geri çıkar (canlı veriye artık kalmasın)
-    await page.getByRole('link', { name: new RegExp(ad) }).click()
+    await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
     // İlk ziyarette /mentorluk/[studentId] soğuk derlenebilir — geniş zaman aşımı
     await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
 
     await listedenCikar(page)
-    await expect(page.getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
+    await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })
 
   test('detay sayfası: üç bölüm görünür, tanıma kartı kaydedilir, görüşme notu eklenir', async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe('Mentörlük', () => {
     // (Önceki testler kendi öğrencisini geri çıkardığı için burada listenin boş
     // olabileceği varsayılır — bu yüzden `skip` yerine kendi verisini üretir.)
     const ad = await ogrenciEkle(page)
-    await page.getByRole('link', { name: new RegExp(ad) }).click()
+    await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
 
     // İlk ziyarette /mentorluk/[studentId] soğuk derlenebilir — geniş zaman aşımı
     await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
@@ -118,6 +118,6 @@ test.describe('Mentörlük', () => {
 
     // 3) Mentörlük kaydını geri çıkar
     await listedenCikar(page)
-    await expect(page.getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
+    await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })
 })

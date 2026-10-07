@@ -22,8 +22,8 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
 
   const bugun = todayLocalISO()
   const bas = basTarihi((await searchParams).bas, donemBasi(), bugun)
-  const [rows, adlar, supabase] = await Promise.all([
-    MentorService.getMyMentorships(), MentorService.getMentorAdlari(), createClient(),
+  const [rows, adlar, eskiler, supabase] = await Promise.all([
+    MentorService.getMyMentorships(), MentorService.getMentorAdlari(), MentorService.getEskiOgrencilerim(), createClient(),
   ])
 
   // Ekleme kutusu için okul öğrencileri (zaten listede olanlar çıkarılır)
@@ -99,6 +99,22 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
       <div className="max-w-3xl">
         <OgrenciEkleKarti ogrenciler={eklenebilir} />
       </div>
+
+      {eskiler.length > 0 && (
+        <section className="max-w-3xl mt-8">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Önceki öğrencilerim</h2>
+          <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Mentörlüğü başka öğretmene geçti — notlarını salt okunur görebilirsin.</p>
+          <ul className="flex flex-wrap gap-2">
+            {eskiler.map(e => (
+              <li key={e.student_id}>
+                <Link href={`/mentorluk/${e.student_id}`} className="inline-flex items-center min-h-[44px] px-3 rounded-xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500">
+                  {e.full_name}<span className="ml-1 text-xs text-gray-500 dark:text-slate-400">· {e.class_name ?? '—'}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

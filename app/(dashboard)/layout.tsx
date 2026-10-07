@@ -12,7 +12,7 @@ import AbonelikUyariSeridi from './AbonelikUyariSeridi'
 import { subscriptionState, kalanGun } from '@/src/domains/billing/subscriptionMath'
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
-import { createClient } from '@/src/infrastructure/supabase/server'
+import { MentorRepository } from '@/src/domains/mentor/repositories/MentorRepository'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -23,9 +23,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // Mentörlük menüde yalnız en az bir öğrencisi olan öğretmende görünür (okuma hatası = gizli, sayfa yine açılır)
   let mentorMu = false
   if (isTeachingRole(profile?.role)) {
-    const supabase = await createClient()
-    const { count } = await supabase.from('mentorships')
-      .select('id', { count: 'exact', head: true }).eq('mentor_id', user.id)
+    const { count } = await MentorRepository.countActiveMentorships(user.id)
     mentorMu = (count ?? 0) > 0
   }
 

@@ -7,8 +7,8 @@ import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 type Not = { id: string; content: string; report_date: string }
 
 export default function GorusmeNotlari({
-  studentId, classId, notlar,
-}: { studentId: string; classId: string; notlar: Not[] }) {
+  studentId, classId, notlar, salt = false,
+}: { studentId: string; classId: string; notlar: Not[]; salt?: boolean }) {
   const [hata, setHata] = useState<string | null>(null)
   const [silOnayId, setSilOnayId] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -37,7 +37,7 @@ export default function GorusmeNotlari({
     <section className="rounded-2xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-5">
       <h2 className="font-semibold text-gray-900 dark:text-slate-100 mb-4">Görüşme notları</h2>
 
-      <form ref={formRef} action={ekle} className="space-y-2 mb-5">
+      {!salt && <form ref={formRef} action={ekle} className="space-y-2 mb-5">
         <div>
           <label htmlFor="report_date" className="sr-only">Görüşme tarihi</label>
           <input
@@ -67,7 +67,7 @@ export default function GorusmeNotlari({
         >
           {isPending ? 'Kaydediliyor…' : 'Not ekle'}
         </button>
-      </form>
+      </form>}
 
       {notlar.length === 0 ? (
         <p className="text-sm text-gray-500 dark:text-slate-400">Henüz görüşme notu yok.</p>
@@ -102,6 +102,7 @@ export default function GorusmeNotlari({
                   <>
                     <div className="flex items-start justify-between gap-3">
                       <p className="text-xs font-medium text-gray-500 dark:text-slate-400">{tarih}</p>
+                      {!salt && (
                       <button
                         onClick={() => setSilOnayId(n.id)}
                         disabled={isPending}
@@ -110,6 +111,7 @@ export default function GorusmeNotlari({
                       >
                         Sil
                       </button>
+                      )}
                     </div>
                     <p className="text-sm text-gray-800 dark:text-slate-200 mt-1 whitespace-pre-wrap">{n.content}</p>
                   </>

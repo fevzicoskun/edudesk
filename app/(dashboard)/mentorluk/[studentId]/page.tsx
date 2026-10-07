@@ -30,10 +30,13 @@ export default async function MentorlukDetayPage({
   if (!profile?.school_id) redirect('/anasayfa')
   if (!isTeachingRole(profile.role)) redirect('/anasayfa')
 
-  // Öğrenci gerçekten mentörlük listemde mi? Değilse sayfa yok.
+  // Öğrenci mentörlük listemde mi? Değilse önceki öğrencim mi (salt okunur notlar)? İkisi de değilse sayfa yok.
   const rows = await MentorService.getMyMentorships()
-  const satir = rows.find(r => r.student_id === studentId)
+  const simdiki = rows.find(r => r.student_id === studentId)
+  const eski = simdiki ? undefined : (await MentorService.getEskiOgrencilerim()).find(r => r.student_id === studentId)
+  const satir = simdiki ?? eski
   if (!satir) notFound()
+  const salt = !simdiki
 
   const supabase = await createClient()
   const [karte, notlar, ogrenciRes] = await Promise.all([
@@ -43,8 +46,9 @@ export default async function MentorlukDetayPage({
   ])
   if (ogrenciRes.error || !ogrenciRes.data) throw new Error(ogrenciRes.error?.message ?? 'Öğrenci okunamadı')
   const classId = ogrenciRes.data.class_id
-  const profil = await HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true, bas })
-  if ('error' in profil) throw new Error(profil.error)
+  // Ödev durumu yalnız güncel mentörlükte (önceki mentör yalnız kendi notlarını görür)
+  const profil = salt ? null : await HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true, bas })
+  if (profil && 'error' in profil) throw new Error(profil.error)
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -57,29 +61,36 @@ export default async function MentorlukDetayPage({
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{satir.full_name}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{satir.class_name ?? '—'}</p>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        {!salt && simdiki && <div className="flex flex-wrap items-center justify-end gap-2">
           <Link
             href={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu?bas=${bas}`}
             className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700"
           >
             Yazdır
           </Link>
-          {satir.idare_atadi
+          {simdiki.idare_atadi
             ? <span className="text-xs text-gray-500 dark:text-slate-400">İdare atadı</span>
             : <ListedenCikarButonu studentId={studentId} ad={satir.full_name} />}
-        </div>
+        </div>}
       </div>
 
+      {salt && (
+        <p role="status" className="mb-6 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 px-4 py-3 text-gray-700 dark:text-slate-300">
+          Bu öğrencinin mentörlüğü artık sizde değil. Kendi notlarınızı ve tanıma kartınızı yalnız okuyabilirsiniz.
+        </p>
+      )}
+
       <div className="space-y-6">
-        <OdevDurumu homeworks={profil.homeworks} />
-        <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} />
-        <TanimaKarti studentId={studentId} profil={karte} />
+        {profil && <OdevDurumu homeworks={profil.homeworks} />}
+        {!salt && <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} />}
+        <TanimaKarti studentId={studentId} profil={karte} salt={salt} />
         <GorusmeNotlari
           studentId={studentId}
           classId={classId}
           notlar={notlar}
+          salt={salt}
         />
-        <MentorlukDuzeni studentId={studentId} anlatildiTarihi={karte?.rules_explained_at ?? null} />
+        {!salt && <MentorlukDuzeni studentId={studentId} anlatildiTarihi={karte?.rules_explained_at ?? null} />}
       </div>
     </div>
   )

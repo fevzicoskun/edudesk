@@ -6,7 +6,8 @@ import { mentorProfileSchema, type MentorProfileInput } from '../validators'
 import { todayLocalISO } from '@/src/shared/date'
 
 // Öğrencilere mentör atayabilen roller (yalnızca idare)
-const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi', 'admin']
+// RLS is_mudur_or_my() ile aynı küme — fazlası servisten geçip RLS'de ham hatayla düşerdi
+const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi']
 
 export type MentorshipRow = {
   student_id:       string
@@ -57,6 +58,30 @@ export const MentorService = {
         idare_atadi:      row.assigned_by !== ability.userId,
       }
     })
+  },
+
+  /** Önceki mentörlük: notunu/kartını yazdığım ama artık listemde olmayan öğrenciler (salt okunur, 2026-10-07). */
+  async getEskiOgrencilerim(): Promise<{ student_id: string; full_name: string; class_name: string | null }[]> {
+    const ability = await requireAbility()
+    const [simdiki, profiller, notlar] = await Promise.all([
+      MentorService.getMyMentorships(),
+      MentorRepository.myProfileStudentIds(ability.userId, ability.schoolId),
+      MentorRepository.myReportStudentIds(ability.userId, ability.schoolId),
+    ])
+    const hata = profiller.error ?? notlar.error
+    if (hata) throw new Error(hata.message)
+    const simdi = new Set(simdiki.map(r => r.student_id))
+    // İçi boş tanıma kartı okunacak bir şey değil — yalnız dolu kart ya da not "önceki öğrenci" yapar
+    const doluKart = (profiller.data ?? []).filter(p =>
+      Object.entries(p).some(([k, v]) => k !== 'student_id' && typeof v === 'string' && v.trim() !== ''))
+    const ids = [...new Set([...doluKart, ...(notlar.data ?? [])].map(r => r.student_id))]
+      .filter(id => !simdi.has(id))
+    if (ids.length === 0) return []
+    const { data, error } = await MentorRepository.findStudentsInSchool(ids, ability.schoolId)
+    if (error) throw new Error(error.message)
+    return (data ?? [])
+      .map(s => ({ student_id: s.id, full_name: s.full_name, class_name: (s.classes as { name: string } | null)?.name ?? null }))
+      .sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
   },
 
   /** Okuldaki tüm atamalar: öğrenci id → mentör (ekleme kutusu, sınıf ve öğrenci sayfası). */
