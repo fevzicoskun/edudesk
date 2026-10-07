@@ -3,28 +3,41 @@ import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { format, parseISO } from '@/src/shared/date'
-import { gunFarki } from '@/src/domains/mentor/mentorshipMath'
+import { todayLocalISO } from '@/src/shared/date'
+import { donemBasi } from '@/src/shared/utils'
+import { basTarihi, mentorTablosu } from '@/src/domains/mentor/lib/mentorTablosu'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
+import MentorTablosu from './MentorTablosu'
 
 export const metadata = { title: 'Mentörlük' }
 
-export default async function MentorlukPage() {
+const ikincilButon = 'px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700'
+
+export default async function MentorlukPage({ searchParams }: { searchParams: Promise<{ bas?: string | string[] }> }) {
   const profile = await getCurrentProfile()
   if (!profile?.school_id) redirect('/anasayfa')
   if (!isTeachingRole(profile.role)) redirect('/anasayfa')
 
-  const [rows, supabase] = await Promise.all([MentorService.getMyMentorships(), createClient()])
+  const bugun = todayLocalISO()
+  const bas = basTarihi((await searchParams).bas, donemBasi(), bugun)
+  const [rows, adlar, supabase] = await Promise.all([
+    MentorService.getMyMentorships(), MentorService.getMentorAdlari(), createClient(),
+  ])
 
   // Ekleme kutusu için okul öğrencileri (zaten listede olanlar çıkarılır)
-  const { data: ogrenciler } = await supabase
-    .from('students')
-    .select('id, full_name, classes(name)')
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .order('full_name')
-    .limit(500)
+  const [{ data: ogrenciler }, sonuc] = await Promise.all([
+    supabase
+      .from('students')
+      .select('id, full_name, classes(name)')
+      .eq('school_id', profile.school_id)
+      .is('deleted_at', null)
+      .order('full_name')
+      .limit(1000),
+    HomeworkService.getMentorHomeworkProfiles(rows.map(r => r.student_id), bas),
+  ])
+  if ('error' in sonuc) throw new Error(sonuc.error)
 
   const listedekiler = new Set(rows.map(r => r.student_id))
   const eklenebilir = (ogrenciler ?? [])
@@ -33,60 +46,59 @@ export default async function MentorlukPage() {
       id: o.id,
       full_name: o.full_name,
       class_name: (o.classes as { name: string } | null)?.name ?? null,
+      mentor: adlar.get(o.id)?.ad ?? null,
     }))
 
+  const tablo = mentorTablosu(sonuc.ogrenciler.map(o => ({
+    id: o.id, full_name: o.full_name, class_name: o.class_name, homeworks: o.homeworks,
+  })))
+  const sonGorusme = Object.fromEntries(rows.map(r => [r.student_id, r.last_report_date]))
+
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-3 mb-1">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Mentörlüğüm</h1>
         <span className="text-sm text-gray-500 dark:text-slate-400">{rows.length} öğrenci</span>
       </div>
       <p className="text-sm text-gray-500 dark:text-slate-400 mb-5">
-        Mentörlük yaptığın öğrenciler. Notların yalnızca sana görünür.
+        Mentörlük yaptığın öğrenciler ve tüm derslerdeki ödev durumları. Notların yalnızca sana görünür.
       </p>
 
-      <OgrenciEkleKarti ogrenciler={eklenebilir} />
+      {rows.length > 0 && (
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <form method="get" className="flex items-end gap-2">
+            <label className="text-sm text-gray-600 dark:text-slate-400">
+              Şu tarihten itibaren
+              <input
+                type="date" name="bas" defaultValue={bas} max={bugun}
+                className="block mt-1 px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100"
+              />
+            </label>
+            <button className={ikincilButon}>Uygula</button>
+          </form>
+          <div className="flex gap-2">
+            <Link href={`/mentorluk/tablo?bas=${bas}`} className={ikincilButon}>Tabloyu yazdır</Link>
+            <Link href={`/mentorluk/yazdir?bas=${bas}`} className={ikincilButon}>Hepsini yazdır</Link>
+          </div>
+        </div>
+      )}
 
       {rows.length === 0 ? (
-        <div className="mt-6 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8">
+        <div className="mb-6 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8">
           <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">Henüz öğrenci eklemedin</p>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-            Yukarıdan öğrenci ekleyerek tanıma kartını doldurmaya ve görüşme notu tutmaya başlayabilirsin.
+            Aşağıdan öğrenci ekleyerek tanıma kartını doldurmaya ve görüşme notu tutmaya başlayabilirsin.
           </p>
         </div>
       ) : (
-        <ul className="mt-6 space-y-2">
-          {rows.map(r => {
-            const fark = r.last_report_date ? gunFarki(r.last_report_date) : null
-            return (
-              <li key={r.student_id}>
-                <Link
-                  href={`/mentorluk/${r.student_id}`}
-                  className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-gray-200 dark:hover:border-slate-600 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold text-gray-900 dark:text-slate-100 truncate">{r.full_name}</p>
-                    <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{r.class_name ?? '—'}</p>
-                  </div>
-                  {r.last_report_date ? (
-                    <span className={`shrink-0 text-xs font-medium px-2 py-1 rounded-full border ${
-                      fark !== null && fark > 30
-                        ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900'
-                        : 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700'
-                    }`}>
-                      son görüşme {format(parseISO(r.last_report_date), 'd MMM')}
-                    </span>
-                  ) : (
-                    <span className="shrink-0 text-xs font-medium px-2 py-1 rounded-full border bg-gray-50 text-gray-500 border-gray-200 dark:bg-slate-900 dark:text-slate-400 dark:border-slate-700">
-                      henüz görüşülmedi
-                    </span>
-                  )}
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
+        <div className="mb-6">
+          <MentorTablosu tablo={tablo} sonGorusme={sonGorusme} bas={bas} />
+        </div>
       )}
+
+      <div className="max-w-3xl">
+        <OgrenciEkleKarti ogrenciler={eklenebilir} />
+      </div>
     </div>
   )
 }

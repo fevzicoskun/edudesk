@@ -3,7 +3,8 @@
 import { useState, useTransition, useMemo } from 'react'
 import { addMentorship } from '@/app/actions/mentor'
 
-type Ogrenci = { id: string; full_name: string; class_name: string | null }
+/** mentor dolu = başka öğretmenin öğrencisi (tek mentör kuralı) → seçilemez */
+type Ogrenci = { id: string; full_name: string; class_name: string | null; mentor: string | null }
 
 export default function OgrenciEkleKarti({ ogrenciler }: { ogrenciler: Ogrenci[] }) {
   const [acik, setAcik] = useState(false)
@@ -13,8 +14,10 @@ export default function OgrenciEkleKarti({ ogrenciler }: { ogrenciler: Ogrenci[]
 
   const sonuclar = useMemo(() => {
     const q = arama.trim().toLocaleLowerCase('tr')
-    if (!q) return ogrenciler.slice(0, 8)
-    return ogrenciler.filter(o => o.full_name.toLocaleLowerCase('tr').includes(q)).slice(0, 8)
+    // Eklenebilenler önce: mentörü olan öğrenci yalnız bilgi olarak listenin sonunda görünür
+    const sirali = [...ogrenciler].sort((a, b) => Number(!!a.mentor) - Number(!!b.mentor))
+    if (!q) return sirali.slice(0, 8)
+    return sirali.filter(o => o.full_name.toLocaleLowerCase('tr').includes(q)).slice(0, 8)
   }, [arama, ogrenciler])
 
   function ekle(id: string) {
@@ -53,11 +56,13 @@ export default function OgrenciEkleKarti({ ogrenciler }: { ogrenciler: Ogrenci[]
           <li key={o.id}>
             <button
               onClick={() => ekle(o.id)}
-              disabled={isPending}
+              disabled={isPending || !!o.mentor}
               className="w-full flex items-center justify-between gap-2 min-h-[44px] px-3 rounded-xl text-sm text-left hover:bg-gray-50 dark:hover:bg-slate-700 disabled:opacity-50 transition-colors"
             >
               <span className="text-gray-800 dark:text-slate-200 truncate">{o.full_name}</span>
-              <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">{o.class_name ?? '—'}</span>
+              <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">
+                {o.class_name ?? '—'}{o.mentor && ` · mentörü: ${o.mentor}`}
+              </span>
             </button>
           </li>
         ))}
