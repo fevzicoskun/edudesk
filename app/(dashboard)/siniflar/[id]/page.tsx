@@ -13,7 +13,6 @@ import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
 import PerformansWidget from './PerformansWidget'
-import MentorAtamaKarti from './MentorAtamaKarti'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -153,14 +152,6 @@ export default async function SinifDetayPage({
             </button>
           </form>
         </div>
-      )}
-
-      {canManage && (
-        <MentorAtamaKarti
-          classId={id}
-          teachers={teachers}
-          currentMentorId={cls.mentor_teacher_id ?? null}
-        />
       )}
 
       <Suspense fallback={null}>

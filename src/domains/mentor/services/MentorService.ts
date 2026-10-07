@@ -5,7 +5,7 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { mentorProfileSchema, type MentorProfileInput } from '../validators'
 import { todayLocalISO } from '@/src/shared/date'
 
-// Bir sınıfa rehber öğretmen atayabilen roller (yalnızca idare)
+// Öğrencilere mentör atayabilen roller (yalnızca idare)
 const MENTOR_ASSIGN_ROLES = ['mudur', 'mudur_yardimcisi', 'admin']
 
 export type MentorshipRow = {
@@ -13,6 +13,8 @@ export type MentorshipRow = {
   full_name:        string
   class_name:       string | null
   last_report_date: string | null
+  /** atamayı idare yaptı → mentör listeden kendisi çıkaramaz */
+  idare_atadi:      boolean
 }
 
 export type MentorProfileRow = {
@@ -35,10 +37,8 @@ export const MentorService = {
       MentorRepository.listMentorships(ability.userId, ability.schoolId),
       MentorRepository.lastReportDates(ability.userId, ability.schoolId),
     ])
-    if (listRes.error) {
-      logger.error({ event: 'mentorship_list_failed', userId: ability.userId, err: listRes.error.message }, 'Mentörlük listesi okunamadı')
-      return []
-    }
+    // Sessiz [] = "öğrencin yok" yalanı; hata sayfanın error boundary'sine gider
+    if (listRes.error) throw new Error(listRes.error.message)
     if (dateRes.error) {
       logger.error({ event: 'mentorship_last_report_dates_failed', userId: ability.userId, err: dateRes.error.message }, 'Son görüşme tarihleri okunamadı')
     }
@@ -54,8 +54,17 @@ export const MentorService = {
         full_name:        s?.full_name ?? '—',
         class_name:       s?.classes?.name ?? null,
         last_report_date: sonGorusme.get(row.student_id) ?? null,
+        idare_atadi:      row.assigned_by !== ability.userId,
       }
     })
+  },
+
+  /** Okuldaki tüm atamalar: öğrenci id → mentör (ekleme kutusu, sınıf ve öğrenci sayfası). */
+  async getMentorAdlari(): Promise<Map<string, { mentor_id: string; ad: string }>> {
+    await requireAbility()
+    const { data, error } = await MentorRepository.mentorAdlari()
+    if (error) throw new Error(error.message)
+    return new Map((data ?? []).map(r => [r.student_id, { mentor_id: r.mentor_id, ad: r.mentor_adi }]))
   },
 
   async addMentorship(studentId: string): Promise<{ error?: string }> {
@@ -65,10 +74,16 @@ export const MentorService = {
     if (!student) return { error: 'Öğrenci bulunamadı' }
 
     const { error } = await MentorRepository.insertMentorship({
-      mentor_id: ability.userId, student_id: studentId, school_id: ability.schoolId,
+      mentor_id: ability.userId, student_id: studentId, school_id: ability.schoolId, assigned_by: ability.userId,
     })
     if (error) {
-      if ((error as { code?: string }).code === '23505') return { error: 'Bu öğrenci zaten listenizde' }
+      // Tek mentör kuralı (unique student_id): kimin öğrencisi olduğunu söyle
+      if ((error as { code?: string }).code === '23505') {
+        const { data } = await MentorRepository.mentorAdlari()
+        const mevcut = (data ?? []).find(r => r.student_id === studentId)
+        if (mevcut?.mentor_id === ability.userId) return { error: 'Bu öğrenci zaten listenizde' }
+        return { error: `Bu öğrencinin mentörü ${mevcut?.mentor_adi ?? 'başka bir öğretmen'}` }
+      }
       return { error: error.message }
     }
     return {}
@@ -76,27 +91,42 @@ export const MentorService = {
 
   async removeMentorship(studentId: string): Promise<{ error?: string }> {
     const ability = await requireAbility()
+    const { data: satir, error: okuma } = await MentorRepository.findMentorshipAtama(studentId, ability.userId, ability.schoolId)
+    if (okuma) return { error: okuma.message }
+    if (!satir) return { error: 'Kayıt bulunamadı veya yetkiniz yok.' }
+    if (satir.assigned_by !== ability.userId) return { error: 'Bu atamayı idare yaptı; kaldırmak için idareye başvurun.' }
     const { error } = await MentorRepository.deleteMentorship(studentId, ability.userId, ability.schoolId)
     if (error) return { error: error.message }
     return {}
   },
 
-  // Sınıfa rehber öğretmen ata/kaldır — yalnızca müdür + müdür yardımcısı (+admin).
-  async assignClassMentor(classId: string, teacherId: string | null): Promise<{ error?: string }> {
+  // İdare: seçilen öğrencilere mentör ata (mentorId null → mentörlüğü kaldır).
+  // Fail-closed: tek yabancı öğrenci = hiç yazma.
+  async assignMentors(studentIds: string[], mentorId: string | null): Promise<{ error?: string }> {
     const profile = await getCurrentProfile()
     if (!profile?.school_id) return { error: 'Giriş gerekli' }
-    if (!MENTOR_ASSIGN_ROLES.includes(profile.role)) {
-      return { error: 'Bu işlem için yetkiniz yok' }
-    }
+    if (!MENTOR_ASSIGN_ROLES.includes(profile.role)) return { error: 'Bu işlem için yetkiniz yok' }
+    const schoolId = profile.school_id
+    const ids = [...new Set(studentIds)]
+    if (ids.length === 0) return { error: 'Öğrenci seçilmedi' }
 
-    // Atanacak kişi varsa, aynı okulda olduğunu doğrula (cross-tenant koruması)
-    if (teacherId) {
-      const { data: staff } = await MentorRepository.findSchoolStaff(teacherId, profile.school_id)
-      if (!staff) return { error: 'Seçilen öğretmen bu okulda bulunamadı' }
+    if (mentorId) {
+      const { data: t } = await MentorRepository.findSchoolTeacher(mentorId, schoolId)
+      if (!t) return { error: 'Seçilen öğretmen bu okulda bulunamadı' }
     }
+    const { count, error: sayim } = await MentorRepository.countStudentsInSchool(ids, schoolId)
+    if (sayim) return { error: sayim.message }
+    if (count !== ids.length) return { error: 'Öğrenci bulunamadı' }
 
-    const { error } = await MentorRepository.setClassMentor(classId, teacherId, profile.school_id)
+    if (!mentorId) {
+      const { error } = await MentorRepository.deleteMentorshipsByStudents(ids, schoolId)
+      return error ? { error: error.message } : {}
+    }
+    const { data, error } = await MentorRepository.upsertMentorships(
+      ids.map(student_id => ({ student_id, mentor_id: mentorId, school_id: schoolId, assigned_by: profile.id })),
+    )
     if (error) return { error: error.message }
+    if ((data ?? []).length !== ids.length) return { error: 'Atama kaydedilemedi' }
     return {}
   },
 

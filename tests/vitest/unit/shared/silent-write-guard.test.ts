@@ -66,7 +66,6 @@ const repoYazmalari: [string, () => Promise<{ error: unknown }>][] = [
   ['ClassRepository.deleteStudentNote',      () => ClassRepository.deleteStudentNote(ID, U, S)],
   ['ClassRepository.deleteParentContactLog', () => ClassRepository.deleteParentContactLog(ID, U, S)],
   ['HomeworkSourceRepository.deactivate',    () => HomeworkSourceRepository.deactivate(ID, U, S)],
-  ['MentorRepository.setClassMentor',        () => MentorRepository.setClassMentor(ID, U, S)],
 ]
 
 describe('0 satıra denk gelen yazma açık hata döner', () => {

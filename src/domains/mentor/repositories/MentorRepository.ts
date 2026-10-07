@@ -7,14 +7,14 @@ export const MentorRepository = {
     const supabase = await createClient()
     return supabase
       .from('mentorships')
-      .select('id, student_id, students!inner(id, full_name, class_id, deleted_at, classes(name))')
+      .select('id, student_id, assigned_by, students!inner(id, full_name, class_id, deleted_at, classes(name))')
       .eq('mentor_id', mentorId)
       .eq('school_id', schoolId)
       .is('students.deleted_at', null)
       .order('created_at')
   },
 
-  async insertMentorship(data: { mentor_id: string; student_id: string; school_id: string }) {
+  async insertMentorship(data: { mentor_id: string; student_id: string; school_id: string; assigned_by: string }) {
     const supabase = await createClient()
     return supabase.from('mentorships').insert(data).select('id').single()
   },
@@ -66,6 +66,59 @@ export const MentorRepository = {
       .maybeSingle()
   },
 
+  async findMentorshipAtama(studentId: string, mentorId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('mentorships')
+      .select('assigned_by')
+      .eq('student_id', studentId)
+      .eq('mentor_id', mentorId)
+      .eq('school_id', schoolId)
+      .maybeSingle()
+  },
+
+  // Okuldaki tüm atamalar: öğrenci → mentör adı (SECURITY DEFINER, yalnız ad döner)
+  async mentorAdlari() {
+    const supabase = await createClient()
+    return supabase.rpc('ogrenci_mentor_adlari')
+  },
+
+  // ── İdare: öğrenci bazlı atama ──────────────────────────────────────────
+
+  // Mentör adayı: okulun öğretmeni ya da zümre başkanı (mentörlük ekranı yalnız bu rollere açık)
+  async findSchoolTeacher(profileId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', profileId)
+      .eq('school_id', schoolId)
+      .in('role', ['ogretmen', 'zumre_baskani'])
+      .maybeSingle()
+  },
+
+  async countStudentsInSchool(studentIds: string[], schoolId: string) {
+    const supabase = await createClient()
+    return supabase
+      .from('students')
+      .select('id', { count: 'exact', head: true })
+      .in('id', studentIds)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+  },
+
+  async upsertMentorships(rows: { student_id: string; mentor_id: string; school_id: string; assigned_by: string }[]) {
+    const supabase = await createClient()
+    return supabase.from('mentorships').upsert(rows, { onConflict: 'student_id' }).select('id')
+  },
+
+  // Atanmamış öğrenci seçildiyse 0 satır silinmesi meşrudur — sayım kontrolü bilinçli olarak yok
+  async deleteMentorshipsByStudents(studentIds: string[], schoolId: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('mentorships').delete().in('student_id', studentIds).eq('school_id', schoolId)
+    return { error }
+  },
+
   // ── Mentor Reports (sınıf öğrencileri için) ─────────────────────────────
 
   async insertMentorReport(data: {
@@ -114,34 +167,6 @@ export const MentorRepository = {
     if (error) return { error }
     if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
     return { error: null }
-  },
-
-  // ── Sınıfa rehber öğretmen atama ────────────────────────────────────────
-
-  // Sınıfın mentor_teacher_id'sini set/temizle (teacherId null → kaldır)
-  async setClassMentor(classId: string, teacherId: string | null, schoolId: string) {
-    const supabase = await createClient()
-    const { data: rows, error } = await supabase
-      .from('classes')
-      .update({ mentor_teacher_id: teacherId })
-      .eq('id', classId)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .select('id')
-    if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
-    return { error: null }
-  },
-
-  // Atanacak kişinin aynı okulda bir profil olduğunu doğrula (cross-tenant koruması)
-  async findSchoolStaff(profileId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', profileId)
-      .eq('school_id', schoolId)
-      .single()
   },
 
   // ── Tanıma kartı ─────────────────────────────────────────────────────────

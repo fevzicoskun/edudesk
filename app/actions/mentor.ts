@@ -11,21 +11,27 @@ const mentorReportSchema = z.object({
   report_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz tarih'),
 })
 
-// ── Sınıfa Rehber Öğretmen Atama ───────────────────────────────────────────────
+// ── İdare: öğrenci bazlı mentör atama ─────────────────────────────────────────
 
-export async function assignClassMentor(
+const atamaSchema = z.object({
+  classId:    UUID,
+  studentIds: z.array(UUID).min(1, 'Öğrenci seçilmedi').max(200),
+  mentorId:   UUID.nullable(),
+})
+
+export async function assignMentors(
   classId: string,
-  teacherId: string | null,
+  studentIds: string[],
+  mentorId: string | null,
 ): Promise<ActionResult> {
-  try {
-    UUID.parse(classId)
-    if (teacherId !== null) UUID.parse(teacherId)
-  } catch { return { error: 'Geçersiz ID' } }
+  const parsed = atamaSchema.safeParse({ classId, studentIds, mentorId })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-  const result = await MentorService.assignClassMentor(classId, teacherId)
+  const result = await MentorService.assignMentors(parsed.data.studentIds, parsed.data.mentorId)
   if (result.error) return { error: result.error }
 
   revalidatePath(`/siniflar/${classId}`)
+  revalidatePath('/mentorluk')
   return {}
 }
 
@@ -94,6 +100,7 @@ export async function removeMentorship(studentId: string): Promise<ActionResult>
   if (result.error) return { error: result.error }
 
   revalidatePath('/mentorluk')
+  revalidatePath(`/mentorluk/${studentId}`)
   return {}
 }
 
