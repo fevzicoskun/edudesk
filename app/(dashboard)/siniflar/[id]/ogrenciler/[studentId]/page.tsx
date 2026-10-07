@@ -85,7 +85,7 @@ export default async function OgrenciDetayPage({
   const schoolId = currentProfile.school_id
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
   const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
-    supabase.from('classes').select('id, name, mentor_teacher_id').eq('id', classId).eq('school_id', schoolId).single(),
+    supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     // 2026-09-28: okuldaki öğretmen öğrencinin TÜM ödevlerini salt-okunur görür. Yazdırılabilir özetle
     // AYNI kaynak — sayılar ve tamamlama oranı iki ekranda birebir tutar.
@@ -148,13 +148,10 @@ export default async function OgrenciDetayPage({
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
   const grades = (gradesRes.data ?? []) as GradeRow[]
 
-  // Rehberlik görüşmeleri — sadece sınıfın atanmış mentörü + yöneticiler görür (RLS ile aynı)
-  const isManager = ['mudur', 'mudur_yardimcisi', 'zumre_baskani'].includes(currentProfile.role)
-  const isClassMentor = !!cls.mentor_teacher_id && cls.mentor_teacher_id === currentProfile.id
-  const canSeeMentorReports = isManager || isClassMentor
-  const mentorReports = canSeeMentorReports && cls.mentor_teacher_id
-    ? await MentorService.getMentorReportsByStudent(studentId)
-    : []
+  // Öğrenci bazlı mentörlük (2026-10-07): görüşme notları yalnız öğrencinin mentörüne aittir (RLS ile aynı)
+  const mentor = (await MentorService.getMentorAdlari()).get(studentId) ?? null
+  const benMentorum = mentor?.mentor_id === currentProfile.id
+  const mentorReports = benMentorum ? await MentorService.getMentorReportsByStudent(studentId) : []
 
   // Öğrenci 360: zaman çizelgesi — sayfanın zaten çektiği verilerden derlenir.
   const timelineEvents = buildStudentTimeline({
@@ -184,6 +181,7 @@ export default async function OgrenciDetayPage({
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             {cls.name} {student.student_number ? `· No: ${student.student_number}` : ''}
           </p>
+          {mentor && <p className="text-sm text-gray-500 dark:text-slate-400">Mentörü: {mentor.ad}</p>}
         </div>
         <CopyVeliLink
           studentId={studentId}
@@ -311,22 +309,13 @@ export default async function OgrenciDetayPage({
         </section>
       </div>
 
-      {canSeeMentorReports && (
-        cls.mentor_teacher_id ? (
-          <RehberlikRaporlariSection
-            studentId={studentId}
-            classId={classId}
-            reports={mentorReports}
-            canWrite={isClassMentor}
-          />
-        ) : isManager ? (
-          <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mt-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-2">Rehberlik Görüşmeleri</h2>
-            <p className="text-sm text-gray-500 dark:text-slate-400">
-              Bu sınıfa henüz rehber öğretmen atanmadı. Sınıf sayfasından atayabilirsiniz.
-            </p>
-          </section>
-        ) : null
+      {benMentorum && (
+        <RehberlikRaporlariSection
+          studentId={studentId}
+          classId={classId}
+          reports={mentorReports}
+          canWrite
+        />
       )}
 
       <VeliGorusmeleriSection

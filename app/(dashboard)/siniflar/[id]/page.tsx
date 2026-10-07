@@ -13,6 +13,8 @@ import SinifExportButton from './SinifExportButton'
 import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
 import PerformansWidget from './PerformansWidget'
+import MentorDagilimiKarti from './MentorDagilimiKarti'
+import { MentorService } from '@/src/domains/mentor/services/MentorService'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -44,7 +46,7 @@ export default async function SinifDetayPage({
   const [clsResult, studentsResult, absenceResult, viewCounts, teachersResult] = await Promise.all([
     supabase
       .from('classes')
-      .select('name, mentor_teacher_id')
+      .select('name')
       .eq('id', id)
       .eq('school_id', schoolId)
       .is('deleted_at', null)
@@ -70,7 +72,8 @@ export default async function SinifDetayPage({
       .from('profiles')
       .select('id, full_name')
       .eq('school_id', schoolId)
-      .in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi', 'mudur'])
+      // Mentör adayları: mentörlük ekranı yalnız öğretmen + zümre başkanına açık
+      .in('role', ['ogretmen', 'zumre_baskani'])
       .order('full_name'),
   ])
 
@@ -89,8 +92,9 @@ export default async function SinifDetayPage({
   }
 
   const canManage = profile?.role === 'mudur' || profile?.role === 'mudur_yardimcisi'
+  const mentorAdlari = canManage ? await MentorService.getMentorAdlari() : new Map<string, { mentor_id: string; ad: string }>()
 
-  // Rehber öğretmen dropdown'ı için okul personeli (ad'ı olanlar)
+  // Mentör dağılımı açılır listesi için öğretmenler (ad'ı olanlar)
   const teachers = (teachersResult.data ?? [])
     .filter((t): t is { id: string; full_name: string } => !!t.full_name)
 
@@ -152,6 +156,14 @@ export default async function SinifDetayPage({
             </button>
           </form>
         </div>
+      )}
+
+      {canManage && students.length > 0 && (
+        <MentorDagilimiKarti
+          classId={id}
+          ogrenciler={students.map(s => ({ id: s.id, full_name: s.full_name, mentor: mentorAdlari.get(s.id)?.ad ?? null }))}
+          ogretmenler={teachers}
+        />
       )}
 
       <Suspense fallback={null}>
