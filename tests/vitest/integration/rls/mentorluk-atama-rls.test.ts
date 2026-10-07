@@ -102,6 +102,27 @@ describe('mentorships — öğrenci bazlı RLS', () => {
     expect(r.error).not.toBeNull()
   })
 
+  it('başka okulun öğrencisi doğrudan API ile kilitlenemez (insert reddedilir)', async () => {
+    const { data: digerSinif } = await serviceDb.from('classes')
+      .insert({ name: 'Diğer Okul Sınıf', grade: 10, academic_year: '2025-2026', school_id: digerOkul.id })
+      .select('id').single()
+    const { data: yabanci } = await serviceDb.from('students')
+      .insert({ full_name: 'Yabancı Öğrenci', student_number: null, class_id: digerSinif!.id, school_id: digerOkul.id })
+      .select('id').single()
+    const r = await createUserClient(tA).from('mentorships')
+      .insert({ mentor_id: ogrA.id, student_id: yabanci!.id, school_id: okul.id, assigned_by: ogrA.id })
+    expect(r.error).not.toBeNull()
+    const kayit = await serviceDb.from('mentorships').select('id').eq('student_id', yabanci!.id)
+    expect(kayit.data).toHaveLength(0)
+  })
+
+  it('MY başka okulun öğretmenini mentör yazamaz', async () => {
+    const sid = await ogrenci('Yabancı Mentör')
+    const r = await createUserClient(tMy).from('mentorships')
+      .insert({ mentor_id: digerMy.id, student_id: sid, school_id: okul.id, assigned_by: my.id })
+    expect(r.error).not.toBeNull()
+  })
+
   it('ogrenci_mentor_adlari: öğretmen kendi okulundaki tüm atamaların yalnız adını görür', async () => {
     const sid = await ogrenci('Ad RPC')
     await createUserClient(tB).from('mentorships')

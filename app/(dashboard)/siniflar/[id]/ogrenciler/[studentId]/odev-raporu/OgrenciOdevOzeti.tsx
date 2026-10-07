@@ -40,9 +40,9 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
   const dersler = dersOzeti(homeworks)
 
   return (
-    <div className="bg-white text-black rounded-xl border border-gray-200 p-5 print:border-0 print:p-0 print:rounded-none">
+    <div className="bg-white dark:bg-slate-800 text-black dark:text-slate-100 rounded-xl border border-gray-200 dark:border-slate-700 p-5 print:border-0 print:p-0 print:rounded-none print:text-black">
       {/* not: <header> kullanma — globals.css print kuralı tüm header'ları gizliyor */}
-      <div className="border-b-2 border-black pb-1 mb-3 flex items-baseline justify-between">
+      <div className="border-b-2 border-black dark:border-slate-400 pb-1 mb-3 flex items-baseline justify-between">
         <h2 className="text-base font-bold">{okulAdi}</h2>
         <span className="text-sm">Öğrenci Ödev Özeti</span>
       </div>
@@ -53,7 +53,7 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
         <dt className="font-semibold">Sınıf</dt>
         <dd>{sinifAdi || '—'}</dd>
         <dt className="font-semibold">Yazdırma tarihi</dt>
-        <dd>{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' })}</dd>
+        <dd className={kapsam ? 'col-span-3' : undefined}>{new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Istanbul' })}</dd>
         {kapsam && (
           <>
             <dt className="font-semibold">Kapsam</dt>

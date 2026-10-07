@@ -80,6 +80,34 @@ test.describe.serial('Mentör dağılımı', () => {
     await ctx.close()
   })
 
+  test('karanlık temada yazdırma sayfaları ekranda okunur (kontrast ≥ 4.5)', async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: AUTH('ogretmen'), colorScheme: 'dark' })
+    const page = await ctx.newPage()
+    // Metin rengi ile en yakın opak zemin arasındaki WCAG kontrastı
+    const kontrast = (sel: string) => page.locator(sel).first().evaluate(el => {
+      // Tailwind v4 oklch() döndürür — canvas her biçimi sRGB'ye çevirir
+      const rgb = (c: string) => {
+        const x = document.createElement('canvas').getContext('2d')!
+        x.fillStyle = c; x.fillRect(0, 0, 1, 1)
+        const [r, g, bb, a] = x.getImageData(0, 0, 1, 1).data
+        return [r, g, bb, a / 255]
+      }
+      const lum = ([r, g, b]: number[]) => {
+        const f = (v: number) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4 }
+        return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
+      }
+      let z: Element | null = el, bg = 'rgba(0, 0, 0, 0)'
+      while (z) { bg = getComputedStyle(z).backgroundColor; if (rgb(bg)[3] > 0) break; z = z.parentElement }
+      const [a, b] = [lum(rgb(getComputedStyle(el).color)), lum(rgb(bg))].sort((x, y) => y - x)
+      return (a + 0.05) / (b + 0.05)
+    })
+    await page.goto('/mentorluk/yazdir')
+    expect(await kontrast('section[aria-label] dd')).toBeGreaterThanOrEqual(4.5)
+    await page.goto('/mentorluk/tablo')
+    expect(await kontrast('tbody td')).toBeGreaterThanOrEqual(4.5)
+    await ctx.close()
+  })
+
   test('telefonda tablo yerine satır listesi, yatay taşma yok', async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH('ogretmen'), viewport: { width: 375, height: 800 } })
     const page = await ctx.newPage()

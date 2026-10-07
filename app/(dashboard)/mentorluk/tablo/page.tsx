@@ -61,7 +61,7 @@ export default async function MentorTabloPage({ searchParams }: { searchParams: 
             <ul className="mt-1 text-sm">
               {tablo.dikkat.map(d => (
                 <li key={d.id}>
-                  {d.full_name} — <span className="text-red-700 font-semibold">{d.toplam}</span> ({d.dersler})
+                  {d.full_name} — <span className="text-red-700 dark:text-red-400 font-semibold">{d.toplam}</span> ({d.dersler})
                 </li>
               ))}
             </ul>
