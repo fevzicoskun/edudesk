@@ -286,7 +286,7 @@ export const HomeworkService = {
   async getStudentHomeworkProfile(
     studentId: string,
     classId: string,
-    { tumOdevler = false }: { tumOdevler?: boolean } = {},
+    { tumOdevler = false, bas }: { tumOdevler?: boolean; bas?: string } = {},
   ): Promise<
     | { error: string }
     | {
@@ -302,7 +302,7 @@ export const HomeworkService = {
     const kapsam = await HomeworkService.getOdevKapsami()
     if (!kapsam) return { error: 'Giriş gerekli' }
     const profileData = await HomeworkRepository.findStudentHomeworkProfile(
-      studentId, classId, ability.schoolId, tumOdevler || kapsam.tumu ? undefined : kapsam.ogretmenIds,
+      studentId, classId, ability.schoolId, tumOdevler || kapsam.tumu ? undefined : kapsam.ogretmenIds, bas,
     )
 
     if ('error' in profileData && profileData.error) return { error: profileData.error }
@@ -315,6 +315,34 @@ export const HomeworkService = {
     ).get(studentId) ?? []
 
     return { student: profileData.student, homeworks: records, stats: computeStudentHomeworkStats(records) }
+  },
+
+  /** Mentör grubu (farklı sınıflar) için ödev özetleri — öğrenci bazlı ekranlar gibi TÜM ödevler (2026-09-28 kararı). */
+  async getMentorHomeworkProfiles(studentIds: string[], bas?: string): Promise<
+    | { error: string }
+    | { ogrenciler: { id: string; full_name: string; student_number: string | null; class_id: string; class_name: string | null; homeworks: HomeworkRecord[]; stats: ReturnType<typeof computeStudentHomeworkStats> }[] }
+  > {
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.READ)) return { error: 'Bu işlem için yetkiniz yok.' }
+    if (studentIds.length === 0) return { ogrenciler: [] }
+
+    const { students, homeworks, submissions } = await HomeworkRepository.findStudentsHomeworkProfiles(studentIds, ability.schoolId, bas)
+    const bugun = todayLocalISO()
+    const kayit = new Map<string, HomeworkRecord[]>()
+    // Sınıf sınıf kurulur: öğrenci yalnız kendi sınıfının ödevlerini alır
+    for (const classId of new Set(students.map(s => s.class_id))) {
+      const sinifOgr = students.filter(s => s.class_id === classId).map(s => s.id)
+      const sinifOdev = homeworks.filter(h => h.class_id === classId)
+      for (const [sid, recs] of sinifOdevKayitlari(sinifOgr, sinifOdev, submissions, bugun)) kayit.set(sid, recs)
+    }
+    const ogrenciler = [...students]
+      .sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
+      .map(s => {
+        const hws = kayit.get(s.id) ?? []
+        return { ...s, homeworks: hws, stats: computeStudentHomeworkStats(hws) }
+      })
+    return { ogrenciler }
   },
 
   /** Sınıfın tüm öğrencileri için ödev özeti (toplu yazdırma). Numara sırasına göre, numarasızlar sonda. */

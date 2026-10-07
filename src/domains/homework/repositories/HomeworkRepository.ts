@@ -217,7 +217,7 @@ export const HomeworkRepository = {
   },
 
   /** teacherIds verilirse yalnız o öğretmenlerin ödevleri (kapsam); undefined = sınıfın tüm ödevleri */
-  async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string, teacherIds?: string[]) {
+  async findStudentHomeworkProfile(studentId: string, classId: string, schoolId: string, teacherIds?: string[], bas?: string) {
     const supabase = await createClient()
     let homeworksQuery = supabase
       .from('homeworks')
@@ -229,6 +229,7 @@ export const HomeworkRepository = {
       .order('due_date', { ascending: false })
       .order('id')
     if (teacherIds) homeworksQuery = homeworksQuery.in('teacher_id', teacherIds)
+    if (bas) homeworksQuery = homeworksQuery.gte('assigned_date', bas)
     // Teslimler öğrenci id'siyle süzülür — ödev id listesi .in()'e verilirse yıl içinde URL şişer (414).
     // Başka sınıfın/silinmiş ödevin teslimi homeworks listesinde eşleşmez, yok sayılır.
     const [studentRes, homeworksRes, subsRes] = await Promise.all([
@@ -257,6 +258,49 @@ export const HomeworkRepository = {
       homeworks: homeworksRes.data ?? [],
       submissions: subsRes.data ?? [],
     }
+  },
+
+  /** Farklı sınıflardan öğrenciler (mentör grubu) — sabit 3 sorgu. Ödevler öğrencilerin sınıflarından,
+   *  teslimler öğrenci id'siyle; başka sınıfın ödevi servis tarafında öğrenciye eşlenmez. */
+  async findStudentsHomeworkProfiles(studentIds: string[], schoolId: string, bas?: string) {
+    const supabase = await createClient()
+    if (studentIds.length === 0) return { students: [], homeworks: [], submissions: [] }
+    const studentsRes = await supabase
+      .from('students')
+      .select('id, full_name, student_number, class_id, classes(name)')
+      .in('id', studentIds)
+      .eq('school_id', schoolId)
+      .is('deleted_at', null)
+    if (studentsRes.error) throw new Error(studentsRes.error.message)
+    const students = (studentsRes.data ?? []).map(s => ({
+      id: s.id, full_name: s.full_name, student_number: s.student_number, class_id: s.class_id,
+      class_name: (s.classes as { name: string } | null)?.name ?? null,
+    }))
+    if (students.length === 0) return { students, homeworks: [], submissions: [] }
+    const classIds = [...new Set(students.map(s => s.class_id))]
+
+    const [homeworks, submissions] = await Promise.all([
+      fetchAll((from, to) => {
+        let q = supabase
+          .from('homeworks')
+          .select('id, title, subject, due_date, teacher_id, class_id')
+          .in('class_id', classIds)
+          .eq('school_id', schoolId)
+          .eq('is_template', false)
+          .is('deleted_at', null)
+        if (bas) q = q.gte('assigned_date', bas)
+        return q.order('due_date', { ascending: false }).order('id').range(from, to)
+      }),
+      fetchAll((from, to) => supabase
+        .from('homework_submissions')
+        .select('homework_id, student_id, status, note')
+        .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi
+        .in('student_id', students.map(s => s.id))
+        .eq('school_id', schoolId)
+        .order('id')
+        .range(from, to)),
+    ])
+    return { students, homeworks, submissions }
   },
 
   /** Sınıftaki tüm öğrenciler + (kapsamdaki) ödevler + işaretli teslimler — toplu özet için sabit sorgu sayısı. */
