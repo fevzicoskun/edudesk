@@ -81,7 +81,7 @@ async function createMentoredStudent(): Promise<string> {
 
   const { error: mErr } = await serviceDb
     .from('mentorships')
-    .insert({ mentor_id: mentorTeacher.id, student_id: studentId, school_id: school.id })
+    .insert({ mentor_id: mentorTeacher.id, student_id: studentId, school_id: school.id, assigned_by: mentorTeacher.id })
   if (mErr) throw new Error(`test mentörlük kaydı oluşturulamadı: ${mErr.message}`)
 
   return studentId

@@ -1534,6 +1534,7 @@ export type Database = {
       }
       mentorships: {
         Row: {
+          assigned_by: string | null
           created_at: string
           id: string
           mentor_id: string
@@ -1541,6 +1542,7 @@ export type Database = {
           student_id: string
         }
         Insert: {
+          assigned_by?: string | null
           created_at?: string
           id?: string
           mentor_id: string
@@ -1548,6 +1550,7 @@ export type Database = {
           student_id: string
         }
         Update: {
+          assigned_by?: string | null
           created_at?: string
           id?: string
           mentor_id?: string
@@ -3790,6 +3793,14 @@ export type Database = {
       is_yonetici_in_school: { Args: never; Returns: boolean }
       is_zumre_baskani: { Args: never; Returns: boolean }
       is_zumre_baskani_in_school: { Args: never; Returns: boolean }
+      ogrenci_mentor_adlari: {
+        Args: never
+        Returns: {
+          mentor_adi: string
+          mentor_id: string
+          student_id: string
+        }[]
+      }
       okul_son_kullanim: {
         Args: { p_since: string }
         Returns: {
