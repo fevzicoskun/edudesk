@@ -2305,6 +2305,7 @@ export type Database = {
           suspended_at: string | null
           suspended_by: string | null
           trial_ends_at: string | null
+          yoklama_aktif: boolean
         }
         Insert: {
           access_until?: string | null
@@ -2317,6 +2318,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           trial_ends_at?: string | null
+          yoklama_aktif?: boolean
         }
         Update: {
           access_until?: string | null
@@ -2329,6 +2331,7 @@ export type Database = {
           suspended_at?: string | null
           suspended_by?: string | null
           trial_ends_at?: string | null
+          yoklama_aktif?: boolean
         }
         Relationships: []
       }
@@ -3660,6 +3663,10 @@ export type Database = {
       }
     }
     Functions: {
+      set_yoklama_aktif: {
+        Args: { p_aktif: boolean }
+        Returns: undefined
+      }
       admin_onboard_user: {
         Args: { p_id: string; p_role?: string; p_school_id: string }
         Returns: undefined

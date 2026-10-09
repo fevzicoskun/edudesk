@@ -9,12 +9,17 @@ vi.mock('@/src/shared/authorization/server', () => ({
 vi.mock('@/src/domains/school/repositories/SchoolRepository', () => ({
   SchoolRepository: {
     updateSchool: vi.fn(),
+    findYoklamaAktif: vi.fn(),
+    setYoklamaAktif: vi.fn(),
   },
 }))
+vi.mock('@/src/shared/auth', () => ({ getCurrentProfile: vi.fn() }))
+vi.mock('@/src/infrastructure/observability/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }))
 
 const { getAbility }        = await import('@/src/shared/authorization/server')
 const { SchoolRepository }  = await import('@/src/domains/school/repositories/SchoolRepository')
 const { SchoolService }     = await import('@/src/domains/school/services/SchoolService')
+const { getCurrentProfile } = await import('@/src/shared/auth')
 
 const SCHOOL_ID = 'school-service-unit'
 const CALLER_ID = 'caller-unit'
@@ -148,5 +153,41 @@ describe('SchoolService.regenerateSchoolCode()', () => {
       error: { message: 'DB down' },
     } as never)
     expect((await SchoolService.regenerateSchoolCode()).error).toBe('DB down')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('SchoolService — yoklama anahtarı', () => {
+  const profil = (role: string) => vi.mocked(getCurrentProfile).mockResolvedValue({ id: CALLER_ID, school_id: SCHOOL_ID, role } as never)
+
+  it('yoklamaAktif: okuldaki değeri döner', async () => {
+    vi.mocked(SchoolRepository.findYoklamaAktif).mockResolvedValue({ data: { yoklama_aktif: false }, error: null } as never)
+    expect(await SchoolService.yoklamaAktif(SCHOOL_ID)).toBe(false)
+  })
+
+  it('yoklamaAktif: okuma hatasında AÇIK sayar (yanlışlıkla gizlemek yok) ve loglar', async () => {
+    const { logger } = await import('@/src/infrastructure/observability/logger')
+    vi.mocked(SchoolRepository.findYoklamaAktif).mockResolvedValue({ data: null, error: { message: 'x' } } as never)
+    expect(await SchoolService.yoklamaAktif(SCHOOL_ID)).toBe(true)
+    expect(logger.error).toHaveBeenCalled()
+  })
+
+  it.each(['ogretmen', 'zumre_baskani'])('setYoklamaAktif: %s → Yetki yok, RPC çağrılmaz', async rol => {
+    profil(rol)
+    expect(await SchoolService.setYoklamaAktif(false)).toEqual({ error: 'Yetki yok' })
+    expect(SchoolRepository.setYoklamaAktif).not.toHaveBeenCalled()
+  })
+
+  it.each(['mudur', 'mudur_yardimcisi'])('setYoklamaAktif: %s → RPC çağrılır', async rol => {
+    profil(rol)
+    vi.mocked(SchoolRepository.setYoklamaAktif).mockResolvedValue({ error: null } as never)
+    expect(await SchoolService.setYoklamaAktif(true)).toEqual({})
+    expect(SchoolRepository.setYoklamaAktif).toHaveBeenCalledWith(true)
+  })
+
+  it('setYoklamaAktif: RPC hatası iletilir', async () => {
+    profil('mudur')
+    vi.mocked(SchoolRepository.setYoklamaAktif).mockResolvedValue({ error: { message: 'izin yok' } } as never)
+    expect(await SchoolService.setYoklamaAktif(false)).toEqual({ error: 'izin yok' })
   })
 })

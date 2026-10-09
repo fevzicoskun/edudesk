@@ -7,6 +7,17 @@ export const SchoolRepository = {
     return admin.from('schools').update(data).eq('id', schoolId)
   },
 
+  async findYoklamaAktif(schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('schools').select('yoklama_aktif').eq('id', schoolId).single()
+  },
+
+  /** RPC rol (müdür/MY) ve okulu içeride doğrular — kullanıcı oturumuyla çağrılır */
+  async setYoklamaAktif(aktif: boolean) {
+    const supabase = await createClient()
+    return supabase.rpc('set_yoklama_aktif', { p_aktif: aktif })
+  },
+
   async findProfileSchool(userId: string) {
     const supabase = await createClient()
     return supabase.from('profiles').select('school_id').eq('id', userId).single()
