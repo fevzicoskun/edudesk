@@ -55,3 +55,31 @@ test.describe('Sayfa genişlikleri — müdür yardımcısı', () => {
     }
   })
 })
+
+test.describe('Mentörlük telefonda alt menüde', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
+  test('mentörlüğü olan öğretmenin telefondaki alt menüsünde "Mentörlük" var', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 860 })
+    await page.goto('/mentorluk')
+    await page.getByRole('button', { name: '+ Öğrenci ekle' }).click()
+    const ilk = page.locator('ul button').first()
+    await expect(ilk).toBeVisible()
+    const ad = (await ilk.locator('span').first().textContent())?.trim() ?? ''
+    await ilk.click()
+    await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toBeVisible({ timeout: 10_000 })
+    try {
+      await page.setViewportSize({ width: 390, height: 844 })
+      await page.goto('/anasayfa')
+      const altMenu = page.locator('nav.fixed.bottom-0')
+      // yalnız alt barın kendi linkleri (çekmece aynı nav içinde, ekran dışında duruyor)
+      await expect(altMenu.locator(':scope > a', { hasText: 'Mentörlük' })).toBeVisible({ timeout: 15_000 })
+    } finally {
+      await page.setViewportSize({ width: 1280, height: 860 })
+      await page.goto('/mentorluk')
+      await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
+      await page.getByRole('button', { name: 'Listeden çıkar' }).click()
+      await page.getByRole('button', { name: 'Çıkar' }).click()
+      await expect(page).toHaveURL(/\/mentorluk$/, { timeout: 10_000 })
+    }
+  })
+})

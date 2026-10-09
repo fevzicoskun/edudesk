@@ -83,7 +83,8 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
   {
     href: '/mentorluk',
     label: 'Mentörlük',
-    mobile: false,
+    // telefonda alt menüde (cuma veli bülteni buradan) — yalnızMentor olduğu için mentörlüğü olmayana görünmez
+    mobile: true,
     roles: ['ogretmen', 'zumre_baskani'],
     grup: 'gunluk',
     yalnizMentor: true,
