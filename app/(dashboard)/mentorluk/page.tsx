@@ -79,6 +79,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
           <div className="flex gap-2">
             <Link href={`/mentorluk/tablo?bas=${bas}`} className={ikincilButon}>Tabloyu yazdır</Link>
             <Link href={`/mentorluk/yazdir?bas=${bas}`} className={ikincilButon}>Hepsini yazdır</Link>
+            <Link href="/mentorluk/bulten" className={ikincilButon}>Haftalık veli bülteni</Link>
           </div>
         </div>
       )}
