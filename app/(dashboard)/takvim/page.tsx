@@ -25,7 +25,7 @@ export default async function TakvimPage({ searchParams }: { searchParams: Promi
   const next = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <TakvimClient
         year={year}
         month={month}

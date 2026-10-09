@@ -44,7 +44,7 @@ export default async function OgretmenAktivitePage() {
   const teacherMap = new Map(teachers.map(t => [t.id, t.full_name ?? 'Bilinmiyor']))
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
 
       {/* Başlık */}
       <div>

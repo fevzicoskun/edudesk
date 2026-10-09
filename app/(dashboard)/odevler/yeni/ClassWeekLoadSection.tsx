@@ -41,7 +41,7 @@ export default function ClassWeekLoadSection({
     <>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <label htmlFor="hw-verildigi" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Verildiği Tarih</label>
+          <label htmlFor="hw-verildigi" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Verildiği Tarih</label>
           <input
             id="hw-verildigi"
             name="assigned_date"
@@ -54,7 +54,7 @@ export default function ClassWeekLoadSection({
           />
         </div>
         <div className="space-y-2">
-          <label htmlFor="hw-son-teslim" className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Son Teslim Tarihi</label>
+          <label htmlFor="hw-son-teslim" className="block text-sm font-medium text-gray-700 dark:text-slate-300">Son Teslim Tarihi</label>
           <input
             id="hw-son-teslim"
             name="due_date"

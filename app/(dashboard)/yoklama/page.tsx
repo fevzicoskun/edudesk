@@ -109,7 +109,7 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
       <div className="mb-5 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Yoklama</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Devamsız ve geç öğrencilerin velisine otomatik e-posta gider (özürlüye gitmez)</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{getEgitimYili()} — Veli e-postası kayıtlı öğrencilerde devamsız ve geç bilgisi veliye otomatik e-postayla gider (özürlüye gitmez)</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Link

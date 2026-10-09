@@ -22,7 +22,7 @@ export default async function DersProgramiPage() {
   ])
 
   return (
-    <div className="p-4 md:p-6 max-w-5xl mx-auto">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto">
       <DersProgramiClient
         initialPeriods={periods}
         initialSlots={slots}

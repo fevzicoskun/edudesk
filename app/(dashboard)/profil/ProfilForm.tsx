@@ -94,12 +94,9 @@ export default function ProfilForm({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
-              Okul Adı
-            </label>
-            <div className={inputCls + ' bg-gray-50 dark:bg-slate-700/50 opacity-75 cursor-not-allowed'}>
-              {schoolName ?? '—'}
-            </div>
+            {/* değiştirilemez bilgi: giriş kutusu gibi görünmesin */}
+            <p className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Okul</p>
+            <p className="text-sm text-gray-900 dark:text-slate-100">{schoolName ?? '—'}</p>
           </div>
 
           {state.error && (

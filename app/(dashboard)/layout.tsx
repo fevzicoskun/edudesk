@@ -54,14 +54,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <ToastProvider>
       <UsageTracker />
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
-        <div className="print:hidden">
+        {/* flex: içindeki <aside> satırın tam yüksekliğine uzasın (yoksa beyaz menü içerik bitince kesilir) */}
+        <div className="flex print:hidden">
           <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} />
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="print:hidden">
             <TopBar userId={profile?.id} />
           </div>
-          <main className="flex-1 overflow-auto pt-14 md:pt-0 pb-16 md:pb-0 mobile-main print:overflow-visible print:pt-0">{abonelikUyari !== null && <AbonelikUyariSeridi kalan={abonelikUyari} />}<PushTesvikSeridi />{children}</main>
+          {/* öğretmen rollerinde sağ altta "+" (hızlı ödev) düğmesi var: masaüstünde son içerik onun altında kalmasın */}
+          <main className={`flex-1 overflow-auto pt-14 md:pt-0 pb-16 ${isTeachingRole(profile?.role) ? 'md:pb-24' : 'md:pb-0'} mobile-main print:overflow-visible print:pt-0 print:pb-0`}>{abonelikUyari !== null && <AbonelikUyariSeridi kalan={abonelikUyari} />}<PushTesvikSeridi />{children}</main>
         </div>
       </div>
       <div className="print:hidden">

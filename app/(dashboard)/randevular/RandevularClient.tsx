@@ -117,10 +117,10 @@ export default function RandevularClient({
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-semibold">Veli Görüşmeleri</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Veli Görüşmeleri</h1>
         <button
           onClick={() => { resetForm(); setOpen(true) }}
-          className="px-3 py-2 rounded bg-blue-600 text-white text-sm hover:bg-blue-700"
+          className="inline-flex items-center gap-1.5 min-h-[44px] px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors"
         >
           Yeni Randevu
         </button>

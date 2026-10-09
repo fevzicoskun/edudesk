@@ -45,7 +45,7 @@ export default async function YonetimPage() {
   if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
 
       {/* Başlık */}
       <div className="flex items-start justify-between gap-3">

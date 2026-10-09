@@ -98,7 +98,7 @@ export default async function YeniOdevPage({
   }))
 
   return (
-    <div className="min-h-full bg-gradient-to-br from-slate-50 via-red-50/20 to-slate-50">
+    <div className="min-h-full">
       <div className="p-4 md:p-6 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <Link
@@ -130,7 +130,7 @@ export default async function YeniOdevPage({
               <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
               </svg>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Şablonlardan Oluştur</p>
+              <p className="text-sm font-semibold text-gray-700 dark:text-slate-300">Şablonlardan oluştur</p>
             </div>
             <div className="divide-y divide-gray-50">
               {templates.map(tmpl => (

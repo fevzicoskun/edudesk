@@ -43,7 +43,7 @@ export default async function DevamsizlikRaporuPage() {
   // Fail-open koruması: RPC hatasında boş rapor GÖSTERİLMEZ — riskler gizlenmesin.
   if (counts === null) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="p-4 md:p-6 max-w-6xl mx-auto">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-4">Devamsızlık Raporu</h1>
         <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center dark:bg-red-950 dark:border-red-800">
           <p className="text-red-700 dark:text-red-400 text-sm font-medium">Devamsızlık verileri şu anda yüklenemiyor.</p>
@@ -66,7 +66,7 @@ export default async function DevamsizlikRaporuPage() {
   const takipCount   = rows.filter(r => r.risk === 'takip').length
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
       {/* Başlık */}
       <div className="flex items-center justify-between">
         <div>
