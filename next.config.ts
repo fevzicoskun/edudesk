@@ -11,6 +11,10 @@ const nextConfig: NextConfig = {
     '@fastify/otel',
     'pino',
   ],
+  // Bülten görseli yazı tiplerini fs ile okur — Vercel paketine dahil edilmeli
+  outputFileTracingIncludes: {
+    '/api/bulten/gorsel': ['./assets/fonts/**'],
+  },
   experimental: {
     optimizePackageImports: ['recharts', 'lucide-react', '@radix-ui/react-icons'],
   },
