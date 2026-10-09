@@ -58,3 +58,39 @@ test.describe('Haftalık veli bülteni', () => {
     expect(r.status()).toBe(400)
   })
 })
+
+test.describe('Haftalık veli bülteni — bilgisayardan gönderim', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
+
+  test('"WhatsApp\'a gönder (görsel + metin)": kart panoya PNG kopyalanır, wa.me sohbeti metinle açılır', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+    await page.goto('/mentorluk')
+    await page.getByRole('button', { name: '+ Öğrenci ekle' }).click()
+    const ilk = page.locator('ul button').first()
+    await expect(ilk).toBeVisible()
+    const ad = (await ilk.locator('span').first().textContent())?.trim() ?? ''
+    await ilk.click()
+    await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toBeVisible({ timeout: 10_000 })
+
+    try {
+      await page.goto('/mentorluk/bulten')
+      const satir = page.locator('details', { hasText: ad })
+      await satir.locator('summary').click()
+      const gonder = satir.getByRole('button', { name: "WhatsApp'a gönder (görsel + metin)" })
+      await expect(gonder).toBeVisible({ timeout: 15_000 }) // yoksa erken düş: finally temizliğine süre kalsın
+      const [sekme] = await Promise.all([context.waitForEvent('page', { timeout: 15_000 }), gonder.click()])
+      expect(sekme.url()).toMatch(/^https:\/\/(wa\.me|api\.whatsapp\.com)\//)
+      expect(decodeURIComponent(sekme.url().replaceAll('+', ' '))).toContain(ad) // wa.me → api.whatsapp.com boşluğu + ile kodlar
+      await sekme.close()
+      await expect(satir.getByRole('status')).toContainText('Ctrl+V', { timeout: 20_000 })
+      const turler = await page.evaluate(async () => (await navigator.clipboard.read()).flatMap(i => [...i.types]))
+      expect(turler).toContain('image/png')
+    } finally {
+      await page.goto('/mentorluk')
+      await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
+      await page.getByRole('button', { name: 'Listeden çıkar' }).click()
+      await page.getByRole('button', { name: 'Çıkar' }).click()
+      await expect(page).toHaveURL(/\/mentorluk$/, { timeout: 10_000 })
+    }
+  })
+})

@@ -61,6 +61,34 @@ function PaylasIndir({ url, ad, metin, hazirla }: { url: string; ad: string; met
   )
 }
 
+/** Bilgisayar: Windows paylaşım menüsü WhatsApp Desktop'a yalnız metni geçirir. Bunun yerine kart panoya PNG
+ *  kopyalanır ve wa.me sohbeti metin yazılı açılır; mentör Ctrl+V ile görseli ekler. Yalnız fare/dokunmatik-dışı cihazda. */
+function MasaustuGonder({ url, whatsapp }: { url: string; whatsapp: string }) {
+  const [masaustu, setMasaustu] = useState(false)
+  const [durum, setDurum] = useState<{ ok: boolean; metin: string } | null>(null)
+  useEffect(() => {
+    setMasaustu(typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+      && typeof ClipboardItem !== 'undefined' && !!navigator.clipboard?.write)
+  }, [])
+  if (!masaustu) return null
+  return (
+    <>
+      <button type="button" className={ana} onClick={() => {
+        // ikisi de tıklamayla aynı görevde başlar: pano için Blob sözü (Chrome destekler), sekme senkron açılır
+        const kopya = navigator.clipboard.write([new ClipboardItem({
+          'image/png': fetch(url).then(r => { if (!r.ok) throw new Error('görsel'); return r.blob() }),
+        })])
+        window.open(whatsapp, '_blank', 'noopener')
+        kopya.then(
+          () => setDurum({ ok: true, metin: 'Sohbet açıldı, metin hazır. Görsel panoda: sohbette Ctrl+V ile yapıştırıp gönderin.' }),
+          () => setDurum({ ok: false, metin: 'Görsel panoya kopyalanamadı. Sohbet açıldı; görseli "Görseli indir" ile ekleyin.' }),
+        )
+      }}>WhatsApp&apos;a gönder (görsel + metin)</button>
+      {durum && <span role="status" className={`text-sm ${durum.ok ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{durum.metin}</span>}
+    </>
+  )
+}
+
 export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: string; gruplar: Grup[]; ogrenciler: Ogr[] }) {
   const [gonderildi, setGonderildi] = useState<Record<string, boolean>>({})
   const [kopyalandi, setKopyalandi] = useState('')
@@ -112,6 +140,7 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: s
                   <Gorsel url={o.gorselUrl} alt={`${o.full_name} haftalık ödev kartı`} />
                   <div className="flex flex-wrap gap-2 items-center">
                     <PaylasIndir url={o.gorselUrl} ad={o.full_name} metin={o.mesaj} hazirla={!!acik[o.student_id]} />
+                    <MasaustuGonder url={o.gorselUrl} whatsapp={o.whatsapp} />
                     <a className={dugme} href={o.whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp&apos;ta aç</a>
                     <button type="button" className={dugme} onClick={async () => {
                       try { await navigator.clipboard.writeText(o.mesaj); setKopyalandi(o.student_id) } catch { setKopyalandi('') }
