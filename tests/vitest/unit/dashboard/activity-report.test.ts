@@ -7,6 +7,7 @@ import {
   extractTitle,
   nameInitials,
   since30daysISO,
+  akisSatirlari,
   type TeacherRow,
   type LogRow,
 } from '@/src/domains/dashboard/lib/activityReport'
@@ -54,10 +55,17 @@ describe('buildTeacherStats', () => {
     expect(t2.odevCount).toBe(1)
   })
 
-  it('toplam aktiviteye göre azalan sıralama yapar', () => {
-    const stats = buildTeacherStats([T1, T2], [LOG_YOKLAMA, LOG_ODEV, LOG_YOKLAMA2, LOG_UPDATE])
-    expect(stats[0].id).toBe('t1') // 3 log
-    expect(stats[1].id).toBe('t2') // 1 log
+  it('sıralama: önce ödev sayısı, sonra giriş günü — "Panele girdi" kalabalığı öne geçirmez', () => {
+    const giris = (id: string, gun: string): LogRow => ({ id, teacher_id: 't2', action: 'dashboard_view', meta: null, created_at: `${gun}T09:00:00Z` })
+    const stats = buildTeacherStats([T1, T2], [LOG_ODEV, giris('g1', '2026-06-01'), giris('g2', '2026-06-01'), giris('g3', '2026-06-02'), giris('g4', '2026-06-03')])
+    expect(stats.map(s => s.id)).toEqual(['t1', 't2']) // t1: 1 ödev; t2: 0 ödev ama 4 giriş
+  })
+
+  it('giriş günü: Türkiye saatine göre farklı gün sayısı (aynı gün çok giriş = 1)', () => {
+    const l = (id: string, at: string): LogRow => ({ id, teacher_id: 't1', action: 'dashboard_view', meta: null, created_at: at })
+    // 2026-06-01T22:30Z = İstanbul 2 Haziran 01:30 → ayrı gün
+    const stats = buildTeacherStats([T1], [l('a', '2026-06-01T08:00:00Z'), l('b', '2026-06-01T12:00:00Z'), l('c', '2026-06-01T22:30:00Z')])
+    expect(stats[0].girisGunu).toBe(2)
   })
 
   it('son aktivite tarihini doğru belirler', () => {
@@ -84,9 +92,10 @@ describe('computeSummary', () => {
     expect(summary.activeCount).toBe(2)
   })
 
-  it('toplam aktivite sayısını döner', () => {
-    const summary = computeSummary([T1, T2], [LOG_YOKLAMA, LOG_ODEV, LOG_UPDATE])
-    expect(summary.totalActivity).toBe(3)
+  it('ödev giren öğretmen sayısı (yalnız ödev ekleme; güncelleme/giriş sayılmaz)', () => {
+    const giris: LogRow = { id: 'g', teacher_id: 't2', action: 'dashboard_view', meta: null, created_at: '2026-06-05T09:00:00Z' }
+    const summary = computeSummary([T1, T2], [LOG_YOKLAMA, LOG_ODEV, LOG_UPDATE, giris])
+    expect(summary.odevGirenCount).toBe(1) // yalnız t1
   })
 
   it('pasif öğretmen sayısını hesaplar (mudur hariç)', () => {
@@ -100,7 +109,7 @@ describe('computeSummary', () => {
     const summary = computeSummary([T1, T2], [])
     expect(summary.activeCount).toBe(0)
     expect(summary.passiveCount).toBe(2)
-    expect(summary.totalActivity).toBe(0)
+    expect(summary.odevGirenCount).toBe(0)
   })
 })
 
@@ -179,5 +188,34 @@ describe('since30daysISO', () => {
     const diffMs = Date.now() - result.getTime()
     const diffDays = diffMs / (1000 * 60 * 60 * 24)
     expect(diffDays).toBeCloseTo(30, 0)
+  })
+})
+
+describe('akisSatirlari — aktivite akışı ayıklanmış', () => {
+  const l = (id: string, teacher: string, action: string, at: string, title?: string): LogRow =>
+    ({ id, teacher_id: teacher, action, meta: title ? { title } : null, created_at: at })
+
+  it('"Panele girdi" akışta yer almaz', () => {
+    expect(akisSatirlari([l('a', 't1', 'dashboard_view', '2026-06-01T09:00:00Z')])).toEqual([])
+  })
+
+  it('aynı gün aynı öğretmenin aynı işi tek satır + adet; en yeni zaman ve ilk başlık', () => {
+    const r = akisSatirlari([
+      l('a', 't1', 'odev_eklendi', '2026-06-01T12:00:00Z', 'C'),
+      l('b', 't1', 'dashboard_view', '2026-06-01T11:30:00Z'),
+      l('c', 't1', 'odev_eklendi', '2026-06-01T11:00:00Z', 'B'),
+      l('d', 't1', 'odev_eklendi', '2026-06-01T10:00:00Z', 'A'),
+    ])
+    expect(r).toEqual([{ key: 'a', teacher_id: 't1', action: 'odev_eklendi', adet: 3, created_at: '2026-06-01T12:00:00Z', title: 'C' }])
+  })
+
+  it('farklı gün, farklı iş veya farklı öğretmen ayrı satır; sıra korunur (yeniden eskiye)', () => {
+    const r = akisSatirlari([
+      l('a', 't1', 'odev_eklendi', '2026-06-02T10:00:00Z'),
+      l('b', 't2', 'odev_eklendi', '2026-06-02T09:00:00Z'),
+      l('c', 't1', 'odev_guncellendi', '2026-06-02T08:00:00Z'),
+      l('d', 't1', 'odev_eklendi', '2026-06-01T10:00:00Z'),
+    ])
+    expect(r.map(x => [x.key, x.adet])).toEqual([['a', 1], ['b', 1], ['c', 1], ['d', 1]])
   })
 })

@@ -83,3 +83,14 @@ test.describe('Mentörlük telefonda alt menüde', () => {
     }
   })
 })
+
+test.describe('Öğretmen aktivitesi ayıklanmış', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'mudur_yardimcisi.json') })
+  test('"Panele girdi" akışta yok; özet "Ödev Giren Öğretmen", tablo "Giriş günü" gösterir', async ({ page }) => {
+    await page.goto('/rapor/ogretmen-aktivite')
+    await expect(page.getByText('Ödev Giren Öğretmen')).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('columnheader', { name: 'Giriş günü' })).toBeVisible()
+    await expect(page.getByText('Panele girdi')).toHaveCount(0)
+    await expect(page.getByText('Toplam Aktivite')).toHaveCount(0)
+  })
+})

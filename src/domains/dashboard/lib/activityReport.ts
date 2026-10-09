@@ -31,14 +31,20 @@ export type TeacherStat = {
   yoklamaCount: number
   odevCount: number
   totalCount: number
+  /** son 30 günde uygulamaya girdiği farklı gün sayısı (Türkiye saati) */
+  girisGunu: number
   lastActivity: string | null
 }
 
 export type ActivitySummary = {
   activeCount: number
-  totalActivity: number
+  /** ödev ekleyen farklı öğretmen sayısı — "toplam aktivite" (giriş kalabalığı) yerine anlamlı ölçü */
+  odevGirenCount: number
   passiveCount: number
 }
+
+/** ISO zaman → Türkiye takvim günü (YYYY-MM-DD) */
+const istanbulGunu = (iso: string) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(iso))
 
 export function buildTeacherStats(teachers: TeacherRow[], logs: LogRow[]): TeacherStat[] {
   const statMap = new Map<string, TeacherStat>()
@@ -51,9 +57,11 @@ export function buildTeacherStats(teachers: TeacherRow[], logs: LogRow[]): Teach
       yoklamaCount: 0,
       odevCount: 0,
       totalCount: 0,
+      girisGunu: 0,
       lastActivity: null,
     })
   }
+  const gunler = new Map<string, Set<string>>()
 
   for (const log of logs) {
     const stat = statMap.get(log.teacher_id)
@@ -64,9 +72,14 @@ export function buildTeacherStats(teachers: TeacherRow[], logs: LogRow[]): Teach
     if (!stat.lastActivity || log.created_at > stat.lastActivity) {
       stat.lastActivity = log.created_at
     }
+    const g = gunler.get(log.teacher_id) ?? new Set<string>()
+    g.add(istanbulGunu(log.created_at))
+    gunler.set(log.teacher_id, g)
   }
+  for (const [id, g] of gunler) statMap.get(id)!.girisGunu = g.size
 
-  return Array.from(statMap.values()).sort((a, b) => b.totalCount - a.totalCount)
+  // "Panele girdi" kayıtları totalCount'u şişirir — sıralama işe (ödev) ve düzenli girişe göre
+  return Array.from(statMap.values()).sort((a, b) => b.odevCount - a.odevCount || b.girisGunu - a.girisGunu)
 }
 
 export function computeSummary(teachers: TeacherRow[], logs: LogRow[]): ActivitySummary {
@@ -74,10 +87,26 @@ export function computeSummary(teachers: TeacherRow[], logs: LogRow[]): Activity
   const teachingRoles = new Set<string>(['ogretmen', 'zumre_baskani', 'mudur_yardimcisi'])
   const teachingTeachers = teachers.filter(t => teachingRoles.has(t.role))
   return {
-    activeCount:   activeTeacherIds.size,
-    totalActivity: logs.length,
+    activeCount:    activeTeacherIds.size,
+    odevGirenCount: new Set(logs.filter(l => l.action === 'odev_eklendi').map(l => l.teacher_id)).size,
     passiveCount:  teachingTeachers.filter(t => !activeTeacherIds.has(t.id)).length,
   }
+}
+
+export type AkisSatiri = { key: string; teacher_id: string; action: string; adet: number; created_at: string; title: string | null }
+
+/** Aktivite akışı: "Panele girdi" çıkarılır; aynı gün aynı öğretmenin aynı işi tek satırda birleşir (adet).
+ *  Girdi yeniden eskiye sıralı gelir; satır en yeni kaydın zamanını ve başlığını taşır. */
+export function akisSatirlari(logs: LogRow[]): AkisSatiri[] {
+  const satirlar = new Map<string, AkisSatiri>()
+  for (const log of logs) {
+    if (log.action === 'dashboard_view') continue
+    const k = `${log.teacher_id}|${log.action}|${istanbulGunu(log.created_at)}`
+    const v = satirlar.get(k)
+    if (v) v.adet++
+    else satirlar.set(k, { key: log.id, teacher_id: log.teacher_id, action: log.action, adet: 1, created_at: log.created_at, title: extractTitle(log.meta) })
+  }
+  return [...satirlar.values()]
 }
 
 export function actionLabel(action: string): string {

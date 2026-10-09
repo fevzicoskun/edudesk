@@ -5,9 +5,9 @@ import { ActivityReportRepository } from '@/src/domains/dashboard/repositories/A
 import {
   buildTeacherStats,
   computeSummary,
+  akisSatirlari,
   actionLabel,
   roleLabel,
-  extractTitle,
   nameInitials,
   since30daysISO,
   type LogRow,
@@ -42,6 +42,8 @@ export default async function OgretmenAktivitePage() {
   const summary = computeSummary(teachers, logs)
 
   const teacherMap = new Map(teachers.map(t => [t.id, t.full_name ?? 'Bilinmiyor']))
+  // "Panele girdi" akışta yok; aynı gün aynı iş tek satır (×adet)
+  const akis = akisSatirlari(logs)
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
@@ -61,8 +63,8 @@ export default async function OgretmenAktivitePage() {
           <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">Aktif Öğretmen</p>
         </div>
         <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-2xl p-4 text-center">
-          <p className="text-3xl font-bold text-green-700 dark:text-green-400">{summary.totalActivity}</p>
-          <p className="text-xs text-green-600 dark:text-green-400 mt-1">Toplam Aktivite</p>
+          <p className="text-3xl font-bold text-green-700 dark:text-green-400">{summary.odevGirenCount}</p>
+          <p className="text-xs text-green-600 dark:text-green-400 mt-1">Ödev Giren Öğretmen</p>
         </div>
         <div className="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-4 text-center">
           <p className="text-3xl font-bold text-gray-700 dark:text-slate-300">{summary.passiveCount}</p>
@@ -84,7 +86,7 @@ export default async function OgretmenAktivitePage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700">
                 <tr>
-                  {['Ad Soyad', 'Rol', 'Yoklama', 'Ödev', 'Toplam', 'Son Aktivite'].map(h => (
+                  {['Ad Soyad', 'Rol', 'Yoklama', 'Ödev', 'Giriş günü', 'Son Aktivite'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400">
                       {h}
                     </th>
@@ -98,7 +100,7 @@ export default async function OgretmenAktivitePage() {
                     <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">{roleLabel(s.role)}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.yoklamaCount}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.odevCount}</td>
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-slate-100">{s.totalCount}</td>
+                    <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.girisGunu}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">
                       {s.lastActivity
                         ? formatDistanceToNow(parseISO(s.lastActivity), { addSuffix: true })
@@ -117,20 +119,20 @@ export default async function OgretmenAktivitePage() {
         <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">
           Aktivite Akışı
         </p>
-        {logs.length === 0 ? (
+        {akis.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-8 text-center">
-            <p className="text-gray-400 text-sm">Son 30 günde aktivite kaydı yok.</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm">Son 30 günde ödev veya yoklama kaydı yok.</p>
           </div>
         ) : (
           <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl divide-y divide-gray-50 dark:divide-slate-700/50">
-            {logs.slice(0, 100).map(log => {
+            {akis.slice(0, 100).map(log => {
               const name     = teacherMap.get(log.teacher_id) ?? '?'
               const initials = nameInitials(name)
-              const title    = extractTitle(log.meta)
-              const detail   = title ? ` — ${title}` : ''
+              // birleşik satırda adet + en son ödevin başlığı birlikte (başlık kaybolmasın)
+              const detail   = `${log.adet > 1 ? ` ×${log.adet}` : ''}${log.title ? ` — ${log.title}` : ''}`
 
               return (
-                <div key={log.id} className="flex items-center gap-3 px-4 py-3">
+                <div key={log.key} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-bold text-blue-700 dark:text-blue-300 shrink-0">
                     {initials}
                   </div>
