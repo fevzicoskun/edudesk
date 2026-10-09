@@ -82,3 +82,14 @@ describe('gorselYuksekligi', () => {
     expect(gorselYuksekligi('odevler', { gunler: [0, 0, 0, 0, 0] })).toBeGreaterThan(gorselYuksekligi('odevler', { gunler: [0] }))
   })
 })
+
+describe('sinifPuntosu', () => {
+  it('kısa ad büyük, uzun ad başlığa sığacak kadar küçük', async () => {
+    const { sinifPuntosu } = await import('@/src/domains/mentor/lib/bultenGorselleri')
+    expect(sinifPuntosu('9-A')).toBe(156)
+    expect(sinifPuntosu('11-B')).toBe(156)
+    expect(sinifPuntosu('12 SAY')).toBeLessThan(156)
+    // 1080 genişlikte başlık bloğu en çok ~440px: karakter başına ~0.62em
+    expect(sinifPuntosu('__PW_TEST__ 9-A') * 0.62 * '__PW_TEST__ 9-A'.length).toBeLessThanOrEqual(440)
+  })
+})

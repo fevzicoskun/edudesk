@@ -19,9 +19,12 @@ export function gorselYuksekligi(tur: 'odevler' | 'ozet' | 'ogrenci', s: { gunle
   return BASLIK + BOLUM * 2 + (eksik ? eksik * EKSIK : TEBRIK) + gunler.reduce((a, n) => a + gunSatiri(n, false), 0) + ALT + PAY
 }
 
+/** Büyük sınıf adı punto: "9-A" 156px; uzun adlar (~440px başlık bloğuna) sığacak kadar küçülür. */
+export const sinifPuntosu = (ad: string) => Math.min(156, Math.floor(440 / (0.62 * Math.max(1, ad.length))))
+
 const Baslik = ({ sinif, ust, alt }: { sinif: string; ust: string; alt: string[] }) => (
   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: 32, borderBottom: `6px solid ${C.ink}` }}>
-    <div style={{ display: 'flex', fontSize: 156, fontWeight: 800, lineHeight: 0.82, letterSpacing: -4, padding: '0 8px',
+    <div style={{ display: 'flex', fontSize: sinifPuntosu(sinif), fontWeight: 800, lineHeight: 0.82, letterSpacing: -sinifPuntosu(sinif) / 40, padding: '0 8px',
       backgroundImage: `linear-gradient(transparent 58%, ${C.sun} 58%)` }}>{sinif}</div>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
       <div style={{ fontSize: 44, fontWeight: 800 }}>{ust}</div>
