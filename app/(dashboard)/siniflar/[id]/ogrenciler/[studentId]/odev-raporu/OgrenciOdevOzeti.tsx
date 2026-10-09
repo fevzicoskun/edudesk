@@ -1,6 +1,6 @@
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
-import { dersOzeti, dersOzetiMetni, type HomeworkRecord, type StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
+import { dersGruplari, dersOzetiMetni, type HomeworkRecord, type StudentHomeworkStats } from '@/src/domains/homework/lib/stats'
 
 const ETIKET: Record<SubmissionStatus, string> = {
   yapildi: 'Yapıldı', gec: 'Geç', eksik: 'Eksik', yapilmadi: 'Yapılmadı', mazeretli: 'Mazeretli',
@@ -37,7 +37,7 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
     { etiket: 'Kontrol edilmedi', sayi: stats.kontrolEdilmedi, cls: 'text-gray-500' },
     { etiket: 'Bekliyor', sayi: stats.bekliyor, cls: 'text-gray-600 italic' },
   ].filter(o => o.sayi > 0)
-  const dersler = dersOzeti(homeworks)
+  const gruplar = dersGruplari(homeworks)
 
   return (
     <div className="bg-white dark:bg-slate-800 text-black dark:text-slate-100 rounded-xl border border-gray-200 dark:border-slate-700 p-5 print:border-0 print:p-0 print:rounded-none print:text-black">
@@ -73,10 +73,10 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
         {stats.degerlendirilen > 0 && (
           <span className="text-gray-700"> — tamamlama %{stats.completionRate}</span>
         )}
-        {dersler.length > 0 && (
+        {gruplar.length > 0 && (
           <span className="block mt-0.5 text-[9.5pt] text-gray-800">
             <span className="font-semibold">Derslere göre (yapılan/kontrol edilen): </span>
-            {dersler.map(dersOzetiMetni).join('  ·  ')}
+            {gruplar.map(g => dersOzetiMetni(g.ozet)).join('  ·  ')}
           </span>
         )}
       </p>
@@ -88,16 +88,26 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
           <thead>
             <tr className="border-b border-black">
               <th className="text-left font-semibold py-1 w-24">Son teslim</th>
-              <th className="text-left font-semibold py-1 w-28">Ders</th>
               <th className="text-left font-semibold py-1">Ödev</th>
               <th className="text-left font-semibold py-1 w-28">Durum</th>
             </tr>
           </thead>
-          <tbody>
-            {homeworks.map(hw => (
+          {gruplar.map(g => (
+            // ders başına bir tbody: başlık satırı yazdırmada ödevlerinden ayrılıp sayfa sonunda tek kalmaz
+            <tbody key={g.ozet.ders}>
+              <tr className="break-inside-avoid break-after-avoid">
+                <th colSpan={3} scope="rowgroup" className="text-left pt-3 pb-1 border-b border-gray-500">
+                  <span className="font-bold text-[10.5pt]">{g.ozet.ders}</span>
+                  <span className="font-normal text-gray-700 text-[9.5pt]">
+                    {g.ozet.degerlendirilen > 0
+                      ? `  ·  yapılan/kontrol edilen: ${dersOzetiMetni(g.ozet).slice(g.ozet.ders.length).trim()}`
+                      : '  ·  henüz kontrol edilmedi'}
+                  </span>
+                </th>
+              </tr>
+            {g.odevler.map(hw => (
               <tr key={hw.id} className="border-b border-gray-300 break-inside-avoid">
                 <td className="py-1 align-top tabular-nums whitespace-nowrap">{tarih(hw.due_date)}</td>
-                <td className="py-1 align-top">{hw.subject}</td>
                 <td className="py-1 align-top">
                   {hw.title}
                   {hw.note && <span className="block text-[8.5pt] text-gray-700">Not: {hw.note}</span>}
@@ -109,7 +119,8 @@ export default function OgrenciOdevOzeti({ okulAdi, sinifAdi, ogrenci, homeworks
                 </td>
               </tr>
             ))}
-          </tbody>
+            </tbody>
+          ))}
         </table>
       )}
 

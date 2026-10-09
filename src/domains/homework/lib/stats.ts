@@ -71,6 +71,22 @@ export function dersAnahtari(subject: string): string {
   return (subject.trim() || 'Diğer').toLocaleLowerCase('tr-TR')
 }
 
+/** Öğrenci ödev raporu için derse göre gruplar: dersler dersOzeti sırasıyla (alfabetik), her dersin ödevleri
+ *  eskiden yeniye (tarihsiz en sonda). Grup özeti dersOzeti'nin aynısıdır — aynı anahtar, aynı tanım. */
+export function dersGruplari(homeworks: HomeworkRecord[]): { ozet: DersOzeti; odevler: HomeworkRecord[] }[] {
+  const gruplar = new Map<string, HomeworkRecord[]>()
+  for (const hw of homeworks) {
+    const k = dersAnahtari(hw.subject)
+    gruplar.set(k, [...(gruplar.get(k) ?? []), hw])
+  }
+  return dersOzeti(homeworks).map(ozet => ({
+    ozet,
+    odevler: [...(gruplar.get(dersAnahtari(ozet.ders)) ?? [])].sort((a, b) =>
+      a.due_date === b.due_date ? a.title.localeCompare(b.title, 'tr')
+        : a.due_date === null ? 1 : b.due_date === null ? -1 : a.due_date.localeCompare(b.due_date)),
+  }))
+}
+
 /** Ödev Geçmişi ders süzmesi. Süzme yoksa ya da ders eşleşmiyorsa (bozuk adres) tüm liste — boş ekran değil. */
 export function derseGore<T extends { subject: string }>(homeworks: T[], ders: string | null): T[] {
   if (!ders) return homeworks

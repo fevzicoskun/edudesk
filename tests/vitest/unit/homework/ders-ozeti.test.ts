@@ -75,3 +75,33 @@ describe('derseGore() — Ödev Geçmişi süzmesi', () => {
     for (const d of dersOzeti(kayitlar)) expect(derseGore(kayitlar, d.ders).length).toBe(d.toplam)
   })
 })
+
+describe('dersGruplari — öğrenci ödev raporu derse göre gruplu', () => {
+  const r = (subject: string, due_date: string | null, title = 't', status: HomeworkRecord['status'] = null): HomeworkRecord =>
+    ({ id: `${subject}-${due_date}-${title}`, title, subject, due_date, status, note: null, teacher_id: 'x', bekliyor: false })
+
+  it('dersler alfabetik (tr), her dersin ödevleri eskiden yeniye; tarihsiz en sonda', async () => {
+    const { dersGruplari } = await import('@/src/domains/homework/lib/stats')
+    const g = dersGruplari([
+      r('Kimya', '2026-10-08'), r('Fizik', '2026-10-07'), r('Kimya', '2026-09-24'),
+      r('Çoğrafya', '2026-10-05'), r('Fizik', null), r('Fizik', '2026-09-30'),
+    ])
+    expect(g.map(x => x.ozet.ders)).toEqual(['Çoğrafya', 'Fizik', 'Kimya'])
+    expect(g[1].odevler.map(o => o.due_date)).toEqual(['2026-09-30', '2026-10-07', null])
+    expect(g[2].odevler.map(o => o.due_date)).toEqual(['2026-09-24', '2026-10-08'])
+  })
+
+  it('aynı ders farklı yazımla (boşluk/büyük harf) tek grupta; grup özeti dersOzeti ile aynı', async () => {
+    const { dersGruplari, dersOzeti } = await import('@/src/domains/homework/lib/stats')
+    const k = [r('Fizik', '2026-10-01', 'a', 'yapildi'), r(' fizik ', '2026-10-02', 'b', 'eksik')]
+    const g = dersGruplari(k)
+    expect(g).toHaveLength(1)
+    expect(g[0].odevler).toHaveLength(2)
+    expect(g[0].ozet).toEqual(dersOzeti(k)[0])
+  })
+
+  it('boş liste → boş', async () => {
+    const { dersGruplari } = await import('@/src/domains/homework/lib/stats')
+    expect(dersGruplari([])).toEqual([])
+  })
+})
