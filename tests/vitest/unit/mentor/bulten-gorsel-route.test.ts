@@ -1,13 +1,20 @@
 // tests/vitest/unit/mentor/bulten-gorsel-route.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
+// Gerçek ImageResponse çizimi akış içinde (ReadableStream.start) yapar: hata ancak gövde okunurken çıkar.
+const cizim = vi.hoisted(() => ({ hata: false }))
 vi.mock('next/og', () => ({
   ImageResponse: class extends Response {
     constructor(_el: unknown, opt: { headers?: Record<string, string>; width?: number; height?: number }) {
       super('png', { headers: { 'content-type': 'image/png', ...(opt.headers ?? {}), 'x-h': String(opt.height) } })
     }
+    async arrayBuffer(): Promise<ArrayBuffer> {
+      if (cizim.hata) throw new Error('satori çizim hatası')
+      return super.arrayBuffer()
+    }
   },
 }))
+vi.mock('@/src/infrastructure/observability/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }))
 vi.mock('@/src/shared/authorization/server', () => ({ getAbility: vi.fn() }))
 vi.mock('@/src/domains/mentor/services/BultenService', () => ({ BultenService: { getBulten: vi.fn() } }))
 vi.mock('node:fs/promises', () => ({ readFile: vi.fn().mockResolvedValue(Buffer.from('font')) }))
@@ -28,6 +35,7 @@ const bulten = {
 }
 
 beforeEach(() => {
+  cizim.hata = false
   vi.mocked(getAbility).mockResolvedValue({ cannot: () => false } as never)
   vi.mocked(BultenService.getBulten).mockResolvedValue(bulten as never)
 })
@@ -91,5 +99,15 @@ describe('sinifPuntosu', () => {
     expect(sinifPuntosu('12 SAY')).toBeLessThan(156)
     // 1080 genişlikte başlık bloğu en çok ~440px: karakter başına ~0.62em
     expect(sinifPuntosu('__PW_TEST__ 9-A') * 0.62 * '__PW_TEST__ 9-A'.length).toBeLessThanOrEqual(440)
+  })
+})
+
+describe('çizim hatası', () => {
+  it('çizim akış içinde patlarsa 200 + kopuk gövde değil, 500 + log döner', async () => {
+    const { logger } = await import('@/src/infrastructure/observability/logger')
+    cizim.hata = true
+    const r = await istek(`tur=ozet&hafta=2026-10-12&sinif=${SINIF}`)
+    expect(r.status).toBe(500)
+    expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ event: 'bulten_gorsel_hatasi' }), expect.any(String))
   })
 })

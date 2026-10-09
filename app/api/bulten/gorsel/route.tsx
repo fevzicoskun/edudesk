@@ -49,10 +49,12 @@ export async function GET(req: Request) {
         : gorselYuksekligi('ozet', { ozet: sinif.ozet.length })
     }
     const [normal, kalin] = await Promise.all([font('BricolageGrotesque-Regular.ttf'), font('BricolageGrotesque-ExtraBold.ttf')])
-    return new ImageResponse(el, {
-      width: 1080, height, headers: BASLIKLAR,
+    // ImageResponse çizimi akış içinde yapar; burada tamamen okunur ki çizim hatası da catch'e düşsün (200 + kopuk gövde olmasın)
+    const png = await new ImageResponse(el, {
+      width: 1080, height,
       fonts: [{ name: 'Bricolage', data: normal, weight: 400, style: 'normal' }, { name: 'Bricolage', data: kalin, weight: 800, style: 'normal' }],
-    })
+    }).arrayBuffer()
+    return new Response(png, { headers: { 'Content-Type': 'image/png', ...BASLIKLAR } })
   } catch (e) {
     logger.error({ event: 'bulten_gorsel_hatasi', err: e instanceof Error ? e.message : String(e) }, 'Bülten görseli üretilemedi')
     return Response.json({ error: 'Görsel oluşturulamadı' }, { status: 500 })

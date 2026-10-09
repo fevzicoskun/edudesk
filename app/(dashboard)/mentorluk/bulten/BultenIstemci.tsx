@@ -29,20 +29,31 @@ function Gorsel({ url, alt }: { url: string; alt: string }) {
     : <img src={url} alt={alt} loading="lazy" onError={() => setHata(true)} className="w-full max-w-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-white" />
 }
 
-function PaylasIndir({ url, ad, metin }: { url: string; ad: string; metin?: string }) {
+/** Paylaş: iOS Safari dokunma iznini share() öncesindeki uzun await'te düşürür → PNG `hazirla` olunca ÖNCEDEN
+ *  File olarak alınır; dokununca navigator.share beklemesiz çağrılır. Desteklenmiyorsa yalnız "Görseli indir". */
+function PaylasIndir({ url, ad, metin, hazirla }: { url: string; ad: string; metin?: string; hazirla: boolean }) {
   const [paylasilir, setPaylasilir] = useState(false)
+  const [dosya, setDosya] = useState<File | null>(null)
   const [durum, setDurum] = useState('')
   useEffect(() => {
     const deneme = new File([''], 'x.png', { type: 'image/png' })
     setPaylasilir(typeof navigator !== 'undefined' && !!navigator.canShare?.({ files: [deneme] }))
   }, [])
+  useEffect(() => {
+    if (!paylasilir || !hazirla || dosya) return
+    let iptal = false
+    pngDosyasi(url, ad).then(f => { if (!iptal) setDosya(f) }, () => { if (!iptal) setDurum('Görsel hazırlanamadı, Görseli indir ile deneyin') })
+    return () => { iptal = true }
+  }, [paylasilir, hazirla, dosya, url, ad])
   return (
     <>
       {paylasilir && (
-        <button type="button" className={ana} onClick={async () => {
-          try { await navigator.share({ files: [await pngDosyasi(url, ad)], ...(metin ? { text: metin } : {}) }) }
-          catch (e) { if ((e as Error).name !== 'AbortError') setDurum('Paylaşılamadı, Görseli indir ile deneyin') }
-        }}>Paylaş</button>
+        <button type="button" className={ana} disabled={!dosya} aria-busy={!dosya} onClick={() => {
+          if (!dosya) return
+          // await YOK: share() dokunmayla aynı görev içinde çağrılmalı
+          navigator.share({ files: [dosya], ...(metin ? { text: metin } : {}) })
+            .catch((e: Error) => { if (e.name !== 'AbortError') setDurum('Paylaşılamadı, Görseli indir ile deneyin') })
+        }}>{dosya ? 'Paylaş' : 'Hazırlanıyor…'}</button>
       )}
       <a className={dugme} href={url} download={`${ad}.png`}>Görseli indir</a>
       {durum && <span role="status" className="text-sm text-red-600 dark:text-red-400">{durum}</span>}
@@ -53,6 +64,8 @@ function PaylasIndir({ url, ad, metin }: { url: string; ad: string; metin?: stri
 export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: string; gruplar: Grup[]; ogrenciler: Ogr[] }) {
   const [gonderildi, setGonderildi] = useState<Record<string, boolean>>({})
   const [kopyalandi, setKopyalandi] = useState('')
+  // satır bir kez açılınca kişisel görsel paylaşım için önceden hazırlanır (kapalı satırlar için istek atılmaz)
+  const [acik, setAcik] = useState<Record<string, boolean>>({})
   useEffect(() => { setGonderildi(Object.fromEntries(ogrenciler.map(o => [o.student_id, gonderildiOku(hafta, o.student_id)]))) }, [hafta, ogrenciler])
   const isaretle = (id: string, v: boolean) => { gonderildiYaz(hafta, id, v); setGonderildi(g => ({ ...g, [id]: v })) }
 
@@ -67,7 +80,7 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: s
               <figure key={url} className="space-y-2">
                 <figcaption className="text-sm font-semibold text-gray-700 dark:text-slate-300">{g.class_name} · {baslik}</figcaption>
                 <Gorsel url={url} alt={`${g.class_name} ${baslik}`} />
-                <div className="flex flex-wrap gap-2"><PaylasIndir url={url} ad={`${g.class_name} ${baslik}`} /></div>
+                <div className="flex flex-wrap gap-2"><PaylasIndir url={url} ad={`${g.class_name} ${baslik}`} hazirla /></div>
               </figure>
             ))}
           </div>
@@ -82,7 +95,7 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: s
         <ul className="divide-y divide-gray-200 dark:divide-slate-700 border border-gray-200 dark:border-slate-700 rounded-2xl">
           {ogrenciler.map(o => (
             <li key={o.student_id}>
-              <details className="group">
+              <details className="group" onToggle={e => { const a = (e.currentTarget as HTMLDetailsElement).open; if (a) setAcik(x => ({ ...x, [o.student_id]: true })) }}>
                 <summary className="flex items-center justify-between gap-3 min-h-[44px] px-4 py-2 cursor-pointer">
                   <span className="font-medium text-gray-900 dark:text-slate-100">
                     {o.full_name} <span className="text-sm text-gray-500 dark:text-slate-400">· {o.class_name}</span>
@@ -98,7 +111,7 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler }: { hafta: s
                   <pre className="whitespace-pre-wrap text-sm bg-gray-50 dark:bg-slate-800 text-gray-800 dark:text-slate-200 rounded-xl p-3 font-sans">{o.mesaj}</pre>
                   <Gorsel url={o.gorselUrl} alt={`${o.full_name} haftalık ödev kartı`} />
                   <div className="flex flex-wrap gap-2 items-center">
-                    <PaylasIndir url={o.gorselUrl} ad={o.full_name} metin={o.mesaj} />
+                    <PaylasIndir url={o.gorselUrl} ad={o.full_name} metin={o.mesaj} hazirla={!!acik[o.student_id]} />
                     <a className={dugme} href={o.whatsapp} target="_blank" rel="noopener noreferrer">WhatsApp&apos;ta aç</a>
                     <button type="button" className={dugme} onClick={async () => {
                       try { await navigator.clipboard.writeText(o.mesaj); setKopyalandi(o.student_id) } catch { setKopyalandi('') }

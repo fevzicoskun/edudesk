@@ -4,6 +4,9 @@ import { addDaysISO } from '@/src/shared/date'
 import { haftaEtiketi, gunAy, dersKisa, dersRengi, kisalt } from './bultenMath'
 import type { Bulten, BultenSinifi, BultenOgrencisi } from '../services/BultenService'
 
+/** Değişken uzunluktaki metin tek satır: Satori kaydırırsa satır uzar, önceden hesaplanan yükseklik taşar. */
+// Satori (Yoga) flexShrink varsayılanı 0'dır — daralabilmesi için açıkça 1 verilir.
+const TEK_SATIR = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1, minWidth: 0 } as const
 const C = { ink: '#1D2B5F', soft: '#5A6485', rule: '#DCE3F0', sun: '#FFD23F', wash: '#F5F7FC', ok: '#2E9E6B', eks: '#F2B233', yok: '#D9534F' }
 // Yükseklikler 2026-10-09 gerçek çizimden ölçüldü (px, 1080 genişlik). Satori içerik yüksekliğini bilmez; önceden hesaplanır.
 const BASLIK = 230, ALT = 105, PAY = 30, BOLUM = 90, EKSIK = 105, TEBRIK = 90, OZET = 116, LEJANT = 60, NOT = 108
@@ -27,7 +30,7 @@ const Baslik = ({ sinif, ust, alt }: { sinif: string; ust: string; alt: string[]
     <div style={{ display: 'flex', fontSize: sinifPuntosu(sinif), fontWeight: 800, lineHeight: 0.82, letterSpacing: -sinifPuntosu(sinif) / 40, padding: '0 8px',
       backgroundImage: `linear-gradient(transparent 58%, ${C.sun} 58%)` }}>{sinif}</div>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-      <div style={{ fontSize: 44, fontWeight: 800 }}>{ust}</div>
+      <div style={{ fontSize: 44, fontWeight: 800, maxWidth: 560, ...TEK_SATIR }}>{ust}</div>
       {alt.map(a => <div key={a} style={{ fontSize: 30, color: C.soft }}>{a}</div>)}
     </div>
   </div>
@@ -41,14 +44,14 @@ const Kart = ({ children }: { children: React.ReactNode }) => (
   <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', padding: '60px 60px 44px', background: '#fff', color: C.ink, fontFamily: 'Bricolage' }}>{children}</div>
 )
 const DersSatiri = ({ subject, title, alt }: { subject: string; title: string; alt?: string }) => (
-  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '6px 0' }}>
-    <div style={{ width: 20, height: 20, borderRadius: 10, background: dersRengi(subject), marginTop: 12, marginRight: 20 }} />
-    <div style={{ display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', fontSize: 34 }}>
-        <span style={{ fontWeight: 800, color: dersRengi(subject), marginRight: 10 }}>{dersKisa(subject)}</span>
-        <span>{kisalt(title, 44)}</span>
+  <div style={{ display: 'flex', alignItems: 'flex-start', padding: '6px 0', flexGrow: 1, flexShrink: 1, minWidth: 0 }}>
+    <div style={{ width: 20, height: 20, borderRadius: 10, background: dersRengi(subject), marginTop: 12, marginRight: 20, flexShrink: 0 }} />
+    <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', fontSize: 34, flexShrink: 1, minWidth: 0 }}>
+        <span style={{ fontWeight: 800, color: dersRengi(subject), marginRight: 10, flexShrink: 0 }}>{dersKisa(subject)}</span>
+        <span style={TEK_SATIR}>{kisalt(title, 44)}</span>
       </div>
-      {alt ? <div style={{ fontSize: 25, color: C.soft }}>{alt}</div> : null}
+      {alt ? <div style={{ fontSize: 25, color: C.soft, ...TEK_SATIR }}>{alt}</div> : null}
     </div>
   </div>
 )
@@ -86,9 +89,9 @@ export const OzetGorseli = ({ sinif, bulten }: { sinif: BultenSinifi; bulten: Bu
       : sinif.ozet.map(o => (
         <div key={o.id} style={{ display: 'flex', flexDirection: 'column', padding: '22px 0', borderBottom: `2px solid ${C.rule}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <div style={{ display: 'flex', fontSize: 32 }}>
-              <span style={{ fontWeight: 800, color: dersRengi(o.subject), marginRight: 10 }}>{dersKisa(o.subject)}</span>
-              <span>{kisalt(o.title, 34)}</span>
+            <div style={{ display: 'flex', fontSize: 32, flex: 1, minWidth: 0, marginRight: 16 }}>
+              <span style={{ fontWeight: 800, color: dersRengi(o.subject), marginRight: 10, flexShrink: 0 }}>{dersKisa(o.subject)}</span>
+              <span style={TEK_SATIR}>{kisalt(o.title, 34)}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline' }}>
               <span style={{ fontSize: 32, fontWeight: 800 }}>{`${o.yapildi}/${o.toplam}`}</span>
@@ -131,7 +134,7 @@ export const OgrenciGorseli = ({ ogrenci, sinif, bulten }: { ogrenci: BultenOgre
         : ogrenci.eksikler.map(e => (
           <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: `2px solid ${C.rule}` }}>
             <DersSatiri subject={e.subject} title={e.title} alt={`${gunAy(e.due_date)} kontrolü`} />
-            <span style={{ fontSize: 25, fontWeight: 600, padding: '4px 18px', borderRadius: 20, marginTop: 8,
+            <span style={{ fontSize: 25, fontWeight: 600, padding: '4px 18px', borderRadius: 20, marginTop: 8, marginLeft: 16, flexShrink: 0,
               background: e.durum === 'eksik' ? '#FFF1CC' : '#FBE1E0', color: e.durum === 'eksik' ? '#8A5A00' : '#A12A26' }}>{e.durum}</span>
           </div>
         ))}
