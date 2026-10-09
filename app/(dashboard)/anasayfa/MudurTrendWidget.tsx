@@ -8,19 +8,6 @@ import TrendChart from './charts/TrendChart'
 
 const MIN_WEEKS = 2
 
-function BirikiyorCard({ title, weeks }: { title: string; weeks: number }) {
-  return (
-    <Card>
-      <CardHeader><CardTitle className="text-sm">{title}</CardTitle></CardHeader>
-      <CardContent>
-        <p className="text-sm text-gray-500 dark:text-slate-400">
-          Trend için veri birikiyor — şu ana kadar {weeks} hafta. En az {MIN_WEEKS} hafta gerekiyor.
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
-
 export default async function MudurTrendWidget() {
   const school_id = await requireSchoolId()
   const { absence: absenceTrend, activity: activityTrend, coverage: coverageTrend, classAbs: classAbsence } = await getSchoolTrends(school_id)
@@ -31,44 +18,33 @@ export default async function MudurTrendWidget() {
 
   const maxClassRate = classAbsence[0]?.rate ?? 0
 
+  // Yalnız verisi yeten trendler grafik olur; tek grafik tam genişlik alır (yanında boş "birikiyor" kartı kalmasın).
+  // Verisi biriken trendler tek, küçük bir bilgi satırında toplanır.
+  const trendler = [
+    { ad: 'Devamsızlık oranı', yeter: enoughAbsence, hafta: filledWeekCount(absenceTrend), data: absenceTrend, renk: '#ef4444' },
+    { ad: 'Öğretmen aktivite oranı', yeter: enoughActivity, hafta: filledWeekCount(activityTrend), data: activityTrend, renk: '#10b981' },
+    { ad: 'Yoklama kapsama oranı', yeter: enoughCoverage, hafta: coverageTrend.filter(p => p.expected > 0).length, data: coverageTrend, renk: '#3b82f6' },
+  ]
+  const grafikler = trendler.filter(t => t.yeter)
+  const birikenler = trendler.filter(t => !t.yeter)
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      {/* Devamsızlık trendi */}
-      {enoughAbsence ? (
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Devamsızlık oranı (haftalık)</CardTitle></CardHeader>
+      {grafikler.map((t, i) => (
+        // tek sayıdaysa son grafik satırı tek başına doldurur
+        <Card key={t.ad} className={grafikler.length % 2 === 1 && i === grafikler.length - 1 ? 'lg:col-span-2' : ''}>
+          <CardHeader><CardTitle className="text-sm">{t.ad} (haftalık)</CardTitle></CardHeader>
           <CardContent>
-            <TrendChart data={absenceTrend} color="#ef4444" format="percent" />
+            <TrendChart data={t.data} color={t.renk} format="percent" />
           </CardContent>
         </Card>
-      ) : (
-        <BirikiyorCard title="Devamsızlık oranı (haftalık)" weeks={filledWeekCount(absenceTrend)} />
-      )}
+      ))}
 
-      {/* Öğretmen aktivite trendi */}
-      {enoughActivity ? (
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Öğretmen aktivite oranı (haftalık)</CardTitle></CardHeader>
-          <CardContent>
-            <TrendChart data={activityTrend} color="#10b981" format="percent" />
-          </CardContent>
-        </Card>
-      ) : (
-        <BirikiyorCard title="Öğretmen aktivite oranı (haftalık)" weeks={filledWeekCount(activityTrend)} />
-      )}
-
-      {/* Yoklama kapsama trendi */}
-      {enoughCoverage ? (
-        <Card className="lg:col-span-2">
-          <CardHeader><CardTitle className="text-sm">Yoklama kapsama oranı (haftalık)</CardTitle></CardHeader>
-          <CardContent>
-            <TrendChart data={coverageTrend} color="#3b82f6" format="percent" />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="lg:col-span-2">
-          <BirikiyorCard title="Yoklama kapsama oranı (haftalık)" weeks={coverageTrend.filter(p => p.expected > 0).length} />
-        </div>
+      {birikenler.length > 0 && (
+        <p className="lg:col-span-2 text-sm text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-3">
+          Trend için veri birikiyor (en az {MIN_WEEKS} hafta gerekiyor):{' '}
+          {birikenler.map(t => `${t.ad.toLocaleLowerCase('tr')} — ${t.hafta} hafta`).join(' · ')}
+        </p>
       )}
 
       {/* Sınıf karşılaştırması */}

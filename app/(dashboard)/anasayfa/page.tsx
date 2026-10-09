@@ -109,7 +109,8 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
         <MYStatsWidget />
       </Suspense>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* iki sütun aynı yükseklikte biter: sol son kart ve sağ liste kalan boyu doldurur */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
         <Suspense fallback={<WidgetSkeleton tall />}>
           <MYSolSutunWidget />
         </Suspense>

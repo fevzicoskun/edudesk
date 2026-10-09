@@ -35,7 +35,7 @@ export default async function MYSolSutunWidget() {
 
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4 h-full">
       <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Devamsızlık Riski</h2>
@@ -65,7 +65,7 @@ export default async function MYSolSutunWidget() {
         )}
       </section>
 
-      <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+      <section className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğretmenler</h2>
           <Link href="/kullanicilar" className="text-xs text-indigo-600 dark:text-indigo-400 font-medium hover:underline">Yönet →</Link>

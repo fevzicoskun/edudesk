@@ -48,7 +48,7 @@ export default async function MudurOgretmenAktivite() {
   const inactiveCount = rows.filter(t => !t.hasHomework && !t.hasAttendance).length
 
   return (
-    <Card className="border-gray-200 dark:border-slate-700 shadow-sm">
+    <Card className="h-full gap-0 py-0 border-gray-200 dark:border-slate-700 shadow-sm">
       <CardHeader className="px-4 pt-4 pb-2">
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -76,8 +76,8 @@ export default async function MudurOgretmenAktivite() {
           <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-14 text-center">Yoklama</span>
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <ul className="divide-y divide-gray-100 dark:divide-slate-700 max-h-96 overflow-y-auto">
+      <CardContent className="p-0 flex-1 min-h-0">
+        <ul className="divide-y divide-gray-100 dark:divide-slate-700 max-h-96 lg:max-h-none overflow-y-auto">
           {rows.map(t => (
             <li key={t.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
               <div className="min-w-0 flex-1">
