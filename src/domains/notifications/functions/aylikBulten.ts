@@ -2,6 +2,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { esc, turkeyDate } from '@/src/lib/email-utils'
+import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
 export const aylikBultenFn = inngest.createFunction(
   { id: 'aylik-bulten', triggers: [{ cron: '0 5 1 * *' }] }, // Her ayın 1'i 08:00 Türkiye
@@ -91,7 +92,9 @@ export const aylikBultenFn = inngest.createFunction(
         const classNameMap = new Map((classes ?? []).map(c => [c.id, c.name]))
         let bestClass = '—'
         let bestRate  = -1
-        for (const r of attendanceRates ?? []) {
+        // Yoklama modülü kapalı okulda "En iyi yoklama" bölümü yok (bestRate null kalır)
+        const yoklamaKapali = (await kapaliOkullar(db)).has(sid)
+        for (const r of yoklamaKapali ? [] : attendanceRates ?? []) {
           const total = Number(r.total)
           const rate  = total > 0 ? Number(r.present) / total : 0
           if (rate > bestRate) { bestRate = rate; bestClass = classNameMap.get(r.class_id) ?? '—' }

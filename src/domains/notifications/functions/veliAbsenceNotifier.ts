@@ -2,6 +2,7 @@ import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { mailer } from '@/src/lib/mailer'
 import { esc, formatDateTR } from '@/src/lib/email-utils'
+import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
 interface StudentRow {
   full_name:          string
@@ -39,6 +40,8 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
 
     const record = await step.run('kontrol', async () => {
       const supabase = createServiceClient()
+      // Yoklama modülü kapalı okulda veliye devamsızlık bildirimi gitmez
+      if ((await kapaliOkullar(supabase)).has(schoolId)) return 'yoklama-kapali' as const
       const { data, error } = await supabase
         .from('attendance')
         .select('status, notified_at, students(full_name, veli_email, veli_ad, veli_email_opt_out)')
@@ -50,6 +53,7 @@ export const veliAbsenceNotifierFn = inngest.createFunction(
       return data
     })
 
+    if (record === 'yoklama-kapali')       return { skipped: 'yoklama-kapali' }
     if (!record)                           return { skipped: 'kayit-yok' }
     if (record.status === 'excused')       return { skipped: 'ozurlu' }
     if (record.status !== 'absent' && record.status !== 'late') return { skipped: 'geldi' }

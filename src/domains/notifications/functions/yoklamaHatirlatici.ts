@@ -3,6 +3,7 @@ import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { sendPushToUser } from '@/src/infrastructure/push/webpush'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
+import { kapaliOkullar, yoklamasiAcik } from '@/src/domains/school/yoklamaAnahtari'
 
 const YONETICI_ROLLER = ['mudur', 'mudur_yardimcisi']
 
@@ -34,8 +35,10 @@ export const yoklamaHatirlaticiFn = inngest.createFunction(
         .range(f, t))
       // Okuma hatası = throw (Inngest yeniden dener, cronHataBildirimi kaydeder); eskiden "eksik yok" sayılıyordu
       if (sinifHata) throw new Error(`Sınıflar okunamadı: ${sinifHata.message}`)
-      if (!classes?.length) return []
-      const schoolIds = [...new Set(classes.map(c => c.school_id as string))]
+      // Yoklama modülü kapalı okullar hiç işlenmez (tek sınıfın yanlışlıkla girilen yoklaması diğerlerini "eksik" yapmasın)
+      const acikSiniflar = yoklamasiAcik(classes as { id: string; name: string; school_id: string; mentor_teacher_id: string | null }[], await kapaliOkullar(db))
+      if (!acikSiniflar.length) return []
+      const schoolIds = [...new Set(acikSiniflar.map(c => c.school_id))]
       const { data: attData, error: yoklamaHata } = await fetchAllResult((f, t) => db.from('attendance')
         .select('class_id, school_id')
         .eq('date', todayISO)
@@ -45,7 +48,7 @@ export const yoklamaHatirlaticiFn = inngest.createFunction(
       // Eskiden hata → attData boş → TÜM sınıflar "eksik" → herkese yanlış hatırlatma
       if (yoklamaHata) throw new Error(`Yoklamalar okunamadı: ${yoklamaHata.message}`)
       return findMissingClasses(
-        classes as { id: string; name: string; school_id: string; mentor_teacher_id: string | null }[],
+        acikSiniflar,
         (attData ?? []) as { class_id: string; school_id: string }[],
       )
     })

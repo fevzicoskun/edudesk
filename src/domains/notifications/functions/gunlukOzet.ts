@@ -10,6 +10,7 @@ import { todaysLessons, formatOzetBody, type Period, type Slot } from '@/src/dom
 import { formatDutyReminder } from '@/src/domains/schedule/dutyMath'
 import { findMissingClasses } from './yoklamaHatirlatici'
 import { formatGunlukOzet, previousSchoolDayGap, type GunlukOzetInput } from '../gunlukOzetMath'
+import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
 const DAY_MAP: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5 }
 const istDate = (d: Date) => new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(d)
@@ -46,8 +47,10 @@ export const gunlukOzetFn = inngest.createFunction(
 
       // Bölüm: dün eksik yoklama (mentor sınıfları). Tatil koruması: okulda dün 0 kayıt → okul atlanır.
       const schoolsWithAttendance = new Set((attendance.data ?? []).map(a => a.school_id as string))
+      // Yoklama modülü kapalı okulda "dün eksik yoklama" bölümü hiç yok
+      const yoklamaKapali = await kapaliOkullar(db)
       const mentorClasses = (classes.data ?? []).filter(
-        c => c.mentor_teacher_id && schoolsWithAttendance.has(c.school_id as string),
+        c => c.mentor_teacher_id && schoolsWithAttendance.has(c.school_id as string) && !yoklamaKapali.has(c.school_id as string),
       )
       const missingByMentor = new Map<string, { name: string; school_id: string }[]>()
       for (const c of findMissingClasses(mentorClasses as { id: string; name: string; school_id: string; mentor_teacher_id: string }[], (attendance.data ?? []) as { class_id: string; school_id: string }[])) {
