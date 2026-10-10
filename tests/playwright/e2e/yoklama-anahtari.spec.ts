@@ -4,6 +4,14 @@ import path from 'path'
 // Spec: docs/superpowers/specs/2026-10-10-yoklama-anahtari-design.md — test okulu her durumda AÇIK bırakılır.
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 
+/** "Diğer" grubundaki bir sayfada (Profil) grup kendiliğinden açıktır — tıklamak localStorage geri yüklemesiyle yarışır */
+async function menuLinki(page: Page, ad: string) {
+  await page.goto('/profil')
+  const menu = page.locator('aside').first()
+  await expect(menu.getByRole('link', { name: 'Profil' })).toBeVisible({ timeout: 15_000 })
+  return menu.getByRole('link', { name: ad })
+}
+
 async function anahtariAyarla(page: Page, acik: boolean) {
   await page.goto('/ayarlar')
   const anahtar = page.getByRole('switch', { name: 'Yoklama modülü' })
@@ -28,10 +36,12 @@ test.describe('Yoklama anahtarı — müdür yardımcısı', () => {
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 20_000 })
       await expect(page.getByText('Yoklama Alınan Sınıf')).toHaveCount(0)
       await expect(page.getByText(/sınıf yoklaması girilmemiş/)).toHaveCount(0)
+      await expect(await menuLinki(page, 'Devamsızlık Raporu')).toHaveCount(0)
 
       await anahtariAyarla(page, true)
       await page.goto('/anasayfa')
       await expect(page.getByText('Yoklama Alınan Sınıf')).toBeVisible({ timeout: 20_000 })
+      await expect(await menuLinki(page, 'Devamsızlık Raporu')).toHaveCount(1)
     } finally {
       await anahtariAyarla(page, true)
     }

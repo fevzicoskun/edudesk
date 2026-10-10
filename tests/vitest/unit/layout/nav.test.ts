@@ -129,3 +129,25 @@ describe('gorunurNav — yalnizMentor (Mentörlük yalnız mentörlüğü olana,
     expect(mobilNavSec(mob, 'ogretmen', { mentorMu: true }).altBar.map(i => i.href)).toEqual(['/anasayfa', '/mentorluk'])
   })
 })
+
+describe('gorunurNav — yalnizYoklama (yoklama anahtarı, 2026-10-10)', () => {
+  const items = [
+    item('/anasayfa'),
+    item('/yoklama', { roles: ['ogretmen', 'zumre_baskani'], yalnizYoklama: true }),
+    item('/rapor/devamsizlik', { roles: ['mudur', 'mudur_yardimcisi'], yalnizYoklama: true }),
+  ]
+  it('varsayılan (okul ayarı bilinmiyorsa) açık sayılır', () => {
+    expect(gorunurNav(items, 'ogretmen').map(i => i.href)).toEqual(['/anasayfa', '/yoklama'])
+  })
+  it('yoklama kapalıyken öğretmende Yoklama, idarede Devamsızlık Raporu gizli', () => {
+    expect(gorunurNav(items, 'ogretmen', { yoklamaAktif: false }).map(i => i.href)).toEqual(['/anasayfa'])
+    expect(gorunurNav(items, 'mudur', { yoklamaAktif: false }).map(i => i.href)).toEqual(['/anasayfa'])
+  })
+  it('açıkken rolüne göre görünür', () => {
+    expect(gorunurNav(items, 'mudur', { yoklamaAktif: true }).map(i => i.href)).toEqual(['/anasayfa', '/rapor/devamsizlik'])
+  })
+  it('mobil seçim de aynı koşulu uygular', () => {
+    const mob = items.map(i => ({ ...i, mobile: true }))
+    expect(mobilNavSec(mob, 'ogretmen', { yoklamaAktif: false }).altBar.map(i => i.href)).toEqual(['/anasayfa'])
+  })
+})

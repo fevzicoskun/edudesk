@@ -13,6 +13,7 @@ import { subscriptionState, kalanGun } from '@/src/domains/billing/subscriptionM
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { MentorRepository } from '@/src/domains/mentor/repositories/MentorRepository'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -26,6 +27,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     const { count } = await MentorRepository.countActiveMentorships(user.id)
     mentorMu = (count ?? 0) > 0
   }
+  // Yoklama menüleri okul ayarına bağlı (okul yoksa / okunamazsa açık sayılır)
+  const yoklamaAktif = profile?.school_id ? await okulYoklamaAktif(profile.school_id) : true
 
   // Abonelik enforcement (fail-open: schools okunamazsa geçir — tahsilat güvenlik sınırı değil).
   let abonelikUyari: number | null = null
@@ -56,7 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         {/* flex: içindeki <aside> satırın tam yüksekliğine uzasın (yoksa beyaz menü içerik bitince kesilir) */}
         <div className="flex print:hidden">
-          <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} />
+          <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} yoklamaAktif={yoklamaAktif} />
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="print:hidden">

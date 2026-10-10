@@ -17,20 +17,25 @@ export type NavKayit = {
   grup: NavGrup
   /** Yalnız en az bir mentörlük öğrencisi olan kullanıcıda görünür (Mentörlük) */
   yalnizMentor?: boolean
+  /** Yalnız okulun yoklama modülü açıkken görünür (Yoklama, Devamsızlık Raporu) */
+  yalnizYoklama?: boolean
 }
 
-export type NavSecenek = { mentorMu?: boolean }
+/** yoklamaAktif varsayılan true: okul ayarı bilinmiyorsa eski davranış */
+export type NavSecenek = { mentorMu?: boolean; yoklamaAktif?: boolean }
 
 /** Mobil alt bardaki toplam yuva sayısı — 5. yuva çekmece varsa "Daha Fazla"ya ayrılır */
 const MOBIL_YUVA = 5
 
-export function gorunurNav<T extends Pick<NavKayit, 'roles' | 'yalnizMentor'>>(
+export function gorunurNav<T extends Pick<NavKayit, 'roles' | 'yalnizMentor' | 'yalnizYoklama'>>(
   items: T[],
   role: Role | undefined,
-  { mentorMu = false }: NavSecenek = {},
+  { mentorMu = false, yoklamaAktif = true }: NavSecenek = {},
 ): T[] {
   return items.filter(item =>
-    (!item.roles || (!!role && item.roles.includes(role))) && (!item.yalnizMentor || mentorMu))
+    (!item.roles || (!!role && item.roles.includes(role)))
+    && (!item.yalnizMentor || mentorMu)
+    && (!item.yalnizYoklama || yoklamaAktif))
 }
 
 export function gruplaNav<T extends Pick<NavKayit, 'grup'>>(items: T[]): { gunluk: T[]; diger: T[] } {
@@ -45,7 +50,7 @@ export function gruplaNav<T extends Pick<NavKayit, 'grup'>>(items: T[]): { gunlu
  * Alt bara sığmayan mobil girişler çekmeceye eklenir — aksi halde menüden
  * tamamen kaybolurlardı (Sınıflar'ın başına gelen buydu).
  */
-export function mobilNavSec<T extends Pick<NavKayit, 'mobile' | 'roles' | 'yalnizMentor'>>(
+export function mobilNavSec<T extends Pick<NavKayit, 'mobile' | 'roles' | 'yalnizMentor' | 'yalnizYoklama'>>(
   items: T[],
   role: Role | undefined,
   secenek: NavSecenek = {},

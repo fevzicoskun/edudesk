@@ -28,7 +28,7 @@ function formatName(raw: string): string {
     .join(' ') || raw
 }
 
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; yalnizMentor?: boolean; icon: ReactNode }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; yalnizMentor?: boolean; yalnizYoklama?: boolean; icon: ReactNode }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
@@ -69,7 +69,16 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
   },
-  // ponytail: Yoklama menüden gizli (2026-09-25, kullanılmıyor) — /yoklama rotası duruyor; geri açmak için bu kaydı git geçmişinden geri getir
+  // Yoklama yalnız okulun yoklama modülü açıkken (Ayarlar → Okul ayarları; 2026-10-10)
+  {
+    href: '/yoklama',
+    label: 'Yoklama',
+    mobile: false,
+    roles: ['ogretmen', 'zumre_baskani'],
+    grup: 'diger',
+    yalnizYoklama: true,
+    icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>,
+  },
   {
     href: '/ders-programi',
     label: 'Ders Programım',
@@ -130,6 +139,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     mobile: false,
     roles: ['mudur', 'mudur_yardimcisi'],
     grup: 'diger',
+    yalnizYoklama: true,
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
   },
   {
@@ -173,7 +183,7 @@ function NavLink({
   )
 }
 
-export default function Sidebar({ profile, email, mentorMu = false }: { profile: SidebarProfile | null; email: string; mentorMu?: boolean }) {
+export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif = true }: { profile: SidebarProfile | null; email: string; mentorMu?: boolean; yoklamaAktif?: boolean }) {
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)
@@ -185,7 +195,7 @@ export default function Sidebar({ profile, email, mentorMu = false }: { profile:
   const [collapsed, setCollapsed] = useState(false)
   const [digerAcik, setDigerAcik] = useState(false)
 
-  const filteredNav = gorunurNav(navItems, role, { mentorMu })
+  const filteredNav = gorunurNav(navItems, role, { mentorMu, yoklamaAktif })
   const { gunluk, diger } = gruplaNav(filteredNav)
   // iç içe bağlantılar (/yonetim ↔ /yonetim/odevler) için tüm menü üzerinden tek hesap
   const aktif = aktifHref(pathname, navItems.map(i => i.href))
@@ -356,7 +366,7 @@ export default function Sidebar({ profile, email, mentorMu = false }: { profile:
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {(() => {
-          const { altBar, drawer } = mobilNavSec(navItems, role, { mentorMu })
+          const { altBar, drawer } = mobilNavSec(navItems, role, { mentorMu, yoklamaAktif })
           const showDrawer = drawer.length > 0
           return (
             <>
