@@ -60,4 +60,19 @@ export const BultenService = {
     })
     return { ...bos, okulAdi: ek.okulAdi, siniflar, ogrenciler }
   },
+
+  async gonderilenler(hafta: string): Promise<string[]> {
+    if (!pazartesiMi(hafta)) throw new Error('Geçersiz hafta')
+    const ability = await requireAbility()
+    return BultenRepository.gonderilenler(ability.schoolId, hafta)
+  },
+
+  async gonderildiIsaretle(studentId: string, hafta: string, gonderildi: boolean): Promise<{ error?: string }> {
+    if (!pazartesiMi(hafta)) return { error: 'Geçersiz hafta' }
+    const ability = await requireAbility()
+    const { error } = await BultenRepository.gonderildiYaz(ability.schoolId, ability.userId, studentId, hafta, gonderildi)
+    // 42501 = RLS reddi: öğrenci artık bu kişinin mentörlüğünde değil
+    if (error) return { error: error.code === '42501' ? 'Bu öğrenci mentörlüğünüzde değil.' : 'Kaydedilemedi, tekrar deneyin.' }
+    return {}
+  },
 }

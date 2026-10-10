@@ -50,7 +50,7 @@ test.describe('Sayfa genişlikleri — müdür yardımcısı', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'mudur_yardimcisi.json'), viewport: { width: 1600, height: 900 } })
   test('yönetim sayfalarında başlık aynı hizada', async ({ page }) => {
     const ref = await baslikX(page, '/kullanicilar')
-    for (const y of ['/yonetim', '/nobet', '/rapor/devamsizlik', '/rapor/ogretmen-aktivite']) {
+    for (const y of ['/anasayfa', '/nobet', '/rapor/devamsizlik', '/rapor/ogretmen-aktivite']) {
       expect(await baslikX(page, y), y).toBe(ref)
     }
   })

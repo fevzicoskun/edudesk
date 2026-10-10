@@ -1,0 +1,63 @@
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { requireSchoolId } from '@/src/shared/auth'
+import { schoolYearStart } from '@/src/shared/utils'
+import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
+import { getAbsenceScores } from '@/src/domains/dashboard/queries/schoolStats'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+
+export default async function DevamsizlikRiskiWidget() {
+  const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
+
+  const yearStart = schoolYearStart()
+  // Yalnız yoklama modülü açıkken; öğretmen listesi YoneticiBolumleri/OgretmenBolumu'nda (2026-10-10)
+  if (!(await okulYoklamaAktif(school_id))) return null
+
+  const [studentsRes, classesRes, absenceScores] = await Promise.all([
+    supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
+    supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null).order('grade').order('name'),
+    getAbsenceScores(school_id, yearStart),
+  ])
+
+  const students = studentsRes.data ?? []
+  const classes  = classesRes.data  ?? []
+
+  const absenceMap = new Map(absenceScores.map(r => [r.student_id, r.absences]))
+  const riskStudents = students
+    .map(s => ({ ...s, absences: absenceMap.get(s.id) ?? 0 }))
+    .filter(s => s.absences >= ATTENDANCE_WARN_DAYS)
+    .sort((a, b) => b.absences - a.absences)
+    .slice(0, 10)
+
+  const classMap = new Map(classes.map(c => [c.id, c]))
+
+  return (
+      <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Devamsızlık Riski</h2>
+          <span className="text-[11px] text-gray-500 dark:text-slate-400">yıl içi &middot; {ATTENDANCE_WARN_DAYS}+ devamsız</span>
+        </div>
+        {riskStudents.length === 0 ? (
+          <p className="px-4 py-7 text-center text-sm text-gray-500 dark:text-slate-400">Riskli öğrenci yok.</p>
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
+            {riskStudents.map(s => {
+              const cls    = classMap.get(s.class_id)
+              const danger = s.absences >= ATTENDANCE_LIMIT_DAYS
+              return (
+                <li key={s.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${danger ? 'bg-red-500' : 'bg-amber-400'}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-medium text-gray-900 dark:text-slate-100 truncate">{s.full_name}</p>
+                    <p className="text-[11px] text-gray-500 dark:text-slate-400">{cls?.name ?? '—'}</p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${danger ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-950 dark:text-amber-400'}`}>
+                    {s.absences} gün
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </section>
+  )
+}

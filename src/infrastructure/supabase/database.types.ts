@@ -2119,6 +2119,30 @@ export type Database = {
           },
         ]
       }
+      bulten_gonderimleri: {
+        Row: {
+          created_at: string
+          hafta: string
+          mentor_id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          hafta: string
+          mentor_id?: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          hafta?: string
+          mentor_id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: []
+      }
       school_events: {
         Row: {
           created_at: string

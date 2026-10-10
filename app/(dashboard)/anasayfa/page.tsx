@@ -1,13 +1,18 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { getCurrentProfile } from '@/src/shared/auth'
+import { getCurrentProfile, requireSchoolId } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 import OgretmenDashboard     from './OgretmenDashboard'
-import MudurOgretmenAktivite from './MudurOgretmenAktivite'
 import WidgetErrorBoundary from './WidgetErrorBoundary'
 import MYStatsWidget          from './MYStatsWidget'
-import MYSolSutunWidget       from './MYSolSutunWidget'
+import DevamsizlikRiskiWidget from './DevamsizlikRiskiWidget'
+import { BugunBolumu, OdevBolumu, OgretmenBolumu, MentorlukBolumu } from './YoneticiBolumleri'
+import KarneIndirButton from '../yonetim/KarneIndirButton'
+import UyariBandi from '../yonetim/UyariBandi'
+import BugunYoklamaWidget from '../yonetim/BugunYoklamaWidget'
+import AylikDevamsizlikWidget from '../yonetim/AylikDevamsizlikWidget'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 import { getGreeting }        from '@/src/shared/utils'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState } from '@/src/domains/dashboard/lib/firstRun'
@@ -41,56 +46,15 @@ function DashboardSkeleton() {
   )
 }
 
-function OdevTakibiLink() {
-  return (
-    <Link
-      href="/yonetim/odevler"
-      className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium"
-    >
-      Ödev Takibi →
-    </Link>
-  )
-}
+const baglanti = 'px-3 py-2 rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-gray-700 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500'
 
-async function MudurWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
-  const setup = await SetupService.getSetupStatus()
+/** MY ve müdür aynı sayfa (spec 2026-10-10); eski Okul Durumu buraya katıldı. Müdürde altta trendler. */
+async function YoneticiWidgets({ fullName, classCount, mudur }: { fullName: string; classCount: number; mudur: boolean }) {
+  const [setup, yoklama] = await Promise.all([
+    mudur ? SetupService.getSetupStatus() : null,
+    requireSchoolId().then(okulYoklamaAktif),
+  ])
 
-  return (
-    <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
-            {getGreeting(fullName)}
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
-            {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
-          </p>
-        </div>
-        <OdevTakibiLink />
-      </div>
-
-      {setup?.kind === 'mudur'
-        ? <BaslangicKartiMudur code={setup.code} />
-        : firstRunState('mudur', classCount) === 'setup' && <KurulumWidget />}
-
-      <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
-        <MYStatsWidget />
-      </Suspense>
-
-      <Suspense fallback={<WidgetSkeleton tall />}>
-        <MYSolSutunWidget />
-      </Suspense>
-
-      <Suspense fallback={<><WidgetSkeleton tall /><WidgetSkeleton tall /></>}>
-        <WidgetErrorBoundary label="Okul trendleri">
-          <MudurTrendWidget />
-        </WidgetErrorBoundary>
-      </Suspense>
-    </div>
-  )
-}
-
-async function MYWidgets({ fullName, classCount }: { fullName: string; classCount: number }) {
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -100,32 +64,61 @@ async function MYWidgets({ fullName, classCount }: { fullName: string; classCoun
             {format(parseISO(todayLocalISO()), 'd MMMM yyyy, EEEE')}
           </p>
         </div>
-        <OdevTakibiLink />
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/kullanicilar" className={baglanti}>Kullanıcılar</Link>
+          <Link href="/yonetim/ogrenciler" className={baglanti}>Öğrenciler</Link>
+          <KarneIndirButton />
+          <Link href="/yonetim/odevler" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
+            Ödev Takibi →
+          </Link>
+        </div>
       </div>
 
-      {firstRunState('mudur_yardimcisi', classCount) === 'setup' && <KurulumWidget />}
+      {setup?.kind === 'mudur'
+        ? <BaslangicKartiMudur code={setup.code} />
+        : firstRunState(mudur ? 'mudur' : 'mudur_yardimcisi', classCount) === 'setup' && <KurulumWidget />}
 
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
         <MYStatsWidget />
       </Suspense>
+      <Suspense fallback={null}>
+        <UyariBandi />
+      </Suspense>
 
-      {/* iki sütun aynı yükseklikte biter: sol son kart ve sağ liste kalan boyu doldurur */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <MYSolSutunWidget />
-        </Suspense>
-        <Suspense fallback={<WidgetSkeleton tall />}>
-          <WidgetErrorBoundary label="Öğretmen aktivitesi">
-            <MudurOgretmenAktivite />
+      {([
+        ['Bugün', BugunBolumu],
+        ['Ödev durumu', OdevBolumu],
+        ['Öğretmen takibi', OgretmenBolumu],
+        ['Mentörlük ve veli', MentorlukBolumu],
+      ] as const).map(([ad, Bolum]) => (
+        <Suspense key={ad} fallback={<WidgetSkeleton tall />}>
+          <WidgetErrorBoundary label={ad}>
+            <Bolum />
           </WidgetErrorBoundary>
         </Suspense>
-      </div>
+      ))}
+
+      {yoklama && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Suspense fallback={<WidgetSkeleton tall />}><BugunYoklamaWidget /></Suspense>
+          <Suspense fallback={<WidgetSkeleton tall />}><AylikDevamsizlikWidget /></Suspense>
+          <Suspense fallback={<WidgetSkeleton tall />}><DevamsizlikRiskiWidget /></Suspense>
+        </div>
+      )}
 
       <Suspense fallback={<WidgetSkeleton tall />}>
         <WidgetErrorBoundary label="Erken uyarılar">
           <ErkenUyarilarWidget />
         </WidgetErrorBoundary>
       </Suspense>
+
+      {mudur && (
+        <Suspense fallback={<><WidgetSkeleton tall /><WidgetSkeleton tall /></>}>
+          <WidgetErrorBoundary label="Okul trendleri">
+            <MudurTrendWidget />
+          </WidgetErrorBoundary>
+        </Suspense>
+      )}
     </div>
   )
 }
@@ -146,9 +139,7 @@ export default async function AnasayfaPage() {
       .eq('school_id', profile.school_id!)
       .is('deleted_at', null)
     const classCount = count ?? 0
-    return profile.role === 'mudur'
-      ? <MudurWidgets fullName={fullName} classCount={classCount} />
-      : <MYWidgets fullName={fullName} classCount={classCount} />
+    return <YoneticiWidgets fullName={fullName} classCount={classCount} mudur={profile.role === 'mudur'} />
   }
 
   return (

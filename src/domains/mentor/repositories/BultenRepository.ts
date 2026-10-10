@@ -17,4 +17,23 @@ export const BultenRepository = {
       ogretmenAdlari: new Map((ogretmen.data ?? []).map(p => [p.id, p.full_name ?? ''])),
     }
   },
+
+  /** Çağıranın bu hafta "gönderildi" işaretli öğrencileri (RLS: mentör kendi satırları). */
+  async gonderilenler(schoolId: string, hafta: string): Promise<string[]> {
+    const db = await createClient()
+    const { data, error } = await db.from('bulten_gonderimleri').select('student_id')
+      .eq('school_id', schoolId).eq('hafta', hafta)
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(r => r.student_id)
+  },
+
+  /** İşaret koy/kaldır. Yetki RLS'te: yalnız öğrencinin güncel mentörü yazar. */
+  async gonderildiYaz(schoolId: string, mentorId: string, studentId: string, hafta: string, gonderildi: boolean) {
+    const db = await createClient()
+    return gonderildi
+      ? db.from('bulten_gonderimleri')
+          .upsert({ school_id: schoolId, mentor_id: mentorId, student_id: studentId, hafta }, { onConflict: 'student_id,hafta', ignoreDuplicates: true })
+      : db.from('bulten_gonderimleri').delete()
+          .eq('school_id', schoolId).eq('mentor_id', mentorId).eq('student_id', studentId).eq('hafta', hafta)
+  },
 }

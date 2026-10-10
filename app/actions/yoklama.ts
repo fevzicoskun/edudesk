@@ -49,7 +49,7 @@ export async function saveYoklama(classId: string, date: string, entries: Attend
   if (profile?.id) {
     await TeacherDashboardService.logActivity(profile.id, 'yoklama_kaydedildi', { class_id: classId })
   }
-  revalidatePath('/yonetim')
+  revalidatePath('/anasayfa')
   revalidatePath('/yoklama')
 }
 

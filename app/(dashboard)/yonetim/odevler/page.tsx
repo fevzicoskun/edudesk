@@ -32,7 +32,7 @@ export default async function OdevTakibiPage({ searchParams }: { searchParams: P
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ödev Takibi</h1>
-        <Link href="/yonetim" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200">← Okul Durumu</Link>
+        <Link href="/anasayfa" className="text-sm text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200">← Ana sayfa</Link>
       </div>
 
       {r.dersler.length === 0 ? (

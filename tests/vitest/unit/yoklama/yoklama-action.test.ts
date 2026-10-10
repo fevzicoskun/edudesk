@@ -193,11 +193,11 @@ describe('saveYoklama() — başarılı kayıt', () => {
     expect(inngest.send).not.toHaveBeenCalled()
   })
 
-  it('başarılı kayıt → revalidatePath("/yonetim") çağrılır', async () => {
+  it('başarılı kayıt → revalidatePath("/anasayfa") çağrılır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     const { revalidatePath } = await import('next/cache')
     await saveYoklama(CLASS_ID, '2026-06-09', [{ studentId: S1, status: 'present' }])
-    expect(revalidatePath).toHaveBeenCalledWith('/yonetim')
+    expect(revalidatePath).toHaveBeenCalledWith('/anasayfa')
   })
 })
 

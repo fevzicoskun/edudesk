@@ -114,7 +114,7 @@ test.describe('MY Ödev Takibi', () => {
   })
 
   test('okul karnesi PDF\'i ödev bölümlerini ve okuma rehberini içerir', async ({ page }) => {
-    await page.goto('/yonetim')
+    await page.goto('/anasayfa')
     const indir = page.getByRole('button', { name: 'Karne (PDF) indir' })
     await expect(indir).toBeVisible({ timeout: 20_000 })
     const [dosya] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), indir.click()])
@@ -131,17 +131,17 @@ test.describe('MY Ödev Takibi', () => {
     }
   })
 
-  test('menüde yalnız Ödev Takibi aktif (Okul Durumu yanmaz)', async ({ page }) => {
+  test('menüde Ödev Takibi aktif; Okul Durumu menüde yok (ana sayfaya katıldı)', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 })
     await page.goto('/yonetim/odevler')
     const aside = page.locator('aside').first()
     await expect(aside.getByRole('link', { name: 'Ödev Takibi' })).toHaveAttribute('aria-current', 'page', { timeout: 20_000 })
-    await expect(aside.getByRole('link', { name: 'Okul Durumu' })).not.toHaveAttribute('aria-current', 'page')
+    await expect(aside.getByRole('link', { name: 'Okul Durumu' })).toHaveCount(0)
   })
 
   test('ana sayfadan tek tıkla ulaşılır', async ({ page }) => {
     await page.goto('/anasayfa')
-    await page.getByRole('main').getByRole('link', { name: 'Ödev Takibi →' }).click()
+    await page.getByRole('main').getByRole('link', { name: 'Ödev Takibi →' }).first().click()
     await expect(page).toHaveURL(/\/yonetim\/odevler$/, { timeout: 20_000 })
   })
 })

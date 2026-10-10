@@ -44,15 +44,12 @@ test.describe('Yoklama anahtarı — müdür yardımcısı', () => {
       await expect(page.getByText('Yoklama Alınan Sınıf')).toHaveCount(0)
       await expect(page.getByText(/sınıf yoklaması girilmemiş/)).toHaveCount(0)
       await expect(await menuLinki(page, 'Devamsızlık Raporu')).toHaveCount(0)
-      // MY ana sayfa: Devamsızlık Riski kartı ve Öğretmen Aktivitesi'nde Yoklama sütunu yok
+      // MY ana sayfa (Okul Durumu buraya katıldı): Devamsızlık Riski, bugün yoklama, aylık devamsızlık yok
       await page.goto('/anasayfa')
-      await expect(page.locator('main').getByText('Öğretmen Aktivitesi', { exact: true })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('heading', { name: 'Öğretmen takibi' })).toBeVisible({ timeout: 20_000 })
       await expect(page.getByRole('heading', { name: 'Devamsızlık Riski' })).toHaveCount(0)
       await expect(page.getByText('Yoklama', { exact: true })).toHaveCount(0)
-      // Okul Durumu: bugün yoklama ve aylık devamsızlık kartları yok
-      await page.goto('/yonetim')
-      await expect(page.getByRole('heading', { name: 'Okul Durumu' })).toBeVisible({ timeout: 20_000 })
-      await expect(page.getByText('Bu Ay Devamsızlık')).toHaveCount(0)
+      await expect(page.getByRole('heading', { name: 'Bu Ay Devamsızlık' })).toHaveCount(0)
       await expect(page.getByText(/Yoklama: \d+ \/ \d+ sınıf/)).toHaveCount(0)
       // Aktivite raporu: Yoklama sütunu yok
       await page.goto('/rapor/ogretmen-aktivite')
@@ -62,6 +59,7 @@ test.describe('Yoklama anahtarı — müdür yardımcısı', () => {
       await anahtariAyarla(page, true)
       await page.goto('/anasayfa')
       await expect(page.getByText('Yoklama Alınan Sınıf')).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('heading', { name: 'Bu Ay Devamsızlık' })).toBeVisible()
       await expect(await menuLinki(page, 'Devamsızlık Raporu')).toHaveCount(1)
     } finally {
       await anahtariAyarla(page, true)

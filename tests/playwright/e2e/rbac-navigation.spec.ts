@@ -57,9 +57,9 @@ test.describe('Müdür rolü erişim hakları', () => {
     await expect(page.locator('main').first()).toBeVisible()
   })
 
-  test('yönetim sayfasına erişebilir', async ({ page }) => {
+  test('eski Okul Durumu adresi ana sayfaya yönlenir', async ({ page }) => {
     await page.goto('/yonetim')
-    await expect(page).not.toHaveURL(/login/)
+    await expect(page).toHaveURL(/\/anasayfa$/, { timeout: 15_000 })
   })
 
   test('siniflar sayfasına erişebilir', async ({ page }) => {

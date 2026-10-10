@@ -18,7 +18,7 @@ export default async function BultenPage({ searchParams }: { searchParams: Promi
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const istenen = (await searchParams).hafta
   const hafta = typeof istenen === 'string' && pazartesiMi(istenen) ? istenen : haftaSec(todayLocalISO())
-  const b = await BultenService.getBulten(hafta)
+  const [b, gonderilenler] = await Promise.all([BultenService.getBulten(hafta), BultenService.gonderilenler(hafta)])
   const eksikli = b.ogrenciler.filter(o => o.eksikler.length).length
   const gorsel = (q: string) => `/api/bulten/gorsel?${q}&hafta=${hafta}`
 
@@ -44,7 +44,9 @@ export default async function BultenPage({ searchParams }: { searchParams: Promi
         </div>
       ) : (
         <BultenIstemci
+          key={hafta}
           hafta={hafta}
+          gonderilenler={gonderilenler}
           gruplar={b.siniflar.map(s => ({
             class_name: s.class_name,
             odevlerUrl: gorsel(`tur=odevler&sinif=${s.class_id}`),

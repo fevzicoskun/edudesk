@@ -36,9 +36,18 @@ test.describe('Haftalık veli bülteni', () => {
     expect(r.headers()['content-type']).toBe('image/png')
     expect(r.headers()['cache-control']).toBe('private, no-store')
 
-    await satir.getByLabel('Gönderildi').check()
+    // Kopyala işareti kendiliğinden koyar; işaret sunucuda (bulten_gonderimleri) → yeniden yüklemede kalır
+    await expect(satir.getByLabel('Gönderildi')).toBeChecked()
+    await expect(satir.getByText('✓ Gönderildi')).toBeVisible()
+    await page.waitForLoadState('networkidle')
     await page.reload()
-    await expect(page.locator('details', { hasText: ad }).getByText('✓ Gönderildi')).toBeVisible()
+    await expect(page.locator('details', { hasText: ad }).getByText('✓ Gönderildi')).toBeVisible({ timeout: 15_000 })
+    // elle kaldırılabilir ve bu da kalıcıdır
+    await page.locator('details', { hasText: ad }).locator('summary').click()
+    await page.locator('details', { hasText: ad }).getByLabel('Gönderildi').uncheck()
+    await page.waitForLoadState('networkidle')
+    await page.reload()
+    await expect(page.locator('details', { hasText: ad }).getByText('✓ Gönderildi')).toHaveCount(0, { timeout: 15_000 })
 
     // Temizlik: öğrenciyi mentörlükten çıkar
     await page.goto('/mentorluk')

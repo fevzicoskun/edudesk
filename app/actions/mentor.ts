@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { UUID } from '@/src/shared/validation'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
+import { BultenService } from '@/src/domains/mentor/services/BultenService'
 import type { ActionResult } from '@/src/shared/types/index'
 
 const mentorReportSchema = z.object({
@@ -131,5 +132,22 @@ export async function markRulesExplained(studentId: string): Promise<ActionResul
   if (result.error) return { error: result.error }
 
   revalidatePath(`/mentorluk/${studentId}`)
+  return {}
+}
+
+// ── Haftalık bülten gönderim işareti ─────────────────────────────────────────
+
+const bultenSchema = z.object({
+  studentId:  UUID,
+  hafta:      z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Geçersiz hafta'),
+  gonderildi: z.boolean(),
+})
+
+export async function bultenGonderildi(studentId: string, hafta: string, gonderildi: boolean): Promise<ActionResult> {
+  const parsed = bultenSchema.safeParse({ studentId, hafta, gonderildi })
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const result = await BultenService.gonderildiIsaretle(parsed.data.studentId, parsed.data.hafta, parsed.data.gonderildi)
+  if (result.error) return { error: result.error }
+  revalidatePath('/anasayfa')
   return {}
 }

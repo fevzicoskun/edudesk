@@ -35,13 +35,13 @@ test.afterAll(async () => {
   await db.from('usage_daily').delete().in('user_id', [ogr.id, zb.id])
 })
 
-test('MY ana sayfası: kullanan öğretmen Aktif, kullanmayan Pasif; Aktif Öğretmen sayısı doğru', async ({ page }) => {
+test('MY ana sayfası: Öğretmen takibinde son giriş; kullanmayan "hiç"; Aktif Öğretmen sayısı doğru', async ({ page }) => {
   await page.goto('/anasayfa')
-  const liste = page.locator('section', { has: page.getByRole('heading', { name: 'Öğretmenler' }) })
-  const satir = (ad: string) => liste.locator('li', { hasText: ad })
-  await expect(satir(ogr.ad)).toContainText('Aktif', { timeout: 20_000 })
-  await expect(satir(ogr.ad)).toContainText('son ')
-  await expect(satir(zb.ad)).toContainText('Pasif')
+  const tablo = page.getByRole('region', { name: 'Öğretmen takibi' })
+  const satir = (ad: string) => tablo.locator('tr', { hasText: ad })
+  await expect(satir(ogr.ad)).toBeVisible({ timeout: 20_000 })
+  await expect(satir(ogr.ad).locator('td').last()).not.toHaveText('hiç')
+  await expect(satir(zb.ad).locator('td').last()).toHaveText('hiç')
 
   // "Aktif Öğretmen" kartı en az 1 (test okulunda başka öğretmen kullanımı yok → tam 1)
   const kart = page.locator('div.rounded-xl', { has: page.getByText('Aktif Öğretmen', { exact: true }) })
