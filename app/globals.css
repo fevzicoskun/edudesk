@@ -189,6 +189,10 @@ body {
   --color-ring: var(--ring);
 }
 
+/* Kâğıt kenar boşluğu — rapor sayfaları print:p-0 ile kendi boşluğunu sıfırlıyor; bu olmadan yazı kâğıdın
+   kenarına dayanıyordu (2026-10-10 kullanıcı). Sayfaya özel @page (ör. size: landscape) bununla birleşir. */
+@page { margin: 15mm 14mm; }
+
 @media print {
   /* Sidebar ve mobile header gizle */
   aside, header { display: none !important; }
