@@ -94,3 +94,24 @@ test.describe('Öğretmen aktivitesi ayıklanmış', () => {
     await expect(page.getByText('Toplam Aktivite')).toHaveCount(0)
   })
 })
+
+// 2026-10-10 kullanıcı (iPhone): telefonda arama yoktu — masaüstü üst barı md altında gizli, mobil başlıkta düğme yoktu
+test.describe('Telefonda arama', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json'), viewport: { width: 390, height: 844 }, hasTouch: true })
+
+  test('üst başlıkta arama düğmesi var ve arama penceresini açar', async ({ page }) => {
+    await page.goto('/anasayfa')
+    const ara = page.getByRole('button', { name: 'Ara', exact: true })
+    await expect(ara).toBeVisible({ timeout: 20_000 })
+    const kutu = (await ara.boundingBox())!
+    expect(kutu.width).toBeGreaterThanOrEqual(40) // dokunma hedefi
+    await expect(async () => {
+      await ara.tap()
+      await expect(page.getByRole('dialog', { name: 'Arama' }).locator('input').first()).toBeVisible({ timeout: 2_000 })
+    }).toPass({ timeout: 20_000 })
+    // iOS Safari 16px altı yazılı kutuya dokununca sayfayı yakınlaştırır
+    const boyut = await page.getByRole('dialog', { name: 'Arama' }).locator('input').first()
+      .evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+    expect(boyut).toBeGreaterThanOrEqual(16)
+  })
+})

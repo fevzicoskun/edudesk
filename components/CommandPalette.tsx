@@ -35,6 +35,11 @@ function ResultIcon({ type }: { type: SearchResult['type'] }) {
   )
 }
 
+/** Paleti açar — masaüstü üst bar ve telefon başlığındaki arama düğmeleri (Ctrl+K dinleyicisine gider) */
+export function aramayiAc() {
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, bubbles: true }))
+}
+
 export default function CommandPalette() {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')

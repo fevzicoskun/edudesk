@@ -11,6 +11,7 @@ import ThemeToggle from '@/components/ThemeToggle'
 import MobileNavDrawer from '@/components/layout/MobileNavDrawer'
 import FeedbackButton from '@/components/FeedbackButton'
 import NotificationBell from '@/components/NotificationBell'
+import { aramayiAc } from '@/components/CommandPalette'
 import EduDeskLogo from '@/components/EduDeskLogo'
 import Avatar from '@/app/components/Avatar'
 import { aktifHref, gorunurNav, gruplaNav, mobilNavSec, type NavGrup } from '@/components/layout/navMath'
@@ -242,6 +243,17 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
           )}
         </div>
         <div className="flex items-center gap-1">
+          {/* masaüstü arama çubuğu (TopBar) telefonda gizli — aynı paleti açan düğme */}
+          <button
+            type="button"
+            onClick={aramayiAc}
+            aria-label="Ara"
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800"
+          >
+            <svg aria-hidden className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
           <NotificationBell align="right" userId={profile?.id} />
           <ThemeToggle />
           <Link href="/profil" aria-label="Profilim" className="ml-1">
