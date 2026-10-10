@@ -1,3 +1,4 @@
+import { fetchAll } from '@/src/shared/utils/fetchAll'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { kategorizeOdev } from '@/src/domains/homework/homeworkMath'
 import SinifChipBar from './SinifChipBar'
@@ -39,6 +40,8 @@ export default async function HomeworkSection({
     .is('deleted_at', null)
     .eq('is_template', false)
     .order('due_date', { ascending: false })
+    // eşitlik bozucu: aynı teslim günlü ödevler sayfa sınırında atlanmasın/tekrarlanmasın
+    .order('id')
 
   if (!kapsam.tumu) query = query.in('teacher_id', kapsam.ogretmenIds)
   // URL'deki öğretmen filtresi kapsamı genişletemez: kapsam dışı id → boş liste
@@ -48,7 +51,9 @@ export default async function HomeworkSection({
   if (params.ders)  query = query.eq('subject', params.ders)
   if (params.q)     query = query.ilike('title', `%${params.q}%`)
 
-  const { data: hwData, count: hwCount } = await query.range(offset, offset + PAGE_SIZE - 1)
+  const { data: hwData, count: hwCount, error: hwErr } = await query.range(offset, offset + PAGE_SIZE - 1)
+  // DB hatası "henüz ödev yok" gibi görünmesin → error.tsx
+  if (hwErr) throw new Error(`Ödevler okunamadı: ${hwErr.message}`)
   const homeworks   = hwData ?? []
   const totalCount  = hwCount ?? 0
   const totalPages  = Math.ceil(totalCount / PAGE_SIZE)
@@ -57,8 +62,11 @@ export default async function HomeworkSection({
   const classIds    = [...new Set(homeworks.map(h => h.class_id as string))]
 
   const [subStatsRes, classCountsRes] = await Promise.all([
+    // 50 ödev × sınıf mevcudu 1000'i aşar (PostgREST max_rows sessizce keser) → sayfalı, yalnız işaretliler
     homeworkIds.length > 0
-      ? supabase.from('homework_submissions').select('homework_id, status, marked_at').in('homework_id', homeworkIds).eq('school_id', schoolId)
+      ? fetchAll<{ homework_id: string; status: string; marked_at: string | null }>((f, t) => supabase.from('homework_submissions')
+          .select('homework_id, status, marked_at').in('homework_id', homeworkIds).eq('school_id', schoolId)
+          .not('marked_at', 'is', null).order('id').range(f, t)).then(data => ({ data }))
       : Promise.resolve({ data: [] as { homework_id: string; status: string; marked_at: string | null }[] }),
     classIds.length > 0
       ? supabase.from('students').select('class_id').in('class_id', classIds).eq('school_id', schoolId).is('deleted_at', null)

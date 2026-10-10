@@ -173,9 +173,12 @@ export async function updateVeliContact(studentId: string, classId: string, form
   const parsed = veliContactSchema.safeParse(Object.fromEntries(formData.entries()))
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
 
-  const email   = parsed.data.veli_email   || null
-  const telefon = parsed.data.veli_telefon || null
-  const ad      = parsed.data.veli_ad      || null
+  // Formda OLMAYAN alan dokunulmaz (undefined): sınıf kartı yalnız e-posta+telefon gönderir,
+  // önceden veli adını null'a çekiyordu (2026-10-10 tarama).
+  const alan = (k: 'veli_email' | 'veli_telefon' | 'veli_ad') => formData.has(k) ? (parsed.data[k] || null) : undefined
+  const email   = alan('veli_email')
+  const telefon = alan('veli_telefon')
+  const ad      = alan('veli_ad')
 
   const result = await ClassService.updateVeliContact(studentId, { email, telefon, ad })
   if (result?.error) return { error: result.error }

@@ -31,9 +31,11 @@ export const BultenService = {
 
     const ids = mentorluk.map(m => m.student_id)
     // bas YOK: o parametre assigned_date'e göre süzer; geçen hafta kontrol edilen eski ödevler kaçardı
-    const profiller = await HomeworkService.getMentorHomeworkProfiles(ids)
+    const [profiller, ek] = await Promise.all([
+      HomeworkService.getMentorHomeworkProfiles(ids),
+      BultenRepository.ekBilgi(ability.schoolId, ids),
+    ])
     if ('error' in profiller) throw new Error(profiller.error)
-    const ek = await BultenRepository.ekBilgi(ability.schoolId, ids)
 
     const sinifIdleri = [...new Set(profiller.ogrenciler.map(o => o.class_id))]
     const siniflar: BultenSinifi[] = sinifIdleri.map(cid => {

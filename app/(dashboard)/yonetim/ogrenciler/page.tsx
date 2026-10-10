@@ -17,7 +17,7 @@ export default async function OgrencilerPage() {
 
   const { data } = await supabase
     .from('classes')
-    .select('id, name, grade, students(id, full_name, student_number)')
+    .select('id, name, grade, students(id, full_name, student_number, deleted_at)')
     .eq('school_id', profile.school_id!)
     .is('deleted_at', null)
     .order('grade')

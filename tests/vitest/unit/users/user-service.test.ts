@@ -22,6 +22,7 @@ vi.mock('@/src/domains/users/repositories/UserRepository', () => ({
     getSchoolClasses:    vi.fn(), // matris
     addTeacherClasses:   vi.fn(), // matris
     updateAuthEmail:     vi.fn(),
+    sahipOlunanVeri:     vi.fn(),
   },
 }))
 
@@ -41,7 +42,10 @@ function makeProfile(role: string) {
   return { data: { role, school_id: SCHOOL_ID }, error: null }
 }
 
-beforeEach(() => { vi.clearAllMocks() })
+beforeEach(() => {
+  vi.clearAllMocks()
+  vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 0, mentorluk: 0, dersProgrami: 0, nobet: 0 })
+})
 
 // ─────────────────────────────────────────────────────────────
 describe('UserService.invite()', () => {
@@ -170,6 +174,25 @@ describe('UserService.deleteUser()', () => {
 })
 
 // ─────────────────────────────────────────────────────────────
+describe('UserService.deleteUser() — veri koruması', () => {
+  it('ödevi/mentörlüğü/ders programı/nöbeti olan öğretmen silinmez, ne kaybolacağı söylenir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 19, mentorluk: 15, dersProgrami: 1, nobet: 2 })
+    const r = await UserService.deleteUser(TARGET_ID)
+    expect(r.error).toBe('Bu kullanıcının 19 ödev, 15 mentörlük öğrencisi, ders programı, 2 nöbet kaydı var; silinirse kalıcı olarak kaybolur. Silme yapılmadı.')
+    expect(UserRepository.deleteAuthUser).not.toHaveBeenCalled()
+  })
+
+  it('sayım hata verirse silme yapılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.sahipOlunanVeri).mockRejectedValue(new Error('db'))
+    await expect(UserService.deleteUser(TARGET_ID)).rejects.toThrow()
+    expect(UserRepository.deleteAuthUser).not.toHaveBeenCalled()
+  })
+})
+
 describe('UserService.assignRole()', () => {
   beforeEach(() => {
     vi.mocked(UserRepository.assignRole).mockResolvedValue({ data: null, error: null } as never)

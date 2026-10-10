@@ -66,10 +66,14 @@ export default async function OgretmenDashboard() {
 
   void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
-  const [metrics, duties, myTasks] = await Promise.all([
+  // tek bekleme turu: sınıf sayısı ve kurulum durumu da birlikte
+  const supabaseTc = await createClient()
+  const [metrics, duties, myTasks, { count: assignedClassCount }, setup] = await Promise.all([
     TeacherDashboardService.getDashboardMetrics(user.id),
     DutyService.getMyDuties(),
     TaskService.getMyActiveTasks(),
+    supabaseTc.from('teacher_classes').select('class_id', { count: 'exact', head: true }).eq('teacher_id', profile.id),
+    SetupService.getSetupStatus(),
   ])
 
   // İstanbul günü — UTC sunucuda gece 00:00–03:00 arası gün kayması olmasın.
@@ -83,11 +87,6 @@ export default async function OgretmenDashboard() {
 
   // İlk-kullanım: ATANMIŞ sınıf (teacher_classes) yoksa sade bekleme ekranı göster.
   // Not: ödev-türevli yoklamaDurumu DEĞİL — ödevi olmayan ama sınıfı olan öğretmen yanlış ekran görmesin.
-  const supabaseTc = await createClient()
-  const { count: assignedClassCount } = await supabaseTc
-    .from('teacher_classes')
-    .select('class_id', { count: 'exact', head: true })
-    .eq('teacher_id', profile.id)
   if (firstRunState(profile.role as Role, assignedClassCount ?? 0) === 'waiting') {
     return (
       <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -104,7 +103,6 @@ export default async function OgretmenDashboard() {
   const upcomingHws = metrics.homeworks
     .filter(h => h.due_date > todayStr && h.due_date <= next7Str)
     .sort((a, b) => a.due_date.localeCompare(b.due_date))
-  const setup = await SetupService.getSetupStatus()
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">

@@ -22,13 +22,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const profile = await getCurrentProfile()
 
   // Mentörlük menüde yalnız en az bir öğrencisi olan öğretmende görünür (okuma hatası = gizli, sayfa yine açılır)
-  let mentorMu = false
-  if (isTeachingRole(profile?.role)) {
-    const { count } = await MentorRepository.countActiveMentorships(user.id)
-    mentorMu = (count ?? 0) > 0
-  }
-  // Yoklama menüleri okul ayarına bağlı (okul yoksa / okunamazsa açık sayılır)
-  const yoklamaAktif = profile?.school_id ? await okulYoklamaAktif(profile.school_id) : true
+  // Yoklama menüleri okul ayarına bağlı (okul yoksa / okunamazsa açık sayılır). İki okuma paralel.
+  const [mentorMu, yoklamaAktif] = await Promise.all([
+    isTeachingRole(profile?.role)
+      ? MentorRepository.countActiveMentorships(user.id).then(({ count }) => (count ?? 0) > 0)
+      : false,
+    profile?.school_id ? okulYoklamaAktif(profile.school_id) : true,
+  ])
 
   // Abonelik enforcement (fail-open: schools okunamazsa geçir — tahsilat güvenlik sınırı değil).
   let abonelikUyari: number | null = null

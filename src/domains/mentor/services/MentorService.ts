@@ -190,14 +190,16 @@ export const MentorService = {
   async getMentorReportsByStudent(studentId: string) {
     const ability = await requireAbility()
     const { data, error } = await MentorRepository.getMentorReportsByStudent(studentId, ability.schoolId)
-    if (error) return []
+    // hata "not yok" gibi görünmesin → error.tsx
+    if (error) throw new Error(`Mentör notları okunamadı: ${error.message}`)
     return data ?? []
   },
 
   async getMentorReportsByClass(classId: string) {
     const ability = await requireAbility()
     const { data, error } = await MentorRepository.getMentorReportsByClass(classId, ability.schoolId)
-    if (error) return []
+    // hata "not yok" gibi görünmesin → error.tsx
+    if (error) throw new Error(`Mentör notları okunamadı: ${error.message}`)
     return data ?? []
   },
 
@@ -212,7 +214,9 @@ export const MentorService = {
 
   async getMentorProfile(studentId: string): Promise<MentorProfileRow | null> {
     const ability = await requireAbility()
-    const { data } = await MentorRepository.getMentorProfile(studentId, ability.userId, ability.schoolId)
+    const { data, error } = await MentorRepository.getMentorProfile(studentId, ability.userId, ability.schoolId)
+    // Okuma hatası boş kart gibi görünürse mentör tek alan yazıp kaydeder ve diğer 6 alanı siler (upsert)
+    if (error) throw new Error(`Tanıma kartı okunamadı: ${error.message}`)
     return (data as MentorProfileRow | null) ?? null
   },
 

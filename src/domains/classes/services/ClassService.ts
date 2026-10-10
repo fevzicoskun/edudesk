@@ -112,7 +112,8 @@ export const ClassService = {
     if (error) throw new Error(error.message)
   },
 
-  async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }): Promise<{ error?: string }> {
+  /** undefined alan güncellenmez; null alanı boşaltır. */
+  async updateVeliContact(studentId: string, data: { email?: string | null; telefon?: string | null; ad?: string | null }): Promise<{ error?: string }> {
     const ability  = await requireAbility()
     // İdare (students:update) tüm öğrencileri; öğretmen yalnız ders verdiği sınıfın/mentörü olduğu öğrencinin velisini düzenler.
     if (ability.cannot(P.STUDENTS.UPDATE)
@@ -132,7 +133,11 @@ export const ClassService = {
 
     const { data: rows, error } = await supabase
       .from('students')
-      .update({ veli_email: data.email, veli_telefon: data.telefon, veli_ad: data.ad })
+      .update({
+        ...(data.email   !== undefined && { veli_email: data.email }),
+        ...(data.telefon !== undefined && { veli_telefon: data.telefon }),
+        ...(data.ad      !== undefined && { veli_ad: data.ad }),
+      })
       .eq('id', studentId)
       .eq('school_id', ability.schoolId)
       .select('id')

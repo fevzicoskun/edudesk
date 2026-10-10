@@ -88,15 +88,19 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler, gonderilenle
   // işaret sunucuda (bulten_gonderimleri): idare ana sayfası mentör başına ilerlemeyi buradan görür
   const [gonderildi, setGonderildi] = useState<Record<string, boolean>>(() => Object.fromEntries(gonderilenler.map(id => [id, true])))
   const [kayitHatasi, setKayitHatasi] = useState('')
+  // istek sürerken aynı öğrenci için ikinci istek yok: ters sırada dönen yanıt ekranı DB'den farklı bırakmasın
+  const [bekleyen, setBekleyen] = useState<Record<string, boolean>>({})
   const [kopyalandi, setKopyalandi] = useState('')
   // satır bir kez açılınca kişisel görsel paylaşım için önceden hazırlanır (kapalı satırlar için istek atılmaz)
   const [acik, setAcik] = useState<Record<string, boolean>>({})
   const isaretle = (id: string, v: boolean) => {
+    if (bekleyen[id]) return
+    setBekleyen(b => ({ ...b, [id]: true }))
     setGonderildi(g => ({ ...g, [id]: v }))
     bultenGonderildi(id, hafta, v).then(
       r => { if (r.error) { setGonderildi(g => ({ ...g, [id]: !v })); setKayitHatasi(r.error) } else setKayitHatasi('') },
       () => { setGonderildi(g => ({ ...g, [id]: !v })); setKayitHatasi('Kaydedilemedi, tekrar deneyin.') },
-    )
+    ).finally(() => setBekleyen(b => ({ ...b, [id]: false })))
   }
   // gönder/paylaş/kopyala düğmeleri işareti kendiliğinden koyar
   const gonderdi = (id: string) => { if (!gonderildi[id]) isaretle(id, true) }
@@ -151,7 +155,7 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler, gonderilenle
                       try { await navigator.clipboard.writeText(o.mesaj); setKopyalandi(o.student_id); gonderdi(o.student_id) } catch { setKopyalandi('') }
                     }}>{kopyalandi === o.student_id ? 'Kopyalandı' : 'Kopyala'}</button>
                     <label className="inline-flex items-center gap-2 min-h-[44px] text-sm text-gray-700 dark:text-slate-300">
-                      <input type="checkbox" className="w-5 h-5" checked={!!gonderildi[o.student_id]} onChange={e => isaretle(o.student_id, e.target.checked)} />
+                      <input type="checkbox" className="w-5 h-5" checked={!!gonderildi[o.student_id]} disabled={!!bekleyen[o.student_id]} onChange={e => isaretle(o.student_id, e.target.checked)} />
                       Gönderildi
                     </label>
                   </div>

@@ -317,6 +317,20 @@ describe('ClassService.updateVeliContact()', () => {
     expect(studentsChain.update).toHaveBeenCalledWith(expect.objectContaining({ veli_telefon: '5551112233' }))
   })
 
+  it('gönderilmeyen alan (undefined) güncellenmez — kart veli adını silmesin', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(createAbility({
+      userId: 'teacher-unit', schoolId: SCHOOL_ID, permissions: [],
+    }) as never)
+    vi.mocked(ClassRepository.isTeacherOfStudent).mockResolvedValue(true)
+    const { db, studentsChain } = makeVeliDb({ clash: false })
+    vi.mocked(createClient).mockResolvedValue(db as never)
+
+    await ClassService.updateVeliContact('stu-1', { email: null, telefon: '5551112233' })
+
+    expect(studentsChain.update).toHaveBeenCalledWith({ veli_email: null, veli_telefon: '5551112233' })
+    expect(Object.keys(vi.mocked(studentsChain.update as (x: object) => unknown).mock.calls[0][0])).not.toContain('veli_ad')
+  })
+
   // email_is_teacher RPC + students update için mock supabase.
   function makeVeliDb({ clash }: { clash: boolean }) {
     const studentsChain: Record<string, unknown> = {}
