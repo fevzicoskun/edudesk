@@ -4,7 +4,9 @@ import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
 import { redirect } from 'next/navigation'
 import { getNotificationPreferences } from '@/src/domains/notifications/actions'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { isTeachingRole } from '@/src/shared/types'
+import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaAnahtari from './YoklamaAnahtari'
 import BildirimTercihleri from '@/app/(dashboard)/profil/BildirimTercihleri'
 import PasswordForm from './PasswordForm'
 import KaynakYonetimi from './KaynakYonetimi'
@@ -48,6 +50,9 @@ export default async function AyarlarPage() {
         <KaynakYonetimi initial={sourcesRes.data ?? []} />
       )}
       <PasswordForm />
+      {isMudurOrAbove(profile.role) && profile.school_id && (
+        <YoklamaAnahtari initial={await okulYoklamaAktif(profile.school_id)} />
+      )}
       {profile.role === 'mudur' && <OkulBilgileri />}
     </div>
   )

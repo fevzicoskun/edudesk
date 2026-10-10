@@ -6,6 +6,7 @@ import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS } from '@/src/shared/constants/attendance'
 import { getAbsenceScores, getOkulKullanim, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 import { aktifMi } from '@/src/domains/dashboard/lib/aktiflik'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 type AlertType = 'red' | 'yellow' | 'green'
 
@@ -31,13 +32,15 @@ export default async function MYStatsWidget() {
 
   const todayStr    = todayLocalISO()
   const yearStart   = schoolYearStart()
+  // Yoklama modülü kapalıysa yoklama/devamsızlık sorguları hiç çalışmaz, kutu ve uyarıları gösterilmez
+  const yoklama     = await okulYoklamaAktif(school_id)
 
   const [teachers, classesRes, studentsRes, todayAttRes, absenceScores, kullanim] = await Promise.all([
     getSchoolTeachers(school_id),
     supabase.from('classes').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
     supabase.from('students').select('id', { count: 'exact', head: true }).eq('school_id', school_id).is('deleted_at', null),
-    supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr),
-    getAbsenceScores(school_id, yearStart),
+    yoklama ? supabase.from('attendance').select('class_id, status').eq('school_id', school_id).eq('date', todayStr) : Promise.resolve({ data: [] as { class_id: string; status: string }[] }),
+    yoklama ? getAbsenceScores(school_id, yearStart) : Promise.resolve([] as { student_id: string; absences: number }[]),
     getOkulKullanim(),
   ])
 
@@ -55,7 +58,7 @@ export default async function MYStatsWidget() {
 
   const alerts: { text: string; type: AlertType }[] = []
   const missingAtt = classCount - classesWithAtt.size
-  if (missingAtt > 0 && classCount > 0)
+  if (yoklama && missingAtt > 0 && classCount > 0)
     alerts.push({ text: `${missingAtt} sınıf yoklaması girilmemiş`, type: 'yellow' })
   if (todayAbsent >= 5)
     alerts.push({ text: `Bugün ${todayAbsent} devamsız öğrenci`, type: 'red' })
@@ -79,6 +82,7 @@ export default async function MYStatsWidget() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {yoklama ? (<>
         <div className={`rounded-xl border p-4 ${statColor(classesWithAtt.size >= classCount && classCount > 0, false)}`}>
           <p className="text-3xl font-bold leading-none">
             {classesWithAtt.size}<span className="text-base font-medium opacity-90">/{classCount}</span>
@@ -91,6 +95,17 @@ export default async function MYStatsWidget() {
           <p className="text-sm font-medium mt-1.5">Devamsız Öğrenci</p>
           <p className="text-[11px] opacity-90 mt-0.5">bugün · {totalStudents} toplam · tıkla →</p>
         </Link>
+        </>) : (<>
+        {/* yoklama kapalı: aynı satırı nötr okul bilgisi doldurur */}
+        <div className="rounded-xl border p-4 border-gray-200 bg-white text-gray-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <p className="text-3xl font-bold leading-none">{totalStudents}</p>
+          <p className="text-sm font-medium mt-1.5">Öğrenci</p>
+        </div>
+        <div className="rounded-xl border p-4 border-gray-200 bg-white text-gray-800 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          <p className="text-3xl font-bold leading-none">{classCount}</p>
+          <p className="text-sm font-medium mt-1.5">Sınıf</p>
+        </div>
+        </>)}
         <div className={`rounded-xl border p-4 ${statColor(inactiveCount === 0, false)}`}>
           <p className="text-3xl font-bold leading-none">
             {activeCount}<span className="text-base font-medium opacity-90">/{teachers.length}</span>

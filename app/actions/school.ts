@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { updateSchoolSchema } from '@/src/domains/school/validators'
 import { SchoolService } from '@/src/domains/school/services/SchoolService'
@@ -31,4 +32,14 @@ export async function regenerateSchoolCode() {
 
   revalidatePath('/anasayfa')
   return { code: result.code }
+}
+
+/** Yoklama modülü aç/kapat — yalnız müdür/MY (servis + RPC doğrular). Tüm sayfalar yeniden hesaplanır. */
+export async function setYoklamaAktif(aktif: unknown) {
+  const parsed = z.boolean().safeParse(aktif)
+  if (!parsed.success) return { error: 'Geçersiz değer' }
+  const result = await SchoolService.setYoklamaAktif(parsed.data)
+  if (result.error) return { error: result.error }
+  revalidatePath('/', 'layout')
+  return { success: true }
 }
