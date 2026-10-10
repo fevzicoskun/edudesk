@@ -12,6 +12,20 @@ export const UserRepository = {
     })
   },
 
+  /** Giriş e-postasını değiştirir; hesap id'si (ve tüm veri) aynı kalır. email_confirm → onay maili GİTMEZ. */
+  async updateAuthEmail(userId: string, email: string) {
+    const admin = createServiceClient()
+    return admin.auth.admin.updateUserById(userId, { email, email_confirm: true })
+  },
+
+  /** E-postalar auth.users'ta — RLS'li client göremez. */
+  async getAuthEmails(userIds: string[]): Promise<Record<string, string>> {
+    const admin = createServiceClient()
+    // ponytail: kullanıcı başına bir istek; okul ~50 kişi. Yüzlerce olursa listUsers sayfalı okumaya geçilir.
+    const sonuc = await Promise.all(userIds.map(id => admin.auth.admin.getUserById(id)))
+    return Object.fromEntries(sonuc.flatMap(r => (r.data.user?.email ? [[r.data.user.id, r.data.user.email]] : [])))
+  },
+
   async deleteAuthUser(userId: string) {
     const admin = createServiceClient()
     return admin.auth.admin.deleteUser(userId)

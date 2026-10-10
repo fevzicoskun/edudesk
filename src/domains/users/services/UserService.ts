@@ -54,6 +54,30 @@ export const UserService = {
     return { success: true, tempPassword }
   },
 
+  /** Temsili/yanlış e-postayı gerçeğiyle değiştirir (2026-10-10). Kim kimi: silme kuralıyla aynı. */
+  async changeEmail(targetId: string, email: string): Promise<ActionResult> {
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.USERS.CREATE)) return { error: 'Yetki yok' }
+    if (targetId === ability.userId) return { error: 'Kendi e-postanızı buradan değiştiremezsiniz' }
+
+    const { data: target } = await UserRepository.getProfileById(targetId)
+    if (!target || target.school_id !== ability.schoolId) return { error: 'Kullanıcı bulunamadı' }
+    const izinli: Role[] = ability.can(P.USERS.MANAGE)
+      ? ['mudur_yardimcisi', 'ogretmen', 'zumre_baskani']
+      : ['ogretmen', 'zumre_baskani']
+    if (!izinli.includes(target.role as Role)) return { error: 'Bu kullanıcının e-postasını değiştiremezsiniz' }
+
+    const { error } = await UserRepository.updateAuthEmail(targetId, email)
+    if (error) {
+      if (error.code === 'email_exists' || error.message.includes('already been registered')) return { error: 'Bu e-posta başka bir hesapta kayıtlı' }
+      logger.error({ event: 'change_email_failed', targetId, code: error.code }, 'E-posta değiştirilemedi')
+      return { error: 'E-posta değiştirilemedi, tekrar deneyin.' }
+    }
+    logger.info({ event: 'email_changed', by: ability.userId, targetId }, 'Kullanıcı e-postası değiştirildi')
+    return {}
+  },
+
   async deleteUser(targetId: string): Promise<ActionResult> {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

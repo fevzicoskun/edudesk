@@ -5,6 +5,7 @@ import { ROLE_LABELS, type Role } from '@/src/shared/types'
 import { format, parseISO } from '@/src/shared/date'
 import RoleSelector from './RoleSelector'
 import DeleteButton from './DeleteButton'
+import EpostaDegistir from './EpostaDegistir'
 import SinifAtamaMatrisi from './SinifAtamaMatrisi'
 
 export type UserRow = {
@@ -12,6 +13,8 @@ export type UserRow = {
   full_name: string
   subject: string | null
   role: Role
+  /** yalnız müdür/MY'ye gönderilir (auth.users) */
+  email?: string | null
 }
 
 /** Son 30 günde uygulamanın kullanıldığı gün sayısı ve son kullanım günü (usage_daily) */
@@ -202,6 +205,9 @@ export default function KullaniciFiltreli({
                         {u.full_name}
                         {isSelf && <span className="ml-2 text-[10px] text-gray-400">(sen)</span>}
                       </p>
+                      {canAssign && (
+                        <EpostaDegistir userId={u.id} userName={u.full_name} email={u.email ?? null} duzenlenebilir={canEditThis} />
+                      )}
                     </td>
                     <td className="px-3 py-2 sm:px-4 sm:py-3 text-gray-500 dark:text-slate-400 hidden sm:table-cell">
                       {u.subject ?? '—'}

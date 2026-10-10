@@ -35,7 +35,8 @@ export default async function KullanicilarPage() {
     UserRepository.getSchoolClasses(profile.school_id),
   ])
 
-  const users      = (data ?? []) as UserRow[]
+  const emails     = (isMudur || isMY) ? await UserRepository.getAuthEmails((data ?? []).map(u => u.id)) : {}
+  const users      = (data ?? []).map(u => ({ ...u, email: emails[u.id] ?? null })) as UserRow[]
   const allClasses = (classesData ?? []) as ClassRow[]
   const classIds   = allClasses.map(c => c.id)
 

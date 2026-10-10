@@ -21,6 +21,7 @@ vi.mock('@/src/domains/users/repositories/UserRepository', () => ({
     getSchoolTeacherIds: vi.fn(), // matris
     getSchoolClasses:    vi.fn(), // matris
     addTeacherClasses:   vi.fn(), // matris
+    updateAuthEmail:     vi.fn(),
   },
 }))
 
@@ -354,5 +355,49 @@ describe('UserService.updateProfile()', () => {
     const result = await UserService.updateProfile(CALLER_ID, PARAMS)
     expect(result.error).toBeUndefined()
     expect(UserRepository.updateProfile).toHaveBeenCalledWith(CALLER_ID, PARAMS)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────
+describe('UserService.changeEmail()', () => {
+  const YENI = 'gercek@okul.com'
+
+  it('users:create izni yoksa hata, güncelleme yok', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(OGRETMEN_PERMS) as never)
+    expect((await UserService.changeEmail(TARGET_ID, YENI)).error).toBe('Yetki yok')
+    expect(UserRepository.updateAuthEmail).not.toHaveBeenCalled()
+  })
+
+  it('başka okulun kullanıcısı → bulunamadı', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue({ data: { role: 'ogretmen', school_id: 'baska' }, error: null } as never)
+    expect((await UserService.changeEmail(TARGET_ID, YENI)).error).toBe('Kullanıcı bulunamadı')
+    expect(UserRepository.updateAuthEmail).not.toHaveBeenCalled()
+  })
+
+  it('MY müdür yardımcısının e-postasını değiştiremez', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('mudur_yardimcisi') as never)
+    expect((await UserService.changeEmail(TARGET_ID, YENI)).error).toBe('Bu kullanıcının e-postasını değiştiremezsiniz')
+  })
+
+  it('kendi e-postası bu yoldan değişmez', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS, TARGET_ID) as never)
+    expect((await UserService.changeEmail(TARGET_ID, YENI)).error).toBe('Kendi e-postanızı buradan değiştiremezsiniz')
+  })
+
+  it('müdür öğretmenin e-postasını değiştirir', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.updateAuthEmail).mockResolvedValue({ error: null } as never)
+    expect(await UserService.changeEmail(TARGET_ID, YENI)).toEqual({})
+    expect(UserRepository.updateAuthEmail).toHaveBeenCalledWith(TARGET_ID, YENI)
+  })
+
+  it('e-posta başka hesapta kayıtlıysa anlaşılır hata', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_YARDIMCISI_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.updateAuthEmail).mockResolvedValue({ error: { code: 'email_exists', message: 'A user with this email address has already been registered' } } as never)
+    expect((await UserService.changeEmail(TARGET_ID, YENI)).error).toBe('Bu e-posta başka bir hesapta kayıtlı')
   })
 })

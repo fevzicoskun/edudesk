@@ -71,6 +71,17 @@ export async function removeUser(targetId: string): Promise<ActionResult> {
   return result
 }
 
+const emailSchema = z.string().trim().toLowerCase().email('Geçerli bir e-posta girin').max(254)
+
+export async function changeUserEmail(targetId: string, email: string): Promise<ActionResult> {
+  if (!UUID.safeParse(targetId).success) return { error: 'Geçersiz istek' }
+  const parsed = emailSchema.safeParse(email)
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz e-posta' }
+  const result = await UserService.changeEmail(targetId, parsed.data)
+  if (!result.error) revalidatePath('/kullanicilar')
+  return result
+}
+
 export async function assignRole(targetId: string, newRole: string): Promise<ActionResult> {
   if (!UUID.safeParse(targetId).success) return { error: 'Geçersiz istek' }
   const roleResult = AssignableRole.safeParse(newRole)
