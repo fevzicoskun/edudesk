@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>EduDesk İlk Gün Kılavuzu</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --brand: #c8102e; --brand-dark: #8a001c; --brand-soft: #fff1f2;
+    --ink: #111827; --muted: #4b5563; --line: #e5e7eb; --bg: #f9fafb;
+    --green: #047857; --green-bg: #d1fae5; --yellow: #a16207; --yellow-bg: #fef3c7;
+    --red: #b91c1c; --red-bg: #fee2e2; --orange: #c2410c; --orange-bg: #ffedd5;
+    --blue: #1d4ed8; --blue-bg: #dbeafe;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: #fff; }
+  body { font-family: 'Inter', system-ui, sans-serif; color: var(--ink); font-size: 11pt; line-height: 1.5;
+         -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sayfa { width: 210mm; height: 297mm; padding: 16mm 16mm 14mm; position: relative; overflow: hidden; page-break-after: always; }
+  .sayfa:last-child { page-break-after: auto; }
+  .alt { position: absolute; left: 16mm; right: 16mm; bottom: 9mm; display: flex; justify-content: space-between;
+         font-size: 8.5pt; color: #6b7280; border-top: 1px solid var(--line); padding-top: 3mm; }
+
+  /* Kapak */
+  .kapak { background: linear-gradient(160deg, var(--brand) 0%, var(--brand-dark) 100%); color: #fff;
+           margin: -16mm -16mm 0; padding: 14mm 16mm 11mm; border-radius: 0 0 10mm 10mm; }
+  .logo { display: inline-flex; align-items: center; gap: 3mm; font-weight: 800; font-size: 14pt; letter-spacing: .2px; }
+  .logo-kutu { width: 9mm; height: 9mm; border-radius: 2.5mm; background: #fff; color: var(--brand);
+               display: grid; place-items: center; font-weight: 800; font-size: 13pt; }
+  .kapak h1 { font-size: 30pt; line-height: 1.1; font-weight: 800; margin-top: 9mm; }
+  .kapak p.alt-baslik { color: #fff; font-size: 13pt; opacity: .95; margin-top: 3mm; max-width: 150mm; }
+  .rozet { display: inline-block; margin-top: 7mm; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.35);
+           padding: 1.5mm 4mm; border-radius: 99px; font-size: 10pt; font-weight: 600; }
+
+  h2 { font-size: 16pt; font-weight: 800; margin: 9mm 0 4mm; }
+  h2 .no { display: inline-grid; place-items: center; width: 9mm; height: 9mm; border-radius: 50%;
+           background: var(--brand); color: #fff; font-size: 12pt; margin-right: 3mm; vertical-align: middle; }
+  h3 { font-size: 12pt; font-weight: 700; margin-bottom: 2mm; }
+  p { color: var(--muted); }
+  b, strong { color: var(--ink); }
+
+  .uc-adim { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 6mm; }
+  .adim-kart { border: 1px solid var(--line); border-radius: 4mm; padding: 5mm; background: #fff; }
+  .adim-kart .ikon { width: 12mm; height: 12mm; border-radius: 3mm; background: var(--brand-soft); color: var(--brand);
+                     display: grid; place-items: center; margin-bottom: 3mm; }
+  .adim-kart .ust { font-size: 8.5pt; font-weight: 700; color: var(--brand); text-transform: uppercase; letter-spacing: .6px; }
+  .adim-kart h3 { margin-top: 1mm; }
+  .adim-kart p { font-size: 9.5pt; }
+
+  .kutu { border-radius: 4mm; padding: 5mm 6mm; background: var(--bg); border: 1px solid var(--line); }
+  .kutu + .kutu { margin-top: 4mm; }
+  .iki { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+
+  ol.adimlar { list-style: none; counter-reset: a; }
+  ol.adimlar li { counter-increment: a; position: relative; padding: 0 0 3.2mm 10mm; color: var(--muted); }
+  ol.adimlar li::before { content: counter(a); position: absolute; left: 0; top: .2mm; width: 6.5mm; height: 6.5mm;
+                          border-radius: 50%; background: var(--ink); color: #fff; font-size: 8.5pt; font-weight: 700;
+                          display: grid; place-items: center; }
+  .dugme { display: inline-block; background: var(--ink); color: #fff; font-weight: 600; font-size: 9pt;
+           padding: .3mm 2.2mm; border-radius: 1.5mm; white-space: nowrap; }
+  .dugme.k { background: var(--brand); }
+  .dugme.y { background: #16a34a; }
+  .menu { font-weight: 700; color: var(--ink); }
+
+  .ipucu { display: flex; gap: 3mm; align-items: flex-start; background: var(--blue-bg); color: #1e3a8a;
+           border-radius: 3mm; padding: 3.5mm 4.5mm; font-size: 9.8pt; margin-top: 4mm; }
+  .ipucu svg { flex-shrink: 0; margin-top: .4mm; }
+  .ipucu b { color: #1e3a8a; }
+  .uyari { background: var(--yellow-bg); color: #713f12; }
+  .uyari b { color: #713f12; }
+
+  .durumlar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2.5mm; margin-top: 3mm; }
+  .durum { border-radius: 2.5mm; padding: 2.5mm 2mm; text-align: center; font-size: 9pt; }
+  .durum b { display: block; font-size: 10pt; margin-bottom: .5mm; }
+  .d-y { background: var(--green-bg); } .d-y b { color: var(--green); }
+  .d-e { background: var(--yellow-bg); } .d-e b { color: var(--yellow); }
+  .d-n { background: var(--red-bg); } .d-n b { color: var(--red); }
+  .d-g { background: var(--orange-bg); } .d-g b { color: var(--orange); }
+  .d-m { background: var(--blue-bg); } .d-m b { color: var(--blue); }
+  .durum span { color: var(--muted); }
+
+  .sss { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm 6mm; margin-top: 3mm; }
+  .sss h3 { font-size: 10.5pt; margin-bottom: 1mm; }
+  .sss p { font-size: 9.6pt; }
+
+  .giris { display: grid; grid-template-columns: 1.15fr 1fr; gap: 5mm; margin-top: 0; }
+  .giris .kutu, .iki .kutu { margin-top: 0; }
+  .adres { font-size: 15pt; font-weight: 800; color: var(--brand); letter-spacing: .2px; }
+  .kapanis { margin-top: 6mm; text-align: center; border: 2px dashed #fecdd3; border-radius: 4mm; padding: 5mm; }
+  .kapanis b { font-size: 12pt; }
+</style>
+</head>
+<body>
+
+<!-- ───────────── Sayfa 1 ───────────── -->
+<section class="sayfa">
+  <div class="kapak">
+    <div class="logo"><span class="logo-kutu">E</span> EduDesk</div>
+    <h1>İlk Gün Kılavuzu</h1>
+    <p class="alt-baslik">Ödev takibi, mentörlük ve veli iletişimi tek yerde.<br>Başlamak için bilmeniz gereken her şey bu üç sayfada.</p>
+    <span class="rozet">⏱ Okuma süresi: 5 dakika</span>
+  </div>
+
+  <div class="uc-adim">
+    <div class="adim-kart">
+      <div class="ikon"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg></div>
+      <div class="ust">1. Adım</div>
+      <h3>Ödev verin</h3>
+      <p>Sınıfı, dersi ve teslim tarihini seçin. Bir dakika sürer.</p>
+    </div>
+    <div class="adim-kart">
+      <div class="ikon"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+      <div class="ust">2. Adım</div>
+      <h3>Kontrol edin</h3>
+      <p>"Hepsi yaptı" deyin, yalnız yapmayanları değiştirin.</p>
+    </div>
+    <div class="adim-kart">
+      <div class="ikon"><svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg></div>
+      <div class="ust">3. Adım</div>
+      <h3>Veliye bildirin</h3>
+      <p>Mentörseniz haftalık bülteni WhatsApp'tan tek dokunuşla gönderin.</p>
+    </div>
+  </div>
+
+  <h2 style="margin-top:7mm">Giriş</h2>
+  <div class="giris">
+    <div class="kutu">
+      <h3>Adres</h3>
+      <p class="adres">myedudesk.com.tr</p>
+      <ol class="adimlar" style="margin-top:4mm">
+        <li>Okula verdiğiniz <b>e-posta adresinizi</b> yazın.</li>
+        <li>İlk girişte şifreniz yoksa <span class="dugme">Şifremi unuttum</span> bağlantısına dokunun. E-postanıza gelen bağlantıyla kendi şifrenizi belirleyin.</li>
+        <li>Mail gelmediyse <b>spam / gereksiz</b> klasörüne de bakın.</li>
+      </ol>
+    </div>
+    <div class="kutu">
+      <h3>Telefonda uygulama gibi</h3>
+      <p style="font-size:9.8pt">Siteyi telefonunuzun ana ekranına ekleyin; her gün tek dokunuşla açılır.</p>
+      <ol class="adimlar" style="margin-top:3mm">
+        <li><b>iPhone:</b> Safari'de Paylaş <b>⬆</b> → <b>Ana Ekrana Ekle</b></li>
+        <li><b>Android:</b> Ekranın altında çıkan <span class="dugme">Ana ekrana ekle</span> düğmesine dokunun.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="ipucu">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    <div><b>Sınıflarınız sizin için hazır.</b> Ders verdiğiniz sınıflar ve öğrenci listeleri idare tarafından girildi. Bir sınıfınız ya da öğrenciniz eksikse idareye haber verin.</div>
+  </div>
+
+  <div class="alt"><span>EduDesk · İlk Gün Kılavuzu</span><span>1 / 3</span></div>
+</section>
+
+<!-- ───────────── Sayfa 2 ───────────── -->
+<section class="sayfa">
+  <h2 style="margin-top:0"><span class="no">1</span>Ödev verin</h2>
+  <div class="kutu">
+    <ol class="adimlar">
+      <li>Menüden <span class="menu">Ödevler</span>'e girin ve <span class="dugme k">Yeni Ödev</span> düğmesine dokunun.</li>
+      <li><b>Sınıf</b>, <b>Ders</b> ve <b>Başlık</b> yazın. İsterseniz kitap adını ve sayfa aralığını (ör. <i>39-47</i>) ekleyin.</li>
+      <li><b>Verildiği Tarih</b> ve <b>Son Teslim Tarihi</b>'ni seçip kaydedin. Ödev, sınıftaki bütün öğrencilere açılır.</li>
+    </ol>
+  </div>
+  <div class="ipucu">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+    <div><b>Her hafta aynı tür ödev mi veriyorsunuz?</b> Formdaki <b>Şablon olarak kaydet</b> ile saklayın, bir dahaki sefere <b>Şablonlardan oluştur</b> ile saniyeler içinde verin.</div>
+  </div>
+
+  <h2><span class="no">2</span>Kontrol edin</h2>
+  <div class="kutu">
+    <ol class="adimlar">
+      <li>Teslim günü geldiğinde ödeve dokunun. Sınıf listesi açılır.</li>
+      <li>Önce <span class="dugme y">✓ Hepsi yaptı</span> düğmesine dokunun.</li>
+      <li>Sonra yalnız yapmayan öğrencilerin durum düğmesine dokunun. Her dokunuş bir sonraki duruma geçer; diğer seçenekler için satırdaki <b>⋮</b> menüsünü kullanın.</li>
+      <li>Her işaret <b>anında kaydedilir</b>; ayrıca "kaydet" demenize gerek yok. Yanlış işaretlediyseniz tekrar dokunup düzeltin.</li>
+    </ol>
+  </div>
+
+  <p style="margin-top:4mm"><b>Durumlar</b></p>
+  <div class="durumlar">
+    <div class="durum d-y"><b>Yapıldı</b><span>tam yaptı</span></div>
+    <div class="durum d-e"><b>Eksik</b><span>bir kısmını yaptı</span></div>
+    <div class="durum d-n"><b>Yapılmadı</b><span>hiç yapmadı</span></div>
+    <div class="durum d-g"><b>Geç</b><span>geç getirdi</span></div>
+    <div class="durum d-m"><b>Mazeretli</b><span>izinli / raporlu</span></div>
+  </div>
+
+  <div class="ipucu uyari">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <div><b>Kontrol etmeyi unutmayın.</b> İşaretlenmemiş ödev "kontrol bekliyor" görünür ve okulun ödev raporlarında eksik sayılır. Ana sayfanızdaki <b>yapılacaklar</b> ve Ödevler sayfasının üstündeki <b>kontrol bekleyenler</b> size neyin kaldığını hatırlatır.</div>
+  </div>
+
+  <div class="kutu" style="margin-top:5mm">
+    <h3>Neden önemli?</h3>
+    <p style="font-size:9.8pt">İşaretlediğiniz her ödev; öğrencinin <b>ders bazında</b> takibine, mentörün haftalık veli bültenine ve idarenin ödev raporuna kendiliğinden yansır. Bir kez işaretlersiniz, herkes aynı bilgiyi görür. Ayrıca tablo tutmanıza gerek kalmaz.</p>
+  </div>
+
+  <div class="alt"><span>EduDesk · İlk Gün Kılavuzu</span><span>2 / 3</span></div>
+</section>
+
+<!-- ───────────── Sayfa 3 ───────────── -->
+<section class="sayfa">
+  <h2 style="margin-top:0"><span class="no">3</span>Mentörler için: haftalık veli bülteni</h2>
+  <p>Mentörü olduğunuz öğrencilerin velilerine her hafta kısa bir özet gönderirsiniz. EduDesk mesajı ve görseli sizin yerinize hazırlar.</p>
+
+  <div class="iki" style="margin-top:4mm">
+    <div class="kutu">
+      <h3>Veli grubu için</h3>
+      <p style="font-size:9.8pt">Sınıfın <b>bu haftaki ödevleri</b> ve <b>geçen haftanın özeti</b> görsel olarak hazırdır. İsim içermez; sınıf veli grubunda paylaşılabilir.</p>
+    </div>
+    <div class="kutu">
+      <h3>Her veliye kişisel</h3>
+      <p style="font-size:9.8pt">Öğrencinin eksik ödevleri ya da tebrik mesajı, öğrenciye özel bir kartla birlikte gönderilir.</p>
+    </div>
+  </div>
+
+  <div class="kutu" style="margin-top:4mm">
+    <ol class="adimlar">
+      <li>Menüden <span class="menu">Mentörlük</span> → <span class="dugme">Haftalık veli bülteni</span>.</li>
+      <li>Öğrencinin satırına dokunun; mesaj ve görsel açılır.</li>
+      <li><b>Telefonda:</b> <span class="dugme y">Paylaş</span> → WhatsApp'ta veliyi seçin. <b>Bilgisayarda:</b> <span class="dugme y">WhatsApp'a gönder</span>; sohbet açılınca görseli <b>Ctrl+V</b> ile yapıştırın.</li>
+      <li>Gönderdiğiniz öğrenci <b>✓ Gönderildi</b> olarak işaretlenir; listenin başında kaçının kaldığını görürsünüz.</li>
+    </ol>
+  </div>
+
+  <div class="ipucu">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.49a1 1 0 01-.5 1.21l-2.26 1.13a11.04 11.04 0 005.52 5.52l1.13-2.26a1 1 0 011.21-.5l4.49 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z"/></svg>
+    <div><b>Veli telefonunu bir kez girin.</b> Öğrencinin sayfasında veli adını ve telefonunu kaydedin; WhatsApp her hafta doğrudan o veliyi açar.</div>
+  </div>
+
+  <h2>Sık sorulanlar</h2>
+  <div class="sss">
+    <div><h3>Şifremi unuttum, ne yapayım?</h3><p>Giriş ekranındaki <b>Şifremi unuttum</b> bağlantısıyla e-postanıza yenisi için bağlantı gelir.</p></div>
+    <div><h3>Yanlış öğrenciyi işaretledim.</h3><p>Aynı öğrenciye tekrar dokunup doğru durumu seçin. Değişiklik anında kaydedilir.</p></div>
+    <div><h3>Bir öğrenci listemde yok.</h3><p>Öğrenci listeleri idare tarafından yönetilir. Eksik ya da yanlış öğrenciyi idareye bildirin.</p></div>
+    <div><h3>Bilgisayar ve telefonda aynı mı?</h3><p>Evet. Hangi cihazdan girerseniz girin aynı bilgileri görürsünüz.</p></div>
+    <div><h3>Ödevi yanlış girdim.</h3><p>Ödeve girin, düzenleyin ya da silin. Silinen ödev gerekirse geri alınabilir.</p></div>
+    <div><h3>Bir sorun veya öneri var.</h3><p>Ekrandaki <b>Öneri &amp; Destek</b> düğmesinden yazın; doğrudan geliştiriciye ulaşır.</p></div>
+  </div>
+
+  <div class="kapanis">
+    <b>İlk hafta için tek hedef:</b>
+    <p style="margin-top:1.5mm">Verdiğiniz her ödevi <b>teslim günü işaretleyin.</b> Gerisini sistem sizin için toparlar.</p>
+  </div>
+
+  <div class="alt"><span>EduDesk · İlk Gün Kılavuzu</span><span>3 / 3</span></div>
+</section>
+
+</body>
+</html>
