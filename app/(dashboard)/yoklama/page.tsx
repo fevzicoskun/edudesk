@@ -12,6 +12,9 @@ import type { AbsenceCount } from '@/src/domains/attendance/types'
 import YoklamaClient from './YoklamaClient'
 import { ScheduleService } from '@/src/domains/schedule/services/ScheduleService'
 import { todaysLessons, suankiDers } from '@/src/domains/schedule/scheduleMath'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaKapali from '@/components/YoklamaKapali'
+import { isMudurOrAbove as yoneticiMi } from '@/src/shared/types'
 
 export const metadata = { title: 'Yoklama' }
 
@@ -19,6 +22,8 @@ export default async function YoklamaPage({ searchParams }: { searchParams: Prom
   const { sinif } = await searchParams
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')
+  // Yoklama modülü kapalı okulda bu sayfa yerine bilgi kartı
+  if (!(await okulYoklamaAktif(profile.school_id))) return <YoklamaKapali yonetici={yoneticiMi(profile.role)} />
 
   // classes ve teacher_classes birbirinden bağımsız — paralel çek (teacher_classes yalnızca profile.id'ye bağlı)
   const [{ data: rawClasses }, { data: tcRows }] = await Promise.all([

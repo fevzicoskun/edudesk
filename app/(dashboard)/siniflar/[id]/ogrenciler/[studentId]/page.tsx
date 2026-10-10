@@ -31,6 +31,7 @@ import { donemBasi } from '@/src/shared/utils'
 import HaftalikPlanSection from './HaftalikPlanSection'
 import MentorlugumeEkle from './MentorlugumeEkle'
 import { isTeachingRole } from '@/src/shared/types'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export const revalidate = 60
 
@@ -85,6 +86,8 @@ export default async function OgrenciDetayPage({
   if (!currentProfile?.school_id) redirect('/login')
 
   const schoolId = currentProfile.school_id
+  // Yoklama modülü kapalıysa devamsızlık sorgusu, çubuğu ve paneli yok
+  const yoklama = await okulYoklamaAktif(schoolId)
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
   const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
@@ -93,7 +96,9 @@ export default async function OgrenciDetayPage({
     // AYNI kaynak — sayılar ve tamamlama oranı iki ekranda birebir tutar.
     HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true }),
     supabase.from('student_notes').select('id, body, created_at').eq('student_id', studentId).eq('school_id', schoolId).order('created_at', { ascending: false }),
-    supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false }),
+    yoklama
+      ? supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false })
+      : Promise.resolve({ data: [] as { date: string; status: string }[], error: null }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
     supabase
       .from('parent_contact_logs')
@@ -224,7 +229,7 @@ export default async function OgrenciDetayPage({
             </p>
           </div>
           {/* Devamsızlık */}
-          <div>
+          {yoklama && <div>
             <div className="flex justify-between items-center mb-1">
               <p className="text-xs text-gray-500 dark:text-slate-400">Devamsızlık</p>
               <p className={`text-xs font-bold ${absenceDanger ? 'text-red-500' : absenceWarn ? 'text-yellow-500' : 'text-gray-700 dark:text-slate-200'}`}>{absentDays} / {ATTENDANCE_LIMIT_DAYS}</p>
@@ -236,7 +241,7 @@ export default async function OgrenciDetayPage({
               />
             </div>
             <p className="text-[11px] text-gray-500 dark:text-slate-400 mt-1">MEB sınırı {ATTENDANCE_LIMIT_DAYS} gün</p>
-          </div>
+          </div>}
         </div>
       </div>
 
@@ -257,14 +262,14 @@ export default async function OgrenciDetayPage({
         ))}
       </div>
 
-      <DevamsizlikPaneli
+      {yoklama && <DevamsizlikPaneli
         attendanceTableExists={attendanceTableExists}
         attendanceRecords={attendanceRecords}
         absentDays={absentDays}
         absentPct={absentPct}
         absenceDanger={absenceDanger}
         absenceWarn={absenceWarn}
-      />
+      />}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <OdevGecmisiSection odevler={odevler.map(h => ({ ...h, acilabilir: kapsamdaMi(kapsam, h.teacher_id) }))} raporHref={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu`} sayfaHref={`/siniflar/${classId}/ogrenciler/${studentId}`} ders={ders} />

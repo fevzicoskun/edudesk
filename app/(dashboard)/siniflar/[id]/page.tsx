@@ -15,6 +15,7 @@ import { Suspense } from 'react'
 import PerformansWidget from './PerformansWidget'
 import MentorDagilimiKarti from './MentorDagilimiKarti'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -40,6 +41,7 @@ export default async function SinifDetayPage({
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
 
   const schoolId = profile?.school_id ?? ''
+  const yoklama = schoolId ? await okulYoklamaAktif(schoolId) : true
 
   const yearStart = schoolYearStart()
 
@@ -58,7 +60,8 @@ export default async function SinifDetayPage({
       .eq('school_id', schoolId)
       .is('deleted_at', null)
       .order('full_name'),
-    fetchAllResult((f, t) => supabase
+    // Yoklama modülü kapalıysa sorgu yok → öğrenci kartlarında devamsızlık rozeti çıkmaz
+    !yoklama ? Promise.resolve({ data: [] as { student_id: string; status: string }[], error: null }) : fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id, status')
       .eq('class_id', id)

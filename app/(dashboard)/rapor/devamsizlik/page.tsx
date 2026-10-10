@@ -6,6 +6,9 @@ import { AttendanceRepository } from '@/src/domains/attendance/repositories/Atte
 import { buildReportRows } from '@/src/domains/attendance/lib/absenceReport'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import DevamsizlikExcelButton from './DevamsizlikExcelButton'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaKapali from '@/components/YoklamaKapali'
+import { isMudurOrAbove as yoneticiMi } from '@/src/shared/types'
 
 const MUDUR_ROLLER = ['mudur', 'mudur_yardimcisi']
 
@@ -28,6 +31,8 @@ export default async function DevamsizlikRaporuPage() {
   if (!profile?.school_id || !MUDUR_ROLLER.includes(profile.role)) {
     redirect('/anasayfa')
   }
+  // Yoklama modülü kapalı okulda bu sayfa yerine bilgi kartı
+  if (!(await okulYoklamaAktif(profile.school_id))) return <YoklamaKapali yonetici={yoneticiMi(profile.role)} />
 
   const db    = await createClient()
   const since = schoolYearStart()

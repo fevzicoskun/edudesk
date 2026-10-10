@@ -4,9 +4,11 @@ type Props = {
   devamsizliklar: { status: 'absent' | 'late' }[]
   odevler: SubmissionRow[]
   today: string
+  /** okulun yoklama modülü kapalıysa devamsızlık kutusu yok */
+  yoklamaAktif?: boolean
 }
 
-export default function VeliOzetKart({ devamsizliklar, odevler, today }: Props) {
+export default function VeliOzetKart({ devamsizliklar, odevler, today, yoklamaAktif = true }: Props) {
   const absentCount = devamsizliklar.filter(a => a.status === 'absent').length
   const toplam = odevler.length
   const tamamlanan = odevler.filter(s => s.status === 'yapildi').length
@@ -26,11 +28,11 @@ export default function VeliOzetKart({ devamsizliklar, odevler, today }: Props) 
     : 'bg-red-50 border-red-200 text-red-700'
 
   return (
-    <div className="grid grid-cols-3 gap-2">
-      <div className={`rounded-2xl border p-3 text-center ${devRenk}`}>
+    <div className={`grid gap-2 ${yoklamaAktif ? 'grid-cols-3' : 'grid-cols-2'}`}>
+      {yoklamaAktif && <div className={`rounded-2xl border p-3 text-center ${devRenk}`}>
         <p className="text-2xl font-bold">{absentCount}</p>
         <p className="text-[10px] font-medium mt-0.5">Devamsızlık</p>
-      </div>
+      </div>}
       <div className={`rounded-2xl border p-3 text-center ${odevRenk}`}>
         <p className="text-2xl font-bold">{oran}%</p>
         <p className="text-[10px] font-medium mt-0.5">Ödev Oranı</p>

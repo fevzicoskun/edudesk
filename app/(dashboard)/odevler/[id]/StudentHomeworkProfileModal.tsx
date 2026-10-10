@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import { getStudentHomeworkProfile } from '@/src/domains/homework/actions'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import StudentAttendanceHistory from '@/components/student/StudentAttendanceHistory'
+import { okulYoklamaDurumu } from '@/app/actions/school'
 
 type ProfileData = Awaited<ReturnType<typeof getStudentHomeworkProfile>>
 
@@ -46,6 +47,9 @@ export default function StudentHomeworkProfileModal({
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [tab, setTab] = useState<'odev' | 'devamsizlik'>('odev')
+  // Yoklama modülü kapalı okulda Devamsızlık sekmesi yok; cevap gelene kadar gizli (kapalı okulda bir an bile görünmesin)
+  const [yoklama, setYoklama] = useState(false)
+  useEffect(() => { okulYoklamaDurumu().then(setYoklama, () => setYoklama(false)) }, [])
 
   useEffect(() => {
     if (!studentId) { setData(null); setError(null); setTab('odev'); return }
@@ -143,7 +147,7 @@ export default function StudentHomeworkProfileModal({
 
         {/* Sekmeler */}
         <div className="flex gap-1 px-5 pt-2 border-b border-gray-100 dark:border-slate-700">
-          {([['odev', 'Ödev Profili'], ['devamsizlik', 'Devamsızlık']] as const).map(([key, label]) => (
+          {([['odev', 'Ödev Profili'], ...(yoklama ? [['devamsizlik', 'Devamsızlık']] as const : [])] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -160,7 +164,7 @@ export default function StudentHomeworkProfileModal({
 
         {/* İçerik */}
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
-          {tab === 'devamsizlik' && studentId && (
+          {yoklama && tab === 'devamsizlik' && studentId && (
             <StudentAttendanceHistory studentId={studentId} />
           )}
           {tab === 'odev' && (<>

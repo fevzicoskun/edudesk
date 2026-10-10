@@ -4,6 +4,8 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { format } from '@/src/shared/date'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaKapali from '@/components/YoklamaKapali'
 
 export const revalidate = 0
 export const metadata = { title: 'Bugünkü Devamsızlar' }
@@ -11,6 +13,7 @@ export const metadata = { title: 'Bugünkü Devamsızlar' }
 export default async function DevamsizlarPage() {
   const profile = await getCurrentProfile()
   if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
+  if (profile.school_id && !(await okulYoklamaAktif(profile.school_id))) return <YoklamaKapali yonetici />
 
   const supabase = await createClient()
   // Europe/Istanbul TZ — codebase geneliyle tutarlı (yerel sunucu UTC olabilir)

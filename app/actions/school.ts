@@ -5,6 +5,8 @@ import { z } from 'zod'
 import { redirect } from 'next/navigation'
 import { updateSchoolSchema } from '@/src/domains/school/validators'
 import { SchoolService } from '@/src/domains/school/services/SchoolService'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export async function setupSchool(_: unknown, formData: FormData) {
   const name = String(formData.get('name') ?? '').trim()
@@ -42,4 +44,11 @@ export async function setYoklamaAktif(aktif: unknown) {
   if (result.error) return { error: result.error }
   revalidatePath('/', 'layout')
   return { success: true }
+}
+
+/** İstemci bileşenleri için (ör. öğrenci ödev penceresinin Devamsızlık sekmesi): okulun yoklama modülü açık mı */
+export async function okulYoklamaDurumu(): Promise<boolean> {
+  const profil = await getCurrentProfile()
+  if (!profil?.school_id) return false
+  return okulYoklamaAktif(profil.school_id)
 }

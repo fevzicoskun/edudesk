@@ -1,5 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
+import { createClient } from '@supabase/supabase-js'
+
+// Güvenlik ağı: test yarıda kesilse bile (süre aşımı vb.) test okulunun yoklaması AÇIK bırakılır
+const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+test.afterAll(async () => {
+  await db.from('schools').update({ yoklama_aktif: true }).like('name', '__PW_TEST__%')
+})
 
 // Spec: docs/superpowers/specs/2026-10-10-yoklama-anahtari-design.md — test okulu her durumda AÇIK bırakılır.
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
@@ -84,6 +91,36 @@ test.describe('Yoklama anahtarı — müdür', () => {
       await expect(page.getByRole('heading', { name: 'Devamsızlık Riski' })).toHaveCount(0)
     } finally {
       await anahtariAyarla(page, true)
+    }
+  })
+})
+
+test.describe('Yoklama anahtarı — kapalıyken sayfalar', () => {
+  test('öğretmen: /yoklama "modül kapalı" der, öğrenci sayfasında devamsızlık yok; idare: devamsızlık raporu kapalı', async ({ browser }) => {
+    const my  = await browser.newContext({ storageState: path.join(AUTH_DIR, 'mudur_yardimcisi.json') })
+    const ogr = await browser.newContext({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
+    const myPage = await my.newPage(), ogrPage = await ogr.newPage()
+    try {
+      await anahtariAyarla(myPage, false)
+
+      await ogrPage.goto('/yoklama')
+      await expect(ogrPage.getByText('Yoklama modülü kapalı')).toBeVisible({ timeout: 20_000 })
+
+      // öğretmenin sınıfındaki ilk öğrencinin sayfası — ayrı sekmede (önceki sayfanın yüklemesiyle çakışmasın)
+      const ogrSayfa = await ogr.newPage()
+      await ogrSayfa.goto('/siniflar')
+      await ogrSayfa.locator('a[href^="/siniflar/"]').first().click()
+      await ogrSayfa.locator('a[href*="/ogrenciler/"]').first().click()
+      await expect(ogrSayfa).toHaveURL(/\/ogrenciler\/[0-9a-f-]+$/, { timeout: 20_000 })
+      await expect(ogrSayfa.getByText('Ödev Geçmişi')).toBeVisible({ timeout: 20_000 })
+      await expect(ogrSayfa.getByText('Devamsızlık', { exact: true })).toHaveCount(0)
+
+      await myPage.goto('/rapor/devamsizlik')
+      await expect(myPage.getByText('Yoklama modülü kapalı')).toBeVisible({ timeout: 20_000 })
+      await expect(myPage.getByRole('link', { name: 'Ayarlar' }).last()).toBeVisible()
+    } finally {
+      await anahtariAyarla(myPage, true)
+      await my.close(); await ogr.close()
     }
   })
 })

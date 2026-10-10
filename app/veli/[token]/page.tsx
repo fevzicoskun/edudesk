@@ -12,6 +12,7 @@ import VeliPlanSection from './VeliPlanSection'
 import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
 import { yazdirmaBasligi } from '@/src/shared/utils'
 import { addDaysISO } from '@/src/shared/date'
+import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
 export const metadata = { title: yazdirmaBasligi('Veli Görünümü') }
 
@@ -72,7 +73,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const supabase = createServiceClient()
   let studentQuery = supabase
     .from('students')
-    .select('id, full_name, student_number, classes(name, grade)')
+    .select('id, full_name, student_number, school_id, classes(name, grade)')
     .eq('id', studentId)
     .is('deleted_at', null) // service-role RLS'i bypass eder → silinen öğrenci velisine gösterilmemeli
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
@@ -117,6 +118,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   if (!studentResult.data) notFound()
 
   const student = studentResult.data
+  // Yoklama modülü kapalı okulda veliye devamsızlık gösterilmez (veli oturumsuz → servis istemcisiyle okunur)
+  const yoklama = !(await kapaliOkullar(supabase)).has(student.school_id)
   const cls = student.classes as { name: string; grade: number } | null
   const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
@@ -161,7 +164,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-5">
         <VeliTracker token={token} />
-        <VeliOzetKart devamsizliklar={attendance} odevler={submissions} today={today} />
+        <VeliOzetKart devamsizliklar={attendance} odevler={submissions} today={today} yoklamaAktif={yoklama} />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="bg-white border border-gray-200 rounded-2xl p-4 text-center overflow-hidden">
             <p className="text-3xl font-bold text-gray-900">{total}</p>
@@ -193,7 +196,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
         <VeliOdevlerSection upcoming={upcoming} past={past} today={today} />
         <VeliPlanSection weeks={planWeeks} />
-        <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />
+        {yoklama && <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />}
 
         {notes.length > 0 && (
           <section data-veli-section="notlar" className="bg-white border border-gray-200 rounded-2xl p-4">

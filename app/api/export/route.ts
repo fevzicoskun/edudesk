@@ -8,6 +8,7 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { AttendanceService } from '@/src/domains/attendance/services/AttendanceService'
 import { todayLocalISO } from '@/src/shared/date'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 const ALLOWED_JOB_TYPES: JobType[] = [
   'excel_odevler',
@@ -35,6 +36,11 @@ export async function POST(req: NextRequest) {
 
   const schoolId = ability.schoolId
   const params = body.params ?? {}
+
+  // Yoklama modülü kapalı okulda yoklama exportu yok
+  if (jobType === 'excel_yoklama' && !(await okulYoklamaAktif(schoolId))) {
+    return NextResponse.json({ error: 'Yoklama modülü kapalı' }, { status: 409 })
+  }
 
   // Yoklama exportu: classId varsa sınıfa erişim yetkisi doğrula
   if (jobType === 'excel_yoklama' && params.classId) {

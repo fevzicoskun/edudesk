@@ -5,12 +5,17 @@ import { schoolYearStart } from '@/src/shared/utils'
 import EmptyState from '@/app/components/EmptyState'
 import { AttendanceRepository } from '@/src/domains/attendance/repositories/AttendanceRepository'
 import CizelgeClient from './CizelgeClient'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaKapali from '@/components/YoklamaKapali'
+import { isMudurOrAbove as yoneticiMi } from '@/src/shared/types'
 
 export const metadata = { title: 'Yoklama Çizelgesi' }
 
 export default async function CizelgePage() {
   const [supabase, profile] = await Promise.all([createClient(), getCurrentProfile()])
   if (!profile?.school_id) redirect('/anasayfa')
+  // Yoklama modülü kapalı okulda bu sayfa yerine bilgi kartı
+  if (!(await okulYoklamaAktif(profile.school_id))) return <YoklamaKapali yonetici={yoneticiMi(profile.role)} />
 
   // Çizelge tüm okul sınıflarını gösterir (yoklama dropdown'ı ile tutarlı) — rol filtresi yok.
   const { data: rawClasses } = await supabase

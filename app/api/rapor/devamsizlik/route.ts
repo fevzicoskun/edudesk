@@ -6,6 +6,7 @@ import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import { schoolYearStart } from '@/src/shared/utils'
 import { countAbsences } from '@/src/domains/attendance/lib/attendanceMath'
 import { buildReportRows, buildExcelRows } from '@/src/domains/attendance/lib/absenceReport'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 const MUDUR_ROLLER = ['mudur', 'mudur_yardimcisi']
 
@@ -13,6 +14,9 @@ export async function GET() {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !MUDUR_ROLLER.includes(profile.role)) {
     return NextResponse.json({ error: 'Yetkisiz' }, { status: 403 })
+  }
+  if (!(await okulYoklamaAktif(profile.school_id))) {
+    return NextResponse.json({ error: 'Yoklama modülü kapalı' }, { status: 409 })
   }
 
   const db    = await createClient()

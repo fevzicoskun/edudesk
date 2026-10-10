@@ -21,6 +21,9 @@ import KpiOzet from './KpiOzet'
 import SinifTrend from './SinifTrend'
 import KronikSicil from './KronikSicil'
 import SinifKapsama from './SinifKapsama'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import YoklamaKapali from '@/components/YoklamaKapali'
+import { isMudurOrAbove as yoneticiMi } from '@/src/shared/types'
 
 export const revalidate = 30
 
@@ -34,6 +37,8 @@ export default async function YoklamaAnalitikPage() {
   if (!profile?.school_id || !user) redirect('/login')
 
   if (!(isTeachingRole(profile.role) || isMudurOrAbove(profile.role))) redirect('/yoklama')
+  // Yoklama modülü kapalı okulda bu sayfa yerine bilgi kartı
+  if (!(await okulYoklamaAktif(profile.school_id))) return <YoklamaKapali yonetici={yoneticiMi(profile.role)} />
 
   const sid = profile.school_id
   const isManager = profile.role === 'zumre_baskani' || isMudurOrAbove(profile.role)
