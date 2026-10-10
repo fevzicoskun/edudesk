@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import path from 'path'
+import fs from 'fs'
 import { createClient } from '@supabase/supabase-js'
 
 /**
@@ -39,6 +40,8 @@ test.beforeAll(async () => {
     satir(`${DERS} işaretli 1`, gun(-8)),
     satir(`${DERS} işaretli 2`, gun(-7)),
     satir(`${DERS} işaretli 3`, gun(-6)),
+    satir(`${DERS} işaretli 4`, gun(-6)),
+    satir(`${DERS} işaretli 5`, gun(-6)),
     satir(`${DERS} bekleyen`, gun(-5)),
   ]).select('id, title')
   if (error) throw error
@@ -47,9 +50,10 @@ test.beforeAll(async () => {
   const isaretli = data!.filter(h => h.title.includes('işaretli')).map(h => h.id)
   // Ödev eklenince teslim satırları otomatik açılır; yoksa ekle
   const { error: e2 } = await db.from('homework_submissions').upsert(
-    isaretli.map(homework_id => ({
+    // 5 kontrol edilmiş ödevin 3'ü yapılmadı → %60 (riskli eşiği %30, en az 5 ödev)
+    isaretli.map((homework_id, i) => ({
       homework_id, student_id: ogrenci.id, school_id: schoolId,
-      status: 'yapilmadi', marked_at: new Date().toISOString(),
+      status: i < 3 ? 'yapilmadi' : 'yapildi', marked_at: new Date().toISOString(),
     })),
     { onConflict: 'homework_id,student_id' },
   )
@@ -69,10 +73,11 @@ test.describe('MY Ödev Takibi', () => {
     await page.goto('/yonetim/odevler')
     await expect(page.getByRole('heading', { name: 'Ödev Takibi', level: 1 })).toBeVisible({ timeout: 20_000 })
 
-    const ders = page.getByTestId('ders-satirlari').locator('li', { hasText: DERS })
-    await expect(ders).toContainText('4 ödev')
-    await expect(ders).toContainText(`${ogretmenAd} 4`)
-    await expect(ders).toContainText('3 kontrol edildi')
+    const ders = page.getByTestId('ders-satirlari').locator('tbody tr', { hasText: DERS })
+    await expect(ders.locator('td').nth(1)).toHaveText('6')
+    await expect(ders).toContainText(`${ogretmenAd} 6`)
+    await expect(ders).toContainText('5 kontrol edildi')
+    await expect(ders).toContainText('%40') // 2 yapıldı / 5 işaret
     await expect(ders).toContainText('1 kontrol edilecek')
 
     const bekleyen = page.getByTestId('kontrol-edilecek').locator('li', { hasText: `${DERS} bekleyen` })
@@ -82,9 +87,16 @@ test.describe('MY Ödev Takibi', () => {
 
     const edilen = page.getByTestId('kontrol-edilen').or(page.locator('details ul')).locator('li', { hasText: `${DERS} işaretli 1` })
     await expect(edilen.first()).toContainText('1 yapılmadı')
+  })
 
+  test('ders süzmesinde sınıf tamamlanması ve %30 kuralıyla riskli öğrenci', async ({ page }) => {
+    await page.goto(`/yonetim/odevler?ders=${encodeURIComponent(DERS.toLocaleLowerCase('tr'))}`)
+    await expect(page.getByRole('heading', { name: 'Ödev Takibi', level: 1 })).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByTestId('sinif-satirlari').locator('li')).toHaveCount(1)
+    await expect(page.getByTestId('sinif-satirlari')).toContainText('%40')
     const riskli = page.getByTestId('riskli-ogrenciler').locator('li', { hasText: ogrenci.ad })
-    await expect(riskli).toContainText(`${DERS} 3`)
+    await expect(riskli).toContainText('%60')
+    await expect(riskli).toContainText(`3/5 · ${DERS} 3`)
   })
 
   test('ders çipi listeleri o derse süzer', async ({ page }) => {
@@ -98,7 +110,25 @@ test.describe('MY Ödev Takibi', () => {
     const satirlar = page.getByTestId('kontrol-edilecek').locator('li')
     await expect(satirlar).toHaveCount(1)
     await expect(satirlar.first()).toContainText(`${DERS} bekleyen`)
-    await expect(page.getByTestId('ders-satirlari').locator('li')).toHaveCount(1)
+    await expect(page.getByTestId('ders-satirlari').locator('tbody tr')).toHaveCount(1)
+  })
+
+  test('okul karnesi PDF\'i ödev bölümlerini ve okuma rehberini içerir', async ({ page }) => {
+    await page.goto('/yonetim')
+    const indir = page.getByRole('button', { name: 'Karne (PDF) indir' })
+    await expect(indir).toBeVisible({ timeout: 20_000 })
+    const [dosya] = await Promise.all([page.waitForEvent('download', { timeout: 60_000 }), indir.click()])
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(fs.readFileSync((await dosya.path())!)) }).promise
+    let metin = ''
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const icerik = await (await pdf.getPage(i)).getTextContent()
+      metin += icerik.items.map(it => ('str' in it ? it.str : '')).join(' ') + '\n'
+    }
+    for (const s of ['Okul Karnesi — Ödev Takibi', 'Bu rapor nasıl okunur', 'Derslere göre', 'Sınıflara göre tamamlanma',
+      'Öğretmenlere göre', 'Riskli öğrenciler', 'Bekleyen kontroller', DERS, ogrenci.ad]) {
+      expect(metin, s).toContain(s)
+    }
   })
 
   test('menüde yalnız Ödev Takibi aktif (Okul Durumu yanmaz)', async ({ page }) => {

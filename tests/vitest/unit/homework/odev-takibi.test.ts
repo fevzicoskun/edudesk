@@ -97,30 +97,95 @@ describe('odevTakibi() — kontrol listeleri', () => {
   })
 })
 
-describe('odevTakibi() — riskli öğrenciler', () => {
-  const ucOdev = [hw('h1'), hw('h2'), hw('h3', { subject: 'Coğrafya' })]
+describe('odevTakibi() — riskli öğrenciler (%30 kuralı)', () => {
+  // Ali 5 ödevin 2'sini kaçırdı (%40) → riskli; Ayşe 5'te 1 (%20) → değil
+  const besOdev = [hw('h1'), hw('h2'), hw('h3'), hw('h4', { subject: 'Coğrafya' }), hw('h5', { subject: 'Coğrafya' })]
+  const isaretler = [
+    sub('h1', 's1', 'yapilmadi'), sub('h2', 's1', 'yapildi'), sub('h3', 's1', 'yapildi'), sub('h4', 's1', 'eksik'), sub('h5', 's1', 'gec'),
+    sub('h1', 's2', 'yapilmadi'), sub('h2', 's2', 'yapildi'), sub('h3', 's2', 'yapildi'), sub('h4', 's2', 'yapildi'), sub('h5', 's2', 'yapildi'),
+  ]
 
-  it('3+ yapılmadı/eksik → riskli, ders kırılımıyla', () => {
-    const r = calistir(ucOdev, [
-      sub('h1', 's1', 'yapilmadi'), sub('h2', 's1', 'eksik'), sub('h3', 's1', 'yapilmadi'),
-      sub('h1', 's2', 'yapilmadi'), sub('h2', 's2', 'yapildi'), sub('h3', 's2', 'gec'),
-    ])
+  it('kontrol edilen ödevlerin %30+ yapılmadı/eksik → riskli, oran ve ders kırılımıyla', () => {
+    const r = calistir(besOdev, isaretler)
     expect(r.riskliOgrenciler).toHaveLength(1)
-    expect(r.riskliOgrenciler[0]).toMatchObject({ id: 's1', ad: 'Ali', sinif: '9-A', toplam: 3 })
-    expect(r.riskliOgrenciler[0].dersler).toEqual([{ ad: 'Matematik', sayi: 2 }, { ad: 'Coğrafya', sayi: 1 }])
+    expect(r.riskliOgrenciler[0]).toMatchObject({ id: 's1', ad: 'Ali', sinif: '9-A', toplam: 2, isaretli: 5, oran: 40 })
+    expect(r.riskliOgrenciler[0].dersler).toEqual([{ ad: 'Matematik', sayi: 1 }, { ad: 'Coğrafya', sayi: 1 }])
   })
 
-  it('ders süzmesinde yalnız o dersin kaçırmaları sayılır', () => {
-    const r = calistir(ucOdev, [
-      sub('h1', 's1', 'yapilmadi'), sub('h2', 's1', 'eksik'), sub('h3', 's1', 'yapilmadi'),
-    ], 'matematik')
-    expect(r.riskliOgrenciler).toHaveLength(0) // Matematik'te yalnız 2
+  it('tam %30 sınırdadır → riskli', () => {
+    const on = Array.from({ length: 10 }, (_, i) => hw(`k${i}`))
+    const r = calistir(on, on.map((h, i) => sub(h.id, 's1', i < 3 ? 'yapilmadi' : 'yapildi')))
+    expect(r.riskliOgrenciler.map(o => o.oran)).toEqual([30])
+  })
+
+  it("5'ten az kontrol edilmiş ödevi olan öğrenci risk listesine girmez (az veriyle %100 yanıltır)", () => {
+    const dort = besOdev.slice(0, 4)
+    const r = calistir(dort, dort.map(h => sub(h.id, 's1', 'yapilmadi')))
+    expect(r.riskliOgrenciler).toHaveLength(0)
+  })
+
+  it('mazeretli payda dışıdır (6 işaret, 1 mazeretli, 2 kaçırma = %40)', () => {
+    const alti = [...besOdev, hw('h6')]
+    const r = calistir(alti, [
+      sub('h1', 's1', 'yapilmadi'), sub('h2', 's1', 'eksik'), sub('h3', 's1', 'mazeretli'),
+      sub('h4', 's1', 'yapildi'), sub('h5', 's1', 'yapildi'), sub('h6', 's1', 'yapildi'),
+    ])
+    expect(r.riskliOgrenciler[0]).toMatchObject({ isaretli: 5, oran: 40 })
+  })
+
+  it('en yüksek oran üstte', () => {
+    const r = calistir(besOdev, [
+      ...besOdev.map((h, i) => sub(h.id, 's1', i < 2 ? 'yapilmadi' : 'yapildi')),
+      ...besOdev.map((h, i) => sub(h.id, 's2', i < 4 ? 'yapilmadi' : 'yapildi')),
+    ])
+    expect(r.riskliOgrenciler.map(o => [o.ad, o.oran])).toEqual([['Ayşe', 80], ['Ali', 40]])
+  })
+
+  it('ders süzmesinde yalnız o dersin ödevleri sayılır', () => {
+    const r = calistir(besOdev, besOdev.map(h => sub(h.id, 's1', 'yapilmadi')), 'matematik')
+    expect(r.riskliOgrenciler).toHaveLength(0) // Matematik'te yalnız 3 kontrol edilmiş ödev
   })
 
   it('silinmiş/başka sınıftaki öğrenciye ait teslim sayılmaz', () => {
-    const r = calistir(ucOdev, [
-      sub('h1', 'yok', 'yapilmadi'), sub('h2', 'yok', 'yapilmadi'), sub('h3', 'yok', 'yapilmadi'),
-    ])
+    const r = calistir(besOdev, besOdev.map(h => sub(h.id, 'yok', 'yapilmadi')))
     expect(r.riskliOgrenciler).toHaveLength(0)
+  })
+})
+
+describe('odevTakibi() — tamamlanma oranları', () => {
+  it('ders satırında tamamlanma: yapıldı / (işaretli − mazeretli); işaret yoksa null', () => {
+    const r = calistir([hw('h1'), hw('h2'), hw('h3', { subject: 'Coğrafya' })], [
+      sub('h1', 's1', 'yapildi'), sub('h1', 's2', 'yapilmadi'), sub('h2', 's1', 'yapildi'), sub('h2', 's2', 'mazeretli'),
+    ])
+    expect(r.dersler.find(d => d.ad === 'Matematik')!.tamamlanma).toBe(67)
+    expect(r.dersler.find(d => d.ad === 'Coğrafya')!.tamamlanma).toBeNull()
+  })
+
+  it('sınıflar: en düşük tamamlanma üstte, işaretsiz sınıf sonda', () => {
+    const r = odevTakibi({
+      homeworks: [hw('h1'), hw('h2', { class_id: 'c2' }), hw('h3', { class_id: 'c3' })],
+      submissions: [sub('h1', 's1', 'yapildi'), sub('h2', 's3', 'yapilmadi')],
+      students: [...students, { id: 's3', full_name: 'Can', class_id: 'c2' }],
+      ogretmenler, siniflar: new Map([['c1', '9-A'], ['c2', '10-A'], ['c3', '11-A']]), bugun: BUGUN, ders: null,
+    })
+    expect(r.siniflar.map(s => [s.ad, s.odev, s.tamamlanma])).toEqual([['10-A', 1, 0], ['9-A', 1, 100], ['11-A', 1, null]])
+  })
+
+  it('sınıflar ders süzmesine uyar', () => {
+    const r = calistir([hw('h1'), hw('h2', { subject: 'Coğrafya' })], [], 'coğrafya')
+    expect(r.siniflar.map(s => s.odev)).toEqual([1])
+  })
+})
+
+describe('odevTakibi() — öğretmenler', () => {
+  it('ödev sayısı, kontrol oranı ve en eski bekleyen kontrol günü; çok ödevli üstte', () => {
+    const r = calistir([
+      hw('h1'), hw('h2', { due_date: '2026-09-20' }), hw('h3', { due_date: BUGUN }),
+      hw('h4', { teacher_id: 't2' }),
+    ], [sub('h1', 's1', 'yapildi'), sub('h4', 's1', 'yapildi')])
+    expect(r.ogretmenler).toEqual([
+      { ad: 'Fevzi Coşkun', odev: 3, kontrolEdildi: 1, kontrolOrani: 50, enEskiBekleyen: 9 },
+      { ad: 'Hüseyin İnal', odev: 1, kontrolEdildi: 1, kontrolOrani: 100, enEskiBekleyen: null },
+    ])
   })
 })
