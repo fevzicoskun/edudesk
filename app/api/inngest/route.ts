@@ -9,9 +9,10 @@ import { gunlukOzetFn } from '@/src/domains/notifications/functions/gunlukOzet'
 import { planVeliNotifierFn } from '@/src/domains/notifications/functions/planVeliNotifier'
 import { cronHataBildirimiFn } from '@/src/domains/notifications/functions/cronHataBildirimi'
 import { haftalikYedekFn } from '@/src/domains/notifications/functions/haftalikYedek'
+import { haftalikOzetFn } from '@/src/domains/notifications/functions/haftalikOzet'
 
 export const { GET, POST, PUT } = serve({
   client: inngest,
   // yoklamaHatirlaticiFn kapalı: yoklama arayüzden gizli (2026-09-25), hatırlatma gürültü olurdu
-  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, gunlukOzetFn, planVeliNotifierFn, cronHataBildirimiFn, haftalikYedekFn],
+  functions: [homeworkReminderFn, veliAbsenceNotifierFn, aylikBultenFn, odevSonrasiVeliNotifierFn, homeworkCreatedNotifierFn, gunlukOzetFn, planVeliNotifierFn, cronHataBildirimiFn, haftalikYedekFn, haftalikOzetFn],
 })

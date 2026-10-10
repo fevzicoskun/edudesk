@@ -121,20 +121,20 @@ export function computeClassRisk(
   )
 }
 
-export async function fetchRiskInputs(teacherId: string, schoolId: string) {
+export async function fetchRiskInputs(teacherId: string, schoolId: string, sb?: Parameters<typeof DashboardRepository.getSubmissions>[2]) {
   const twoWeeksAgo   = turkeyDate(subDays(new Date(), 14))
   const ninetyDaysAgo = turkeyDate(subDays(new Date(), 90))
 
-  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId, ninetyDaysAgo)
+  const { data: hwData, error: hwError } = await DashboardRepository.getTeacherHomeworks(teacherId, schoolId, ninetyDaysAgo, sb)
   if (hwError) logger.error({ teacherId, schoolId, code: (hwError as { code?: string }).code }, 'fetchRiskInputs: ödev sorgusu başarısız')
   const homeworks = (hwData ?? []) as HwRow[]
   const hwIds     = homeworks.map(h => h.id)
   const classIds  = [...new Set(homeworks.map(h => h.class_id))]
 
   const [subsResult, attResult, studentsResult] = await Promise.all([
-    DashboardRepository.getSubmissions(hwIds, schoolId),
-    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId),
-    DashboardRepository.getStudentsByClasses(classIds, schoolId),
+    DashboardRepository.getSubmissions(hwIds, schoolId, sb),
+    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId, sb),
+    DashboardRepository.getStudentsByClasses(classIds, schoolId, sb),
   ])
 
   if ('error' in subsResult     && subsResult.error)     logger.error({ teacherId, hwCount: hwIds.length, code: (subsResult.error as { code?: string }).code }, 'fetchRiskInputs: submission sorgusu başarısız')

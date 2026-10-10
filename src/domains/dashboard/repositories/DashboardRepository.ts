@@ -1,10 +1,15 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/src/infrastructure/supabase/database.types'
+
+// Cron (servis istemcisi) aynı sorguları kullansın diye istemci dışarıdan verilebilir; varsayılan oturum istemcisi.
+type Db = SupabaseClient<Database>
 
 export const DashboardRepository = {
-  async getTeacherHomeworks(teacherId: string, schoolId: string, sinceDate?: string) {
-    const supabase = await createClient()
+  async getTeacherHomeworks(teacherId: string, schoolId: string, sinceDate?: string, sb?: Db) {
+    const supabase = sb ?? await createClient()
     let q = supabase
       .from('homeworks')
       .select('id, title, subject, due_date, class_id, classes(name, grade)')
@@ -16,9 +21,9 @@ export const DashboardRepository = {
     return q
   },
 
-  async getSubmissions(hwIds: string[], schoolId: string) {
+  async getSubmissions(hwIds: string[], schoolId: string, sb?: Db) {
     if (hwIds.length === 0) return { data: [] }
-    const supabase = await createClient()
+    const supabase = sb ?? await createClient()
     return fetchAllResult((f, t) => supabase
       .from('homework_submissions')
       .select('homework_id, student_id, status')
@@ -29,9 +34,9 @@ export const DashboardRepository = {
       .range(f, t))
   },
 
-  async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string, schoolId: string) {
+  async getAttendanceRows(classIds: string[], teacherId: string, sinceDate: string, schoolId: string, sb?: Db) {
     if (classIds.length === 0) return { data: [] }
-    const supabase = await createClient()
+    const supabase = sb ?? await createClient()
     return fetchAllResult((f, t) => supabase
       .from('attendance')
       .select('student_id, status')
@@ -43,9 +48,9 @@ export const DashboardRepository = {
       .range(f, t))
   },
 
-  async getStudentsByClasses(classIds: string[], schoolId: string) {
+  async getStudentsByClasses(classIds: string[], schoolId: string, sb?: Db) {
     if (classIds.length === 0) return { data: [] }
-    const supabase = await createClient()
+    const supabase = sb ?? await createClient()
     return supabase
       .from('students')
       .select('id, full_name, class_id, classes(name)')
