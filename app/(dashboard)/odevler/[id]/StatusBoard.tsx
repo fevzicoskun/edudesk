@@ -190,12 +190,15 @@ export default function StatusBoard({
   const saveNoteRef = useRef(saveNote)
   saveNoteRef.current = saveNote
   useEffect(() => {
-    const onHide = () => {
-      if (document.visibilityState !== 'hidden') return
-      for (const [id, metin] of Object.entries(notlarRef.current)) saveNoteRef.current(id, metin)
-    }
+    const hepsiniKaydet = () => { for (const [id, metin] of Object.entries(notlarRef.current)) saveNoteRef.current(id, metin) }
+    const onHide = () => { if (document.visibilityState === 'hidden') hepsiniKaydet() }
     document.addEventListener('visibilitychange', onHide)
-    return () => document.removeEventListener('visibilitychange', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      // Uygulama içinde başka sayfaya geçiş (geri tuşu, menü) blur'suz olabilir: ekran kapanırken
+      // değişmiş notlar kaydedilir. saveNote değişmeyeni atlar; istek bileşen kapansa da gider.
+      hepsiniKaydet()
+    }
   }, [])
 
   function toggleHistory(studentId: string) {

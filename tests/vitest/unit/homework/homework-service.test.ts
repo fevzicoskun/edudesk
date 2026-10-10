@@ -514,6 +514,17 @@ describe('HomeworkService.updateSubmissionNote()', () => {
     )
   })
 
+  it('öğrenci ödevin sınıfında değilse not yazılmaz', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
+    vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({
+      data: { teacher_id: TEACHER_ID, class_id: 'cls-1' }, error: null,
+    } as never)
+    vi.mocked(HomeworkRepository.studentsAllInClass).mockResolvedValueOnce(false)
+    const result = await HomeworkService.updateSubmissionNote('hw-1', 'baska-sinif', 'not')
+    expect(result.error).toBe('Öğrenci bu ödevin sınıfında değil')
+    expect(HomeworkRepository.upsertSubmissionNote).not.toHaveBeenCalled()
+  })
+
   it('1000 karakterden uzun not → 1000 karaktere kırpılır', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility() as never)
     vi.mocked(HomeworkRepository.findHomeworkTeacher).mockResolvedValue({

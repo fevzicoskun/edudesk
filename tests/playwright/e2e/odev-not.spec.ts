@@ -121,3 +121,19 @@ test('⋯ menüsünden "Sınıfta yok": durum mazeretli (veliye yapmadı gitmez)
     return data && { status: data.status, note: data.note, isaretli: !!data.marked_at }
   }).toEqual({ status: 'mazeretli', note: 'Sınıfta yok', isaretli: true })
 })
+
+test('not kutusundan çıkmadan geri tuşuyla sayfadan ayrılınca da not kaydedilir', async ({ page }) => {
+  // uygulama içi geçiş: listeden ödeve tıklanır, sonra geri → blur olmadan ekran kapanır
+  await page.goto('/odevler')
+  await page.getByRole('link', { name: /E2ENOT/ }).first().click()
+  await page.waitForURL(new RegExp(`/odevler/${hwId}`))
+  const alan = await notuAc(page, /notunu düzenle$/)
+  const metin = 'Geri tuşundan önce yazıldı'
+  await alan.fill(metin)
+  await expect(alan).toBeFocused()
+  await page.goBack()
+  await expect.poll(async () => {
+    const { data } = await db.from('homework_submissions').select('note').eq('homework_id', hwId).eq('note', metin)
+    return data?.length
+  }, { timeout: 15_000 }).toBe(1)
+})

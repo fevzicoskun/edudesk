@@ -240,6 +240,7 @@ export default function StudentRow({
             onBlur={e => onNoteBlur(item.student_id, e.target.value)}
             autoFocus
             rows={2}
+            maxLength={1000}
             aria-label={`${item.full_name} için not`}
             placeholder="Öğrenci hakkında kısa not..."
             className="w-full px-3 py-2 text-base border border-gray-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none placeholder:text-gray-500 dark:placeholder:text-slate-400"

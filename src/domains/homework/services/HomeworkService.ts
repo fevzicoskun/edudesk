@@ -181,6 +181,11 @@ export const HomeworkService = {
       return { error: 'Ödev bulunamadı veya yetkiniz yok.' }
     }
 
+    // Öğrenci bu ödevin sınıfında olmalı (durum yoluyla aynı kural) — yoksa başka sınıfa yetim satır açılırdı
+    if (!(await HomeworkRepository.studentsAllInClass([studentId], hw.class_id, ability.schoolId))) {
+      return { error: 'Öğrenci bu ödevin sınıfında değil' }
+    }
+
     const { error } = await HomeworkRepository.upsertSubmissionNote({
       homework_id: homeworkId,
       student_id:  studentId,
