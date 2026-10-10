@@ -2143,6 +2143,42 @@ export type Database = {
         }
         Relationships: []
       }
+      okul_basvurulari: {
+        Row: {
+          contact_name: string
+          created_at: string
+          durum: string
+          email: string
+          id: string
+          note: string | null
+          phone: string | null
+          school_name: string
+          updated_at: string
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          durum?: string
+          email: string
+          id?: string
+          note?: string | null
+          phone?: string | null
+          school_name: string
+          updated_at?: string
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          durum?: string
+          email?: string
+          id?: string
+          note?: string | null
+          phone?: string | null
+          school_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       school_events: {
         Row: {
           created_at: string

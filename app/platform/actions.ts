@@ -181,3 +181,20 @@ export async function cancelSchool(schoolId: string) {
   revalidatePath('/platform')
   return { ok: true }
 }
+
+const BasvuruDurumSchema = z.object({
+  id:    z.string().uuid(),
+  durum: z.enum(['yeni', 'arandi', 'demo', 'kazanildi', 'kaybedildi']),
+})
+
+export async function updateBasvuruDurum(id: string, durum: string): Promise<{ error?: string }> {
+  const supabase = await requirePlatformAdmin()
+  if (!supabase) return { error: 'Yetki yok' }
+  const parsed = BasvuruDurumSchema.safeParse({ id, durum })
+  if (!parsed.success) return { error: 'Geçersiz durum' }
+  const { error } = await supabase.from('okul_basvurulari')
+    .update({ durum: parsed.data.durum, updated_at: new Date().toISOString() }).eq('id', parsed.data.id)
+  if (error) return { error: 'Kaydedilemedi' }
+  revalidatePath('/platform')
+  return {}
+}

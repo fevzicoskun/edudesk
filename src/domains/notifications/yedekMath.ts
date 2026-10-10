@@ -26,8 +26,8 @@ export const YEDEKLENEN_TABLOLAR = [
   'notebook_checks', 'sok_reports', 'curriculum_progress',
   'annual_plans', 'daily_plans', 'zumre_meetings', 'zumre_meeting_templates',
   'ogretmen_dosyasi', 'tasks',
-  // Para
-  'school_payments',
+  // Para ve satış
+  'school_payments', 'okul_basvurulari',
 ] as const
 
 /** id kolonu olmayan tabloların birincil anahtarı (DB'den doğrulandı 2026-09-24). */

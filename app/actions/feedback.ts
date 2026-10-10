@@ -45,6 +45,8 @@ export async function sendFeedback(formData: FormData) {
   }
 
   // Mail best-effort: DB kaydı başarılı olduğu için mail patlasa da ok döner.
+  // Otomatik test hesapları (@test.example) gerçek bildirim kutusuna mail atmasın — kayıt DB'de yine var
+  if (user.email?.endsWith('@test.example')) return { ok: true }
   const categoryLabel = CATEGORY_LABELS[category] ?? 'Öneri'
   const now = new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' })
   try {
