@@ -37,6 +37,20 @@ test.describe('Yoklama anahtarı — müdür yardımcısı', () => {
       await expect(page.getByText('Yoklama Alınan Sınıf')).toHaveCount(0)
       await expect(page.getByText(/sınıf yoklaması girilmemiş/)).toHaveCount(0)
       await expect(await menuLinki(page, 'Devamsızlık Raporu')).toHaveCount(0)
+      // MY ana sayfa: Devamsızlık Riski kartı ve Öğretmen Aktivitesi'nde Yoklama sütunu yok
+      await page.goto('/anasayfa')
+      await expect(page.locator('main').getByText('Öğretmen Aktivitesi', { exact: true })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('heading', { name: 'Devamsızlık Riski' })).toHaveCount(0)
+      await expect(page.getByText('Yoklama', { exact: true })).toHaveCount(0)
+      // Okul Durumu: bugün yoklama ve aylık devamsızlık kartları yok
+      await page.goto('/yonetim')
+      await expect(page.getByRole('heading', { name: 'Okul Durumu' })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByText('Bu Ay Devamsızlık')).toHaveCount(0)
+      await expect(page.getByText(/Yoklama: \d+ \/ \d+ sınıf/)).toHaveCount(0)
+      // Aktivite raporu: Yoklama sütunu yok
+      await page.goto('/rapor/ogretmen-aktivite')
+      await expect(page.getByRole('columnheader', { name: 'Ödev' })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByRole('columnheader', { name: 'Yoklama' })).toHaveCount(0)
 
       await anahtariAyarla(page, true)
       await page.goto('/anasayfa')
@@ -54,5 +68,22 @@ test.describe('Yoklama anahtarı — öğretmen', () => {
     await page.goto('/ayarlar')
     await expect(page.getByRole('heading', { name: 'Ayarlar' })).toBeVisible({ timeout: 20_000 })
     await expect(page.getByRole('switch', { name: 'Yoklama modülü' })).toHaveCount(0)
+  })
+})
+
+test.describe('Yoklama anahtarı — müdür', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'mudur.json') })
+  test('kapalıyken müdür ana sayfasında devamsızlık trendi ve sınıf karşılaştırması yok', async ({ page }) => {
+    try {
+      await anahtariAyarla(page, false)
+      await page.goto('/anasayfa')
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 20_000 })
+      await expect(page.getByText('Sınıf karşılaştırması — devamsızlık')).toHaveCount(0)
+      await expect(page.getByText(/Devamsızlık oranı|devamsızlık oranı/)).toHaveCount(0)
+      await expect(page.getByText(/Yoklama kapsama|yoklama kapsama/)).toHaveCount(0)
+      await expect(page.getByRole('heading', { name: 'Devamsızlık Riski' })).toHaveCount(0)
+    } finally {
+      await anahtariAyarla(page, true)
+    }
   })
 })

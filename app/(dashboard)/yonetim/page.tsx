@@ -9,6 +9,7 @@ import OkulSeviyesiKartlari from './OkulSeviyesiKartlari'
 import AylikDevamsizlikWidget from './AylikDevamsizlikWidget'
 import NobetCizelgesi from './NobetCizelgesi'
 import KarneIndirButton from './KarneIndirButton'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export const revalidate = 60
 export const metadata = { title: 'Okul Durumu' }
@@ -42,6 +43,7 @@ const QUICK_LINKS = [
 
 export default async function YonetimPage() {
   const profile = await getCurrentProfile()
+  const yoklama = profile?.school_id ? await okulYoklamaAktif(profile.school_id) : true
   if (!profile || !['mudur', 'mudur_yardimcisi'].includes(profile.role ?? '')) redirect('/anasayfa')
 
   return (
@@ -68,15 +70,15 @@ export default async function YonetimPage() {
         <UyariBandi />
       </Suspense>
 
-      {/* Bugün + aylık devamsızlık */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Bugün + aylık devamsızlık — yalnız yoklama modülü açıkken */}
+      {yoklama && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Suspense fallback={<CardSkeleton tall />}>
           <AylikDevamsizlikWidget />
         </Suspense>
         <Suspense fallback={<CardSkeleton tall />}>
           <BugunYoklamaWidget />
         </Suspense>
-      </div>
+      </div>}
 
       {/* Okul nöbet çizelgesi */}
       <Suspense fallback={<CardSkeleton />}>

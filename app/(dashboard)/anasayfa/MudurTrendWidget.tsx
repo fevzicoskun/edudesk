@@ -5,11 +5,14 @@ import { getSchoolTrends } from '@/src/domains/dashboard/queries/schoolTrends'
 import { filledWeekCount } from '@/src/domains/dashboard/lib/trendMath'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import TrendChart from './charts/TrendChart'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 const MIN_WEEKS = 2
 
 export default async function MudurTrendWidget() {
   const school_id = await requireSchoolId()
+  // Yoklama modülü kapalıysa devamsızlık/kapsama trendleri ve sınıf karşılaştırması yok
+  const yoklama = await okulYoklamaAktif(school_id)
   const { absence: absenceTrend, activity: activityTrend, coverage: coverageTrend, classAbs: classAbsence } = await getSchoolTrends(school_id)
 
   const enoughAbsence = filledWeekCount(absenceTrend) >= MIN_WEEKS
@@ -21,10 +24,10 @@ export default async function MudurTrendWidget() {
   // Yalnız verisi yeten trendler grafik olur; tek grafik tam genişlik alır (yanında boş "birikiyor" kartı kalmasın).
   // Verisi biriken trendler tek, küçük bir bilgi satırında toplanır.
   const trendler = [
-    { ad: 'Devamsızlık oranı', yeter: enoughAbsence, hafta: filledWeekCount(absenceTrend), data: absenceTrend, renk: '#ef4444' },
-    { ad: 'Öğretmen aktivite oranı', yeter: enoughActivity, hafta: filledWeekCount(activityTrend), data: activityTrend, renk: '#10b981' },
-    { ad: 'Yoklama kapsama oranı', yeter: enoughCoverage, hafta: coverageTrend.filter(p => p.expected > 0).length, data: coverageTrend, renk: '#3b82f6' },
-  ]
+    { ad: 'Devamsızlık oranı', yeter: enoughAbsence, hafta: filledWeekCount(absenceTrend), data: absenceTrend, renk: '#ef4444', yoklamali: true },
+    { ad: 'Öğretmen aktivite oranı', yeter: enoughActivity, hafta: filledWeekCount(activityTrend), data: activityTrend, renk: '#10b981', yoklamali: false },
+    { ad: 'Yoklama kapsama oranı', yeter: enoughCoverage, hafta: coverageTrend.filter(p => p.expected > 0).length, data: coverageTrend, renk: '#3b82f6', yoklamali: true },
+  ].filter(t => yoklama || !t.yoklamali)
   const grafikler = trendler.filter(t => t.yeter)
   const birikenler = trendler.filter(t => !t.yeter)
 
@@ -48,7 +51,7 @@ export default async function MudurTrendWidget() {
       )}
 
       {/* Sınıf karşılaştırması */}
-      <Card className="lg:col-span-2">
+      {yoklama && <Card className="lg:col-span-2">
         <CardHeader><CardTitle className="text-sm">Sınıf karşılaştırması — devamsızlık</CardTitle></CardHeader>
         <CardContent>
           {classAbsence.length === 0 ? (
@@ -72,7 +75,7 @@ export default async function MudurTrendWidget() {
             </ul>
           )}
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   )
 }

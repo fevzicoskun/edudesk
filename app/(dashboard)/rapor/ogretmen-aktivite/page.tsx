@@ -14,6 +14,7 @@ import {
   type TeacherRow,
 } from '@/src/domains/dashboard/lib/activityReport'
 import { formatDistanceToNow, parseISO } from '@/src/shared/date'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export const revalidate = 0
 
@@ -26,6 +27,7 @@ export default async function OgretmenAktivitePage() {
   }
 
   const since = since30daysISO()
+  const yoklama = await okulYoklamaAktif(profile.school_id)
 
   const [{ data: teacherData }, { data: logData }] = await Promise.all([
     ActivityReportRepository.getTeachers(profile.school_id),
@@ -86,7 +88,7 @@ export default async function OgretmenAktivitePage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 dark:bg-slate-700/50 border-b border-gray-200 dark:border-slate-700">
                 <tr>
-                  {['Ad Soyad', 'Rol', 'Yoklama', 'Ödev', 'Giriş günü', 'Son Aktivite'].map(h => (
+                  {['Ad Soyad', 'Rol', ...(yoklama ? ['Yoklama'] : []), 'Ödev', 'Giriş günü', 'Son Aktivite'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-slate-400">
                       {h}
                     </th>
@@ -98,7 +100,7 @@ export default async function OgretmenAktivitePage() {
                   <tr key={s.id} className="hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-900 dark:text-slate-100">{s.fullName}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">{roleLabel(s.role)}</td>
-                    <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.yoklamaCount}</td>
+                    {yoklama && <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.yoklamaCount}</td>}
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.odevCount}</td>
                     <td className="px-4 py-3 text-gray-700 dark:text-slate-300">{s.girisGunu}</td>
                     <td className="px-4 py-3 text-gray-500 dark:text-slate-400 text-xs">

@@ -6,18 +6,21 @@ import { aktifMi } from '@/src/domains/dashboard/lib/aktiflik'
 import { schoolYearStart } from '@/src/shared/utils'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import { getAbsenceScores, getOkulKullanim, getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 export default async function MYSolSutunWidget() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
 
   const bugun     = todayLocalISO()
   const yearStart = schoolYearStart()
+  // Yoklama modülü kapalıysa Devamsızlık Riski kartı ve sorgusu yok; Öğretmenler kartı sütunu doldurur
+  const yoklama   = await okulYoklamaAktif(school_id)
 
   const [studentsRes, classesRes, teachers, absenceScores, kullanim] = await Promise.all([
     supabase.from('students').select('id, full_name, class_id').eq('school_id', school_id).is('deleted_at', null),
     supabase.from('classes').select('id, name, grade').eq('school_id', school_id).is('deleted_at', null).order('grade').order('name'),
     getSchoolTeachers(school_id),
-    getAbsenceScores(school_id, yearStart),
+    yoklama ? getAbsenceScores(school_id, yearStart) : Promise.resolve([] as { student_id: string; absences: number }[]),
     getOkulKullanim(),
   ])
 
@@ -36,7 +39,7 @@ export default async function MYSolSutunWidget() {
 
   return (
     <div className="flex flex-col gap-4 h-full">
-      <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+      {yoklama && <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Devamsızlık Riski</h2>
           <span className="text-[11px] text-gray-500 dark:text-slate-400">yıl içi &middot; {ATTENDANCE_WARN_DAYS}+ devamsız</span>
@@ -63,7 +66,7 @@ export default async function MYSolSutunWidget() {
             })}
           </ul>
         )}
-      </section>
+      </section>}
 
       <section className="flex-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">

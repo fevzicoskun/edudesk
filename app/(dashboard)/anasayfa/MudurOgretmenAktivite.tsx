@@ -3,6 +3,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import { format, parseISO, subDays, todayLocalISO, todayWeekdayTR } from '@/src/shared/date'
 import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 function getWeekRange(): { from: string; label: string; isWeekend: boolean } {
   // İstanbul günü/haftagünü (1=Pzt..7=Paz) — UTC sunucuda gece kayması olmasın
@@ -22,6 +23,8 @@ function Dot({ ok }: { ok: boolean }) {
 export default async function MudurOgretmenAktivite() {
   const [supabase, school_id] = await Promise.all([createClient(), requireSchoolId()])
   const { from: weekAgoStr, label: periodLabel, isWeekend } = getWeekRange()
+  // Yoklama modülü kapalıysa yoklama sütunu yok; sıralama ve "pasif" yalnız ödeve göre
+  const yoklama = await okulYoklamaAktif(school_id)
 
   const [teachers, { data: activity }] = await Promise.all([
     getSchoolTeachers(school_id),
@@ -35,7 +38,7 @@ export default async function MudurOgretmenAktivite() {
     .map(t => ({
       ...t,
       hasHomework:   teachersWithHomework.has(t.id),
-      hasAttendance: teachersWithAtt.has(t.id),
+      hasAttendance: yoklama && teachersWithAtt.has(t.id),
     }))
     .sort((a, b) => {
       // En üste: ikisi de eksik
@@ -45,7 +48,7 @@ export default async function MudurOgretmenAktivite() {
       return (a.full_name ?? '').localeCompare(b.full_name ?? '', 'tr')
     })
 
-  const inactiveCount = rows.filter(t => !t.hasHomework && !t.hasAttendance).length
+  const inactiveCount = rows.filter(t => !t.hasHomework && (!yoklama || !t.hasAttendance)).length
 
   return (
     <Card className="h-full gap-0 py-0 border-gray-200 dark:border-slate-700 shadow-sm">
@@ -73,7 +76,7 @@ export default async function MudurOgretmenAktivite() {
         {/* Kolon başlıkları */}
         <div className="flex items-center justify-end gap-4 mt-2 pr-1">
           <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-12 text-center">Ödev</span>
-          <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-14 text-center">Yoklama</span>
+          {yoklama && <span className="text-[10px] font-medium text-gray-500 dark:text-slate-400 w-14 text-center">Yoklama</span>}
         </div>
       </CardHeader>
       <CardContent className="p-0 flex-1 min-h-0">
@@ -92,13 +95,13 @@ export default async function MudurOgretmenAktivite() {
                 }`}>
                   {t.hasHomework ? 'Girdi' : 'Girmedi'}
                 </span>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-14 text-center ${
+                {yoklama && <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full w-14 text-center ${
                   t.hasAttendance
                     ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
                     : 'bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400'
                 }`}>
                   {t.hasAttendance ? 'Aldı' : 'Almadı'}
-                </span>
+                </span>}
               </div>
             </li>
           ))}
