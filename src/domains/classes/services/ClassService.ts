@@ -114,7 +114,11 @@ export const ClassService = {
 
   async updateVeliContact(studentId: string, data: { email: string | null; telefon: string | null; ad: string | null }): Promise<{ error?: string }> {
     const ability  = await requireAbility()
-    guard(ability, P.STUDENTS.UPDATE)
+    // İdare (students:update) tüm öğrencileri; öğretmen yalnız ders verdiği sınıfın/mentörü olduğu öğrencinin velisini düzenler.
+    if (ability.cannot(P.STUDENTS.UPDATE)
+      && !(await ClassRepository.isTeacherOfStudent(ability.userId, studentId, ability.schoolId))) {
+      return { error: 'Bu öğrencinin veli bilgisini düzenleme yetkiniz yok.' }
+    }
     const supabase = await createClient()
 
     // Güvenlik: veli e-postası okuldaki bir öğretmenin e-postasıyla çakışamaz (kimlik karışması).

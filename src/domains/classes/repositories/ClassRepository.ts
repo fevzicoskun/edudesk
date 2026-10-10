@@ -74,6 +74,23 @@ export const ClassRepository = {
       .is('deleted_at', null).single()
   },
 
+  /** Öğretmen öğrencinin mentörü mü ya da öğrencinin sınıfına ders veriyor mu? */
+  async isTeacherOfStudent(teacherId: string, studentId: string, schoolId: string): Promise<boolean> {
+    const supabase = await createClient()
+    const [mentor, student] = await Promise.all([
+      supabase.from('mentorships').select('id')
+        .eq('mentor_id', teacherId).eq('student_id', studentId).eq('school_id', schoolId).limit(1),
+      supabase.from('students').select('class_id')
+        .eq('id', studentId).eq('school_id', schoolId).is('deleted_at', null).maybeSingle(),
+    ])
+    if (mentor.data?.length) return true
+    const classId = student.data?.class_id
+    if (!classId) return false
+    const { data } = await supabase.from('teacher_classes').select('class_id')
+      .eq('teacher_id', teacherId).eq('class_id', classId).limit(1)
+    return !!data?.length
+  },
+
   async findStudentInSchool(studentId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase.from('students').select('id')

@@ -18,6 +18,7 @@ vi.mock('@/src/domains/classes/repositories/ClassRepository', () => ({
     deleteStudentNote:          vi.fn(),
     findClassInSchool:          vi.fn(),
     findStudentInSchool:        vi.fn(),
+    isTeacherOfStudent:         vi.fn(),
   },
 }))
 
@@ -287,16 +288,33 @@ describe('ClassService.updateVeliContact()', () => {
     })
   }
 
-  it('students:update izni yoksa → throw, DB çağrılmaz', async () => {
+  it('students:update izni yok + öğrenciyle bağı yok → hata döner, update çağrılmaz', async () => {
     vi.mocked(requireAbility).mockResolvedValue(createAbility({
       userId: 'teacher-unit', schoolId: SCHOOL_ID, permissions: [],
     }) as never)
+    vi.mocked(ClassRepository.isTeacherOfStudent).mockResolvedValue(false)
+    const { db, studentsChain } = makeVeliDb({ clash: false })
+    vi.mocked(createClient).mockResolvedValue(db as never)
 
-    await expect(
-      ClassService.updateVeliContact('stu-1', { email: 'a@b.com', telefon: null, ad: 'Veli' })
-    ).rejects.toThrow()
+    const result = await ClassService.updateVeliContact('stu-1', { email: 'a@b.com', telefon: null, ad: 'Veli' })
 
-    expect(createClient).not.toHaveBeenCalled()
+    expect(result.error).toMatch(/yetki/i)
+    expect(ClassRepository.isTeacherOfStudent).toHaveBeenCalledWith('teacher-unit', 'stu-1', SCHOOL_ID)
+    expect(studentsChain.update).not.toHaveBeenCalled()
+  })
+
+  it('students:update izni yok ama öğrencinin öğretmeni/mentörü → update yapılır', async () => {
+    vi.mocked(requireAbility).mockResolvedValue(createAbility({
+      userId: 'teacher-unit', schoolId: SCHOOL_ID, permissions: [],
+    }) as never)
+    vi.mocked(ClassRepository.isTeacherOfStudent).mockResolvedValue(true)
+    const { db, studentsChain } = makeVeliDb({ clash: false })
+    vi.mocked(createClient).mockResolvedValue(db as never)
+
+    const result = await ClassService.updateVeliContact('stu-1', { email: null, telefon: '5551112233', ad: 'Veli' })
+
+    expect(result).toEqual({})
+    expect(studentsChain.update).toHaveBeenCalledWith(expect.objectContaining({ veli_telefon: '5551112233' }))
   })
 
   // email_is_teacher RPC + students update için mock supabase.
