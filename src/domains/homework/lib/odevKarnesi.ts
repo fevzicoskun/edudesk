@@ -1,4 +1,4 @@
-import type { odevTakibi } from './odev-takibi'
+import { riskDersMetni, type odevTakibi } from './odev-takibi'
 
 /** Okul karnesi PDF'inin ödev bölümleri — Ödev Takibi ekranıyla aynı hesap (odevTakibi), yalnız tabloya dökülür. */
 
@@ -17,11 +17,11 @@ export function odevKarnesiBolumleri(r: OdevTakibiSonucu): KarneBolumu[] {
   return [
     {
       baslik: 'Derslere göre',
-      head: ['Ders', 'Ödev', 'Kontrol edildi', 'Kontrol bekleyen', 'Tamamlanma', 'Veren öğretmen'],
+      head: ['Ders', 'Ödev', 'Kontrol edildi', 'Kontrol bekleyen', 'Tamamlanma', 'Riskli öğrenci', 'Veren öğretmen'],
       body: r.dersler.length
-        ? r.dersler.map(d => [d.ad, String(d.odev), String(d.kontrolEdildi), String(d.kontrolEdilecek), yuzde(d.tamamlanma),
+        ? r.dersler.map(d => [d.ad, String(d.odev), String(d.kontrolEdildi), String(d.kontrolEdilecek), yuzde(d.tamamlanma), String(d.riskli),
             d.girenler.map(g => `${g.ad} ${g.sayi}`).join(', ')])
-        : bosSatir('Henüz verilmiş ödev yok', 6),
+        : bosSatir('Henüz verilmiş ödev yok', 7),
     },
     {
       baslik: 'Sınıflara göre tamamlanma',
@@ -41,12 +41,12 @@ export function odevKarnesiBolumleri(r: OdevTakibiSonucu): KarneBolumu[] {
     },
     {
       baslik: 'Riskli öğrenciler',
-      head: ['Öğrenci', 'Sınıf', 'Oran', 'Yapılmadı+eksik / kontrol', 'Dersler'],
+      head: ['Öğrenci', 'Sınıf', 'Riskli dersler (yapılmadı+eksik / kontrol)'],
       body: riskli.length
-        ? riskli.map(o => [o.ad, o.sinif, `%${o.oran}`, `${o.toplam}/${o.isaretli}`, o.dersler.map(d => `${d.ad} ${d.sayi}`).join(', ')])
-        : bosSatir('Riskli öğrenci yok', 5),
+        ? riskli.map(o => [o.ad, o.sinif, o.dersler.map(riskDersMetni).join(', ')])
+        : bosSatir('Riskli öğrenci yok', 3),
       not: kalanRiskli > 0
-        ? `En yüksek oranlı ${riskli.length} öğrenci gösterildi; ${kalanRiskli} öğrenci daha var (tümü Ödev Takibi ekranında).`
+        ? `En çok riskli dersi olan ${riskli.length} öğrenci gösterildi; ${kalanRiskli} öğrenci daha var (tümü Ödev Takibi ekranında).`
         : undefined,
     },
     {

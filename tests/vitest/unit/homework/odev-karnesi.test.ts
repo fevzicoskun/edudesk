@@ -21,7 +21,7 @@ const bolum = (b: ReturnType<typeof odevKarnesiBolumleri>, baslik: string) => b.
 
 describe('odevKarnesiBolumleri()', () => {
   const odevler = [hw('h1'), hw('h2'), hw('h3'), hw('h4'), hw('h5'), hw('h6', { title: 'Bekleyen', due_date: '2026-10-05' })]
-  const isaretler = ['h1', 'h2', 'h3', 'h4', 'h5'].map((h, i) => sub(h, 's0', i < 2 ? 'yapilmadi' : 'yapildi'))
+  const isaretler = ['h1', 'h2', 'h3', 'h4', 'h5'].map((h, i) => sub(h, 's0', i < 3 ? 'yapilmadi' : 'yapildi'))
   const b = odevKarnesiBolumleri(sonuc(odevler, isaretler))
 
   it('bölümler sabit sırada', () => {
@@ -30,17 +30,17 @@ describe('odevKarnesiBolumleri()', () => {
     ])
   })
 
-  it('ders satırı: ödev, kontrol edildi, bekleyen, tamamlanma, veren', () => {
-    expect(bolum(b, 'Derslere göre').body).toEqual([['Matematik', '6', '5', '1', '%60', 'Fevzi Coşkun 6']])
+  it('ders satırı: ödev, kontrol edildi, bekleyen, tamamlanma, riskli öğrenci, veren', () => {
+    expect(bolum(b, 'Derslere göre').body).toEqual([['Matematik', '6', '5', '1', '%40', '1', 'Fevzi Coşkun 6']])
   })
 
   it('sınıf ve öğretmen satırları; kontrol edilmemişte —', () => {
-    expect(bolum(b, 'Sınıflara göre tamamlanma').body).toEqual([['9-A', '6', '%60']])
+    expect(bolum(b, 'Sınıflara göre tamamlanma').body).toEqual([['9-A', '6', '%40']])
     expect(bolum(b, 'Öğretmenlere göre').body).toEqual([['Fevzi Coşkun', '6', '%83', '5 gün']])
   })
 
-  it('riskli öğrenci: oran, kaçırma/kontrol, dersler', () => {
-    expect(bolum(b, 'Riskli öğrenciler').body).toEqual([['Öğrenci 0', '9-A', '%40', '2/5', 'Matematik 2']])
+  it('riskli öğrenci: yalnız riskli dersleri, kaçırma/kontrol ve oranla', () => {
+    expect(bolum(b, 'Riskli öğrenciler').body).toEqual([['Öğrenci 0', '9-A', 'Matematik 3/5 (%60)']])
   })
 
   it('bekleyen kontroller: en eski üstte, gün olarak', () => {

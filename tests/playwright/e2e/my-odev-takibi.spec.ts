@@ -50,7 +50,7 @@ test.beforeAll(async () => {
   const isaretli = data!.filter(h => h.title.includes('işaretli')).map(h => h.id)
   // Ödev eklenince teslim satırları otomatik açılır; yoksa ekle
   const { error: e2 } = await db.from('homework_submissions').upsert(
-    // 5 kontrol edilmiş ödevin 3'ü yapılmadı → %60 (riskli eşiği %30, en az 5 ödev)
+    // 5 kontrol edilmiş ödevin 3'ü yapılmadı → bu derste %60 (ders bazlı eşik %50, en az 3 ödev)
     isaretli.map((homework_id, i) => ({
       homework_id, student_id: ogrenci.id, school_id: schoolId,
       status: i < 3 ? 'yapilmadi' : 'yapildi', marked_at: new Date().toISOString(),
@@ -79,6 +79,7 @@ test.describe('MY Ödev Takibi', () => {
     await expect(ders).toContainText('5 kontrol edildi')
     await expect(ders).toContainText('%40') // 2 yapıldı / 5 işaret
     await expect(ders).toContainText('1 kontrol edilecek')
+    await expect(ders).toContainText('1 öğr.') // bu derste riskli öğrenci
 
     const bekleyen = page.getByTestId('kontrol-edilecek').locator('li', { hasText: `${DERS} bekleyen` })
     await expect(bekleyen).toContainText('5 gündür bekliyor')
@@ -89,14 +90,13 @@ test.describe('MY Ödev Takibi', () => {
     await expect(edilen.first()).toContainText('1 yapılmadı')
   })
 
-  test('ders süzmesinde sınıf tamamlanması ve %30 kuralıyla riskli öğrenci', async ({ page }) => {
+  test('ders süzmesinde sınıf tamamlanması ve ders bazlı riskli öğrenci', async ({ page }) => {
     await page.goto(`/yonetim/odevler?ders=${encodeURIComponent(DERS.toLocaleLowerCase('tr'))}`)
     await expect(page.getByRole('heading', { name: 'Ödev Takibi', level: 1 })).toBeVisible({ timeout: 20_000 })
     await expect(page.getByTestId('sinif-satirlari').locator('li')).toHaveCount(1)
     await expect(page.getByTestId('sinif-satirlari')).toContainText('%40')
     const riskli = page.getByTestId('riskli-ogrenciler').locator('li', { hasText: ogrenci.ad })
-    await expect(riskli).toContainText('%60')
-    await expect(riskli).toContainText(`3/5 · ${DERS} 3`)
+    await expect(riskli).toContainText(`${DERS} 3/5 (%60)`)
   })
 
   test('ders çipi listeleri o derse süzer', async ({ page }) => {

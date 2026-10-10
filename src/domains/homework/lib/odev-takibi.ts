@@ -35,6 +35,8 @@ export type DersSatiri = {
   girenler: { ad: string; sayi: number }[]
   /** yapıldı / (işaretli − mazeretli), %; hiç işaret yoksa null (analitik.oran tanımı) */
   tamamlanma: number | null
+  /** bu derste riskli öğrenci sayısı (RISK_ORANI / RISK_EN_AZ_ODEV, ders bazlı) */
+  riskli: number
 }
 
 export type SinifSatiri = { id: string; ad: string; odev: number; tamamlanma: number | null }
@@ -66,22 +68,24 @@ export type RiskliOgrenci = {
   id: string
   ad: string
   sinif: string
-  /** yapılmadı + eksik */
-  toplam: number
-  /** kontrol edilmiş ödev sayısı (mazeretli hariç) */
-  isaretli: number
-  /** toplam / isaretli, % */
-  oran: number
-  dersler: { ad: string; sayi: number }[]
+  /** yalnız riskli olduğu dersler, en yüksek oranlı önce; kacirma = yapılmadı + eksik, payda = kontrol edilen (mazeretli hariç) */
+  dersler: { ad: string; kacirma: number; payda: number }[]
 }
 
 /** Mentör tablosu (mentorTablosu.ts) için mutlak eşik — analitik.computeRiskyStudents ile aynı */
 export const RISK_ESIGI = 3
-/** Ödev Takibi riskli öğrenci: kontrol edilen ödevlerin en az %30'u yapılmadı/eksik (2026-10-10 kullanıcı kararı) */
-export const RISK_ORANI = 30
-/** Az veriyle %100 yanıltmasın: en az bu kadar kontrol edilmiş ödev */
-export const RISK_EN_AZ_ODEV = 5
+/** Ödev Takibi riskli öğrenci DERS BAZLI: bir derste kontrol edilen ödevlerin en az %50'si yapılmadı/eksik
+ *  (2026-10-10 kullanıcı kararı — genel ortalama az ödevli dersteki kaçırmayı sulandırıyordu) */
+export const RISK_ORANI = 50
+/** Az veriyle yanıltmasın: o derste en az bu kadar kontrol edilmiş ödev */
+export const RISK_EN_AZ_ODEV = 3
 export const GECIKME_GUNU = 3
+/** Ekran ve PDF'te aynı tanım */
+export const RISK_ACIKLAMA = `Bir derste kontrol edilen ödevlerinin en az %${RISK_ORANI}'sini yapmamış veya eksik yapmış öğrenciler `
+  + `(o derste en az ${RISK_EN_AZ_ODEV} kontrol edilmiş ödevi olan). Yalnız riskli olduğu dersler yazılır.`
+/** "Matematik 3/5 (%60)" — kaçırma / kontrol edilen */
+export const riskDersMetni = (d: { ad: string; kacirma: number; payda: number }) =>
+  `${d.ad} ${d.kacirma}/${d.payda} (%${Math.round((d.kacirma / d.payda) * 100)})`
 
 function gunFarki(once: string, sonra: string): number {
   const utc = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d) }
@@ -131,7 +135,7 @@ export function odevTakibi(p: {
   for (const h of p.homeworks) {
     const anahtar = dersAnahtari(h.subject)
     const d = dersMap.get(anahtar) ?? {
-      anahtar, ad: h.subject.trim() || 'Diğer', odev: 0, kontrolEdildi: 0, kontrolEdilecek: 0, bekliyor: 0, girenler: [], tamamlanma: null,
+      anahtar, ad: h.subject.trim() || 'Diğer', odev: 0, kontrolEdildi: 0, kontrolEdilecek: 0, bekliyor: 0, girenler: [], tamamlanma: null, riskli: 0,
       sayac: new Map(), say: yeniSayim(),
     }
     d.odev++
@@ -143,10 +147,6 @@ export function odevTakibi(p: {
     ekle(d.say, h.id)
     dersMap.set(anahtar, d)
   }
-  const dersler: DersSatiri[] = [...dersMap.values()]
-    .map(({ sayac, say, ...d }) => ({ ...d, girenler: sayiListesi(sayac), tamamlanma: sayimOrani(say) }))
-    .sort((a, b) => b.odev - a.odev || a.ad.localeCompare(b.ad, 'tr'))
-
   const suzulmus = derseGore(p.homeworks, p.ders)
 
   const kontrolEdilecek: KontrolSatiri[] = suzulmus
@@ -164,31 +164,39 @@ export function odevTakibi(p: {
       return { ...temel(h), yapildi: say('yapildi'), eksik: say('eksik'), yapilmadi: say('yapilmadi') }
     })
 
-  const odevById = new Map(suzulmus.map(h => [h.id, h]))
-  // öğrenci → { payda (mazeretli hariç işaret), ders adı → kaçırma }
-  const ogrenciSayim = new Map<string, { payda: number; kacirma: Map<string, number> }>()
+  // Risk ders bazlı: öğrenci × ders sayımı TÜM ödevlerden (ders satırının riskli sayısı süzmeden bağımsız);
+  // liste yalnız süzülmüş derslerle sınırlanır.
+  const odevById = new Map(p.homeworks.map(h => [h.id, h]))
+  const ogrenciDers = new Map<string, Map<string, { kacirma: number; payda: number }>>()
   for (const s of p.submissions) {
     const h = odevById.get(s.homework_id)
     if (!h || s.status === 'mazeretli') continue
-    const o = ogrenciSayim.get(s.student_id) ?? { payda: 0, kacirma: new Map<string, number>() }
-    o.payda++
-    if (s.status === 'yapilmadi' || s.status === 'eksik') {
-      const ad = h.subject.trim() || 'Diğer'
-      o.kacirma.set(ad, (o.kacirma.get(ad) ?? 0) + 1)
-    }
-    ogrenciSayim.set(s.student_id, o)
+    const dersler = ogrenciDers.get(s.student_id) ?? new Map<string, { kacirma: number; payda: number }>()
+    const anahtar = dersAnahtari(h.subject)
+    const d = dersler.get(anahtar) ?? { kacirma: 0, payda: 0 }
+    d.payda++
+    if (s.status === 'yapilmadi' || s.status === 'eksik') d.kacirma++
+    dersler.set(anahtar, d)
+    ogrenciDers.set(s.student_id, dersler)
   }
+  const riskliMi = (d: { kacirma: number; payda: number }) => d.payda >= RISK_EN_AZ_ODEV && d.kacirma * 100 >= RISK_ORANI * d.payda
+  const suzulmusDersler = new Set(suzulmus.map(h => dersAnahtari(h.subject)))
   const riskliOgrenciler: RiskliOgrenci[] = p.students
     .flatMap(o => {
-      const sy = ogrenciSayim.get(o.id)
-      if (!sy || sy.payda < RISK_EN_AZ_ODEV) return []
-      const toplam = [...sy.kacirma.values()].reduce((a, b) => a + b, 0)
-      const yuzde = Math.round((toplam / sy.payda) * 100)
-      return yuzde >= RISK_ORANI
-        ? [{ id: o.id, ad: o.full_name, sinifId: o.class_id, sinif: sinif(o.class_id), toplam, isaretli: sy.payda, oran: yuzde, dersler: sayiListesi(sy.kacirma) }]
-        : []
+      const riskliDersler = [...(ogrenciDers.get(o.id) ?? [])].filter(([, d]) => riskliMi(d))
+      for (const [anahtar] of riskliDersler) dersMap.get(anahtar)!.riskli++
+      const dersler = riskliDersler
+        .filter(([anahtar]) => suzulmusDersler.has(anahtar))
+        .map(([anahtar, d]) => ({ ad: dersMap.get(anahtar)!.ad, ...d }))
+        .sort((a, b) => b.kacirma / b.payda - a.kacirma / a.payda || b.kacirma - a.kacirma || a.ad.localeCompare(b.ad, 'tr'))
+      return dersler.length ? [{ id: o.id, ad: o.full_name, sinifId: o.class_id, sinif: sinif(o.class_id), dersler }] : []
     })
-    .sort((a, b) => b.oran - a.oran || b.toplam - a.toplam || a.ad.localeCompare(b.ad, 'tr'))
+  const kacirmaToplami = (o: RiskliOgrenci) => o.dersler.reduce((t, d) => t + d.kacirma, 0)
+  riskliOgrenciler.sort((a, b) => b.dersler.length - a.dersler.length || kacirmaToplami(b) - kacirmaToplami(a) || a.ad.localeCompare(b.ad, 'tr'))
+
+  const dersler: DersSatiri[] = [...dersMap.values()]
+    .map(({ sayac, say, ...d }) => ({ ...d, girenler: sayiListesi(sayac), tamamlanma: sayimOrani(say) }))
+    .sort((a, b) => b.odev - a.odev || a.ad.localeCompare(b.ad, 'tr'))
 
   const sinifMap = new Map<string, { odev: number; say: Sayim }>()
   for (const h of suzulmus) {

@@ -4,7 +4,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import { dersAnahtari } from '@/src/domains/homework/lib/stats'
-import { GECIKME_GUNU, RISK_ORANI, RISK_EN_AZ_ODEV, type RiskliOgrenci } from '@/src/domains/homework/lib/odev-takibi'
+import { GECIKME_GUNU, RISK_ACIKLAMA, riskDersMetni, type RiskliOgrenci } from '@/src/domains/homework/lib/odev-takibi'
 import { odevTakibiVerisi } from '@/src/domains/homework/queries/odevTakibiVerisi'
 
 export const metadata = { title: 'Ödev Takibi' }
@@ -82,6 +82,7 @@ export default async function OdevTakibiPage({ searchParams }: { searchParams: P
                     <th scope="col" className="py-2 pr-3 font-medium">Ders</th>
                     <th scope="col" className="py-2 pr-3 font-medium text-right">Ödev</th>
                     <th scope="col" className="py-2 pr-3 font-medium text-right">Tamamlanma</th>
+                    <th scope="col" className="py-2 pr-3 font-medium text-right">Riskli</th>
                     <th scope="col" className="py-2 pr-3 font-medium">Kontrol</th>
                     <th scope="col" className="py-2 font-medium hidden md:table-cell">Veren</th>
                   </tr>
@@ -96,6 +97,11 @@ export default async function OdevTakibiPage({ searchParams }: { searchParams: P
                       </td>
                       <td className="py-2.5 pr-3 text-right tabular-nums text-gray-800 dark:text-slate-200">{d.odev}</td>
                       <td className="py-2.5 pr-3 text-right"><Yuzde v={d.tamamlanma} /></td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">
+                        {d.riskli > 0
+                          ? <span className="text-red-700 dark:text-red-400 font-semibold" title="Bu derste riskli öğrenci">{d.riskli} öğr.</span>
+                          : <span className={soluk}>—</span>}
+                      </td>
                       <td className="py-2.5 pr-3 min-w-28 md:min-w-44">
                         <Cubuk deger={d.kontrolEdildi} toplam={d.kontrolEdildi + d.kontrolEdilecek} />
                         <span className={soluk}>
@@ -131,7 +137,7 @@ export default async function OdevTakibiPage({ searchParams }: { searchParams: P
           <section className={kutu} aria-labelledby="risk-baslik">
             <h2 id="risk-baslik" className={baslik + ' !mb-1'}>Riskli öğrenciler ({r.riskliOgrenciler.length})</h2>
             <p className={soluk + ' mb-2'}>
-              Kontrol edilen ödevlerinin en az %{RISK_ORANI}&apos;u yapılmadı veya eksik olanlar (en az {RISK_EN_AZ_ODEV} kontrol edilmiş ödevi olan).
+              {RISK_ACIKLAMA}
             </p>
             {r.riskliOgrenciler.length === 0 ? (
               <p className="text-sm text-gray-600 dark:text-slate-400">Riskli öğrenci yok.</p>
@@ -205,10 +211,7 @@ function RiskliListe({ ogrenciler, testId }: { ogrenciler: RiskliOgrenci[]; test
           <Link href={`/siniflar/${o.sinifId}/ogrenciler/${o.id}`} className="font-medium text-gray-900 dark:text-slate-100 hover:underline">
             {o.ad} <span className={soluk}>{o.sinif}</span>
           </Link>
-          <span className="text-sm">
-            <span className="text-red-700 dark:text-red-400 font-semibold tabular-nums">%{o.oran}</span>{' '}
-            <span className={soluk}>{o.toplam}/{o.isaretli} · {o.dersler.map(d => `${d.ad} ${d.sayi}`).join(', ')}</span>
-          </span>
+          <span className="text-sm text-red-700 dark:text-red-400 tabular-nums">{o.dersler.map(riskDersMetni).join(' · ')}</span>
         </li>
       ))}
     </ul>

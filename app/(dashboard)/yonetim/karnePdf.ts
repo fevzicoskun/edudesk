@@ -3,7 +3,7 @@
 import { createDoc, type PdfDoc } from '@/src/lib/createPdf'
 import { format } from '@/src/shared/date'
 import { odevKarnesiBolumleri } from '@/src/domains/homework/lib/odevKarnesi'
-import { RISK_ORANI, RISK_EN_AZ_ODEV, GECIKME_GUNU } from '@/src/domains/homework/lib/odev-takibi'
+import { RISK_ACIKLAMA, GECIKME_GUNU } from '@/src/domains/homework/lib/odev-takibi'
 import type { OkulKarnesi } from '@/app/actions/karne'
 
 const SOL = 40
@@ -70,8 +70,7 @@ export async function buildKarnePdf(data: OkulKarnesi): Promise<void> {
     + '(mazeretliler hesaba katılmaz; kontrol edilmemiş öğrenci "yapmadı" sayılmaz). '
     + 'Kontrol bekleyen, teslim günü geçtiği hâlde hiç işaretlenmemiş ödevdir; '
     + `${GECIKME_GUNU} günden uzun bekleyenler gecikmiş sayılır. `
-    + `Riskli öğrenci: kontrol edilen ödevlerinin en az %${RISK_ORANI}'u yapılmadı veya eksik olan öğrenci `
-    + `(en az ${RISK_EN_AZ_ODEV} kontrol edilmiş ödevi olan). Rakamlar EduDesk "Ödev Takibi" ekranıyla aynıdır.`,
+    + `Riskli öğrenciler: ${RISK_ACIKLAMA} Rakamlar EduDesk "Ödev Takibi" ekranıyla aynıdır.`,
     106)
 
   for (const b of odevKarnesiBolumleri(data.odev)) {
