@@ -4,14 +4,8 @@ import { useState, useTransition, useActionState } from 'react'
 import { format, parseISO } from '@/src/shared/date'
 import { addParentContactLog, deleteParentContactLog } from '@/app/actions/classes'
 import type { ActionResult } from '@/src/shared/types'
-
-const METHOD_LABELS: Record<string, string> = {
-  email:     'E-posta',
-  telefon:   'Telefon',
-  whatsapp:  'WhatsApp',
-  yuz_yuze:  'Yüz Yüze',
-  diger:     'Diğer',
-}
+import Link from 'next/link'
+import { METHOD_LABELS } from './iletisimYontemi'
 const METHOD_COLORS: Record<string, string> = {
   email:     'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
   telefon:   'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
@@ -168,15 +162,23 @@ export default function ParentContactLogSection({
                     <span className="text-[10px] text-gray-500 dark:text-slate-400">Sen</span>
                   )}
                 </div>
-                {log.teacher_id === currentUserId && (
-                  <button
-                    onClick={() => handleDelete(log.id)}
-                    disabled={isPending && deletingId === log.id}
-                    className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40 shrink-0"
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link
+                    href={`/siniflar/${classId}/ogrenciler/${studentId}/gorusme/${log.id}`}
+                    className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
                   >
-                    Sil
-                  </button>
-                )}
+                    Tutanak yazdır
+                  </Link>
+                  {log.teacher_id === currentUserId && (
+                    <button
+                      onClick={() => handleDelete(log.id)}
+                      disabled={isPending && deletingId === log.id}
+                      className="text-xs text-red-400 hover:text-red-600 disabled:opacity-40"
+                    >
+                      Sil
+                    </button>
+                  )}
+                </div>
               </div>
               <p className="text-sm text-gray-700 dark:text-slate-300 mt-1.5 whitespace-pre-wrap">{log.note}</p>
             </div>
