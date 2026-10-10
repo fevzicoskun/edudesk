@@ -16,6 +16,12 @@ describe('YEDEKLENEN_TABLOLAR', () => {
     }
   })
 
+  it('yeni tablolar kapsamda: bülten gönderimi, toplantılar, işaret geçmişi', () => {
+    for (const t of ['bulten_gonderimleri', 'school_meetings', 'homework_submission_logs', 'veli_tokens']) {
+      expect(YEDEKLENEN_TABLOLAR).toContain(t)
+    }
+  })
+
   it('liste tekrarsızdır', () => {
     expect(new Set(YEDEKLENEN_TABLOLAR).size).toBe(YEDEKLENEN_TABLOLAR.length)
   })
@@ -42,10 +48,20 @@ describe('eskiYedekMi()', () => {
     expect(eskiYedekMi('2026-09-12-yedek.json', bugun)).toBe(false)
   })
 
-  it('tam sınırdaki yedek korunur — kenar durumda veri silme', () => {
-    const sinir = new Date(bugun)
+  it('son 30 günün her yedeği korunur', () => {
+    expect(eskiYedekMi('2026-08-20-yedek.json', bugun)).toBe(false) // 30 gün, Perşembe
+  })
+
+  it('30 günden eski hafta içi yedeği silinir, Pazar yedeği 12 haftaya kadar kalır', () => {
+    expect(eskiYedekMi('2026-08-19-yedek.json', bugun)).toBe(true)  // 31 gün, Çarşamba
+    expect(eskiYedekMi('2026-08-16-yedek.json', bugun)).toBe(false) // 34 gün, Pazar
+  })
+
+  it('tam 84. gündeki Pazar yedeği korunur — kenar durumda veri silme', () => {
+    const bugunPazar = new Date('2026-09-20T03:00:00Z') // Pazar
+    const sinir = new Date(bugunPazar)
     sinir.setDate(sinir.getDate() - 84)
-    expect(eskiYedekMi(yedekDosyaAdi(sinir), bugun)).toBe(false)
+    expect(eskiYedekMi(yedekDosyaAdi(sinir), bugunPazar)).toBe(false)
   })
 
   it('beklenmeyen dosya adı asla silinmez', () => {

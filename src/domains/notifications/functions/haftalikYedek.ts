@@ -1,46 +1,28 @@
-// Haftalık yedek: Pazar 03:00'te tüm okul verisini tek JSON dosyası olarak
-// Supabase Storage'daki private 'yedekler' kovasına yazar.
+// Gece yedeği (2026-10-10'a kadar haftalıktı): her gece 03:00'te tüm okul verisini tek JSON dosyası
+// olarak Supabase Storage'daki private 'yedekler' kovasına yazar. Saklama: yedekMath.eskiYedekMi.
+// Platform dışı kopya: `npm run yedek` (scripts/yedek-al.mts) bilgisayara indirir.
 //
-// Neden: Supabase Free plan yedeği 7 gün geriye gidiyor. Asıl senaryo "Eylül'de
-// bozulan bir şeyi Ekim'de fark etmek" — 7 gün buna yetmiyor. Burada 12 hafta
-// saklanıyor. Bu, platform yedeğinin YERİNE geçmez, onu tamamlar.
+// Neden: Supabase Free planda panelden geri yüklenebilir platform yedeği YOK (Pro: 7 gün). Asıl senaryo "Eylül'de
+// bozulan bir şeyi Ekim'de fark etmek" — 7 gün buna yetmiyor. Burada 30 gün her gün,
+// 12 haftaya kadar Pazar yedekleri saklanıyor. Bu, platform yedeğinin YERİNE geçmez, onu tamamlar.
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { logger } from '@/src/infrastructure/observability/logger'
-import { fetchAll } from '@/src/shared/utils/fetchAll'
-import { YEDEKLENEN_TABLOLAR, yedekDosyaAdi, eskiYedekMi, yedekSiralama } from '../yedekMath'
+import { yedekDosyaAdi, eskiYedekMi } from '../yedekMath'
+import { yedekTopla } from '../yedekTopla'
 
 const KOVA = 'yedekler'
 
 export const haftalikYedekFn = inngest.createFunction(
-  { id: 'haftalik-yedek', triggers: [{ cron: 'TZ=Europe/Istanbul 0 3 * * 0' }] },
+  { id: 'haftalik-yedek', triggers: [{ cron: 'TZ=Europe/Istanbul 0 3 * * *' }] },
   async ({ step }) => {
     // Toplama + yazma TEK adımda: step dönüşü Inngest'te saklanır ve 4MB ile sınırlı —
     // ham veri adımlar arasında taşınırsa büyüyen okulda yedek düşer. Dışarı yalnız özet çıkar.
     const yuklendi = await step.run('topla-ve-yaz', async () => {
       const db = createServiceClient()
-      const veri: Record<string, unknown[]> = {}
-      const basarisiz: string[] = []
-
-      for (const tablo of YEDEKLENEN_TABLOLAR) {
-        try {
-          // Sayfalı: PostgREST max_rows=1000 tek istekte fazlasını SESSİZCE keser
-          veri[tablo] = await fetchAll((from, to) => {
-            let q = db.from(tablo).select('*')
-            for (const kolon of yedekSiralama(tablo)) q = q.order(kolon)
-            return q.range(from, to)
-          })
-        } catch (e) {
-          // Tek tablonun hatası yedeği tümden iptal etmesin; eksik olan raporlanır.
-          basarisiz.push(tablo)
-          logger.warn({ event: 'yedek_tablo_okunamadi', tablo, hata: (e as Error).message }, 'Yedek tablosu okunamadı')
-        }
-      }
-
-      const simdi = new Date()
+      const { simdi, basarisiz, govde } = await yedekTopla(db)
+      if (basarisiz.length) logger.warn({ event: 'yedek_tablo_okunamadi', basarisiz }, 'Yedek tablosu okunamadı')
       const dosya = yedekDosyaAdi(simdi)
-      const satirlar = Object.fromEntries(Object.entries(veri).map(([t, r]) => [t, r.length]))
-      const govde = JSON.stringify({ alindi: simdi.toISOString(), surum: 1, basarisiz, satirlar, veri })
 
       const { error } = await db.storage.from(KOVA).upload(dosya, govde, {
         contentType: 'application/json',
@@ -84,7 +66,7 @@ export const haftalikYedekFn = inngest.createFunction(
 
     logger.info(
       { event: 'haftalik_yedek', dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: yuklendi.basarisiz },
-      'Haftalık yedek alındı',
+      'Gece yedeği alındı',
     )
 
     return { dosya: yuklendi.dosya, boyut: yuklendi.boyut, silinen, basarisiz: yuklendi.basarisiz }
