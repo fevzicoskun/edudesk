@@ -5,7 +5,6 @@ import { isTeachingRole } from '@/src/shared/types'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import TanimaKarti from './TanimaKarti'
-import GorusmeNotlari from './GorusmeNotlari'
 import MentorlukDuzeni from './MentorlukDuzeni'
 import ListedenCikarButonu from './ListedenCikarButonu'
 import OdevDurumu from './OdevDurumu'
@@ -39,9 +38,8 @@ export default async function MentorlukDetayPage({
   const salt = !simdiki
 
   const supabase = await createClient()
-  const [karte, notlar, ogrenciRes] = await Promise.all([
+  const [karte, ogrenciRes] = await Promise.all([
     MentorService.getMentorProfile(studentId),
-    MentorService.getMentorReportsByStudent(studentId),
     supabase.from('students').select('class_id, veli_ad').eq('id', studentId).eq('school_id', profile.school_id).single(),
   ])
   if (ogrenciRes.error || !ogrenciRes.data) throw new Error(ogrenciRes.error?.message ?? 'Öğrenci okunamadı')
@@ -76,7 +74,7 @@ export default async function MentorlukDetayPage({
 
       {salt && (
         <p role="status" className="mb-6 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 px-4 py-3 text-gray-700 dark:text-slate-300">
-          Bu öğrencinin mentörlüğü artık sizde değil. Kendi notlarınızı ve tanıma kartınızı yalnız okuyabilirsiniz.
+          Bu öğrencinin mentörlüğü artık sizde değil. Tanıma kartınızı yalnız okuyabilirsiniz.
         </p>
       )}
 
@@ -84,12 +82,7 @@ export default async function MentorlukDetayPage({
         {profil && <OdevDurumu homeworks={profil.homeworks} />}
         {!salt && <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} />}
         <TanimaKarti studentId={studentId} profil={karte} salt={salt} />
-        <GorusmeNotlari
-          studentId={studentId}
-          classId={classId}
-          notlar={notlar}
-          salt={salt}
-        />
+        {/* Görüşme notları okulda Metodbox'a giriliyor; burada bölüm yok (2026-10-11). */}
         {!salt && <MentorlukDuzeni studentId={studentId} anlatildiTarihi={karte?.rules_explained_at ?? null} />}
       </div>
     </div>

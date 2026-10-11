@@ -57,7 +57,7 @@ test.describe('Mentörlük', () => {
     await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })
 
-  test('detay sayfası: üç bölüm görünür, tanıma kartı kaydedilir, görüşme notu eklenir', async ({ page }) => {
+  test('detay sayfası: bölümler görünür, tanıma kartı kaydedilir, görüşme notu bölümü yok', async ({ page }) => {
     // Kendi kendine yeten test: kendi öğrencisini ekler, doğrular, sonunda temizler.
     // (Önceki testler kendi öğrencisini geri çıkardığı için burada listenin boş
     // olabileceği varsayılır — bu yüzden `skip` yerine kendi verisini üretir.)
@@ -66,7 +66,7 @@ test.describe('Mentörlük', () => {
 
     // İlk ziyarette /mentorluk/[studentId] soğuk derlenebilir — geniş zaman aşımı
     await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toHaveCount(0) // Metodbox'ta
     await expect(page.getByRole('heading', { name: 'Mentörlük düzenimiz' })).toBeVisible()
 
     // ── Tanıma kartı: düzenle → kaydet → yenile → hâlâ orada mı? ──
@@ -87,27 +87,8 @@ test.describe('Mentörlük', () => {
     await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText(hedefMetni)).toBeVisible()
 
-    // ── Görüşme notu: ekle → listede görün ──
-    const notMetni = `E2E görüşme notu ${Date.now()}`
-    const notAlani = page.getByLabel('Görüşme notu')
-    await expect(notAlani).toBeVisible()
-    await notAlani.fill(notMetni)
-    await page.getByRole('button', { name: 'Not ekle' }).click()
-    await expect(page.getByText(notMetni)).toBeVisible({ timeout: 10_000 })
-
     // ── Temizlik ──
-    // 1) Notu sil (removeMentorship mentor_reports'u kaskad silmiyor —
-    //    UI üzerinden geri alınabilen her şey geri alınır)
-    const notlarBolumu = page.locator('section', { hasText: 'Görüşme notları' })
-    const silButonu = notlarBolumu.getByRole('button', { name: 'Sil' })
-    await expect(silButonu).toBeVisible()
-    await silButonu.click() // onay adımına geçer
-    const silOnayla = notlarBolumu.getByRole('button', { name: 'Sil' })
-    await expect(silOnayla).toBeVisible()
-    await silOnayla.click()
-    await expect(page.getByText(notMetni)).toHaveCount(0, { timeout: 10_000 })
-
-    // 2) Tanıma kartı alanını boşalt (removeMentorship mentor_profiles'ı da
+    // 1) Tanıma kartı alanını boşalt (removeMentorship mentor_profiles'ı da
     //    kaskad silmiyor; en azından içerik bırakmayalım)
     await page.getByRole('button', { name: 'Düzenle' }).click()
     await expect(hedefAlani).toBeVisible()
@@ -116,7 +97,7 @@ test.describe('Mentörlük', () => {
     await expect(page.getByRole('button', { name: 'Düzenle' })).toBeVisible({ timeout: 10_000 })
     await expect(page.getByText(hedefMetni)).toHaveCount(0)
 
-    // 3) Mentörlük kaydını geri çıkar
+    // 2) Mentörlük kaydını geri çıkar
     await listedenCikar(page)
     await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })

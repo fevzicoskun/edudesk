@@ -17,7 +17,6 @@ import NotGecmisiSection from './NotGecmisiSection'
 import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
 import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import DevamsizlikPaneli from './DevamsizlikPaneli'
-import RehberlikRaporlariSection from './RehberlikRaporlariSection'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -155,10 +154,7 @@ export default async function OgrenciDetayPage({
   type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
   const grades = (gradesRes.data ?? []) as GradeRow[]
 
-  // Öğrenci bazlı mentörlük (2026-10-07): görüşme notları yalnız öğrencinin mentörüne aittir (RLS ile aynı)
   const mentor = (await MentorService.getMentorAdlari()).get(studentId) ?? null
-  const benMentorum = mentor?.mentor_id === currentProfile.id
-  const mentorReports = benMentorum ? await MentorService.getMentorReportsByStudent(studentId) : []
 
   // Öğrenci 360: zaman çizelgesi — sayfanın zaten çektiği verilerden derlenir.
   const timelineEvents = buildStudentTimeline({
@@ -171,7 +167,7 @@ export default async function OgrenciDetayPage({
     meetings: meetingsRes.error ? [] : meetingsRows.map(m => ({
       date: m.meet_date, status: m.status, teacherName: teacherNames[m.teacher_id] ?? 'Öğretmen',
     })),
-    mentorReports: mentorReports.map((r: { report_date: string }) => ({ date: r.report_date })),
+    mentorReports: [], // görüşme notları Metodbox'ta (2026-10-11)
     contactLogs: (contactLogsRes.data ?? []).map(c => ({ date: c.contacted_at, method: c.contact_method })),
     studentNotes: notes.map(n => ({ date: n.created_at, body: n.body })),
   }, donemBasi())
@@ -317,15 +313,6 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
-
-      {benMentorum && (
-        <RehberlikRaporlariSection
-          studentId={studentId}
-          classId={classId}
-          reports={mentorReports}
-          canWrite
-        />
-      )}
 
       <VeliGorusmeleriSection
         meetings={meetingsRows}
