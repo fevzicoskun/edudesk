@@ -9,6 +9,7 @@ import MYStatsWidget          from './MYStatsWidget'
 import DevamsizlikRiskiWidget from './DevamsizlikRiskiWidget'
 import { BugunBolumu, OdevBolumu, OgretmenBolumu, MentorlukBolumu } from './YoneticiBolumleri'
 import KarneIndirButton from '../yonetim/KarneIndirButton'
+import AylikRaporButton from '../yonetim/AylikRaporButton'
 import UyariBandi from '../yonetim/UyariBandi'
 import BugunYoklamaWidget from '../yonetim/BugunYoklamaWidget'
 import AylikDevamsizlikWidget from '../yonetim/AylikDevamsizlikWidget'
@@ -68,6 +69,7 @@ async function YoneticiWidgets({ fullName, classCount, mudur }: { fullName: stri
           <Link href="/kullanicilar" className={baglanti}>Kullanıcılar</Link>
           <Link href="/yonetim/ogrenciler" className={baglanti}>Öğrenciler</Link>
           <KarneIndirButton />
+          <AylikRaporButton />
           <Link href="/yonetim/odevler" className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium">
             Ödev Takibi →
           </Link>

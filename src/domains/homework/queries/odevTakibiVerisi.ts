@@ -4,8 +4,8 @@ import { fetchAll } from '@/src/shared/utils/fetchAll'
 import { todayLocalISO } from '@/src/shared/date'
 import { odevTakibi, type TakipOdev, type TakipTeslim } from '@/src/domains/homework/lib/odev-takibi'
 
-/** Ödev Takibi ekranı ve okul karnesi PDF'i için ortak okuma — ikisi aynı rakamı gösterir. */
-export async function odevTakibiVerisi(supabase: SupabaseClient<Database>, sid: string, ders: string | null) {
+/** Ödev Takibi ekranı, okul karnesi ve aylık rapor için ortak ham okuma — hepsi aynı rakamı gösterir. */
+export async function odevTakibiHamVeri(supabase: SupabaseClient<Database>, sid: string) {
   // fetchAll hata fırlatır → error.tsx; eksik veriyle "0 ödev" gibi yanıltıcı ekran gösterilmez
   const [homeworks, submissions, students, classes, profiles] = await Promise.all([
     fetchAll<TakipOdev>((f, t) => supabase
@@ -32,10 +32,14 @@ export async function odevTakibiVerisi(supabase: SupabaseClient<Database>, sid: 
       .order('id').range(f, t)),
   ])
 
-  return odevTakibi({
-    homeworks, submissions, students, ders,
+  return {
+    homeworks, submissions, students,
     ogretmenler: new Map(profiles.map(p => [p.id, p.full_name])),
     siniflar: new Map(classes.map(c => [c.id, c.name])),
     bugun: todayLocalISO(),
-  })
+  }
+}
+
+export async function odevTakibiVerisi(supabase: SupabaseClient<Database>, sid: string, ders: string | null) {
+  return odevTakibi({ ...(await odevTakibiHamVeri(supabase, sid)), ders })
 }

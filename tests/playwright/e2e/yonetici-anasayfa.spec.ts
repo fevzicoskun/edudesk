@@ -30,5 +30,14 @@ for (const rol of ['mudur_yardimcisi', 'mudur'] as const) {
         await expect(t.getByRole('columnheader', { name: s, exact: true })).toBeVisible()
       }
     })
+
+    test('aylık rapor PDF iner (kurucuya tek sayfa)', async ({ page }, info) => {
+      await page.goto('/anasayfa')
+      const dugme = page.getByRole('button', { name: /raporu \(PDF\)$/ })
+      await expect(dugme).toBeVisible({ timeout: 20_000 })
+      const [indirme] = await Promise.all([page.waitForEvent('download', { timeout: 30_000 }), dugme.click()])
+      expect(indirme.suggestedFilename()).toMatch(/^aylik-rapor-\d{4}-\d{2}\.pdf$/)
+      await indirme.saveAs(info.outputPath(indirme.suggestedFilename()))
+    })
   })
 }
