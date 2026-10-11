@@ -23,12 +23,14 @@ describe('haftalikOzetMaili', () => {
   })
 
   it('yalnız orta/yüksek riskli öğrenciler, en ağır 5 + kalan sayısı; konu öğrenci saymaz', () => {
-    const riskler = ['A', 'B', 'C', 'D', 'E', 'F'].map(a => risk(a, 'high'))
-      .concat({ ...risk('Ağır', 'high'), hwMisses: 5, absences: 2 }, risk('Düşük', 'low'))
+    // Sıra computeAlerts'ten gelir (en ağır önce) — mail bu sırayı korur
+    const riskler = [{ ...risk('Ağır', 'high'), hwMisses: 5, absences: 2 }]
+      .concat(['A', 'B', 'C', 'D', 'E', 'F'].map(a => risk(a, 'high')), risk('Düşük', 'low'))
     const m = haftalikOzetMaili(girdi({ riskler }))!
     expect(m.html.indexOf('>Ağır<')).toBeGreaterThan(-1)
     expect(m.html.indexOf('>Ağır<')).toBeLessThan(m.html.indexOf('>A<')) // en ağır en üstte
     expect(m.html).toContain('href="https://x.test/siniflar/c1/ogrenciler/s-A"')
+    expect(m.html).not.toContain('>E<')
     expect(m.html).not.toContain('>F<')
     expect(m.html).toContain('+2 öğrenci daha')
     expect(m.html).not.toContain('Düşük')

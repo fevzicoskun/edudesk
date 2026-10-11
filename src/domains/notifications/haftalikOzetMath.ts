@@ -24,9 +24,8 @@ const odevSatiri = (h: HwRow, baseUrl: string) =>
 const fazlasi = (n: number, ne: string) => (n > AZAMI ? `<li class="k">+${n - AZAMI} ${ne} daha</li>` : '')
 
 export function haftalikOzetMaili(g: OzetGirdi): { subject: string; html: string } | null {
-  // En ağır vakalar önce: aynı seviyede sıra rastgeleydi (canlı veride 94 öğrenciden 53'ü orta/yüksek — 2026-10-11)
+  // Sıra computeAlerts'ten gelir (seviye → kaçırılan ödev → devamsızlık); ana sayfayla aynı ilk 5
   const takip = g.riskler.filter(r => r.riskLevel !== 'low')
-    .sort((a, b) => (b.hwMisses + b.absences) - (a.hwMisses + a.absences))
   const bekleyen = g.odevler
     .filter(h => h.due_date < g.bugun && !g.kontrolEdilenIds.has(h.id))
     .sort((a, b) => b.due_date.localeCompare(a.due_date))

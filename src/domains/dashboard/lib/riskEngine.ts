@@ -76,7 +76,11 @@ function buildRiskAlerts(
       absences,
     })
   }
-  return alerts.sort((a, b) => RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel])
+  // Seviye içinde en ağır önce: ana sayfa ve haftalık mail yalnız ilk 5'i gösterir (canlıda 31 yüksek riskli, 2026-10-11)
+  return alerts.sort((a, b) =>
+    RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel]
+    || b.hwMisses - a.hwMisses
+    || b.absences - a.absences)
 }
 
 export function computeAlerts(

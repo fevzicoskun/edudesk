@@ -200,6 +200,22 @@ describe('computeAlerts()', () => {
     expect(alerts[1].riskLevel).toBe('low')
   })
 
+  it('aynı seviyede en çok kaçıran önce, eşitlikte devamsızlığı fazla olan', () => {
+    // Ana sayfa yalnız ilk 5'i gösterir: 31 yüksek riskliden rastgele 5 değil, en ağır 5 görünmeli
+    const homeworks = Array.from({ length: 5 }, (_, i) => ({
+      id: `hw${i + 1}`, title: '', subject: '', due_date: '', class_id: 'cls1', classes: null,
+    }))
+    const kacir = (stu: string, n: number) =>
+      homeworks.slice(0, n).map(hw => ({ homework_id: hw.id, student_id: stu, status: 'yapilmadi' }))
+    const alerts = computeAlerts(
+      homeworks,
+      [...kacir('uc', 3), ...kacir('bes', 5), ...kacir('ucDevamsiz', 3)],
+      [{ student_id: 'ucDevamsiz', status: 'absent' }],
+      [makeStudent('uc'), makeStudent('bes'), makeStudent('ucDevamsiz')],
+    )
+    expect(alerts.map(a => a.studentId)).toEqual(['bes', 'ucDevamsiz', 'uc'])
+  })
+
   it('RISK_HW_LOOKBACK (5): 6. ödev pencere dışında kalır — miss sayılmaz', () => {
     // 6 ödev, öğrenci hepsinde eksik — ama limit 5 olduğu için max 5 miss sayılmalı
     const homeworks = Array.from({ length: 6 }, (_, i) => ({
