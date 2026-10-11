@@ -134,50 +134,41 @@ test.describe.serial('Mentör dağılımı', () => {
     await ctx.close()
   }
 
-  test('mentör değişince eski mentör notunu salt okunur görür; geri alınca silebilir', async ({ browser }) => {
+  test('mentör değişince eski mentör öğrenciyi salt okunur görür', async ({ browser }) => {
     test.setTimeout(240_000)
-    const notMetni = `Salt okunur e2e ${Date.now()}`
     const ctx = await browser.newContext({ storageState: AUTH('ogretmen') })
     const page = await ctx.newPage()
-    // 1) Güncel mentör not yazar
+    // 1) Güncel mentör tanıma kartını doldurur (dolu kart öğrenciyi "önceki öğrencilerim"e taşır)
+    const hedef = `Salt okunur e2e ${Date.now()}`
     await page.goto('/mentorluk')
     await page.getByRole('link', { name: ogrenciAdlari[0] }).first().click()
-    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toBeVisible({ timeout: 15_000 })
-    await expect(async () => {
-      await page.getByLabel('Görüşme notu').fill(notMetni)
-      await page.getByRole('button', { name: 'Not ekle' }).click()
-      await expect(page.getByText(notMetni)).toBeVisible({ timeout: 3_000 })
-    }).toPass({ timeout: 30_000 })
+    await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
+    await page.getByRole('button', { name: 'Düzenle' }).click()
+    await page.getByLabel('Kısa vadeli hedefleri').fill(hedef)
+    await page.getByRole('button', { name: 'Kaydet' }).click()
+    await expect(page.getByText(hedef)).toBeVisible({ timeout: 10_000 })
 
     // 2) İdare öğrenciyi zümre başkanına verir
     await tekAta(browser, ogrenciAdlari[0], 'PW Test zumre_baskani')
 
-    // 3) Eski mentör: Önceki öğrencilerim → salt okunur sayfa
+    // 3) Eski mentör: Önceki öğrencilerim → salt okunur sayfa (görüşme notları Metodbox'ta, bölüm yok)
     await page.goto('/mentorluk')
     const onceki = page.locator('section').filter({ hasText: 'Önceki öğrencilerim' })
     await expect(onceki.getByRole('link', { name: new RegExp(ogrenciAdlari[0]) })).toBeVisible()
     await onceki.getByRole('link', { name: new RegExp(ogrenciAdlari[0]) }).click()
     await expect(page.getByRole('status')).toContainText('mentörlüğü artık sizde değil')
-    await expect(page.getByText(notMetni)).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Not ekle' })).toHaveCount(0)
+    await expect(page.getByText(hedef)).toBeVisible()
     await expect(page.getByRole('button', { name: 'Düzenle' })).toHaveCount(0)
-    await expect(page.getByRole('button', { name: 'Sil' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toHaveCount(0)
     await expect(page.getByRole('heading', { name: 'Ödev durumu' })).toHaveCount(0)
 
-    // 4) Temizlik: geri ata, notu sil (canlı veride not bırakma)
+    // 4) Temizlik: geri ata, kartı boşalt (canlı veride içerik bırakma)
     await tekAta(browser, ogrenciAdlari[0], ogretmenAdi)
     await page.reload()
-    const notSatiri = page.locator('li').filter({ hasText: notMetni })
-    // Onay açılınca not metni ekrandan kalkar — "silindi" sanma: onayın kapanmasını ve yenileme sonrasını bekle
-    await expect(async () => {
-      await notSatiri.getByRole('button', { name: 'Sil' }).click()
-      await expect(page.getByText(/silinsin mi/)).toBeVisible({ timeout: 3_000 })
-    }).toPass({ timeout: 30_000 })
-    await page.getByRole('button', { name: 'Sil', exact: true }).last().click()
-    await expect(page.getByText(/silinsin mi/)).toHaveCount(0, { timeout: 10_000 })
-    await page.reload()
-    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toBeVisible()
-    await expect(page.getByText(notMetni)).toHaveCount(0)
+    await page.getByRole('button', { name: 'Düzenle' }).click()
+    await page.getByLabel('Kısa vadeli hedefleri').fill('')
+    await page.getByRole('button', { name: 'Kaydet' }).click()
+    await expect(page.getByText(hedef)).toHaveCount(0, { timeout: 10_000 })
     await ctx.close()
   })
 
