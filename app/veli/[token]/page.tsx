@@ -1,7 +1,6 @@
 ﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { notFound } from 'next/navigation'
 import PrintButton from '@/components/PrintButton'
-import { format, parseISO } from '@/src/shared/date'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
 import VeliTracker from './VeliTracker'
@@ -16,7 +15,6 @@ import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
 export const metadata = { title: yazdirmaBasligi('Veli Görünümü') }
 
-type NoteRow = { id: string; body: string; created_at: string }
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
 function TokenExpiredPage() {
@@ -81,7 +79,8 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const schoolFilter = tokenSchoolId
   const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   const since90 = addDaysISO(today, -90)
-  const [studentResult, submissionsResult, notesResult, attendanceResult, planWeeks] = await Promise.all([
+  // Öğretmen notları (student_notes) bilinçli YOK: okul içidir, öğretmen ekranında "veli görür" uyarısı yok (2026-10-11)
+  const [studentResult, submissionsResult, attendanceResult, planWeeks] = await Promise.all([
     studentQuery.single(),
     (() => {
       let q = supabase
@@ -89,15 +88,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         .select('id, status, updated_at, homeworks(title, subject, due_date, description)')
         .not('marked_at', 'is', null) // yalnız öğretmenin işaretledikleri — otomatik açılan boş satırlar varsayılan 'yapilmadi'
         .eq('student_id', studentId)
-      if (schoolFilter) q = q.eq('school_id', schoolFilter)
-      return q
-    })(),
-    (() => {
-      let q = supabase
-        .from('student_notes')
-        .select('id, body, created_at')
-        .eq('student_id', studentId)
-        .order('created_at', { ascending: false })
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q
     })(),
@@ -124,7 +114,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
-  const notes      = (notesResult.data ?? []) as NoteRow[]
   const attendance = (attendanceResult.data ?? []) as AttendanceRow[]
   const absentCount = attendance.filter(a => a.status === 'absent').length
   const lateCount   = attendance.filter(a => a.status === 'late').length
@@ -198,19 +187,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         <VeliPlanSection weeks={planWeeks} />
         {yoklama && <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />}
 
-        {notes.length > 0 && (
-          <section data-veli-section="notlar" className="bg-white border border-gray-200 rounded-2xl p-4">
-            <h2 className="text-sm font-semibold text-gray-700 mb-3">Öğretmen Notları</h2>
-            <div className="space-y-2">
-              {notes.map(n => (
-                <div key={n.id} className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
-                  <p className="text-sm text-gray-800 whitespace-pre-wrap">{n.body}</p>
-                  <p className="text-xs text-gray-400 mt-2">{format(parseISO(n.created_at), 'd MMM yyyy')}</p>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
 
         <footer className="text-center text-xs text-gray-500 py-4 space-y-1">
           <p>Bu sayfa yalnızca bilgi amaçlıdır · myedudesk.com.tr</p>
