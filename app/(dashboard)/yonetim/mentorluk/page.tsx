@@ -4,14 +4,14 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { isMudurOrAbove } from '@/src/shared/types'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaSec, haftaEtiketi, gunAy } from '@/src/domains/mentor/lib/bultenMath'
+import { haftaSec, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { mentorListesi } from '@/src/domains/dashboard/lib/yoneticiOzeti'
 
 export const metadata = { title: 'Mentörlük' }
 
 const soluk = 'text-gray-500 dark:text-slate-400'
 
-/** İdare: kim kimin mentörü. Görüşme notları burada YOK — yalnız tarih/sayı (mentor_gorusme_ozeti). */
+/** İdare: kim kimin mentörü. Görüşmeler okulda Metodbox'a girildiği için burada görüşme bilgisi yok (2026-10-11). */
 export default async function YonetimMentorlukPage() {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !isMudurOrAbove(profile.role)) redirect('/anasayfa')
@@ -19,14 +19,13 @@ export default async function YonetimMentorlukPage() {
 
   const supabase = await createClient()
   const hafta = haftaSec(todayLocalISO())
-  const [mentorluk, gorusme, gonderim, ogrenci, sinif] = await Promise.all([
+  const [mentorluk, gonderim, ogrenci, sinif] = await Promise.all([
     supabase.rpc('ogrenci_mentor_adlari'),
-    supabase.rpc('mentor_gorusme_ozeti'),
     supabase.from('bulten_gonderimleri').select('student_id').eq('school_id', sid).eq('hafta', hafta),
     supabase.from('students').select('id, full_name, class_id').eq('school_id', sid).is('deleted_at', null).limit(1000),
     supabase.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
   ])
-  for (const r of [mentorluk, gorusme, gonderim, ogrenci, sinif]) if (r.error) throw new Error(r.error.message)
+  for (const r of [mentorluk, gonderim, ogrenci, sinif]) if (r.error) throw new Error(r.error.message)
 
   const ogrenciler = ogrenci.data ?? []
   const siniflar = new Map((sinif.data ?? []).map(c => [c.id, c.name]))
@@ -35,7 +34,6 @@ export default async function YonetimMentorlukPage() {
     ogrenciler,
     siniflar,
     gonderilenler: new Set((gonderim.data ?? []).map(g => g.student_id)),
-    gorusmeler: new Map((gorusme.data ?? []).map(g => [g.student_id, { son: g.son_gorusme, sayi: g.gorusme_sayisi }])),
   })
   const mentorlu = new Set(kartlar.flatMap(k => k.ogrenciler.map(o => o.id)))
   const mentorsuz = new Map<string, string[]>()
@@ -53,7 +51,6 @@ export default async function YonetimMentorlukPage() {
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Mentörlük</h1>
         <p className={`text-sm mt-0.5 ${soluk}`}>
           {kartlar.length} mentör · {ogrenciler.length} öğrenciden {mentorlu.size}&apos;inin mentörü var.
-          {' '}Görüşme notları yalnız mentöre görünür; burada yalnız son görüşme tarihi ve sayısı var.
         </p>
       </div>
 
@@ -76,8 +73,8 @@ export default async function YonetimMentorlukPage() {
                       {o.ad}
                     </Link>
                     <span className={`w-12 shrink-0 text-xs ${soluk}`}>{o.sinif}</span>
-                    <span className={`w-32 shrink-0 text-right text-xs ${o.sonGorusme ? soluk : 'text-amber-700 dark:text-amber-400'}`}>
-                      {o.sonGorusme ? `${gunAy(o.sonGorusme)} · ${o.gorusmeSayisi} görüşme` : 'Görüşme yok'}
+                    <span className={`w-20 shrink-0 text-right text-xs ${o.bulten ? 'text-emerald-700 dark:text-emerald-400' : soluk}`}>
+                      {o.bulten ? 'Bülten ✓' : 'Bülten —'}
                     </span>
                   </li>
                 ))}

@@ -86,7 +86,6 @@ describe('mentorListesi (idare: kim kimin mentörü)', () => {
     ],
     siniflar: new Map([['c9', '9-A'], ['c10', '10-A']]),
     gonderilenler: new Set(['s1']),
-    gorusmeler: new Map([['s1', { son: '2026-10-05', sayi: 3 }]]),
   })
 
   it('mentörler ada göre, öğrencileri sınıf (sayısal) → ad sırasında', () => {
@@ -94,11 +93,11 @@ describe('mentorListesi (idare: kim kimin mentörü)', () => {
     expect(r[1].ogrenciler.map(o => o.ad)).toEqual(['Can', 'Ece']) // 9-A, 10-A'dan önce
   })
 
-  it('silinmiş öğrenci düşer; görüşme ve bülten bilgisi taşınır', () => {
+  it('silinmiş öğrenci düşer; bülten bilgisi taşınır', () => {
     expect(r[0].ogrenciler).toHaveLength(1)
     const ece = r[1].ogrenciler.find(o => o.id === 's1')!
-    expect(ece).toMatchObject({ sinif: '10-A', sonGorusme: '2026-10-05', gorusmeSayisi: 3, bulten: true })
-    expect(r[1].ogrenciler.find(o => o.id === 's2')).toMatchObject({ sonGorusme: null, gorusmeSayisi: 0, bulten: false })
+    expect(ece).toMatchObject({ sinif: '10-A', bulten: true })
+    expect(r[1].ogrenciler.find(o => o.id === 's2')).toMatchObject({ bulten: false })
     expect(r[1].bultenGonderilen).toBe(1)
   })
 })

@@ -3860,14 +3860,6 @@ export type Database = {
       is_yonetici_in_school: { Args: never; Returns: boolean }
       is_zumre_baskani: { Args: never; Returns: boolean }
       is_zumre_baskani_in_school: { Args: never; Returns: boolean }
-      mentor_gorusme_ozeti: {
-        Args: never
-        Returns: {
-          gorusme_sayisi: number
-          son_gorusme: string
-          student_id: string
-        }[]
-      }
       ogrenci_mentor_adlari: {
         Args: never
         Returns: {
