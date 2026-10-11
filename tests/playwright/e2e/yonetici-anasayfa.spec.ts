@@ -31,6 +31,16 @@ for (const rol of ['mudur_yardimcisi', 'mudur'] as const) {
       }
     })
 
+    test('menüden idare mentörlük listesi açılır (notlar yok)', async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await page.goto('/anasayfa')
+      await page.locator('aside').first().getByRole('link', { name: 'Mentörlük', exact: true }).click()
+      await expect(page).toHaveURL(/\/yonetim\/mentorluk$/, { timeout: 20_000 })
+      await expect(page.getByRole('heading', { name: 'Mentörlük', level: 1 })).toBeVisible()
+      await expect(page.getByText(/öğrenciden \d+'inin mentörü var/)).toBeVisible()
+      await expect(page.getByText('Görüşme notları yalnız mentöre görünür', { exact: false })).toBeVisible()
+    })
+
     test('aylık rapor PDF iner (kurucuya tek sayfa)', async ({ page }, info) => {
       await page.goto('/anasayfa')
       const dugme = page.getByRole('button', { name: /raporu \(PDF\)$/ })

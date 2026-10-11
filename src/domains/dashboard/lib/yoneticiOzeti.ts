@@ -75,3 +75,32 @@ export function mentorsuzSiniflar(p: {
     .map(([id, s]) => ({ id, ad: p.siniflar.get(id) ?? '—', ...s }))
     .sort((a, b) => a.ad.localeCompare(b.ad, 'tr', { numeric: true }))
 }
+
+export type MentorOgrencisi = { id: string; ad: string; sinifId: string; sinif: string; sonGorusme: string | null; gorusmeSayisi: number; bulten: boolean }
+export type MentorKarti = { mentorId: string; ad: string; ogrenciler: MentorOgrencisi[]; bultenGonderilen: number }
+
+/** İdare mentörlük listesi: kim kimin mentörü. Mentörler ada göre, öğrencileri sınıf → ad. Silinmiş öğrenci düşer. */
+export function mentorListesi(p: {
+  mentorluklar: { student_id: string; mentor_id: string; mentor_adi: string }[]
+  ogrenciler: { id: string; full_name: string; class_id: string }[]
+  siniflar: Map<string, string>
+  gonderilenler: Set<string>
+  gorusmeler: Map<string, { son: string; sayi: number }>
+}): MentorKarti[] {
+  const ogrenci = new Map(p.ogrenciler.map(o => [o.id, o]))
+  const m = new Map<string, MentorKarti>()
+  for (const r of p.mentorluklar) {
+    const o = ogrenci.get(r.student_id)
+    if (!o) continue
+    const k = m.get(r.mentor_id) ?? { mentorId: r.mentor_id, ad: r.mentor_adi, ogrenciler: [], bultenGonderilen: 0 }
+    const g = p.gorusmeler.get(o.id)
+    const bulten = p.gonderilenler.has(o.id)
+    k.ogrenciler.push({ id: o.id, ad: o.full_name, sinifId: o.class_id, sinif: p.siniflar.get(o.class_id) ?? '—', sonGorusme: g?.son ?? null, gorusmeSayisi: g?.sayi ?? 0, bulten })
+    if (bulten) k.bultenGonderilen++
+    m.set(r.mentor_id, k)
+  }
+  for (const k of m.values()) {
+    k.ogrenciler.sort((a, b) => a.sinif.localeCompare(b.sinif, 'tr', { numeric: true }) || a.ad.localeCompare(b.ad, 'tr'))
+  }
+  return [...m.values()].sort((a, b) => a.ad.localeCompare(b.ad, 'tr'))
+}

@@ -237,6 +237,7 @@ export async function MentorlukBolumu() {
             </ul>
           )}
           <p className={`text-xs mt-2 ${soluk}`}>Mentörün bülten sayfasında gönder/paylaş düğmesine bastığı öğrenciler sayılır.</p>
+          <Link href="/yonetim/mentorluk" className={`inline-block mt-2 ${bag}`}>Kim kimin mentörü →</Link>
         </div>
         <div className="space-y-3">
           <div>

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ogretmenTakibi, bultenIlerlemesi, mentorsuzSiniflar } from '@/src/domains/dashboard/lib/yoneticiOzeti'
+import { ogretmenTakibi, bultenIlerlemesi, mentorsuzSiniflar, mentorListesi } from '@/src/domains/dashboard/lib/yoneticiOzeti'
 
 const BUGUN = '2026-10-10'
 
@@ -68,5 +68,37 @@ describe('mentorsuzSiniflar', () => {
       { id: 'k9', ad: '9-A', mentorsuz: 2, toplam: 2 },
       { id: 'k10', ad: '10-A', mentorsuz: 1, toplam: 2 },
     ])
+  })
+})
+
+describe('mentorListesi (idare: kim kimin mentörü)', () => {
+  const r = mentorListesi({
+    mentorluklar: [
+      { student_id: 's2', mentor_id: 'm1', mentor_adi: 'Zeynep' },
+      { student_id: 's1', mentor_id: 'm1', mentor_adi: 'Zeynep' },
+      { student_id: 's3', mentor_id: 'm2', mentor_adi: 'Ali' },
+      { student_id: 'silinmis', mentor_id: 'm2', mentor_adi: 'Ali' },
+    ],
+    ogrenciler: [
+      { id: 's1', full_name: 'Ece', class_id: 'c10' },
+      { id: 's2', full_name: 'Can', class_id: 'c9' },
+      { id: 's3', full_name: 'Deniz', class_id: 'c9' },
+    ],
+    siniflar: new Map([['c9', '9-A'], ['c10', '10-A']]),
+    gonderilenler: new Set(['s1']),
+    gorusmeler: new Map([['s1', { son: '2026-10-05', sayi: 3 }]]),
+  })
+
+  it('mentörler ada göre, öğrencileri sınıf (sayısal) → ad sırasında', () => {
+    expect(r.map(k => k.ad)).toEqual(['Ali', 'Zeynep'])
+    expect(r[1].ogrenciler.map(o => o.ad)).toEqual(['Can', 'Ece']) // 9-A, 10-A'dan önce
+  })
+
+  it('silinmiş öğrenci düşer; görüşme ve bülten bilgisi taşınır', () => {
+    expect(r[0].ogrenciler).toHaveLength(1)
+    const ece = r[1].ogrenciler.find(o => o.id === 's1')!
+    expect(ece).toMatchObject({ sinif: '10-A', sonGorusme: '2026-10-05', gorusmeSayisi: 3, bulten: true })
+    expect(r[1].ogrenciler.find(o => o.id === 's2')).toMatchObject({ sonGorusme: null, gorusmeSayisi: 0, bulten: false })
+    expect(r[1].bultenGonderilen).toBe(1)
   })
 })

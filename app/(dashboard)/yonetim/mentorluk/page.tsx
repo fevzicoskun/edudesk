@@ -1,0 +1,110 @@
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { getCurrentProfile } from '@/src/shared/auth'
+import { isMudurOrAbove } from '@/src/shared/types'
+import { createClient } from '@/src/infrastructure/supabase/server'
+import { todayLocalISO } from '@/src/shared/date'
+import { haftaSec, haftaEtiketi, gunAy } from '@/src/domains/mentor/lib/bultenMath'
+import { mentorListesi } from '@/src/domains/dashboard/lib/yoneticiOzeti'
+
+export const metadata = { title: 'Mentörlük' }
+
+const soluk = 'text-gray-500 dark:text-slate-400'
+
+/** İdare: kim kimin mentörü. Görüşme notları burada YOK — yalnız tarih/sayı (mentor_gorusme_ozeti). */
+export default async function YonetimMentorlukPage() {
+  const profile = await getCurrentProfile()
+  if (!profile?.school_id || !isMudurOrAbove(profile.role)) redirect('/anasayfa')
+  const sid = profile.school_id
+
+  const supabase = await createClient()
+  const hafta = haftaSec(todayLocalISO())
+  const [mentorluk, gorusme, gonderim, ogrenci, sinif] = await Promise.all([
+    supabase.rpc('ogrenci_mentor_adlari'),
+    supabase.rpc('mentor_gorusme_ozeti'),
+    supabase.from('bulten_gonderimleri').select('student_id').eq('school_id', sid).eq('hafta', hafta),
+    supabase.from('students').select('id, full_name, class_id').eq('school_id', sid).is('deleted_at', null).limit(1000),
+    supabase.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
+  ])
+  for (const r of [mentorluk, gorusme, gonderim, ogrenci, sinif]) if (r.error) throw new Error(r.error.message)
+
+  const ogrenciler = ogrenci.data ?? []
+  const siniflar = new Map((sinif.data ?? []).map(c => [c.id, c.name]))
+  const kartlar = mentorListesi({
+    mentorluklar: mentorluk.data ?? [],
+    ogrenciler,
+    siniflar,
+    gonderilenler: new Set((gonderim.data ?? []).map(g => g.student_id)),
+    gorusmeler: new Map((gorusme.data ?? []).map(g => [g.student_id, { son: g.son_gorusme, sayi: g.gorusme_sayisi }])),
+  })
+  const mentorlu = new Set(kartlar.flatMap(k => k.ogrenciler.map(o => o.id)))
+  const mentorsuz = new Map<string, string[]>()
+  for (const o of ogrenciler) {
+    if (mentorlu.has(o.id)) continue
+    mentorsuz.set(o.class_id, [...(mentorsuz.get(o.class_id) ?? []), o.full_name])
+  }
+  const mentorsuzSiniflar = [...mentorsuz]
+    .map(([id, adlar]) => ({ id, ad: siniflar.get(id) ?? '—', adlar: adlar.sort((a, b) => a.localeCompare(b, 'tr')) }))
+    .sort((a, b) => a.ad.localeCompare(b.ad, 'tr', { numeric: true }))
+
+  return (
+    <div className="p-4 md:p-6 max-w-5xl mx-auto space-y-5">
+      <div>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Mentörlük</h1>
+        <p className={`text-sm mt-0.5 ${soluk}`}>
+          {kartlar.length} mentör · {ogrenciler.length} öğrenciden {mentorlu.size}&apos;inin mentörü var.
+          {' '}Görüşme notları yalnız mentöre görünür; burada yalnız son görüşme tarihi ve sayısı var.
+        </p>
+      </div>
+
+      {kartlar.length === 0 ? (
+        <p className={`text-sm ${soluk}`}>Henüz mentör ataması yok. Sınıf sayfasındaki &quot;Mentör Dağılımı&quot; kutusundan atayabilirsiniz.</p>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {kartlar.map(k => (
+            <section key={k.mentorId} aria-label={k.ad} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl">
+              <header className="flex items-baseline justify-between gap-2 px-4 py-3 border-b border-gray-100 dark:border-slate-700">
+                <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100">{k.ad}</h2>
+                <span className={`text-xs ${soluk}`}>
+                  {k.ogrenciler.length} öğrenci · bülten {k.bultenGonderilen}/{k.ogrenciler.length}
+                </span>
+              </header>
+              <ul className="divide-y divide-gray-100 dark:divide-slate-700">
+                {k.ogrenciler.map(o => (
+                  <li key={o.id} className="flex items-center gap-2 px-4 py-2 text-sm">
+                    <Link href={`/siniflar/${o.sinifId}/ogrenciler/${o.id}`} className="flex-1 min-w-0 truncate text-gray-900 dark:text-slate-100 hover:underline">
+                      {o.ad}
+                    </Link>
+                    <span className={`w-12 shrink-0 text-xs ${soluk}`}>{o.sinif}</span>
+                    <span className={`w-32 shrink-0 text-right text-xs ${o.sonGorusme ? soluk : 'text-amber-700 dark:text-amber-400'}`}>
+                      {o.sonGorusme ? `${gunAy(o.sonGorusme)} · ${o.gorusmeSayisi} görüşme` : 'Görüşme yok'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+      <p className={`text-xs ${soluk}`}>Bülten: {haftaEtiketi(hafta)} haftası için mentörün gönder/paylaş düğmesine bastığı öğrenciler.</p>
+
+      {mentorsuzSiniflar.length > 0 && (
+        <section aria-label="Mentörü olmayanlar" className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">
+            Mentörü olmayanlar <span className={`font-normal ${soluk}`}>({ogrenciler.length - mentorlu.size})</span>
+          </h2>
+          <ul className="space-y-2">
+            {mentorsuzSiniflar.map(s => (
+              <li key={s.id} className="text-sm">
+                <span className="font-medium text-gray-800 dark:text-slate-200">{s.ad}</span>
+                <span className={soluk}> ({s.adlar.length}) — </span>
+                <Link href={`/siniflar/${s.id}`} className="text-blue-700 dark:text-blue-400 hover:underline">Ata →</Link>
+                <p className={`text-xs mt-0.5 ${soluk}`}>{s.adlar.join(', ')}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
+}
