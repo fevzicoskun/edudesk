@@ -4,9 +4,9 @@ import { useState, useTransition } from 'react'
 import { generateBulkVeliTokens, type BulkTokenResult } from '@/app/actions/tokens'
 import { buildWhatsAppUrl } from '@/src/domains/classes/lib/veliPortal'
 
-interface Props { classId: string }
+interface Props { classId: string; okulAdi?: string }
 
-export default function BulkVeliLinkModal({ classId }: Props) {
+export default function BulkVeliLinkModal({ classId, okulAdi }: Props) {
   const [open,    setOpen]    = useState(false)
   const [results, setResults] = useState<(BulkTokenResult & { url: string })[]>([])
   const [copied,  setCopied]  = useState<string | null>(null)
@@ -81,7 +81,7 @@ export default function BulkVeliLinkModal({ classId }: Props) {
                   <div className="flex gap-1.5 shrink-0">
                     {r.veliTelefon && (
                       <a
-                        href={buildWhatsAppUrl(r.studentName, r.veliAd, r.url)}
+                        href={buildWhatsAppUrl(r.studentName, r.veliAd, r.url, okulAdi)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-1.5 rounded-lg border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-colors"

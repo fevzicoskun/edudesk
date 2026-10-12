@@ -80,7 +80,7 @@ export default async function MentorlukDetayPage({
 
       <div className="space-y-6">
         {profil && <OdevDurumu homeworks={profil.homeworks} />}
-        {!salt && <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} />}
+        {!salt && <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} okulAdi={profile?.schools?.name} />}
         <TanimaKarti studentId={studentId} profil={karte} salt={salt} />
         {/* Görüşme notları okulda Metodbox'a giriliyor; burada bölüm yok (2026-10-11). */}
         {!salt && <MentorlukDuzeni studentId={studentId} anlatildiTarihi={karte?.rules_explained_at ?? null} />}

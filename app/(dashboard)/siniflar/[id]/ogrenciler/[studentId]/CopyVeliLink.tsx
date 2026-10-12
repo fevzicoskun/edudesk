@@ -17,10 +17,12 @@ export default function CopyVeliLink({
   studentId,
   studentName,
   veliAd,
+  okulAdi,
 }: {
   studentId: string
   studentName: string
   veliAd: string | null
+  okulAdi?: string
 }) {
   const [tokens, setTokens] = useState<VeliToken[]>([])
   const [loading, setLoading] = useState(true)
@@ -114,7 +116,7 @@ export default function CopyVeliLink({
             )}
           </button>
           <a
-            href={buildWhatsAppUrl(studentName, veliAd, fresh.url)}
+            href={buildWhatsAppUrl(studentName, veliAd, fresh.url, okulAdi)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-green-200 dark:border-green-700 text-xs font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950 transition-colors"

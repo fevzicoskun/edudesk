@@ -25,8 +25,8 @@ export function aggregateVeliEvents(events: VeliEvent[]): VeliAnalyticsResult | 
   }
 }
 
-export function buildWhatsAppUrl(studentName: string, veliAd: string | null, portalUrl: string): string {
+export function buildWhatsAppUrl(studentName: string, veliAd: string | null, portalUrl: string, okulAdi?: string): string {
   const greeting = veliAd ? `Sayın ${veliAd},` : 'Merhaba,'
-  const text = `${greeting} ${studentName} için EduDesk veli portalı: ${portalUrl}`
+  const text = `${greeting} ${studentName} için ${okulAdi ? `${okulAdi} ` : ''}veli portalı: ${portalUrl}`
   return `https://wa.me/?text=${encodeURIComponent(text)}`
 }

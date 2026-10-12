@@ -43,6 +43,13 @@ describe('buildWhatsAppUrl', () => {
     expect(decodeURIComponent(url)).not.toContain('Sayın')
   })
 
+  it('okul adını yazar, EduDesk yazmaz', () => {
+    const metin = decodeURIComponent(buildWhatsAppUrl('Ali', null, 'https://example.com', 'Bahçeşehir Koleji Denizli'))
+    expect(metin).toContain('Ali için Bahçeşehir Koleji Denizli veli portalı: https://example.com')
+    expect(metin).not.toMatch(/edudesk/i)
+    expect(decodeURIComponent(buildWhatsAppUrl('Ali', null, 'https://example.com'))).toContain('Ali için veli portalı:')
+  })
+
   it('URL encodes the message', () => {
     const url = buildWhatsAppUrl('Ali', null, 'https://example.com')
     expect(url).toMatch(/^https:\/\/wa\.me\/\?text=/)

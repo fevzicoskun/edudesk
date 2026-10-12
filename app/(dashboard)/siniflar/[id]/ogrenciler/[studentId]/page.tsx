@@ -192,6 +192,7 @@ export default async function OgrenciDetayPage({
           studentId={studentId}
           studentName={student.full_name}
           veliAd={student.veli_ad ?? null}
+          okulAdi={currentProfile.schools?.name}
         />
       </div>
 

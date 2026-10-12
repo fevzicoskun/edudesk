@@ -133,7 +133,7 @@ export default async function SinifDetayPage({
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">Öğrenci Ekle</h2>
             <div className="flex gap-2">
-              <BulkVeliLinkModal classId={id} />
+              <BulkVeliLinkModal classId={id} okulAdi={profile?.schools?.name} />
               <BulkStudentModal classId={id} maxNumber={maxNumber} />
             </div>
           </div>
