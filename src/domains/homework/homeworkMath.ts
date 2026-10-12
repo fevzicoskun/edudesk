@@ -45,7 +45,22 @@ export function hicIsaretlenmedi(submissions: { marked_at: string | null }[]): b
 
 /** Kaydedilen kaynak adı: baş/son boşluk atılır, kelime arası tek boşluk. Harfler korunur. */
 export function kaynakAdiDuzelt(ad: string): string {
-  return ad.trim().replace(/\s+/g, ' ')
+  return basHarfleriBuyut(ad.trim().replace(/\s+/g, ' '))
+}
+
+/** Ödev başlığı/açıklaması/kaynak adı: her kelimenin baş harfi büyük, kalanı küçük (kullanıcı kararı 2026-10-12).
+ *  Türkçe kurallı (i→İ, I→ı). Kesme işaretinden sonraki ek küçük kalır ("Türkiye'nin"); rakam/noktalama
+ *  sonrası yeni kelime sayılır ("5.Ünite", "A-B"). Boşluk ve satır sonları korunur. Kısaltmalar da düşer: TYT → Tyt;
+ *  tek istisna Romen rakamı (III, IV, XII). */
+const ROMEN = /^(X{0,3})(IX|IV|V?I{0,3})$/ // büyük harfli I–XXXIX; boş eşleşme \p{L}+ yüzünden olmaz
+
+export function basHarfleriBuyut(metin: string): string {
+  return metin.replace(/\p{L}+/gu, (kelime, i: number) => {
+    if (ROMEN.test(kelime)) return kelime // "Ünite III" — Türkçe küçültme "Iıı" yapardı
+    const kucuk = kelime.toLocaleLowerCase('tr')
+    if (i > 0 && /['’]/.test(metin[i - 1])) return kucuk
+    return kucuk.charAt(0).toLocaleUpperCase('tr') + kucuk.slice(1)
+  })
 }
 
 /** Kaynak adlarını karşılaştırır. Türkçe kıyas şart: 'İLKE'.toLowerCase() → 'i̇lke' (bozuk).

@@ -17,7 +17,7 @@ async function formHazir(page: import('@playwright/test').Page) {
     Object.keys(el).some(k => k.startsWith('__reactProps'))), { timeout: 30_000 }).toBe(true)
 }
 
-const BASLIK = `E2EGECMIS${Date.now()}`
+const BASLIK = `E2Egecmis${Date.now()}` // baş-harf kuralında değişmeyen biçim (aramalar tam eşleşme)
 const istanbulGun = (gunOnce: number) =>
   new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date(Date.now() - gunOnce * 864e5))
 

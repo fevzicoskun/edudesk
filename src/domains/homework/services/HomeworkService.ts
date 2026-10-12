@@ -7,6 +7,7 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { odevKapsami, type OdevKapsami } from '@/src/domains/homework/lib/kapsam'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
+import { basHarfleriBuyut } from '../homeworkMath'
 
 export const HomeworkService = {
   /** Oturumdaki kullanıcının görebileceği ödev sahipleri. Profil yoksa null. */
@@ -42,6 +43,8 @@ export const HomeworkService = {
       teacher_id: ability.userId,
       school_id:  ability.schoolId,
       ...data,
+      title:       basHarfleriBuyut(data.title),
+      description: data.description ? basHarfleriBuyut(data.description) : data.description,
       source_id: data.source_id ?? null,
     })
 
@@ -210,7 +213,11 @@ export const HomeworkService = {
     if (!classExists) return { error: 'Geçersiz sınıf' }
 
     // Ödeve yazma yalnızca sahibine ait — yönetici de başkasının ödevini değiştiremez
-    const { error } = await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, data)
+    const { error } = await HomeworkRepository.updateHomework(id, ability.userId, ability.schoolId, {
+      ...data,
+      title:       basHarfleriBuyut(data.title),
+      description: data.description ? basHarfleriBuyut(data.description) : data.description,
+    })
 
     if (error) return { error: error.message }
     return {}

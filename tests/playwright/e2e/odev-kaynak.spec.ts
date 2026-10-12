@@ -17,7 +17,8 @@ async function formHazir(page: import('@playwright/test').Page) {
     Object.keys(el).some(k => k.startsWith('__reactProps'))), { timeout: 30_000 }).toBe(true)
 }
 
-const ETIKET = `E2EKAYNAK${Date.now()}`
+// Kayıtta her kelimenin baş harfi büyütülür (2026-10-12) → etiket zaten o biçimde, aramalar bozulmasın
+const ETIKET = `E2Ekaynak${Date.now()}`
 const KITAP = `${ETIKET} Mikro Orjinal`
 let ogretmenId = '', schoolId = '', matId = '', geoId = ''
 
@@ -49,6 +50,7 @@ test.afterAll(async () => {
 
 test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', async ({ page }) => {
   const baslik = `${ETIKET} geometri ödevi`
+  const kayitli = `${ETIKET} Geometri Ödevi` // her kelimenin baş harfi büyük kaydedilir
   await page.goto('/odevler/yeni')
   const gonder = page.locator('button[type="submit"]').last()
   await expect(async () => {
@@ -69,7 +71,7 @@ test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', a
   await gonder.click()
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
 
-  const { data } = await db.from('homeworks').select('source_id, subject').eq('title', baslik).single()
+  const { data } = await db.from('homeworks').select('source_id, subject').eq('title', kayitli).single()
   expect(data).toEqual({ source_id: geoId, subject: 'Geometri' })
   // yeni kaynak açılmadı
   const { count } = await db.from('homework_sources').select('id', { count: 'exact', head: true }).like('name', `${ETIKET}%`)
@@ -97,6 +99,7 @@ test('Ayarlar: aynı ad + aynı ders ikinci kez eklenemez; listede hayalet kopya
 
 test('Romen rakamı ve rakam tekrarı içeren başlık kaydedilir ("Ünite III · sayfa 1000")', async ({ page }) => {
   const baslik = `${ETIKET} Ünite III · sayfa 1000...`
+  const kayitli = `${ETIKET} Ünite III · Sayfa 1000...` // Romen rakamı büyük kalır, diğer kelimeler baş harf
   await page.goto('/odevler/yeni')
   const gonder = page.locator('button[type="submit"]').last()
   await expect(async () => {
@@ -112,6 +115,6 @@ test('Romen rakamı ve rakam tekrarı içeren başlık kaydedilir ("Ünite III �
 
   await gonder.click()
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
-  const { data } = await db.from('homeworks').select('title').eq('title', baslik).single()
-  expect(data?.title).toBe(baslik)
+  const { data } = await db.from('homeworks').select('title').eq('title', kayitli).single()
+  expect(data?.title).toBe(kayitli)
 })

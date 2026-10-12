@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
+import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, basHarfleriBuyut, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
 
 const BUGUN = new Date('2026-09-19T12:00:00+03:00')
 
@@ -138,5 +138,24 @@ describe('kaynakSec — aynı adlı birden çok kitap (ör. Mikro Orjinal Matema
     expect(kaynakSec([mat, gen, geo], 'Mikro Orjinal', 'Fizik')?.id).toBe('gen')
     expect(kaynakSec([mat, geo], 'Mikro Orjinal', 'Fizik')?.id).toBe('mat')
     expect(kaynakSec([mat, geo], 'Mikro Orjinal', null)?.id).toBe('mat')
+  })
+})
+
+describe('basHarfleriBuyut', () => {
+  it('her kelimenin baş harfi büyük, kalanı küçük (Türkçe i/ı)', () => {
+    expect(basHarfleriBuyut('başarıyorum SAYFA 39-47')).toBe('Başarıyorum Sayfa 39-47')
+    expect(basHarfleriBuyut('ıSPARTA iLKE ÇALIŞMA')).toBe('Isparta İlke Çalışma')
+  })
+  it('kesme işaretinden sonrası küçük, rakam/noktalamadan sonra büyük', () => {
+    expect(basHarfleriBuyut("TÜRKİYE'NİN coğrafyası")).toBe("Türkiye'nin Coğrafyası")
+    expect(basHarfleriBuyut('5.ünite (ek) a-b')).toBe('5.Ünite (Ek) A-B')
+  })
+  it('Romen rakamı büyük kalır (Türkçe küçültme III → ııı bozardı)', () => {
+    expect(basHarfleriBuyut('ünite III · sayfa 1000')).toBe('Ünite III · Sayfa 1000')
+    expect(basHarfleriBuyut('IV. bölüm XII test')).toBe('IV. Bölüm XII Test')
+    expect(basHarfleriBuyut('TYT ve İLK')).toBe('Tyt Ve İlk') // yalnız I/V/X'ten oluşan kelime istisna
+  })
+  it('satır sonları ve boşluklar korunur', () => {
+    expect(basHarfleriBuyut('sayfa 1\n  test 2')).toBe('Sayfa 1\n  Test 2')
   })
 })
