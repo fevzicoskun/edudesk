@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
-import { yazdirmaBasligi, donemBasi } from '@/src/shared/utils'
+import { donemBasi } from '@/src/shared/utils'
 import { todayLocalISO, format, parseISO } from '@/src/shared/date'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
@@ -10,7 +10,7 @@ import { basTarihi, mentorTablosu } from '@/src/domains/mentor/lib/mentorTablosu
 import PrintButton from '@/components/PrintButton'
 import MentorTablosu from '../MentorTablosu'
 
-export const metadata = { title: yazdirmaBasligi('Mentör Grubu Ödev Durumu') }
+export const metadata = { title: 'Mentör Grubu Ödev Durumu' }
 
 /** Kurul / idare için tek kâğıt: öğrenci × ders tablosu + dikkat edilecekler. Yatay A4. */
 export default async function MentorTabloPage({ searchParams }: { searchParams: Promise<{ bas?: string | string[] }> }) {
@@ -72,7 +72,7 @@ export default async function MentorTabloPage({ searchParams }: { searchParams: 
           <div><p className="font-medium">Not</p><div className="mt-8 border-b border-dashed border-gray-400" /></div>
           <div><p className="font-medium">Mentör öğretmen · İmza</p><div className="mt-8 border-b border-dashed border-gray-400" /></div>
         </div>
-        <p className="mt-4 text-[9pt] text-gray-500 text-center">myedudesk.com.tr</p>
+        <p className="mt-4 text-[9pt] text-gray-500 text-center">{profile.schools?.name}</p>
       </div>
     </div>
   )

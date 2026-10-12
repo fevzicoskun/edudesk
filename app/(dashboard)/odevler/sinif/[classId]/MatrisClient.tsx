@@ -5,9 +5,10 @@ import type { SubmissionStatus } from '@/src/shared/types'
 import MatrisToolbar from './matris/MatrisToolbar'
 import MatrisTable from './matris/MatrisTable'
 import { STATUS_LABEL, STATUS_COLOR, PDF_COLOR, dueDateFmt } from './matris/types'
+import { filigranEkle } from '@/src/lib/createPdf'
 import type { MatrisProps, StatEntry } from './matris/types'
 
-export default function MatrisClient({ students, homeworks, subMap, className }: MatrisProps) {
+export default function MatrisClient({ students, homeworks, subMap, className, okulAdi }: MatrisProps) {
   const [search, setSearch]         = useState('')
   const [sortBy, setSortBy]         = useState<'ad' | 'pct_desc' | 'pct_asc'>('ad')
   const [exportMenu, setExportMenu] = useState(false)
@@ -153,7 +154,7 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
     doc.setTextColor(255, 255, 255)
     doc.text(className ?? 'Sınıf', margin, 8)
     doc.setFontSize(9)
-    doc.text('EduDesk', pageW - margin, 8, { align: 'right' })
+    if (okulAdi) doc.text(okulAdi, pageW - margin, 8, { align: 'right' })
 
     doc.setTextColor(30, 30, 30)
     doc.setFontSize(16)
@@ -233,6 +234,7 @@ export default function MatrisClient({ students, homeworks, subMap, className }:
     doc.setTextColor(140, 140, 140)
     doc.text('Yapıldı ✓   Eksik ~   Yapılmadı ✗   Geç G   Mazeretli M   — Girilmedi', margin, legendY)
 
+    await filigranEkle(doc, okulAdi)
     doc.save(`${safeClassName}_donem_raporu.pdf`)
   }
 

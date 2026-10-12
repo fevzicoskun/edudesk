@@ -45,7 +45,7 @@ test('öğretmen notu öğrenci sayfasında var, veli bağlantısında yok', asy
   try {
     const veli = await veliCtx.newPage()
     await veli.goto(`/veli/${token}`)
-    await expect(veli.getByText('Bu sayfa yalnızca bilgi amaçlıdır · myedudesk.com.tr')).toBeVisible({ timeout: 20_000 })
+    await expect(veli.getByText(/^Bu sayfa yalnızca bilgi amaçlıdır/)).toBeVisible({ timeout: 20_000 })
     await expect(veli.locator('body')).not.toContainText(NOT)
     await expect(veli.getByRole('heading', { name: 'Öğretmen Notları' })).toHaveCount(0)
   } finally {

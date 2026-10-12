@@ -53,6 +53,3 @@ export function getGreeting(fullName: string): string {
   return `İyi akşamlar, ${firstName}`
 }
 
-/** Yazdırılan sayfaların başlığı — tarayıcı bunu kağıdın üst köşesine basar, "EduDesk" değil
- *  velinin bulabileceği adres görünsün (2026-09-28). Kök şablonu ("· EduDesk") atlar. */
-export const yazdirmaBasligi = (baslik: string) => ({ absolute: `${baslik} · myedudesk.com.tr` })

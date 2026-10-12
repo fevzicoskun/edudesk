@@ -3,13 +3,12 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import { todayLocalISO, addDaysISO } from '@/src/shared/date'
 import { BultenService } from '@/src/domains/mentor/services/BultenService'
 import { haftaSec, pazartesiMi, haftaEtiketi, whatsappLink } from '@/src/domains/mentor/lib/bultenMath'
 import BultenIstemci from './BultenIstemci'
 
-export const metadata = { title: yazdirmaBasligi('Haftalık Veli Bülteni') }
+export const metadata = { title: 'Haftalık Veli Bülteni' }
 
 const ikincil = 'inline-flex items-center justify-center min-h-[44px] px-3 rounded-xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500'
 

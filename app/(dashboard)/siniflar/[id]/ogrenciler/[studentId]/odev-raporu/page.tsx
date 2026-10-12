@@ -1,4 +1,3 @@
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -10,7 +9,7 @@ import { donemBasi } from '@/src/shared/utils'
 import { format, parseISO, todayLocalISO } from '@/src/shared/date'
 import { basTarihi } from '@/src/domains/mentor/lib/mentorTablosu'
 
-export const metadata = { title: yazdirmaBasligi('Öğrenci Ödev Özeti') }
+export const metadata = { title: 'Öğrenci Ödev Özeti' }
 
 /** Öğrencinin tüm ödevleri (kim verdiyse) — veliyle paylaşılabilir tek sayfa. */
 export default async function OgrenciOdevRaporuPage({

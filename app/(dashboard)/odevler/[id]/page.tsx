@@ -1,6 +1,5 @@
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import { Suspense } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
@@ -39,7 +38,7 @@ function StatusBoardSkeleton() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const profile = await getCurrentProfile()
-  if (!profile?.school_id) return { title: yazdirmaBasligi('Ödev') }
+  if (!profile?.school_id) return { title: 'Ödev' }
   const supabase = await createClient()
   const { data } = await supabase
     .from('homeworks')
@@ -50,8 +49,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .single()
   // Kapsam dışı ödevin adı sekme başlığından da sızmasın
   const kapsam = await HomeworkService.getOdevKapsami()
-  if (!data || !kapsam || !kapsamdaMi(kapsam, data.teacher_id)) return { title: yazdirmaBasligi('Ödev') }
-  return { title: yazdirmaBasligi(data.title) }
+  if (!data || !kapsam || !kapsamdaMi(kapsam, data.teacher_id)) return { title: 'Ödev' }
+  return { title: data.title }
 }
 
 export default async function OdevDetayPage({

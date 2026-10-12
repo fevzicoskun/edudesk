@@ -9,6 +9,7 @@ export type MatrisProps = {
   homeworks:  Homework[]
   subMap:     Record<string, SubmissionStatus>
   className?: string
+  okulAdi?:   string
 }
 
 export type StatEntry = { done: number; eligible: number; pct: number | null }

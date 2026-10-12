@@ -1,6 +1,6 @@
 'use client'
 
-import { createDoc } from '@/src/lib/createPdf'
+import { createDoc, filigranEkle } from '@/src/lib/createPdf'
 import { format, parseISO } from '@/src/shared/date'
 import type { AylikRaporPdf } from '@/app/actions/karne'
 
@@ -48,7 +48,7 @@ export async function buildAylikRaporPdf(r: AylikRaporPdf): Promise<void> {
   doc.text(`${ayAdi(r.ay)} Aylık Raporu`, SOL, 70)
   doc.setFontSize(9)
   doc.setTextColor(...GRI)
-  doc.text(`Karşılaştırma: ${ayAdi(r.gecenAy)} · Oluşturulma: ${format(new Date(), 'd MMMM yyyy')} · Rakamlar EduDesk "Ödev Takibi" ile aynı hesaptır.`, SOL, 86)
+  doc.text(`Karşılaştırma: ${ayAdi(r.gecenAy)} · Oluşturulma: ${format(new Date(), 'd MMMM yyyy')} · Rakamlar "Ödev Takibi" ile aynı hesaptır.`, SOL, 86)
   doc.setTextColor(0, 0, 0)
 
   const bu = format(parseISO(`${r.ay}-01`), 'MMMM'), gecen = format(parseISO(`${r.gecenAy}-01`), 'MMMM')
@@ -69,5 +69,6 @@ export async function buildAylikRaporPdf(r: AylikRaporPdf): Promise<void> {
   doc.text('Tamamlanma: kontrol edilen teslimlerden "yapıldı" olanların payı (mazeretliler hariç). Ödevler teslim gününe göre aya ayrılır.',
     SOL, doc.internal.pageSize.getHeight() - 24)
 
+  await filigranEkle(doc, r.schoolName)
   doc.save(`aylik-rapor-${r.ay}.pdf`)
 }

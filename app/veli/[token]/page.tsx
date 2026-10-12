@@ -1,5 +1,6 @@
 ﻿import { createServiceClient } from '@/src/infrastructure/supabase/service'
 import { notFound } from 'next/navigation'
+import Filigran from '@/components/Filigran'
 import PrintButton from '@/components/PrintButton'
 import { verifyPublicToken, isTokenRevoked, looksLikeToken } from '@/src/infrastructure/tokens'
 import { UUID } from '@/src/shared/validation'
@@ -9,11 +10,10 @@ import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
 import VeliDevamsizlikSection from './VeliDevamsizlikSection'
 import VeliPlanSection from './VeliPlanSection'
 import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import { addDaysISO } from '@/src/shared/date'
 import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
-export const metadata = { title: yazdirmaBasligi('Veli Görünümü') }
+export const metadata = { title: { absolute: 'Veli Görünümü' } }
 
 type AttendanceRow = { date: string; status: 'absent' | 'late' }
 
@@ -71,7 +71,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const supabase = createServiceClient()
   let studentQuery = supabase
     .from('students')
-    .select('id, full_name, student_number, school_id, classes(name, grade)')
+    .select('id, full_name, student_number, school_id, classes(name, grade), schools(name)')
     .eq('id', studentId)
     .is('deleted_at', null) // service-role RLS'i bypass eder → silinen öğrenci velisine gösterilmemeli
   if (tokenSchoolId) studentQuery = studentQuery.eq('school_id', tokenSchoolId)
@@ -111,6 +111,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   // Yoklama modülü kapalı okulda veliye devamsızlık gösterilmez (veli oturumsuz → servis istemcisiyle okunur)
   const yoklama = !(await kapaliOkullar(supabase)).has(student.school_id)
   const cls = student.classes as { name: string; grade: number } | null
+  const okulAdi = (student.schools as { name: string } | null)?.name
   const submissions = ((submissionsResult.data ?? []) as SubmissionRow[]).sort((a, b) =>
     (b.homeworks?.due_date ?? '').localeCompare(a.homeworks?.due_date ?? '')
   )
@@ -128,10 +129,12 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+      <Filigran metin={okulAdi} />
+      {/* print:!block — globals.css uygulama üst çubuğu için tüm <header>'ları kâğıtta gizliyor; burada öğrenci adı var */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-10 print:!block print:static print:border-0">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide"><span className="normal-case">myedudesk.com.tr</span> · Veli Görünümü</p>
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{okulAdi ? <span className="normal-case">{okulAdi}</span> : null}{okulAdi ? ' · ' : ''}Veli Görünümü</p>
             <p className="text-base font-bold text-gray-900 mt-0.5">{student.full_name}</p>
             {expiryText && (
               <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border mt-1 inline-block ${expiryColor}`}>
@@ -189,7 +192,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
 
         <footer className="text-center text-xs text-gray-500 py-4 space-y-1">
-          <p>Bu sayfa yalnızca bilgi amaçlıdır · myedudesk.com.tr</p>
+          <p>Bu sayfa yalnızca bilgi amaçlıdır{okulAdi ? ` · ${okulAdi}` : ''}</p>
           <p>
             <a href="/gizlilik" target="_blank" className="hover:underline">
               Gizlilik Politikası &amp; KVKK Aydınlatma Metni

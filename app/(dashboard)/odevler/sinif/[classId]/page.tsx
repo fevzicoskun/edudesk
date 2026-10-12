@@ -1,4 +1,3 @@
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
@@ -14,7 +13,7 @@ type SubmissionStatus = 'yapildi' | 'eksik' | 'yapilmadi' | 'gec' | 'mazeretli'
 export async function generateMetadata({ params }: { params: Promise<{ classId: string }> }) {
   const { classId } = await params
   const profile = await getCurrentProfile()
-  if (!profile?.school_id) return { title: yazdirmaBasligi('Ödev Matrisi') }
+  if (!profile?.school_id) return { title: 'Ödev Matrisi' }
   const supabase = await createClient()
   const { data } = await supabase
     .from('classes')
@@ -22,7 +21,7 @@ export async function generateMetadata({ params }: { params: Promise<{ classId: 
     .eq('id', classId)
     .eq('school_id', profile.school_id)
     .single()
-  return { title: yazdirmaBasligi(data?.name ? `${data.name} · Ödev Matrisi` : 'Ödev Matrisi') }
+  return { title: data?.name ? `${data.name} · Ödev Matrisi` : 'Ödev Matrisi' }
 }
 
 export default async function SinifMatrisPage({
@@ -127,6 +126,7 @@ export default async function SinifMatrisPage({
             homeworks={homeworks}
             subMap={subMap}
             className={cls.name}
+            okulAdi={profile.schools?.name}
           />
         )}
       </div>

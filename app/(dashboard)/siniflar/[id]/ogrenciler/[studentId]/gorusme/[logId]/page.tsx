@@ -2,12 +2,11 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import { yazdirmaBasligi } from '@/src/shared/utils'
 import { format, parseISO } from '@/src/shared/date'
 import PrintButton from '@/components/PrintButton'
 import { METHOD_LABELS } from '../../iletisimYontemi'
 
-export const metadata = { title: yazdirmaBasligi('Veli Görüşme Tutanağı') }
+export const metadata = { title: 'Veli Görüşme Tutanağı' }
 
 /** Veli iletişim kaydından imzalanabilir A4 tutanak. Görünürlük öğrenci sayfasıyla aynı (pcl_school_read). */
 export default async function GorusmeTutanagiPage({

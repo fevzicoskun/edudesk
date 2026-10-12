@@ -177,7 +177,7 @@ export default function PrintRapor({
 
       <div data-kagit className="mt-4 pt-1 border-t border-gray-300 flex justify-between text-[7.5pt] text-gray-500">
         <span>Yazdırma: {uzunTarih(new Date())}</span>
-        <span>myedudesk.com.tr</span>
+        <span>{okulAdi}</span>
       </div>
     </div>
   )

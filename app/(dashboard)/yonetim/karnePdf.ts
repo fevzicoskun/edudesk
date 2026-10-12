@@ -1,6 +1,6 @@
 'use client'
 
-import { createDoc, type PdfDoc } from '@/src/lib/createPdf'
+import { createDoc, filigranEkle, type PdfDoc } from '@/src/lib/createPdf'
 import { format } from '@/src/shared/date'
 import { odevKarnesiBolumleri } from '@/src/domains/homework/lib/odevKarnesi'
 import { RISK_ACIKLAMA, GECIKME_GUNU } from '@/src/domains/homework/lib/odev-takibi'
@@ -70,7 +70,7 @@ export async function buildKarnePdf(data: OkulKarnesi): Promise<void> {
     + '(mazeretliler hesaba katılmaz; kontrol edilmemiş öğrenci "yapmadı" sayılmaz). '
     + 'Kontrol bekleyen, teslim günü geçtiği hâlde hiç işaretlenmemiş ödevdir; '
     + `${GECIKME_GUNU} günden uzun bekleyenler gecikmiş sayılır. `
-    + `Riskli öğrenciler: ${RISK_ACIKLAMA} Rakamlar EduDesk "Ödev Takibi" ekranıyla aynıdır.`,
+    + `Riskli öğrenciler: ${RISK_ACIKLAMA} Rakamlar "Ödev Takibi" ekranıyla aynıdır.`,
     106)
 
   for (const b of odevKarnesiBolumleri(data.odev)) {
@@ -107,5 +107,6 @@ export async function buildKarnePdf(data: OkulKarnesi): Promise<void> {
     doc.text(`${i} / ${n}`, doc.internal.pageSize.getWidth() - SOL, doc.internal.pageSize.getHeight() - 20, { align: 'right' })
   }
 
+  await filigranEkle(doc, data.schoolName)
   doc.save(`okul-karnesi-${format(new Date(data.generatedAt), 'yyyy-MM-dd')}.pdf`)
 }

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
-import { yazdirmaBasligi, donemBasi } from '@/src/shared/utils'
+import { donemBasi } from '@/src/shared/utils'
 import { todayLocalISO, format, parseISO } from '@/src/shared/date'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
@@ -10,7 +10,7 @@ import { basTarihi } from '@/src/domains/mentor/lib/mentorTablosu'
 import PrintButton from '@/components/PrintButton'
 import OgrenciOdevOzeti from '../../siniflar/[id]/ogrenciler/[studentId]/odev-raporu/OgrenciOdevOzeti'
 
-export const metadata = { title: yazdirmaBasligi('Mentör Öğrencileri Ödev Özetleri') }
+export const metadata = { title: 'Mentör Öğrencileri Ödev Özetleri' }
 
 /** Mentörün tüm öğrencileri, öğrenci başına bir A4 (veli toplantısı / öğrenci görüşmesi). */
 export default async function MentorYazdirPage({ searchParams }: { searchParams: Promise<{ bas?: string | string[] }> }) {

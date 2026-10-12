@@ -34,3 +34,24 @@ export async function createDoc(
 
   return doc
 }
+
+/** Her sayfaya çapraz, soluk okul adı (en son çağrılır: tablo zeminlerinin üstünde, yarı saydam). */
+export async function filigranEkle(doc: InstanceType<typeof JsPDF>, metin: string | null | undefined): Promise<void> {
+  if (!metin) return
+  const { GState } = await import('jspdf')
+  const aci = 35
+  const rad = (aci * Math.PI) / 180
+  for (let i = 1; i <= doc.getNumberOfPages(); i++) {
+    doc.setPage(i)
+    const w = doc.internal.pageSize.getWidth()
+    const h = doc.internal.pageSize.getHeight()
+    doc.saveGraphicsState()
+    doc.setGState(new GState({ opacity: 0.07 }))
+    doc.setFontSize(54)
+    doc.setTextColor(0, 0, 0)
+    // Döndürülmüş yazının ortası sayfa ortasına gelsin (align:center açıyla güvenilir değil)
+    const yari = doc.getTextWidth(metin) / 2
+    doc.text(metin, w / 2 - Math.cos(rad) * yari, h / 2 + Math.sin(rad) * yari, { angle: aci })
+    doc.restoreGraphicsState()
+  }
+}

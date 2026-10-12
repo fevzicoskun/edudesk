@@ -1,5 +1,7 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getCurrentUser, getCurrentProfile } from '@/src/shared/auth'
+import Filigran from '@/components/Filigran'
 import Sidebar from '@/components/layout/Sidebar'
 import TopBar from '@/components/layout/TopBar'
 import { ToastProvider } from '@/components/Toast'
@@ -14,6 +16,12 @@ import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { MentorRepository } from '@/src/domains/mentor/repositories/MentorRepository'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+
+// Sekme/PDF dosya adı ve tarayıcının kâğıda bastığı başlık: "Sayfa · Okul adı" (kökteki "· EduDesk" yerine)
+export async function generateMetadata(): Promise<Metadata> {
+  const okul = (await getCurrentProfile())?.schools?.name
+  return okul ? { title: { template: `%s · ${okul}`, default: okul } } : {}
+}
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser()
@@ -56,6 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <ToastProvider>
       <UsageTracker />
+      <Filigran metin={profile?.schools?.name} />
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         {/* flex: içindeki <aside> satırın tam yüksekliğine uzasın (yoksa beyaz menü içerik bitince kesilir) */}
         <div className="flex print:hidden">
