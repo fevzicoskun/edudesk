@@ -40,7 +40,7 @@ export function BeklemeWidget() {
   return (
     <EmptyState
       title="Henüz sana sınıf atanmadı"
-      description="Müdürün sınıf atadığında dersleriniz ve yoklamalarınız burada görünecek."
+      description="Müdürün sınıf atadığında dersleriniz ve ödevleriniz burada görünecek."
     />
   )
 }

@@ -1,16 +1,13 @@
 import { getCurrentProfile } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { SetupRepository } from '../repositories/SetupRepository'
-import {
-  isWithinOnboardingWindow, buildTeacherSteps, hasIncompleteStep, type SetupStep,
-} from '../setupMath'
+import { isWithinOnboardingWindow } from '../setupMath'
 
 export type SetupStatus =
   | { kind: 'mudur'; code: string }
-  | { kind: 'ogretmen'; steps: SetupStep[] }
   | null
 
-// Fail-quiet: count hatası → adım done sayılır / kart gizlenir. Kart kritik yol değil.
+// Fail-quiet: count hatası → kart gizlenir. Yalnız müdür kartı var (öğretmen kartı 2026-10-12 kaldırıldı). Kart kritik yol değil.
 export const SetupService = {
   async getSetupStatus(): Promise<SetupStatus> {
     const profile = await getCurrentProfile()
@@ -27,19 +24,6 @@ export const SetupService = {
       return { kind: 'mudur', code: profile.schools?.slug ?? '' }
     }
 
-    if (profile.role === 'ogretmen' || profile.role === 'zumre_baskani') {
-      const results = await SetupRepository.teacherCounts(profile.id, profile.school_id)
-      const [classes, schedule, attendance, homework] = results.map(r => {
-        if (r.error) {
-          logger.error({ event: 'setup_status_failed', userId: profile.id, err: r.error.message }, 'Kurulum durumu okunamadı (öğretmen)')
-          return 1 // fail-quiet: hatalı adım done sayılır
-        }
-        return r.count ?? 0
-      })
-      const steps = buildTeacherSteps({ classes, schedule, attendance, homework })
-      return hasIncompleteStep(steps) ? { kind: 'ogretmen', steps } : null
-    }
-
-    return null // mudur_yardimcisi / admin: kart yok
+    return null // diğer roller: kart yok
   },
 }

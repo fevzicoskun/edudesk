@@ -18,8 +18,6 @@ import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { firstRunState, type Role } from '@/src/domains/dashboard/lib/firstRun'
 import { BeklemeWidget } from './IlkAdimlarWidget'
-import BaslangicKartiOgretmen from './BaslangicKartiOgretmen'
-import { SetupService } from '@/src/domains/onboarding/services/SetupService'
 
 
 const DUTY_DAYS: Record<number, string> = { 1: 'Pazartesi', 2: 'Salı', 3: 'Çarşamba', 4: 'Perşembe', 5: 'Cuma' }
@@ -66,14 +64,13 @@ export default async function OgretmenDashboard() {
 
   void TeacherDashboardService.logActivity(user.id, 'dashboard_view').catch(() => {})
 
-  // tek bekleme turu: sınıf sayısı ve kurulum durumu da birlikte
+  // tek bekleme turu: sınıf sayısı da birlikte
   const supabaseTc = await createClient()
-  const [metrics, duties, myTasks, { count: assignedClassCount }, setup] = await Promise.all([
+  const [metrics, duties, myTasks, { count: assignedClassCount }] = await Promise.all([
     TeacherDashboardService.getDashboardMetrics(user.id),
     DutyService.getMyDuties(),
     TaskService.getMyActiveTasks(),
     supabaseTc.from('teacher_classes').select('class_id', { count: 'exact', head: true }).eq('teacher_id', profile.id),
-    SetupService.getSetupStatus(),
   ])
 
   // İstanbul günü — UTC sunucuda gece 00:00–03:00 arası gün kayması olmasın.
@@ -112,9 +109,6 @@ export default async function OgretmenDashboard() {
           {format(today, 'd MMMM yyyy, EEEE')}
         </p>
       </div>
-
-      {/* Başlangıç kartı — ilk 30 gün + eksik kurulum adımı varsa */}
-      {setup?.kind === 'ogretmen' && <BaslangicKartiOgretmen steps={setup.steps} />}
 
       {/* Bugünkü ders programı şeridi (program kuruluysa kendini gösterir) */}
       <Suspense fallback={null}>
