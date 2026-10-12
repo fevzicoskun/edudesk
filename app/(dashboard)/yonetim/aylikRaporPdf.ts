@@ -69,6 +69,6 @@ export async function buildAylikRaporPdf(r: AylikRaporPdf): Promise<void> {
   doc.text('Tamamlanma: kontrol edilen teslimlerden "yapıldı" olanların payı (mazeretliler hariç). Ödevler teslim gününe göre aya ayrılır.',
     SOL, doc.internal.pageSize.getHeight() - 24)
 
-  await filigranEkle(doc, r.schoolName)
+  await filigranEkle(doc)
   doc.save(`aylik-rapor-${r.ay}.pdf`)
 }

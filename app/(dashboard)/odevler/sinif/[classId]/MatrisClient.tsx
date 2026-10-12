@@ -234,7 +234,7 @@ export default function MatrisClient({ students, homeworks, subMap, className, o
     doc.setTextColor(140, 140, 140)
     doc.text('Yapıldı ✓   Eksik ~   Yapılmadı ✗   Geç G   Mazeretli M   — Girilmedi', margin, legendY)
 
-    await filigranEkle(doc, okulAdi)
+    await filigranEkle(doc)
     doc.save(`${safeClassName}_donem_raporu.pdf`)
   }
 

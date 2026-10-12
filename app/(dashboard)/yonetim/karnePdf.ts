@@ -107,6 +107,6 @@ export async function buildKarnePdf(data: OkulKarnesi): Promise<void> {
     doc.text(`${i} / ${n}`, doc.internal.pageSize.getWidth() - SOL, doc.internal.pageSize.getHeight() - 20, { align: 'right' })
   }
 
-  await filigranEkle(doc, data.schoolName)
+  await filigranEkle(doc)
   doc.save(`okul-karnesi-${format(new Date(data.generatedAt), 'yyyy-MM-dd')}.pdf`)
 }

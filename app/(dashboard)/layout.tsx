@@ -64,7 +64,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <ToastProvider>
       <UsageTracker />
-      <Filigran metin={profile?.schools?.name} />
+      <Filigran />
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         {/* flex: içindeki <aside> satırın tam yüksekliğine uzasın (yoksa beyaz menü içerik bitince kesilir) */}
         <div className="flex print:hidden">

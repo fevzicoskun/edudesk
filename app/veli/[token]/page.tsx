@@ -129,7 +129,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
-      <Filigran metin={okulAdi} />
+      <Filigran />
       {/* print:!block — globals.css uygulama üst çubuğu için tüm <header>'ları kâğıtta gizliyor; burada öğrenci adı var */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10 print:!block print:static print:border-0">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">

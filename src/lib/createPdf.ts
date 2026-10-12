@@ -35,23 +35,27 @@ export async function createDoc(
   return doc
 }
 
-/** Her sayfaya çapraz, soluk okul adı (en son çağrılır: tablo zeminlerinin üstünde, yarı saydam). */
-export async function filigranEkle(doc: InstanceType<typeof JsPDF>, metin: string | null | undefined): Promise<void> {
-  if (!metin) return
+let filigranB64: string | null = null
+
+/** Her sayfanın ortasına soluk okul logosu (en son çağrılır: tablo zeminlerinin üstünde, yarı saydam).
+ *  Opaklık yazdırılan sayfalarla aynı (globals.css .filigran). Logo yüklenemezse PDF filigransız iner. */
+export async function filigranEkle(doc: InstanceType<typeof JsPDF>): Promise<void> {
+  try {
+    if (!filigranB64) filigranB64 = await toBase64('/filigran.png')
+  } catch {
+    return
+  }
   const { GState } = await import('jspdf')
-  const aci = 35
-  const rad = (aci * Math.PI) / 180
+  const { width: iw, height: ih } = doc.getImageProperties(filigranB64)
   for (let i = 1; i <= doc.getNumberOfPages(); i++) {
     doc.setPage(i)
     const w = doc.internal.pageSize.getWidth()
     const h = doc.internal.pageSize.getHeight()
+    const gen = Math.min(w, h) * 0.5
+    const yuk = gen * (ih / iw)
     doc.saveGraphicsState()
-    doc.setGState(new GState({ opacity: 0.07 }))
-    doc.setFontSize(54)
-    doc.setTextColor(0, 0, 0)
-    // Döndürülmüş yazının ortası sayfa ortasına gelsin (align:center açıyla güvenilir değil)
-    const yari = doc.getTextWidth(metin) / 2
-    doc.text(metin, w / 2 - Math.cos(rad) * yari, h / 2 + Math.sin(rad) * yari, { angle: aci })
+    doc.setGState(new GState({ opacity: 0.06 }))
+    doc.addImage(filigranB64, 'PNG', (w - gen) / 2, (h - yuk) / 2, gen, yuk, 'filigran')
     doc.restoreGraphicsState()
   }
 }
