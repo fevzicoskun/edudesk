@@ -20,6 +20,9 @@ const Sorgu = z.discriminatedUnion('tur', [
 ])
 const BASLIKLAR = { 'Cache-Control': 'private, no-store' }
 const font = (ad: string) => readFile(path.join(process.cwd(), 'assets/fonts', ad))
+// Okul logosu filigranı — baskıdaki ile aynı dosya ve opaklık (globals.css .filigran, createPdf filigranEkle)
+const FILIGRAN_G = 540, FILIGRAN_Y = Math.round(540 * 382 / 402)
+const filigran = () => readFile(path.join(process.cwd(), 'public/filigran.png')).then(b => `data:image/png;base64,${b.toString('base64')}`)
 
 export async function GET(req: Request) {
   const ability = await getAbility()
@@ -48,7 +51,15 @@ export async function GET(req: Request) {
         ? gorselYuksekligi('odevler', { gunler: sinif.gunler.map(g => g.odevler.length) })
         : gorselYuksekligi('ozet', { ozet: sinif.ozet.length })
     }
-    const [normal, kalin] = await Promise.all([font('BricolageGrotesque-Regular.ttf'), font('BricolageGrotesque-ExtraBold.ttf')])
+    const [normal, kalin, logo] = await Promise.all([font('BricolageGrotesque-Regular.ttf'), font('BricolageGrotesque-ExtraBold.ttf'), filigran()])
+    el = (
+      <div style={{ display: 'flex', position: 'relative', width: '100%', height: '100%' }}>
+        {el}
+        {/* eslint-disable-next-line @next/next/no-img-element -- Satori yalnız <img> çizer */}
+        <img src={logo} width={FILIGRAN_G} height={FILIGRAN_Y} alt=""
+          style={{ position: 'absolute', left: (1080 - FILIGRAN_G) / 2, top: (height - FILIGRAN_Y) / 2, opacity: 0.06 }} />
+      </div>
+    )
     // ImageResponse çizimi akış içinde yapar; burada tamamen okunur ki çizim hatası da catch'e düşsün (200 + kopuk gövde olmasın)
     const png = await new ImageResponse(el, {
       width: 1080, height,

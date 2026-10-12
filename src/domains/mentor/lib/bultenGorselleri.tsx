@@ -36,9 +36,7 @@ const Baslik = ({ sinif, ust, alt }: { sinif: string; ust: string; alt: string[]
   </div>
 )
 const Alt = ({ okul }: { okul: string }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 28, fontSize: 25, color: C.soft }}>
-    <span>{okul}</span><span>EduDesk</span>
-  </div>
+  <div style={{ display: 'flex', marginTop: 28, fontSize: 25, color: C.soft }}>{okul}</div>
 )
 const Kart = ({ children }: { children: React.ReactNode }) => (
   <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', padding: '60px 60px 44px', background: '#fff', color: C.ink, fontFamily: 'Bricolage' }}>{children}</div>
