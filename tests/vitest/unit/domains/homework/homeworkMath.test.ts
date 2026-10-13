@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, basHarfleriBuyut, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
+import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, basHarfleriBuyut, gunEkle, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
 
 const BUGUN = new Date('2026-09-19T12:00:00+03:00')
 
@@ -157,5 +157,16 @@ describe('basHarfleriBuyut', () => {
   })
   it('satır sonları ve boşluklar korunur', () => {
     expect(basHarfleriBuyut('sayfa 1\n  test 2')).toBe('Sayfa 1\n  Test 2')
+  })
+})
+
+describe('gunEkle', () => {
+  it('ISO tarihe gün ekler, ay ve yıl sınırını geçer', () => {
+    expect(gunEkle('2026-10-14', 1)).toBe('2026-10-15')
+    expect(gunEkle('2026-10-28', 10)).toBe('2026-11-07')
+    expect(gunEkle('2026-12-25', 14)).toBe('2027-01-08')
+  })
+  it('yaz saati / saat dilimi kayması yapmaz', () => {
+    expect(gunEkle('2026-03-28', 1)).toBe('2026-03-29')
   })
 })

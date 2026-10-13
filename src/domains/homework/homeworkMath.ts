@@ -94,3 +94,10 @@ export function onerilenBaslik(kaynak: string, sayfa: string): string {
   if (s) return `s.${s}`
   return ''
 }
+
+/** 'YYYY-MM-DD' + n gün. UTC'de hesaplar — yerel saat dilimi/yaz saati günü kaydırmasın. */
+export function gunEkle(iso: string, gun: number): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + gun)
+  return d.toISOString().slice(0, 10)
+}

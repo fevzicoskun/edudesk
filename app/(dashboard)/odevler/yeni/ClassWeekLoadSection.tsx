@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getClassWeekLoad } from '@/app/actions/homework'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
+import HizliTeslim from '@/components/homework/HizliTeslim'
 
 function todayISO() {
   return new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
@@ -66,6 +67,9 @@ export default function ClassWeekLoadSection({
             onChange={e => setDueDate(e.target.value)}
           />
         </div>
+      </div>
+      <div className="-mt-2">
+        <HizliTeslim baslangic={verildigi} deger={dueDate} onSec={setDueDate} />
       </div>
       {verildigi < todayISO() && (
         <p className="text-xs text-amber-700 dark:text-amber-400 -mt-2">

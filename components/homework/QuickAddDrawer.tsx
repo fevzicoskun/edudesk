@@ -7,6 +7,7 @@ import { quickCreateHomework, getHomeworkTemplates } from '@/app/actions/homewor
 import { getMyClasses } from '@/app/actions/classes'
 import type { HomeworkTemplate } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
+import HizliTeslim from './HizliTeslim'
 
 type ClassItem = { id: string; name: string; grade: number | null }
 
@@ -38,8 +39,9 @@ export default function QuickAddDrawer() {
   const { toast }                             = useToast()
   const pathname                              = usePathname()
 
-  // Yoklama ekranında ödev FAB'ı hem alakasız hem de satır aksiyon butonlarını kapatıyor → gizle
-  const hidden = pathname?.startsWith('/yoklama') ?? false
+  // Yoklama ekranında ödev FAB'ı hem alakasız hem de satır aksiyon butonlarını kapatıyor → gizle.
+  // Ödev oluşturma formunda zaten formdasın; FAB sabit "Ödev Oluştur" düğmesinin üstüne biniyordu.
+  const hidden = (pathname?.startsWith('/yoklama') || pathname === '/odevler/yeni') ?? false
 
   useEffect(() => {
     if (!open || classes.length > 0) return
@@ -256,6 +258,9 @@ export default function QuickAddDrawer() {
               min={today}
               className={`mt-1.5 ${INPUT}`}
             />
+            <div className="mt-2">
+              <HizliTeslim baslangic={today} deger={dueDate} onSec={setDueDate} />
+            </div>
           </div>
 
           {/* Veli bildirimi */}

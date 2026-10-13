@@ -81,7 +81,7 @@ export default function HomeworkForm({
   const submitDisabled = isPending || (!isTemplate && selectedClasses.length === 0)
 
   return (
-    <div className="rounded-2xl overflow-hidden bg-white border border-gray-200 shadow-sm">
+    <div className="rounded-2xl overflow-clip bg-white border border-gray-200 shadow-sm">
 
       {/* Şablondan / kopyadan oluşturmada bağlam satırı (sayfa başlığı zaten "Ödev Oluştur") */}
       {defaults && (
@@ -268,10 +268,11 @@ export default function HomeworkForm({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 bg-gray-50/70 border-t border-gray-100 flex flex-col-reverse sm:flex-row gap-3">
+        {/* Telefonda uzun formda düğme hep görünsün; masaüstünde normal akış */}
+        <div className="sticky bottom-0 z-10 sm:static px-6 py-4 bg-gray-50 sm:bg-gray-50/70 border-t border-gray-100 flex flex-row gap-3">
           <Link
             href="/odevler"
-            className="flex-1 text-center px-5 py-3 border border-gray-200 bg-white rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
+            className="hidden sm:block flex-1 text-center px-5 py-3 border border-gray-200 bg-white rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200"
           >
             İptal
           </Link>
