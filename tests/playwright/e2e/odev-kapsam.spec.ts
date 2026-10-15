@@ -92,6 +92,33 @@ test.describe('Ödev görünürlük kapsamı', () => {
     })
   })
 
+  // 2026-10-15: PDR/rehber branşlı öğretmen tüm ödevleri salt okunur görür, meslektaş karşılaştırmasını görmez
+  test.describe('PDR öğretmeni', () => {
+    test.use({ storageState: auth('ogretmen') })
+    test('tüm ödevleri görür, başkasınınkini düzenleyemez, öğretmen karşılaştırması yok', async ({ page }) => {
+      const ogretmenId = await profilId(process.env.TEST_EMAIL_OGRETMEN ?? 'test_ogretmen@test.example')
+      const { data: once } = await db.from('profiles').select('subject').eq('id', ogretmenId).single()
+      await db.from('profiles').update({ subject: 'PDR' }).eq('id', ogretmenId)
+      try {
+        const g = await gorunenBasliklar(page)
+        expect(g.ogr).toBeGreaterThan(0)
+        expect(g.zb).toBeGreaterThan(0)
+        expect(g.mudur).toBeGreaterThan(0)
+
+        await page.goto(`/odevler/${ids.zb}`)
+        await expect(page.getByRole('heading', { name: baslik.zb })).toBeVisible({ timeout: 20_000 })
+        await expect(page.locator(`a[href="/odevler/${ids.zb}/duzenle"]`)).toHaveCount(0)
+
+        await page.goto('/odevler/analitik')
+        await expect(page.locator('main')).toBeVisible({ timeout: 20_000 })
+        await expect(page.getByRole('heading', { name: 'Öğrenci Sicili' }).or(page.locator('main h1')).first()).toBeVisible({ timeout: 20_000 })
+        await expect(page.getByRole('heading', { name: 'Öğretmen Karşılaştırması' })).toHaveCount(0)
+      } finally {
+        await db.from('profiles').update({ subject: once!.subject }).eq('id', ogretmenId)
+      }
+    })
+  })
+
   test.describe('müdür', () => {
     test.use({ storageState: auth('mudur') })
     test('tüm ödevleri görür', async ({ page }) => {
