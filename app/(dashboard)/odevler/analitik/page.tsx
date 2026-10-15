@@ -36,8 +36,9 @@ export default async function AnalitikPage() {
 
   const sid       = profile.school_id
   const kapsam    = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [user.id] }
-  // Öğretmen karşılaştırması birden çok öğretmeni görenlere (zümre başkanı, yönetim)
-  const isManager = kapsam.tumu || kapsam.ogretmenIds.length > 1
+  // Öğretmen karşılaştırması birden çok öğretmeni görenlere (zümre başkanı, yönetim).
+  // PDR öğretmeni (rol ogretmen) tüm ödevleri görür ama meslektaş karşılaştırmasını görmez.
+  const isManager = profile.role !== 'ogretmen' && (kapsam.tumu || kapsam.ogretmenIds.length > 1)
   const supabase  = await createClient()
 
   let hwQuery = supabase

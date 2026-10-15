@@ -26,6 +26,17 @@ describe('odevKapsami()', () => {
     expect(!k.tumu && [...k.ogretmenIds].sort()).toEqual(['m1', 'm2', 'zb'])
   })
 
+  it('PDR / rehber öğretmen tüm okulun ödevlerini görür (salt okunur rehberlik)', () => {
+    for (const subject of ['PDR', ' pdr ', 'Rehberlik', 'Rehber Öğretmen', 'Psikolojik Danışmanlık ve Rehberlik']) {
+      expect(odevKapsami({ id: 'r', role: 'ogretmen', subject }, okul)).toEqual({ tumu: true })
+    }
+  })
+
+  it('branşı rehberlik dışı öğretmen tüm okula açılmaz', () => {
+    expect(odevKapsami({ id: 'x', role: 'ogretmen', subject: 'Din Kültürü' }, okul))
+      .toEqual({ tumu: false, ogretmenIds: ['x'] })
+  })
+
   it('branşı boş zümre başkanı yalnız kendini görür (tüm okula açılmaz)', () => {
     expect(odevKapsami({ id: 'zb', role: 'zumre_baskani', subject: '  ' }, okul))
       .toEqual({ tumu: false, ogretmenIds: ['zb'] })
