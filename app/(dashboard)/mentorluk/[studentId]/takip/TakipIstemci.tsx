@@ -10,11 +10,12 @@ import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 import { useOtoKayit, type KayitDurumu } from './useOtoKayit'
 import PlanSekmesi from './PlanSekmesi'
 import SonucSekmesi from './SonucSekmesi'
+import VeliSekmesi from './VeliSekmesi'
 
 export type Sekme = 'plan' | 'sonuc' | 'veli' | 'dosya'
 export type SekmeProps = { v: SayfaVerisi; veri: HaftaVerisi; degistir: (f: (h: HaftaVerisi) => HaftaVerisi, hemen?: boolean) => void }
 // Task 6: sonuc: 'Sonuç' · Task 8: veli: 'Veli mesajı' · Task 9: dosya: 'Öğrenci dosyası'
-const SEKME_ADI: Partial<Record<Sekme, string>> = { plan: 'Plan', sonuc: 'Sonuç' }
+const SEKME_ADI: Partial<Record<Sekme, string>> = { plan: 'Plan', sonuc: 'Sonuç', veli: 'Veli mesajı' }
 
 function Durum({ d, tekrar }: { d: KayitDurumu; tekrar: () => void }) {
   if (d.tur === 'kaydediliyor') return <span role="status" className="text-sm text-gray-500 dark:text-slate-400">Kaydediliyor…</span>
@@ -63,6 +64,7 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
       )}
       {sekme === 'plan' && <PlanSekmesi {...props} />}
       {sekme === 'sonuc' && <SonucSekmesi {...props} />}
+      {sekme === 'veli' && <VeliSekmesi {...props} />}
     </div>
   )
 }

@@ -11,7 +11,7 @@ import {
 } from '../takip/takipMath'
 
 export type SayfaVerisi = {
-  ogrenci: { id: string; ad: string; sinifAdi: string; sinif: number; classId: string }
+  ogrenci: { id: string; ad: string; sinifAdi: string; sinif: number; classId: string; veliTelefon: string | null }
   hafta: string
   kayit: { veri: HaftaVerisi; updatedAt: string } | null
   taslak: HaftaVerisi
@@ -19,6 +19,8 @@ export type SayfaVerisi = {
   kitaplar: { id: string; ad: string; ders: string }[]
   okulOdevleri: OkulOdevi[]
   konular: { id: string; ders: string; ad: string; grup: string | null }[]
+  /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
+  konuDurumu: Record<string, number>
   mentorAdi: string
   okulAdi: string
 }
@@ -49,18 +51,19 @@ export const TakipService = {
     if (!o) return null
     const sinifBilgi = o.classes as { name: string; grade: number } | null
     const sinif = sinifBilgi?.grade ?? 9
-    const [kayit, onceki, kitaplar, profil, profile] = await Promise.all([
+    const [kayit, onceki, kitaplar, profil, profile, durumlar] = await Promise.all([
       R.hafta(ab.schoolId, studentId, hafta),
       R.oncekiHafta(ab.schoolId, studentId, hafta),
       R.kitaplar(ab.schoolId, studentId),
       HomeworkService.getStudentHomeworkProfile(studentId, o.class_id, { tumOdevler: true }),
       getCurrentProfile(),
+      R.konuDurumlari(ab.schoolId, studentId),
     ])
     if ('error' in profil) throw new Error(profil.error)
     if (sinif in MATEMATIK_KONULARI) await R.konuTohumla(ab.schoolId, ab.userId, sinif, MATEMATIK_KONULARI[sinif as 9])
     const konular = await R.konular(ab.schoolId, sinif)
     return {
-      ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id },
+      ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id, veliTelefon: o.veli_telefon },
       hafta,
       kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at } : null,
       // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
@@ -69,6 +72,7 @@ export const TakipService = {
       kitaplar,
       okulOdevleri: okulOdevleri(profil.homeworks, hafta),
       konular,
+      konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
       mentorAdi: profile?.full_name ?? '',
       okulAdi: profile?.schools?.name ?? '',
     }

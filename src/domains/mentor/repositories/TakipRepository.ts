@@ -23,7 +23,7 @@ export const TakipRepository = {
 
   async ogrenci(schoolId: string, studentId: string) {
     const db = await createClient()
-    const { data, error } = await db.from('students').select('id, full_name, class_id, classes(name, grade)')
+    const { data, error } = await db.from('students').select('id, full_name, class_id, veli_telefon, classes(name, grade)')
       .eq('id', studentId).eq('school_id', schoolId).is('deleted_at', null).maybeSingle()
     if (error) throw new Error(error.message)
     return data
@@ -100,6 +100,13 @@ export const TakipRepository = {
       konular.map((k, i) => ({ school_id: schoolId, ders: 'Matematik', sinif, ad: k.ad, grup: k.grup, sira: i, created_by: userId })),
       { onConflict: 'school_id,ders,sinif,ad', ignoreDuplicates: true })
     if (error) throw new Error(error.message)
+  },
+
+  async konuDurumlari(schoolId: string, studentId: string) {
+    const db = await createClient()
+    const { data, error } = await db.from('ogrenci_konu_durumu').select('konu_id, durum').eq('school_id', schoolId).eq('student_id', studentId)
+    if (error) throw new Error(error.message)
+    return data ?? []
   },
 
   async durumlar(schoolId: string, studentIds: string[], hafta: string) {

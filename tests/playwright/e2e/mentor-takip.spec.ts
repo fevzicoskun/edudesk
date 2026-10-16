@@ -112,3 +112,11 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
 })
+test('veli mesajı ve veli raporu', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
+  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/Sayın Veli, .+ için 19–23 Ekim haftasının özeti/)
+  await expect(page.getByRole('link', { name: "WhatsApp'ta gönder" })).toHaveAttribute('href', /wa\.me/)
+  await page.goto(`/mentorluk/${ogrId}/takip/veli-raporu?hafta=2026-10-19`)
+  await expect(page.getByRole('heading', { name: 'Haftalık Mentörlük Raporu' })).toBeVisible()
+  await expect(page.locator('.filigran img')).toHaveCount(1)
+})
