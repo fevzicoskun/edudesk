@@ -7,7 +7,7 @@ import { kaydetSchema } from '../validators/takip'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
   yeniHafta, ozetHesapla, okulOdevleri, BOS_GORUSME,
-  type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevi,
+  type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevi, type Okuma,
 } from '../takip/takipMath'
 
 export type SayfaVerisi = {
@@ -21,6 +21,8 @@ export type SayfaVerisi = {
   konular: { id: string; ders: string; ad: string; grup: string | null }[]
   /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
   konuDurumu: Record<string, number>
+  /** yalnız Öğrenci dosyası sekmesinde dolu (gecmis: true) */
+  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null }[]
   mentorAdi: string
   okulAdi: string
 }
@@ -44,20 +46,21 @@ async function yetki(studentId: string) {
 export const TakipService = {
   acikMi: () => R.acikMi(),
 
-  async sayfaVerisi(studentId: string, hafta: string): Promise<SayfaVerisi | null> {
+  async sayfaVerisi(studentId: string, hafta: string, { gecmis = false }: { gecmis?: boolean } = {}): Promise<SayfaVerisi | null> {
     const ab = await yetki(studentId)
     if (!ab) return null
     const o = await R.ogrenci(ab.schoolId, studentId)
     if (!o) return null
     const sinifBilgi = o.classes as { name: string; grade: number } | null
     const sinif = sinifBilgi?.grade ?? 9
-    const [kayit, onceki, kitaplar, profil, profile, durumlar] = await Promise.all([
+    const [kayit, onceki, kitaplar, profil, profile, durumlar, gecmisSat] = await Promise.all([
       R.hafta(ab.schoolId, studentId, hafta),
       R.oncekiHafta(ab.schoolId, studentId, hafta),
       R.kitaplar(ab.schoolId, studentId),
       HomeworkService.getStudentHomeworkProfile(studentId, o.class_id, { tumOdevler: true }),
       getCurrentProfile(),
       R.konuDurumlari(ab.schoolId, studentId),
+      gecmis ? R.gecmis(ab.schoolId, studentId) : Promise.resolve([]),
     ])
     if ('error' in profil) throw new Error(profil.error)
     if (sinif in MATEMATIK_KONULARI) await R.konuTohumla(ab.schoolId, ab.userId, sinif, MATEMATIK_KONULARI[sinif as 9])
@@ -73,6 +76,10 @@ export const TakipService = {
       okulOdevleri: okulOdevleri(profil.homeworks, hafta),
       konular,
       konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
+      gecmis: gecmisSat.map(r => ({
+        hafta: r.hafta_basi, seviye: r.seviye as Seviye, okuma: (r.icerik as unknown as Icerik).okuma,
+        ozet: { gorev_toplam: r.gorev_toplam, gorev_yapilan: r.gorev_yapilan, soru: r.soru, dogru: r.dogru, okuma_sayfa: r.okuma_sayfa, islendi: r.islendi },
+      })),
       mentorAdi: profile?.full_name ?? '',
       okulAdi: profile?.schools?.name ?? '',
     }
@@ -103,6 +110,21 @@ export const TakipService = {
     if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
     const { error } = await R.kitapSil(ab.schoolId, studentId, kitapId)
     return error ? { error: 'Kitap silinemedi.' } : {}
+  },
+
+  async konuEkle(studentId: string, ders: string, ad: string) {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    const o = await R.ogrenci(ab.schoolId, studentId)
+    const sinif = (o?.classes as { grade: number } | null)?.grade ?? 9
+    const { error } = await R.konuEkle(ab.schoolId, ab.userId, ders, sinif, ad)
+    return error ? { error: 'Konu eklenemedi.' } : {}
+  },
+  async konuDurumuYaz(studentId: string, konuId: string, durum: 0 | 1 | 2) {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    const { error } = await R.konuDurumuYaz(ab.schoolId, studentId, konuId, durum)
+    return error ? { error: 'Kaydedilemedi.' } : {}
   },
 
   async durumlar(studentIds: string[], hafta: string) {

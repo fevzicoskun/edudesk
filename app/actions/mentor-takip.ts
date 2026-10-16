@@ -28,3 +28,16 @@ export async function kitapSil(studentId: string, kitapId: string): Promise<Acti
   if (!r.error) revalidatePath(`/mentorluk/${studentId}/takip`)
   return r
 }
+
+const konuSchema = z.object({ studentId: UUID, ders: z.string().trim().min(1).max(60), ad: z.string().trim().min(1, 'Konu adı boş olamaz').max(120) })
+export async function konuEkle(studentId: string, ders: string, ad: string): Promise<ActionResult> {
+  const p = konuSchema.safeParse({ studentId, ders, ad })
+  if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const r = await TakipService.konuEkle(p.data.studentId, p.data.ders, p.data.ad)
+  if (!r.error) revalidatePath(`/mentorluk/${studentId}/takip`)
+  return r
+}
+export async function konuDurumu(studentId: string, konuId: string, durum: number): Promise<ActionResult> {
+  if (!UUID.safeParse(studentId).success || !UUID.safeParse(konuId).success || ![0, 1, 2].includes(durum)) return { error: 'Geçersiz veri' }
+  return TakipService.konuDurumuYaz(studentId, konuId, durum as 0 | 1 | 2)
+}

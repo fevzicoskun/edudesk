@@ -109,6 +109,24 @@ export const TakipRepository = {
     return data ?? []
   },
 
+  async gecmis(schoolId: string, studentId: string) {
+    const db = await createClient()
+    const { data, error } = await db.from('mentor_haftalari')
+      .select('hafta_basi, seviye, icerik, gorev_toplam, gorev_yapilan, soru, dogru, okuma_sayfa, islendi')
+      .eq('school_id', schoolId).eq('student_id', studentId).order('hafta_basi').limit(200)
+    if (error) throw new Error(error.message)
+    return data ?? []
+  },
+  async konuEkle(schoolId: string, userId: string, ders: string, sinif: number, ad: string) {
+    const db = await createClient()
+    return db.from('konu_listesi').upsert({ school_id: schoolId, ders, sinif, ad, created_by: userId, sira: 1000 },
+      { onConflict: 'school_id,ders,sinif,ad', ignoreDuplicates: true }).select('id, ders, ad, grup')
+  },
+  async konuDurumuYaz(schoolId: string, studentId: string, konuId: string, durum: number) {
+    const db = await createClient()
+    return db.from('ogrenci_konu_durumu').upsert({ school_id: schoolId, student_id: studentId, konu_id: konuId, durum, updated_at: new Date().toISOString() })
+  },
+
   async durumlar(schoolId: string, studentIds: string[], hafta: string) {
     const db = await createClient()
     const { data, error } = await db.from('mentor_haftalari').select('student_id, islendi, gorev_toplam, gorev_yapilan')

@@ -102,3 +102,14 @@ export function okulOdevleri(kayitlar: HomeworkRecord[], pazartesi: string): Oku
 
 export type HaftaDurumu = 'yok' | 'kagitta' | 'islendi'
 export const haftaDurumu = (s: { islendi: boolean } | null): HaftaDurumu => (!s ? 'yok' : s.islendi ? 'islendi' : 'kagitta')
+
+export function okumaGecmisi(haftalar: { hafta: string; okuma: Okuma | null }[]) {
+  const out: { kitap: string; bas: string; son: string; sayfa: number; bitti: boolean }[] = []
+  for (const { hafta, okuma } of haftalar) {
+    if (!okuma) continue
+    const son = out.at(-1)
+    if (son && son.kitap === okuma.kitap && !son.bitti) { son.son = hafta; son.sayfa += okuma.sayfa ?? 0; son.bitti = okuma.bitti }
+    else out.push({ kitap: okuma.kitap, bas: hafta, son: hafta, sayfa: okuma.sayfa ?? 0, bitti: okuma.bitti })
+  }
+  return out
+}

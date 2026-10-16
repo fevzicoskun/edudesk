@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
-  yeniHafta, okulOdevleri, haftaDurumu, BOS_GORUSME, type Icerik, type Gorev,
+  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -112,4 +112,18 @@ describe('şablonlar', () => {
     expect(t.find(x => x.ad === 'Matematik: yanlışların çözümü')).toMatchObject({ ders: 'Matematik', soruSatiri: false })
   })
   it('konu listeleri dolu', () => { for (const s of [9, 10, 11, 12] as const) expect(MATEMATIK_KONULARI[s].length).toBeGreaterThan(5) })
+})
+
+describe('okumaGecmisi', () => {
+  it('aynı kitap birleşir, sayfalar toplanır, bitti işaretlenir', () => {
+    expect(okumaGecmisi([
+      { hafta: '2026-10-05', okuma: { kitap: 'A', sayfa: 50, bitti: false } },
+      { hafta: '2026-10-12', okuma: { kitap: 'A', sayfa: 70, bitti: true } },
+      { hafta: '2026-10-19', okuma: { kitap: 'B', sayfa: null, bitti: false } },
+      { hafta: '2026-10-26', okuma: null },
+    ])).toEqual([
+      { kitap: 'A', bas: '2026-10-05', son: '2026-10-12', sayfa: 120, bitti: true },
+      { kitap: 'B', bas: '2026-10-19', son: '2026-10-19', sayfa: 0, bitti: false },
+    ])
+  })
 })
