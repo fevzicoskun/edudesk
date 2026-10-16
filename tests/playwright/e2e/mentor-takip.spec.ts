@@ -169,6 +169,29 @@ test('toplu kâğıt: planı olan öğrenci ayrı sayfada', async ({ page }) => 
   await expect(page.locator('section.break-after-page')).not.toHaveCount(0)
 })
 
+test('toplu kâğıt: bu haftaya dokunulmamış ama planı geçen haftadan devam eden öğrenci de çıkar', async ({ page }) => {
+  await page.goto('/mentorluk/takip-kagitlari?hafta=2026-10-26')
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  await expect(page.getByRole('region', { name: o!.full_name })).toBeVisible({ timeout: 20_000 })
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', '2026-10-26')).data).toHaveLength(0)
+})
+
+test('yazdır: son yazılan konu hemen basılan kâğıda girer (kayıt/okuma yarışı yok)', async ({ page, context }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
+  await page.getByLabel('Konu').first().fill('E2E yarış konusu')
+  const [kagit] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Kâğıdı yazdır' }).click()])
+  await expect(kagit.getByRole('table', { name: 'Program' })).toContainText('E2E yarış konusu', { timeout: 20_000 })
+  await kagit.close()
+})
+
+test('kayıt hatasının nedeni ekranda görünür (boş görev adı)', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
+  await page.getByLabel('Görev').first().fill('')
+  await expect(page.getByRole('alert').filter({ hasText: 'Görev adı boş olamaz' })).toBeVisible({ timeout: 15_000 })
+  await page.getByLabel('Sayfa').first().click() // alandan çık → ad "Görev" olarak geri dolar, kayıt düzelir
+  await expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
+})
+
 test.describe('idare', () => {
   test.use({ storageState: AUTH('mudur') })
   test('idare özet rakamı görür, görüşme notu görünmez', async ({ page }) => {

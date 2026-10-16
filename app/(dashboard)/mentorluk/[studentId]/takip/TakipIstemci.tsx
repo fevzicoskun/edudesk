@@ -14,15 +14,19 @@ import VeliSekmesi from './VeliSekmesi'
 import DosyaSekmesi from './DosyaSekmesi'
 
 export type Sekme = 'plan' | 'sonuc' | 'veli' | 'dosya'
-export type SekmeProps = { v: SayfaVerisi; veri: HaftaVerisi; degistir: (f: (h: HaftaVerisi) => HaftaVerisi, hemen?: boolean) => void }
+export type SekmeProps = {
+  v: SayfaVerisi; veri: HaftaVerisi; degistir: (f: (h: HaftaVerisi) => HaftaVerisi, hemen?: boolean) => void
+  /** Bekleyen kaydı yaz; true = kaydedildi (yazdırmadan önce) */
+  bosalt: () => Promise<boolean>
+}
 // Task 6: sonuc: 'Sonuç' · Task 8: veli: 'Veli mesajı' · Task 9: dosya: 'Öğrenci dosyası'
 const SEKME_ADI: Partial<Record<Sekme, string>> = { plan: 'Plan', sonuc: 'Sonuç', veli: 'Veli mesajı', dosya: 'Öğrenci dosyası' }
 
 function Durum({ d, tekrar }: { d: KayitDurumu; tekrar: () => void }) {
   if (d.tur === 'kaydediliyor') return <span role="status" className="text-sm text-gray-500 dark:text-slate-400">Kaydediliyor…</span>
   if (d.tur === 'kaydedildi') return <span role="status" className="text-sm text-green-700 dark:text-green-400">Kaydedildi · {d.saat}</span>
-  if (d.tur === 'cakisma') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Başka bir ekranda değişti — <button className="underline" onClick={() => location.reload()}>yenileyin</button></span>
-  if (d.tur === 'hata') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Kaydedilemedi · <button className="underline" onClick={tekrar}>Tekrar dene</button></span>
+  if (d.tur === 'cakisma') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Başka bir ekranda değişti ya da bu sayfa eski kaldı; son değişiklikler kaydedilmedi — <button className="underline" onClick={() => location.reload()}>yenileyin</button></span>
+  if (d.tur === 'hata') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Kaydedilemedi: {d.mesaj} · <button className="underline" onClick={tekrar}>Tekrar dene</button></span>
   return null
 }
 
@@ -35,7 +39,7 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
   const { durum, anlik, bosalt } = useOtoKayit(veri, kaydet, v.kayit?.updatedAt ?? null)
   const degistir: SekmeProps['degistir'] = (f, hemen) => { if (hemen) anlik(); setVeri(f) }
   const url = (hafta: string, s: Sekme = sekme) => `/mentorluk/${v.ogrenci.id}/takip?hafta=${hafta}&sekme=${s}`
-  const props: SekmeProps = { v, veri, degistir }
+  const props: SekmeProps = { v, veri, degistir, bosalt }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -51,7 +55,7 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
           <Link aria-label="Sonraki hafta" onClick={bosalt} href={url(shiftWeek(v.hafta, 1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">›</Link>
           <Link onClick={bosalt} href={url(weekStartOf(todayLocalISO()))} className="text-sm text-blue-600 hover:underline">Bu hafta</Link>
         </div>
-        <Durum d={durum} tekrar={bosalt} />
+        <Durum d={durum} tekrar={() => void bosalt()} />
       </div>
       {Object.keys(SEKME_ADI).length > 1 && (
         <nav aria-label="Takip sekmeleri" className="flex gap-1 border-b border-gray-200 dark:border-slate-700 mb-5 overflow-x-auto">

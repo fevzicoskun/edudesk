@@ -20,9 +20,10 @@ export default async function TakipKagitlariPage({ searchParams }: { searchParam
   const h = (await searchParams).hafta
   const hafta = h && pazartesiMi(h) ? h : weekStartOf(todayLocalISO())
   const rows = await MentorService.getMyMentorships()
-  const durum = await TakipService.durumlar(rows.map(r => r.student_id), hafta)
+  // Bu haftaya dokunulmamış ama planı geçen haftadan devam eden öğrenci de dahil (taslak = geçen haftanın kopyası)
+  const planli = await TakipService.planliOgrenciler(rows.map(r => r.student_id), hafta)
   // ponytail: öğrenci başına sayfaVerisi (birkaç sorgu); 40+ öğrencide toplu sorguya geç
-  const veriler = (await Promise.all(rows.filter(r => durum.has(r.student_id)).map(r => TakipService.sayfaVerisi(r.student_id, hafta))))
+  const veriler = (await Promise.all(rows.filter(r => planli.has(r.student_id)).map(r => TakipService.sayfaVerisi(r.student_id, hafta))))
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => a.ogrenci.ad.localeCompare(b.ogrenci.ad, 'tr'))
   return (
@@ -31,7 +32,7 @@ export default async function TakipKagitlariPage({ searchParams }: { searchParam
         <div>
           <Link href="/mentorluk" className="text-sm text-gray-600 dark:text-slate-400 hover:text-blue-600">← Mentörlüğüm</Link>
           <h1 className="text-lg font-bold mt-1">Haftalık planlar · {haftaEtiketi(hafta)}</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400">{veriler.length} öğrenci · planı olmayanlar listede yok</p>
+          <p className="text-sm text-gray-500 dark:text-slate-400">{veriler.length} öğrenci · hiç planı olmayanlar listede yok</p>
         </div>
         {veriler.length > 0 && <PrintButton />}
       </div>

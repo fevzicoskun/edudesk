@@ -32,9 +32,21 @@ describe('takipVeliMesaji', () => {
     expect(m).toContain('• İyi giden: Düzenli')
     expect(m).toContain('Evde sizden ricam: Telefonu akşam alın')
   })
-  it('hiç işlenmemiş hafta → program satırı yok', () => {
+  it('görev listesi boş → program satırı yok', () => {
     const g = temel(); g.veri.icerik.gorevler = []
     expect(takipVeliMesaji(g)).not.toContain('• Program')
+  })
+  it('işlenmemiş hafta (hiç ✓/soru yok) → "0 tanesini (%0)" yazmaz', () => {
+    const g = temel(); g.veri.icerik.gorevler = g.veri.icerik.gorevler.map(x => ({ ...x, yapti: false, soru: null, dogru: null }))
+    expect(takipVeliMesaji(g)).not.toContain('• Program')
+  })
+  it('program yüzdesi mentör ödevlerini de sayar (veli raporu kutusuyla aynı)', () => {
+    const g = temel()
+    g.veri.icerik.mentorOdevleri = [
+      { id: 'm1', kitapId: null, kitapAdi: 'K', konu: '', sayfalar: '', yapti: true },
+      { id: 'm2', kitapId: null, kitapAdi: 'K', konu: '', sayfalar: '', yapti: true },
+    ]
+    expect(takipVeliMesaji(g)).toContain('• Program: 6 görevin 5 tanesini tamamladı (%83).')
   })
 })
 

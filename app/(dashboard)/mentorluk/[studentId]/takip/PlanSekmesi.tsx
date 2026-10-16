@@ -1,6 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
-import Link from 'next/link'
+import YazdirBaglantisi from './YazdirBaglantisi'
 import { kitapEkle, kitapSil } from '@/app/actions/mentor-takip'
 import { GUNLER, SEVIYE_ADI, miktarYaz, varsayilanHedef, type Gorev, type Seviye } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu } from '@/src/domains/mentor/takip/sablonlar'
@@ -10,7 +10,7 @@ import type { SekmeProps } from './TakipIstemci'
 const kutu = 'w-full rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
 const yeniId = () => crypto.randomUUID()
 
-export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
+export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
   const [kitaplar, setKitaplar] = useState(v.kitaplar)
   const [kitapAdi, setKitapAdi] = useState(''); const [kitapDers, setKitapDers] = useState('')
   const [hata, setHata] = useState<string | null>(null)
@@ -40,7 +40,7 @@ export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
           onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Bu haftaki görevler silinir.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: sinifSablonu(v.ogrenci.sinif) } }), true) }}>
           Sınıf şablonuna dön
         </button>
-        <Link href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</Link>
+        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={bosalt} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
 
       <section aria-label="Program">
@@ -51,16 +51,17 @@ export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
               <h3 className="text-sm font-semibold mb-1">{gunAdi}</h3>
               {satirlar.map(g => (
                 <div key={g.id} className={`grid grid-cols-12 gap-2 items-center py-1 ${g.ders === 'Matematik' ? 'font-semibold' : ''}`}>
-                  <input aria-label="Görev" className={`${kutu} col-span-12 md:col-span-4`} value={g.ad} onChange={e => gorev(g.id, { ad: e.target.value })} />
+                  <input aria-label="Görev" maxLength={120} required className={`${kutu} col-span-12 md:col-span-4`} value={g.ad} onChange={e => gorev(g.id, { ad: e.target.value })}
+                    onBlur={() => { if (!g.ad.trim()) gorev(g.id, { ad: 'Görev' }, true) }} />
                   <span className="col-span-3 md:col-span-1 text-sm tabular-nums">{miktarYaz(g, veri.seviye)}</span>
-                  <input aria-label="Miktar" type="number" min={1} className={`${kutu} col-span-3 md:col-span-1`} value={g.miktar ?? ''}
-                    onChange={e => gorev(g.id, { miktar: e.target.value ? Math.max(1, Math.trunc(Number(e.target.value))) : null })} />
+                  <input aria-label="Miktar" type="number" min={1} max={600} className={`${kutu} col-span-3 md:col-span-1`} value={g.miktar ?? ''}
+                    onChange={e => gorev(g.id, { miktar: e.target.value ? Math.min(600, Math.max(1, Math.trunc(Number(e.target.value)))) : null })} />
                   <select aria-label="Birim" className={`${kutu} col-span-3 md:col-span-1`} value={g.birim} onChange={e => gorev(g.id, { birim: e.target.value as Gorev['birim'] }, true)}>
                     <option value="dk">dk</option><option value="soru">soru</option><option value="serbest">serbest</option>
                   </select>
-                  <input aria-label="Konu" list={`konu-${g.id}`} className={`${kutu} col-span-6 md:col-span-2`} value={g.konu} placeholder="Konu" onChange={e => gorev(g.id, { konu: e.target.value })} />
+                  <input aria-label="Konu" maxLength={120} list={`konu-${g.id}`} className={`${kutu} col-span-6 md:col-span-2`} value={g.konu} placeholder="Konu" onChange={e => gorev(g.id, { konu: e.target.value })} />
                   <datalist id={`konu-${g.id}`}>{konuListesi(g.ders).map(k => <option key={k.id} value={k.ad} />)}</datalist>
-                  <input aria-label="Sayfa" className={`${kutu} col-span-3 md:col-span-1`} value={g.sayfa} placeholder="Sayfa" onChange={e => gorev(g.id, { sayfa: e.target.value })} />
+                  <input aria-label="Sayfa" maxLength={60} className={`${kutu} col-span-3 md:col-span-1`} value={g.sayfa} placeholder="Sayfa" onChange={e => gorev(g.id, { sayfa: e.target.value })} />
                   <label className="col-span-2 md:col-span-1 text-xs flex items-center gap-1">
                     <input type="checkbox" checked={g.soruSatiri} onChange={e => gorev(g.id, { soruSatiri: e.target.checked }, true)} /> Soru
                   </label>
@@ -93,9 +94,9 @@ export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
               {!kitaplar.some(k => k.id === m.kitapId) && <option value={m.kitapId ?? ''}>{m.kitapAdi}</option>}
               {kitaplar.map(k => <option key={k.id} value={k.id}>{k.ad}</option>)}
             </select>
-            <input aria-label="Konu" className={`${kutu} col-span-6 md:col-span-4`} value={m.konu} placeholder="Konu"
+            <input aria-label="Konu" maxLength={120} className={`${kutu} col-span-6 md:col-span-4`} value={m.konu} placeholder="Konu"
               onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.map(x => x.id === m.id ? { ...x, konu: e.target.value } : x) } }))} />
-            <input aria-label="Sayfalar" className={`${kutu} col-span-4 md:col-span-3`} value={m.sayfalar} placeholder="s. 45–52"
+            <input aria-label="Sayfalar" maxLength={60} className={`${kutu} col-span-4 md:col-span-3`} value={m.sayfalar} placeholder="s. 45–52"
               onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.map(x => x.id === m.id ? { ...x, sayfalar: e.target.value } : x) } }))} />
             <button type="button" aria-label="Mentör ödevini sil" className="col-span-2 md:col-span-1 text-red-700 dark:text-red-400 text-sm"
               onClick={() => { if (confirm('Bu ödev silinsin mi?')) degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.filter(x => x.id !== m.id) } }), true) }}>Sil</button>
@@ -115,8 +116,8 @@ export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
             setKitaplar(k => [...k, r.kitap!]); setKitapAdi(''); setKitapDers(''); setHata(null)
           })
         }}>
-          <label className="text-sm">Kitap adı<input className={`${kutu} block w-56`} value={kitapAdi} onChange={e => setKitapAdi(e.target.value)} required /></label>
-          <label className="text-sm">Ders<input className={`${kutu} block w-32`} value={kitapDers} onChange={e => setKitapDers(e.target.value)} /></label>
+          <label className="text-sm">Kitap adı<input maxLength={120} className={`${kutu} block w-56`} value={kitapAdi} onChange={e => setKitapAdi(e.target.value)} required /></label>
+          <label className="text-sm">Ders<input maxLength={60} className={`${kutu} block w-32`} value={kitapDers} onChange={e => setKitapDers(e.target.value)} /></label>
           <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-600 text-sm">Kitap ekle</button>
           {hata && <span role="alert" className="text-sm text-red-700 dark:text-red-400">{hata}</span>}
         </form>
@@ -135,14 +136,14 @@ export default function PlanSekmesi({ v, veri, degistir }: SekmeProps) {
       <section aria-label="Okuma">
         <h2 className="text-base font-semibold mb-2">Okuma</h2>
         <label className="text-sm">Okuduğu kitap
-          <input className={`${kutu} block max-w-md`} value={veri.icerik.okuma?.kitap ?? ''} placeholder="Kitap adı"
+          <input maxLength={150} className={`${kutu} block max-w-md`} value={veri.icerik.okuma?.kitap ?? ''} placeholder="Kitap adı"
             onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, okuma: e.target.value.trim() ? { kitap: e.target.value, sayfa: h.icerik.okuma?.sayfa ?? null, bitti: h.icerik.okuma?.bitti ?? false } : null } }))} />
         </label>
       </section>
 
       <section aria-label="Hafta içi düzen">
         <label className="text-sm">Hafta içi düzen (kâğıda basılır)
-          <input className={`${kutu} block`} value={veri.icerik.duzen} onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, duzen: e.target.value } }))} />
+          <input maxLength={300} className={`${kutu} block`} value={veri.icerik.duzen} onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, duzen: e.target.value } }))} />
         </label>
       </section>
     </div>

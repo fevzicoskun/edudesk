@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import YazdirBaglantisi from './YazdirBaglantisi'
 import { takipVeliMesaji, konuAdlari } from '@/src/domains/mentor/takip/veliMesaji'
 import { whatsappLink } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
-export default function VeliSekmesi({ v, veri }: SekmeProps) {
+export default function VeliSekmesi({ v, veri, bosalt }: SekmeProps) {
   const otomatik = takipVeliMesaji({ ogrenciAdi: v.ogrenci.ad, pazartesi: v.hafta, veri, onceki: v.onceki?.ozet ?? null, konular: konuAdlari(v.konular, v.konuDurumu), mentorAdi: v.mentorAdi })
   const [metin, setMetin] = useState(otomatik)
   const [kopyalandi, setKopyalandi] = useState(false)
@@ -21,7 +21,7 @@ export default function VeliSekmesi({ v, veri }: SekmeProps) {
           {kopyalandi ? 'Kopyalandı ✓' : 'Mesajı kopyala'}
         </button>
         <a href={whatsappLink(metin, v.ogrenci.veliTelefon)} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 rounded-lg bg-green-600 text-white text-sm">WhatsApp&apos;ta gönder</a>
-        <Link href={`/mentorluk/${v.ogrenci.id}/takip/veli-raporu?hafta=${v.hafta}`} className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-sm">Veli raporunu yazdır</Link>
+        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/veli-raporu?hafta=${v.hafta}`} bosalt={bosalt} className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-sm">Veli raporunu yazdır</YazdirBaglantisi>
       </div>
       <p className="text-xs text-gray-500 dark:text-slate-400">Düzenlemeniz kaydedilmez; mesaj her açılışta güncel verilerden yeniden oluşur.</p>
     </div>

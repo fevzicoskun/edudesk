@@ -89,7 +89,7 @@ export default function SonucSekmesi({ v, veri, degistir }: SekmeProps) {
       <section aria-label="Görüşme" className="grid md:grid-cols-2 gap-3">
         {GORUSME.map(([k, ad]) => (
           <label key={k} className="text-sm">{ad}
-            <textarea rows={2} className={`${kutu} w-full block`} value={veri.gorusme[k]}
+            <textarea rows={2} maxLength={k === 'hedef' ? 300 : 1000} className={`${kutu} w-full block`} value={veri.gorusme[k]}
               onChange={e => degistir(h => ({ ...h, gorusme: { ...h.gorusme, [k]: e.target.value } }))} />
           </label>
         ))}

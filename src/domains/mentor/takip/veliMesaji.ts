@@ -1,5 +1,5 @@
 import { haftaEtiketi } from '../lib/bultenMath'
-import { ozetHesapla, dogrulukYuzde, fark, type HaftaVerisi, type Ozet } from './takipMath'
+import { ozetHesapla, programYuzde, dogrulukYuzde, fark, type HaftaVerisi, type Ozet } from './takipMath'
 
 /** Konu haritasından veli mesajı listeleri (client + server ortak). */
 export function konuAdlari(konular: { id: string; ad: string }[], durum: Record<string, number>) {
@@ -14,13 +14,13 @@ export function takipVeliMesaji(g: {
 }): string {
   const o = ozetHesapla(g.veri.icerik), d = dogrulukYuzde(o), f = fark(o, g.onceki)
   const gk = g.veri.gorusme, ok = g.veri.icerik.okuma, mo = g.veri.icerik.mentorOdevleri
-  const gorevSay = g.veri.icerik.gorevler.length, gorevYap = g.veri.icerik.gorevler.filter(x => x.yapti).length
   const farkMetni = f === null || f === 0 ? '' : `, geçen haftaya göre ${Math.abs(f)} puan ${f > 0 ? 'arttı' : 'düştü'}`
   const satir = (kosul: unknown, metin: string) => (kosul ? [metin] : [])
   return [
     `Sayın Veli, ${g.ogrenciAdi} için ${haftaEtiketi(g.pazartesi)} haftasının özeti:`,
     '',
-    ...satir(gorevSay, `• Program: ${gorevSay} görevin ${gorevYap} tanesini tamamladı (%${Math.round((gorevYap / gorevSay) * 100)}).`),
+    // Görev + mentör ödevi (programYuzde): veli raporu kutusu ve Sonuç kartıyla aynı oran. İşlenmemiş hafta → satır yok.
+    ...satir(o.islendi && o.gorev_toplam, `• Program: ${o.gorev_toplam} görevin ${o.gorev_yapilan} tanesini tamamladı (%${programYuzde(o)}).`),
     ...satir(o.soru, `• Soru: ${o.soru} soru çözdü (hedef ${g.veri.soruHedefi}), doğruluk %${d}${farkMetni}.`),
     ...satir(mo.length, `• Ekstra ödevler: ${mo.length} ödevin ${mo.filter(m => m.yapti).length} tanesi yapıldı.`),
     ...satir(ok && (ok.sayfa || ok.bitti), ok?.bitti ? `• Okuma: ${ok.kitap} kitabını bitirdi${ok.sayfa ? ` (bu hafta ${ok.sayfa} sayfa)` : ''}.` : `• Okuma: ${ok?.kitap} kitabından ${ok?.sayfa} sayfa okudu.`),

@@ -127,6 +127,15 @@ export const TakipRepository = {
     return db.from('ogrenci_konu_durumu').upsert({ school_id: schoolId, student_id: studentId, konu_id: konuId, durum, updated_at: new Date().toISOString() })
   },
 
+  /** Bu hafta ya da önceki bir haftada kaydı olan öğrenciler (plan bu haftaya kopyalanarak devam eder). */
+  async planliOgrenciler(schoolId: string, studentIds: string[], hafta: string): Promise<Set<string>> {
+    const db = await createClient()
+    const { data, error } = await db.from('mentor_haftalari').select('student_id')
+      .eq('school_id', schoolId).lte('hafta_basi', hafta).in('student_id', studentIds)
+    if (error) throw new Error(error.message)
+    return new Set((data ?? []).map(r => r.student_id))
+  },
+
   async durumlar(schoolId: string, studentIds: string[], hafta: string) {
     const db = await createClient()
     const { data, error } = await db.from('mentor_haftalari').select('student_id, islendi, gorev_toplam, gorev_yapilan')

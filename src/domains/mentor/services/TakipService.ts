@@ -127,6 +127,12 @@ export const TakipService = {
     return error ? { error: 'Kaydedilemedi.' } : {}
   },
 
+  async planliOgrenciler(studentIds: string[], hafta: string): Promise<Set<string>> {
+    const ab = await requireAbility()
+    if (!studentIds.length || !(await R.acikMi())) return new Set()
+    return R.planliOgrenciler(ab.schoolId, studentIds, hafta)
+  },
+
   async durumlar(studentIds: string[], hafta: string) {
     const ab = await requireAbility()
     if (!studentIds.length || !(await R.acikMi())) return new Map()
