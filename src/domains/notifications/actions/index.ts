@@ -54,11 +54,14 @@ export async function markRead(id: string) {
 export async function getNotificationPreferences() {
   const [supabase, user] = await Promise.all([createClient(), getCurrentUser()])
   if (!user) return null
-  const { data } = await supabase
+  // maybeSingle: kayıt yok = varsayılan (406 değil). Gerçek hata yutulmaz: varsayılanı (e-posta açık) gösterip
+  // kaydettirmek, e-postasını kapatmış öğretmenin tercihini sessizce değiştirirdi (2026-10-17).
+  const { data, error } = await supabase
     .from('notification_preferences')
     .select('days_before, email_on')
     .eq('user_id', user.id)
-    .single()
+    .maybeSingle()
+  if (error) throw new Error(`Bildirim tercihleri okunamadı: ${error.message}`)
   return data ?? VARSAYILAN_TERCIH // cron da kaydı olmayan öğretmene bunu uygular
 }
 

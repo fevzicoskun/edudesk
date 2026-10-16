@@ -12,6 +12,7 @@ function makeChain(result: unknown) {
   }
   // single() doğrudan Promise döndürür (thenable chain'den ayrı)
   chain.single = vi.fn().mockResolvedValue(result)
+  chain.maybeSingle = vi.fn().mockResolvedValue(result)
   // await chain → then() üzerinden resolve
   chain.then = (resolve: (v: unknown) => unknown) => Promise.resolve(result).then(resolve)
   return chain
@@ -206,6 +207,21 @@ describe('getNotificationPreferences()', () => {
     vi.mocked(createClient).mockResolvedValue(makeSupabase({ data: null, error: null }) as never)
     const result = await getNotificationPreferences()
     expect(result).toEqual({ days_before: 1, email_on: true })
+  })
+
+  it('kayıt yokken 406 üretmez: maybeSingle kullanılır (2026-10-17 tarama: 109× 406)', async () => {
+    const mockDb = makeSupabase({ data: null, error: null })
+    vi.mocked(getCurrentUser).mockResolvedValue(MOCK_USER as never)
+    vi.mocked(createClient).mockResolvedValue(mockDb as never)
+    await getNotificationPreferences()
+    expect(mockDb._chain.maybeSingle).toHaveBeenCalled()
+    expect(mockDb._chain.single).not.toHaveBeenCalled()
+  })
+
+  it('gerçek DB hatası varsayılana çevrilmez (yanlış "e-posta açık" gösterip kaydettirmesin)', async () => {
+    vi.mocked(getCurrentUser).mockResolvedValue(MOCK_USER as never)
+    vi.mocked(createClient).mockResolvedValue(makeSupabase({ data: null, error: { message: 'bağlantı koptu' } }) as never)
+    await expect(getNotificationPreferences()).rejects.toThrow()
   })
 
   it('from("notification_preferences") ile sorgu yapılır', async () => {
