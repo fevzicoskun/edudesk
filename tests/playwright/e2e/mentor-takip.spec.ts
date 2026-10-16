@@ -37,6 +37,12 @@ test.afterAll(async () => {
   await db.from('konu_listesi').delete().like('ad', 'E2Ekonu%')
 })
 
+/** /mentorluk/loading.tsx akışı yüzünden HTTP 200 döner; notFound() içeriği belirler → içeriğe bak. */
+const bulunamadi = async (page: Page, url: string) => {
+  await page.goto(url)
+  await expect(page.getByRole('heading', { name: 'Sayfa bulunamadı' })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('heading', { name: /Haftalık (Takip|Çalışma Planı|Mentörlük Raporu)/ })).toHaveCount(0)
+}
 const kaydedildi = (page: Page) => expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 
 test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır', async ({ page }) => {
@@ -149,5 +155,36 @@ test.describe('idare', () => {
     const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
     await expect(page.getByRole('listitem').filter({ hasText: o!.full_name })).toContainText(/Program %\d+/)
     await expect(page.getByText('Birinci sekme')).toHaveCount(0)
+  })
+})
+test.describe('erişim', () => {
+  test('başka öğretmen (mentörü değil) → 404, kâğıt da 404', async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: AUTH('zumre_baskani') })
+    const p = await ctx.newPage()
+    for (const yol of ['takip', 'takip/kagit', 'takip/veli-raporu']) await bulunamadi(p, `/mentorluk/${ogrId}/${yol}?hafta=2026-10-19`)
+    await ctx.close()
+  })
+
+  test('bayrak kapalı → mentör de 404 alır ve bağlantıyı görmez', async ({ page }) => {
+    await db.from('mentor_takip_kullanicilari').delete().eq('user_id', mentor.id)
+    try {
+      await bulunamadi(page, `/mentorluk/${ogrId}/takip`)
+      await page.goto(`/mentorluk/${ogrId}`)
+      await expect(page.getByRole('link', { name: 'Haftalık takip' })).toHaveCount(0)
+      await page.goto('/mentorluk')
+      await expect(page.getByRole('link', { name: 'Bu haftanın kâğıtları' })).toHaveCount(0)
+    } finally {
+      await db.from('mentor_takip_kullanicilari').upsert({ user_id: mentor.id, school_id: mentor.school_id })
+    }
+  })
+
+  test('mentörlük başka öğretmene geçerse eski mentör erişemez', async ({ page }) => {
+    const diger = await kullanici(process.env.TEST_EMAIL_ZUMRE_BASKANI ?? 'test_zumre_baskani@test.example')
+    await db.from('mentorships').update({ mentor_id: diger.id, assigned_by: diger.id }).eq('student_id', ogrId)
+    try {
+      await bulunamadi(page, `/mentorluk/${ogrId}/takip`)
+    } finally {
+      await db.from('mentorships').update({ mentor_id: mentor.id, assigned_by: mentor.id }).eq('student_id', ogrId)
+    }
   })
 })
