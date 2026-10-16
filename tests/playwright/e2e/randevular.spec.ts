@@ -14,6 +14,6 @@ test.describe('Veli Görüşmeleri', () => {
     await expect(page.getByRole('heading', { name: 'Yeni Randevu' })).toBeVisible({ timeout: 10_000 })
     // Tarih girişi görünür (boş-saat hesabının tetikleyicisi).
     // `getByLabel` ile scoped: sayfada birden fazla date input olabileceğinden (örn. Hızlı Ödev dialog).
-    await expect(page.getByLabel('Tarih')).toBeVisible()
+    await expect(page.getByLabel('Tarih', { exact: true })).toBeVisible()
   })
 })

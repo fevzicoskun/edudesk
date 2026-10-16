@@ -72,6 +72,27 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   expect(kenar).toEqual(['0px'])
 })
 
+test('kâğıt: 24 görev + 12 okul ödeviyle tek A4 sayfa (2026-10-16 kullanıcı: 2 sayfaya taşıyordu)', async ({ page }) => {
+  const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
+  const { data: eklenen, error } = await db.from('homeworks').insert(Array.from({ length: 12 }, (_, i) => ({
+    teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik',
+    title: `E2E kâğıt ödevi ${i + 1} biraz uzunca bir başlık`, due_date: `2026-10-${19 + (i % 5)}`,
+  }))).select('id')
+  if (error) throw new Error(error.message)
+  try {
+    await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
+    await expect(page.getByRole('table', { name: 'Okul ödevleri' }).first()).toBeVisible({ timeout: 20_000 })
+    await page.emulateMedia({ media: 'print' })
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
+    if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
+    expect(pdf.numPages).toBe(1)
+  } finally {
+    await db.from('homeworks').delete().in('id', eklenen!.map(h => h.id))
+  }
+})
+
 test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   await page.getByLabel('Kitap adı').fill('E2E Soru Bankası')
