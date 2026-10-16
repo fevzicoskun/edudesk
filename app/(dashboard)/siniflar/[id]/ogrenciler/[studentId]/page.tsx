@@ -12,8 +12,6 @@ import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
 import { genelDurum, odevSeviyesi, MIN_DEGERLENDIRILEN, type GenelDurum } from '@/src/domains/classes/lib/genelDurum'
 import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
-import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
-import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import DevamsizlikPaneli from './DevamsizlikPaneli'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { schoolYearStart } from '@/src/shared/utils'
@@ -97,7 +95,6 @@ export default async function OgrenciDetayPage({
 
   if (!classResult.data || !studentResult.data) notFound()
 
-  const studentTasks = await TaskService.getStudentTasks(studentId)
 
   const cls = classResult.data
   const student = studentResult.data
@@ -280,8 +277,6 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
-
-      <OgrenciHatirlaticilar initial={studentTasks} studentId={studentId} classId={classId} />
 
       <VeliAnalyticsCard studentId={studentId} schoolId={schoolId} />
 

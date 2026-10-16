@@ -16,19 +16,6 @@ export const TaskRepository = {
       .order('created_at', { ascending: false })
   },
 
-  // Belirli öğrencinin açık görevleri (öğrenci profili yüzeyi).
-  async listOpenForStudent(userId: string, schoolId: string, studentId: string) {
-    const db = await createClient()
-    return db
-      .from('tasks')
-      .select(COLS)
-      .eq('user_id', userId)
-      .eq('school_id', schoolId)
-      .eq('student_id', studentId)
-      .is('done_at', null)
-      .order('created_at', { ascending: false })
-  },
-
   // Yeni görev. Eklenen satırı id'siyle döndürür (optimistik liste için).
   async insert(row: {
     user_id: string

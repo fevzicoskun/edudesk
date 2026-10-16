@@ -31,18 +31,6 @@ export const TaskService = {
     return decorate((data ?? []) as Row[])
   },
 
-  // Bir öğrencinin açık görevleri (profil yüzeyi). Erteleme filtresi uygulanmaz: profilde hepsi görünür.
-  async getStudentTasks(studentId: string): Promise<Task[]> {
-    const ability = await requireAbility()
-    const { data, error } = await TaskRepository.listOpenForStudent(ability.userId, ability.schoolId, studentId)
-    if (error) {
-      logger.error({ event: 'task_student_list_failed', userId: ability.userId, err: error.message }, 'Öğrenci görev listesi hatası')
-      return []
-    }
-    const today = todayStr()
-    return ((data ?? []) as Row[]).map(r => ({ ...r, overdue: isOverdue(r, today) }))
-  },
-
   async addTask(input: {
     title: string
     studentId?: string | null
