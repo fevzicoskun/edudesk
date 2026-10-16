@@ -43,42 +43,6 @@ export type Database = {
           },
         ]
       }
-      app_errors: {
-        Row: {
-          context: Json
-          created_at: string
-          fingerprint: string
-          id: string
-          message: string
-          name: string
-          school_id: string | null
-          source: string
-          user_id: string | null
-        }
-        Insert: {
-          context?: Json
-          created_at?: string
-          fingerprint: string
-          id?: string
-          message: string
-          name: string
-          school_id?: string | null
-          source?: string
-          user_id?: string | null
-        }
-        Update: {
-          context?: Json
-          created_at?: string
-          fingerprint?: string
-          id?: string
-          message?: string
-          name?: string
-          school_id?: string | null
-          source?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       announcements: {
         Row: {
           created_at: string | null
@@ -166,6 +130,64 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tenant_metrics"
             referencedColumns: ["school_id"]
+          },
+        ]
+      }
+      app_errors: {
+        Row: {
+          context: Json
+          created_at: string
+          fingerprint: string
+          id: string
+          message: string
+          name: string
+          school_id: string | null
+          source: string
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          fingerprint: string
+          id?: string
+          message: string
+          name: string
+          school_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          message?: string
+          name?: string
+          school_id?: string | null
+          source?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_errors_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "app_errors_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "app_errors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -305,6 +327,66 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      bulten_gonderimleri: {
+        Row: {
+          created_at: string
+          hafta: string
+          mentor_id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          hafta: string
+          mentor_id?: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          hafta?: string
+          mentor_id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulten_gonderimleri_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulten_gonderimleri_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulten_gonderimleri_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "bulten_gonderimleri_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulten_gonderimleri_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       classes: {
         Row: {
@@ -1268,6 +1350,61 @@ export type Database = {
           },
         ]
       }
+      konu_listesi: {
+        Row: {
+          ad: string
+          created_by: string | null
+          ders: string
+          grup: string | null
+          id: string
+          school_id: string
+          sinif: number
+          sira: number
+        }
+        Insert: {
+          ad: string
+          created_by?: string | null
+          ders: string
+          grup?: string | null
+          id?: string
+          school_id: string
+          sinif: number
+          sira?: number
+        }
+        Update: {
+          ad?: string
+          created_by?: string | null
+          ders?: string
+          grup?: string | null
+          id?: string
+          school_id?: string
+          sinif?: number
+          sira?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "konu_listesi_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "konu_listesi_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "konu_listesi_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+        ]
+      }
       lesson_schedules: {
         Row: {
           class_id: string | null
@@ -1361,6 +1498,158 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_haftalari: {
+        Row: {
+          dogru: number
+          gorev_toplam: number
+          gorev_yapilan: number
+          gorusme: Json
+          hafta_basi: string
+          icerik: Json
+          id: string
+          islendi: boolean
+          okuma_sayfa: number
+          school_id: string
+          seviye: number
+          soru: number
+          soru_hedefi: number
+          student_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          dogru?: number
+          gorev_toplam?: number
+          gorev_yapilan?: number
+          gorusme?: Json
+          hafta_basi: string
+          icerik: Json
+          id?: string
+          islendi?: boolean
+          okuma_sayfa?: number
+          school_id: string
+          seviye: number
+          soru?: number
+          soru_hedefi: number
+          student_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          dogru?: number
+          gorev_toplam?: number
+          gorev_yapilan?: number
+          gorusme?: Json
+          hafta_basi?: string
+          icerik?: Json
+          id?: string
+          islendi?: boolean
+          okuma_sayfa?: number
+          school_id?: string
+          seviye?: number
+          soru?: number
+          soru_hedefi?: number
+          student_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_haftalari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_haftalari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "mentor_haftalari_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_haftalari_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_haftalari_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mentor_kitaplari: {
+        Row: {
+          ad: string
+          created_at: string
+          deleted_at: string | null
+          ders: string
+          id: string
+          school_id: string
+          student_id: string
+        }
+        Insert: {
+          ad: string
+          created_at?: string
+          deleted_at?: string | null
+          ders?: string
+          id?: string
+          school_id: string
+          student_id: string
+        }
+        Update: {
+          ad?: string
+          created_at?: string
+          deleted_at?: string | null
+          ders?: string
+          id?: string
+          school_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_kitaplari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_kitaplari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "mentor_kitaplari_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_kitaplari_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -1532,6 +1821,46 @@ export type Database = {
           },
         ]
       }
+      mentor_takip_kullanicilari: {
+        Row: {
+          created_at: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mentor_takip_kullanicilari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mentor_takip_kullanicilari_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "mentor_takip_kullanicilari_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentorships: {
         Row: {
           assigned_by: string | null
@@ -1559,6 +1888,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "mentorships_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "mentorships_mentor_id_fkey"
             columns: ["mentor_id"]
             isOneToOne: false
@@ -1582,14 +1918,14 @@ export type Database = {
           {
             foreignKeyName: "mentorships_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "active_students"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "mentorships_student_id_fkey"
             columns: ["student_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "students"
             referencedColumns: ["id"]
           },
@@ -1723,6 +2059,66 @@ export type Database = {
           },
         ]
       }
+      ogrenci_konu_durumu: {
+        Row: {
+          durum: number
+          konu_id: string
+          school_id: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          durum: number
+          konu_id: string
+          school_id: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          durum?: number
+          konu_id?: string
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ogrenci_konu_durumu_konu_id_fkey"
+            columns: ["konu_id"]
+            isOneToOne: false
+            referencedRelation: "konu_listesi"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ogrenci_konu_durumu_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ogrenci_konu_durumu_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
+          {
+            foreignKeyName: "ogrenci_konu_durumu_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "active_students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ogrenci_konu_durumu_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ogretmen_dosyasi: {
         Row: {
           academic_year: string
@@ -1761,6 +2157,42 @@ export type Database = {
             referencedColumns: ["school_id"]
           },
         ]
+      }
+      okul_basvurulari: {
+        Row: {
+          contact_name: string
+          created_at: string
+          durum: string
+          email: string
+          id: string
+          note: string | null
+          phone: string | null
+          school_name: string
+          updated_at: string
+        }
+        Insert: {
+          contact_name: string
+          created_at?: string
+          durum?: string
+          email: string
+          id?: string
+          note?: string | null
+          phone?: string | null
+          school_name: string
+          updated_at?: string
+        }
+        Update: {
+          contact_name?: string
+          created_at?: string
+          durum?: string
+          email?: string
+          id?: string
+          note?: string | null
+          phone?: string | null
+          school_name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       parent_contact_logs: {
         Row: {
@@ -2045,6 +2477,13 @@ export type Database = {
             referencedRelation: "schools"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "revoked_tokens_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "tenant_metrics"
+            referencedColumns: ["school_id"]
+          },
         ]
       }
       role_permissions: {
@@ -2118,66 +2557,6 @@ export type Database = {
             referencedColumns: ["school_id"]
           },
         ]
-      }
-      bulten_gonderimleri: {
-        Row: {
-          created_at: string
-          hafta: string
-          mentor_id: string
-          school_id: string
-          student_id: string
-        }
-        Insert: {
-          created_at?: string
-          hafta: string
-          mentor_id?: string
-          school_id: string
-          student_id: string
-        }
-        Update: {
-          created_at?: string
-          hafta?: string
-          mentor_id?: string
-          school_id?: string
-          student_id?: string
-        }
-        Relationships: []
-      }
-      okul_basvurulari: {
-        Row: {
-          contact_name: string
-          created_at: string
-          durum: string
-          email: string
-          id: string
-          note: string | null
-          phone: string | null
-          school_name: string
-          updated_at: string
-        }
-        Insert: {
-          contact_name: string
-          created_at?: string
-          durum?: string
-          email: string
-          id?: string
-          note?: string | null
-          phone?: string | null
-          school_name: string
-          updated_at?: string
-        }
-        Update: {
-          contact_name?: string
-          created_at?: string
-          durum?: string
-          email?: string
-          id?: string
-          note?: string | null
-          phone?: string | null
-          school_name?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       school_events: {
         Row: {
@@ -3723,10 +4102,6 @@ export type Database = {
       }
     }
     Functions: {
-      set_yoklama_aktif: {
-        Args: { p_aktif: boolean }
-        Returns: undefined
-      }
       admin_onboard_user: {
         Args: { p_id: string; p_role?: string; p_school_id: string }
         Returns: undefined
@@ -3860,6 +4235,19 @@ export type Database = {
       is_yonetici_in_school: { Args: never; Returns: boolean }
       is_zumre_baskani: { Args: never; Returns: boolean }
       is_zumre_baskani_in_school: { Args: never; Returns: boolean }
+      mentor_takip_acik: { Args: never; Returns: boolean }
+      mentor_takip_erisimi: { Args: { p_student: string }; Returns: boolean }
+      mentor_takip_ozet: {
+        Args: never
+        Returns: {
+          dogru: number
+          gorev_toplam: number
+          gorev_yapilan: number
+          hafta_basi: string
+          soru: number
+          student_id: string
+        }[]
+      }
       ogrenci_mentor_adlari: {
         Args: never
         Returns: {
@@ -3902,15 +4290,16 @@ export type Database = {
           teacher_id: string
         }[]
       }
+      set_yoklama_aktif: { Args: { p_aktif: boolean }; Returns: undefined }
       soft_delete: {
         Args: { p_id: string; p_table: string }
         Returns: undefined
       }
-      soft_delete_homeworks: { Args: { p_ids: string[] }; Returns: string[] }
       soft_delete_class_cascade: {
         Args: { p_class_id: string; p_school_id: string }
         Returns: undefined
       }
+      soft_delete_homeworks: { Args: { p_ids: string[] }; Returns: string[] }
       submit_feedback: {
         Args: { p_category: string; p_message: string; p_page_path: string }
         Returns: string
