@@ -68,14 +68,4 @@ describe('RLS — doğrudan API ile yetki yükseltme ve veri kaybı kapalı', ()
     const { data } = await createUserClient(zbT).from('schools').update({ access_until: '2100-01-01' }).eq('id', okul.id).select('id')
     expect(data ?? []).toEqual([])
   })
-
-  it('öğretmen başkasının veli görüşme kaydını silemez', async () => {
-    const { data: kayit } = await serviceDb.from('parent_contact_logs').insert({
-      school_id: okul.id, student_id: benimOgrenci, teacher_id: ogr.id, note: 'not', contact_method: 'telefon', contacted_at: new Date().toISOString(),
-    }).select('id').single()
-    const { data } = await createUserClient(digerT).from('parent_contact_logs').delete().eq('id', kayit!.id).select('id')
-    expect(data ?? []).toEqual([])
-    const sahibi = await createUserClient(ogrT).from('parent_contact_logs').delete().eq('id', kayit!.id).select('id')
-    expect(sahibi.data).toHaveLength(1)
-  })
 })

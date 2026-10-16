@@ -6,7 +6,6 @@ import { format, parseISO } from '@/src/shared/date'
 import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
 import VeliIletisimForm from './VeliIletisimForm'
 import CopyVeliLink from './CopyVeliLink'
-import ParentContactLogSection from './ParentContactLogSection'
 import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
 import type { SubmissionStatus } from '@/src/shared/types'
@@ -85,7 +84,7 @@ export default async function OgrenciDetayPage({
   // Yoklama modülü kapalıysa devamsızlık sorgusu, çubuğu ve paneli yok
   const yoklama = await okulYoklamaAktif(schoolId)
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
-  const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes, contactLogsRes] = await Promise.all([
+  const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     // 2026-09-28: okuldaki öğretmen öğrencinin TÜM ödevlerini salt-okunur görür. Yazdırılabilir özetle
@@ -96,13 +95,6 @@ export default async function OgrenciDetayPage({
       ? supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false })
       : Promise.resolve({ data: [] as { date: string; status: string }[], error: null }),
     supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
-    supabase
-      .from('parent_contact_logs')
-      .select('id, note, contact_method, contacted_at, teacher_id')
-      .eq('student_id', studentId)
-      .eq('school_id', schoolId)
-      .order('contacted_at', { ascending: false })
-      .limit(50),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
@@ -151,7 +143,6 @@ export default async function OgrenciDetayPage({
       score: g.score, maxScore: g.grade_columns.max_score,
     })),
     mentorReports: [], // görüşme notları Metodbox'ta (2026-10-11)
-    contactLogs: (contactLogsRes.data ?? []).map(c => ({ date: c.contacted_at, method: c.contact_method })),
     studentNotes: notes.map(n => ({ date: n.created_at, body: n.body })),
   }, donemBasi())
 
@@ -303,13 +294,6 @@ export default async function OgrenciDetayPage({
       <OgrenciHatirlaticilar initial={studentTasks} studentId={studentId} classId={classId} />
 
       <VeliAnalyticsCard studentId={studentId} schoolId={schoolId} />
-
-      <ParentContactLogSection
-        logs={(contactLogsRes.data ?? []) as Array<{ id: string; note: string; contact_method: string; contacted_at: string; teacher_id: string }>}
-        studentId={studentId}
-        classId={classId}
-        currentUserId={currentProfile.id}
-      />
 
       <ZamanCizelgesiSection events={timelineEvents} />
 

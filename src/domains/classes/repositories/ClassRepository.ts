@@ -98,40 +98,4 @@ export const ClassRepository = {
       .is('deleted_at', null).single()
   },
 
-  async insertParentContactLog(data: {
-    school_id: string
-    student_id: string
-    teacher_id: string
-    note: string
-    contact_method: string
-    contacted_at: string
-  }) {
-    const supabase = await createClient()
-    return supabase.from('parent_contact_logs').insert(data)
-  },
-
-  async getParentContactLogs(studentId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('parent_contact_logs')
-      .select('id, note, contact_method, contacted_at, teacher_id')
-      .eq('student_id', studentId)
-      .eq('school_id', schoolId)
-      .order('contacted_at', { ascending: false })
-      .limit(50)
-  },
-
-  async deleteParentContactLog(logId: string, teacherId: string, schoolId: string) {
-    const supabase = await createClient()
-    const { data: rows, error } = await supabase
-      .from('parent_contact_logs')
-      .delete()
-      .eq('id', logId)
-      .eq('teacher_id', teacherId)
-      .eq('school_id', schoolId)
-      .select('id')
-    if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
-    return { error: null }
-  },
 }

@@ -61,7 +61,6 @@ const repoYazmalari: [string, () => Promise<{ error: unknown }>][] = [
   ['ClassRepository.softDeleteStudent',      () => ClassRepository.softDeleteStudent(ID, S, U)],
   ['ClassRepository.restoreStudent',         () => ClassRepository.restoreStudent(ID, S)],
   ['ClassRepository.deleteStudentNote',      () => ClassRepository.deleteStudentNote(ID, U, S)],
-  ['ClassRepository.deleteParentContactLog', () => ClassRepository.deleteParentContactLog(ID, U, S)],
   ['HomeworkSourceRepository.deactivate',    () => HomeworkSourceRepository.deactivate(ID, U, S)],
 ]
 

@@ -11,7 +11,6 @@ const KIND_DOT: Record<TimelineKind, string> = {
   odev:          'bg-orange-500',
   not:           'bg-blue-500',
   rehberlik:     'bg-purple-500',
-  veli_iletisim: 'bg-teal-500',
   ogretmen_notu: 'bg-gray-400 dark:bg-slate-500',
 }
 

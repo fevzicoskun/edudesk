@@ -3,7 +3,7 @@ import { buildStudentTimeline, type TimelineSources } from '@/src/domains/classe
 
 const bos: TimelineSources = {
   attendance: [], submissions: [], grades: [],
-  mentorReports: [], contactLogs: [], studentNotes: [],
+  mentorReports: [], studentNotes: [],
 }
 const W = '2026-02-01' // pencere başı
 
@@ -17,9 +17,9 @@ describe('buildStudentTimeline', () => {
       ...bos,
       attendance: [{ date: '2026-03-10', status: 'absent' }],
       studentNotes: [{ date: '2026-03-12', body: 'not' }],
-      contactLogs: [{ date: '2026-03-11T09:30:00Z', method: 'telefon' }],
+      submissions: [{ status: 'eksik', dueDate: '2026-03-11', title: 'K' }],
     }, W)
-    expect(r.map(e => e.kind)).toEqual(['ogretmen_notu', 'veli_iletisim', 'devamsizlik'])
+    expect(r.map(e => e.kind)).toEqual(['ogretmen_notu', 'odev', 'devamsizlik'])
   })
 
   it('pencere dışı ve bozuk/boş tarihli kayıtlar elenir', () => {
@@ -54,14 +54,13 @@ describe('buildStudentTimeline', () => {
       ...bos,
       grades: [{ examDate: '2026-03-02', title: '1. Yazılı', score: 85, maxScore: 100 }],
       mentorReports: [{ date: '2026-03-04' }],
-      contactLogs: [{ date: '2026-03-05', method: 'e-posta' }],
       studentNotes: [{ date: '2026-03-06', body: 'a'.repeat(100) }],
     }, W)
     const byKind = Object.fromEntries(r.map(e => [e.kind, e.label]))
     expect(byKind['not']).toBe('"1. Yazılı": 85/100')
     expect(byKind).not.toHaveProperty('gorusme') // veli randevuları kaldırıldı (2026-10-17)
     expect(byKind['rehberlik']).toBe('Rehberlik görüşmesi')
-    expect(byKind['veli_iletisim']).toBe('Veli iletişimi (e-posta)')
+    expect(byKind).not.toHaveProperty('veli_iletisim') // veli iletişim kayıtları kaldırıldı (2026-10-17)
     expect(byKind['ogretmen_notu']).toBe('a'.repeat(80) + '…')
   })
 
