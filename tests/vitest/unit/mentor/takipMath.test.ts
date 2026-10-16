@@ -127,3 +127,14 @@ describe('okumaGecmisi', () => {
     ])
   })
 })
+
+// studyPlan/planMath'ten taşındı (2026-10-16: eski çalışma planı kaldırıldı)
+describe('haftaBasi / haftaKaydir', async () => {
+  const { haftaBasi, haftaKaydir } = await import('@/src/domains/mentor/takip/takipMath')
+  it('Pazartesi kendisi', () => expect(haftaBasi('2026-09-07')).toBe('2026-09-07'))
+  it('Çarşamba → Pazartesi', () => expect(haftaBasi('2026-09-09')).toBe('2026-09-07'))
+  it('Pazar → önceki Pazartesi (getDay=0 tuzağı)', () => expect(haftaBasi('2026-09-13')).toBe('2026-09-07'))
+  it('yıl geçişi: 2027-01-01 (Cuma) → 2026-12-28', () => expect(haftaBasi('2027-01-01')).toBe('2026-12-28'))
+  it('+1 hafta', () => expect(haftaKaydir('2026-09-07', 1)).toBe('2026-09-14'))
+  it('-1 hafta yıl geçişi', () => expect(haftaKaydir('2027-01-04', -1)).toBe('2026-12-28'))
+})

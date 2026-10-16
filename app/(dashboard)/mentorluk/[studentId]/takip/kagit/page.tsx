@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
@@ -16,7 +16,7 @@ export default async function KagitPage({ params, searchParams }: { params: Prom
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const { studentId } = await params
   const h = (await searchParams).hafta
-  const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : weekStartOf(todayLocalISO()))
+  const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : haftaBasi(todayLocalISO()))
   if (!v) notFound()
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto print:p-0 print:max-w-none">

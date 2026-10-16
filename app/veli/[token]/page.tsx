@@ -8,8 +8,6 @@ import VeliTracker from './VeliTracker'
 import VeliOzetKart from './VeliOzetKart'
 import VeliOdevlerSection, { type SubmissionRow } from './VeliOdevlerSection'
 import VeliDevamsizlikSection from './VeliDevamsizlikSection'
-import VeliPlanSection from './VeliPlanSection'
-import { VeliPlanService } from '@/src/domains/studyPlan/services/VeliPlanService'
 import { addDaysISO } from '@/src/shared/date'
 import { kapaliOkullar } from '@/src/domains/school/yoklamaAnahtari'
 
@@ -80,7 +78,7 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
   const today = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   const since90 = addDaysISO(today, -90)
   // Öğretmen notları (student_notes) bilinçli YOK: okul içidir, öğretmen ekranında "veli görür" uyarısı yok (2026-10-11)
-  const [studentResult, submissionsResult, attendanceResult, planWeeks] = await Promise.all([
+  const [studentResult, submissionsResult, attendanceResult] = await Promise.all([
     studentQuery.single(),
     (() => {
       let q = supabase
@@ -102,7 +100,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
       if (schoolFilter) q = q.eq('school_id', schoolFilter)
       return q
     })(),
-    VeliPlanService.getPortalWeeks(studentId, tokenSchoolId, today),
   ])
 
   if (!studentResult.data) notFound()
@@ -187,7 +184,6 @@ export default async function VeliPage({ params }: { params: Promise<{ token: st
         </div>
 
         <VeliOdevlerSection upcoming={upcoming} past={past} today={today} />
-        <VeliPlanSection weeks={planWeeks} />
         {yoklama && <VeliDevamsizlikSection attendance={attendance} absentCount={absentCount} lateCount={lateCount} />}
 
 

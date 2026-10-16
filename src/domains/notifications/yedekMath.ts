@@ -19,8 +19,9 @@ export const YEDEKLENEN_TABLOLAR = [
   'veli_tokens', 'notification_preferences', 'platform_admins',
   // Öğrenci takibi
   'mentorships', 'mentor_profiles', 'mentor_reports', 'bulten_gonderimleri',
+  'mentor_haftalari', 'mentor_kitaplari', 'konu_listesi', 'ogrenci_konu_durumu', 'mentor_takip_kullanicilari',
   'student_notes', 'kanaat_notlari', 'parent_meetings', 'parent_contact_logs',
-  'study_plan_items', 'student_sources', 'homework_sources',
+  'homework_sources',
   // Değerlendirme
   'grade_columns', 'grade_entries', 'common_exams', 'exam_entries',
   'notebook_checks', 'sok_reports', 'curriculum_progress',

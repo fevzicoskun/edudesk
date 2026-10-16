@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { pazartesiMi, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
@@ -18,7 +18,7 @@ export default async function TakipKagitlariPage({ searchParams }: { searchParam
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   if (!(await TakipService.acikMi())) notFound()
   const h = (await searchParams).hafta
-  const hafta = h && pazartesiMi(h) ? h : weekStartOf(todayLocalISO())
+  const hafta = h && pazartesiMi(h) ? h : haftaBasi(todayLocalISO())
   const rows = await MentorService.getMyMentorships()
   // Bu haftaya dokunulmamış ama planı geçen haftadan devam eden öğrenci de dahil (taslak = geçen haftanın kopyası)
   const planli = await TakipService.planliOgrenciler(rows.map(r => r.student_id), hafta)

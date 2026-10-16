@@ -27,7 +27,6 @@ import { MeetingRepository } from '@/src/domains/meetings/repositories/MeetingRe
 import ZamanCizelgesiSection from './ZamanCizelgesiSection'
 import { buildStudentTimeline } from '@/src/domains/classes/lib/timelineMath'
 import { donemBasi } from '@/src/shared/utils'
-import HaftalikPlanSection from './HaftalikPlanSection'
 import MentorlugumeEkle from './MentorlugumeEkle'
 import { isTeachingRole } from '@/src/shared/types'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
@@ -320,8 +319,6 @@ export default async function OgrenciDetayPage({
         teacherNames={teacherNames}
         hasError={!!meetingsRes.error}
       />
-
-      <HaftalikPlanSection studentId={studentId} currentUserId={currentProfile.id} />
 
       <NotGecmisiSection grades={grades} />
 

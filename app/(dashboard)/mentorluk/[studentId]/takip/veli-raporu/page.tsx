@@ -3,7 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { pazartesiMi, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { ozetHesapla, programYuzde, dogrulukYuzde } from '@/src/domains/mentor/takip/takipMath'
 import { takipVeliMesaji, konuAdlari } from '@/src/domains/mentor/takip/veliMesaji'
@@ -18,7 +18,7 @@ export default async function VeliRaporuPage({ params, searchParams }: { params:
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const { studentId } = await params
   const h = (await searchParams).hafta
-  const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : weekStartOf(todayLocalISO()))
+  const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : haftaBasi(todayLocalISO()))
   if (!v) notFound()
   const o = ozetHesapla(v.taslak.icerik), p = programYuzde(o), d = dogrulukYuzde(o)
   const mo = v.taslak.icerik.mentorOdevleri

@@ -18,6 +18,13 @@ export type Gorusme = { iyi: string; zor: string; hedef: string; odak: string; e
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
 export type HaftaVerisi = { seviye: Seviye; soruHedefi: number; icerik: Icerik; gorusme: Gorusme }
 
+/** Haftanın pazartesisi ('YYYY-MM-DD', UTC takvim aritmetiği — saat dilimi kaydırmaz). */
+export function haftaBasi(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return addDaysISO(iso, -((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7))
+}
+export const haftaKaydir = (pazartesi: string, delta: number) => addDaysISO(pazartesi, delta * 7)
+
 export const BOS_GORUSME: Gorusme = { iyi: '', zor: '', hedef: '', odak: '', evde: '' }
 export const GUNLER = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const
 export const SEVIYE_ADI = ['Hafif', 'Normal', 'Yoğun'] as const

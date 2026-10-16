@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { useCallback, useState } from 'react'
 import { haftaKaydet } from '@/app/actions/mentor-takip'
-import { shiftWeek, weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaKaydir, haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { todayLocalISO } from '@/src/shared/date'
 import type { HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
@@ -50,10 +50,10 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
           <p className="text-sm text-gray-500 dark:text-slate-400">{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link aria-label="Önceki hafta" onClick={bosalt} href={url(shiftWeek(v.hafta, -1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">‹</Link>
+          <Link aria-label="Önceki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, -1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">‹</Link>
           <span className="text-sm font-medium tabular-nums">{haftaEtiketi(v.hafta)}</span>
-          <Link aria-label="Sonraki hafta" onClick={bosalt} href={url(shiftWeek(v.hafta, 1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">›</Link>
-          <Link onClick={bosalt} href={url(weekStartOf(todayLocalISO()))} className="text-sm text-blue-600 hover:underline">Bu hafta</Link>
+          <Link aria-label="Sonraki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, 1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">›</Link>
+          <Link onClick={bosalt} href={url(haftaBasi(todayLocalISO()))} className="text-sm text-blue-600 hover:underline">Bu hafta</Link>
         </div>
         <Durum d={durum} tekrar={() => void bosalt()} />
       </div>

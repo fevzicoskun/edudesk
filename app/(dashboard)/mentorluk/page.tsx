@@ -9,7 +9,7 @@ import { todayLocalISO } from '@/src/shared/date'
 import { donemBasi } from '@/src/shared/utils'
 import { basTarihi, mentorTablosu } from '@/src/domains/mentor/lib/mentorTablosu'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
-import { weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { haftaDurumu, programYuzde } from '@/src/domains/mentor/takip/takipMath'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 import MentorTablosu from './MentorTablosu'
@@ -58,7 +58,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
   const sonGorusme = Object.fromEntries(rows.map(r => [r.student_id, r.last_report_date]))
   // Haftalık takip açık mentörde: bu haftanın durumu (Plan yok / Kâğıtta / İşlendi · %)
   const takipAcik = await TakipService.acikMi()
-  const durum = takipAcik ? await TakipService.durumlar(rows.map(r => r.student_id), weekStartOf(bugun)) : null
+  const durum = takipAcik ? await TakipService.durumlar(rows.map(r => r.student_id), haftaBasi(bugun)) : null
   const takip = durum ? Object.fromEntries(rows.map(r => {
     const s = durum.get(r.student_id) ?? null
     const d = haftaDurumu(s)

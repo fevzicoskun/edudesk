@@ -118,9 +118,6 @@ export default async function SinifDetayPage({
           <p className="text-sm text-gray-500 dark:text-slate-400">{students.length} öğrenci · {egitimYili}</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
-          <Link href={`/siniflar/${id}/plan`} className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">
-            Haftalık Plan
-          </Link>
           <Link href={`/siniflar/${id}/odev-raporu`} className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">
             Ödev Özetleri
           </Link>

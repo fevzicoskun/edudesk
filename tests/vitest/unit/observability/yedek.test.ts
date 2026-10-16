@@ -22,6 +22,13 @@ describe('YEDEKLENEN_TABLOLAR', () => {
     }
   })
 
+  it('mentör haftalık takip tabloları kapsamda; kaldırılan çalışma planı tabloları yok (2026-10-16)', () => {
+    for (const t of ['mentor_haftalari', 'mentor_kitaplari', 'konu_listesi', 'ogrenci_konu_durumu', 'mentor_takip_kullanicilari']) {
+      expect(YEDEKLENEN_TABLOLAR).toContain(t)
+    }
+    for (const t of ['study_plan_items', 'student_sources']) expect(YEDEKLENEN_TABLOLAR).not.toContain(t)
+  })
+
   it('liste tekrarsızdır', () => {
     expect(new Set(YEDEKLENEN_TABLOLAR).size).toBe(YEDEKLENEN_TABLOLAR.length)
   })
