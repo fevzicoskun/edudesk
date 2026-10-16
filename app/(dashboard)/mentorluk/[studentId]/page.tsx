@@ -13,6 +13,7 @@ import { HomeworkService } from '@/src/domains/homework/services/HomeworkService
 import { todayLocalISO } from '@/src/shared/date'
 import { donemBasi } from '@/src/shared/utils'
 import { basTarihi } from '@/src/domains/mentor/lib/mentorTablosu'
+import { TakipService } from '@/src/domains/mentor/services/TakipService'
 
 export const metadata = { title: 'Mentörlük' }
 
@@ -36,6 +37,7 @@ export default async function MentorlukDetayPage({
   const satir = simdiki ?? eski
   if (!satir) notFound()
   const salt = !simdiki
+  const takipAcik = !salt && await TakipService.acikMi()
 
   const supabase = await createClient()
   const [karte, ogrenciRes] = await Promise.all([
@@ -60,6 +62,9 @@ export default async function MentorlukDetayPage({
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{satir.class_name ?? '—'}</p>
         </div>
         {!salt && simdiki && <div className="flex flex-wrap items-center justify-end gap-2">
+          {takipAcik && (
+            <Link href={`/mentorluk/${studentId}/takip`} className="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700">Haftalık takip</Link>
+          )}
           <Link
             href={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu?bas=${bas}`}
             className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700"
