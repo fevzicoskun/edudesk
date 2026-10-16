@@ -135,6 +135,13 @@ test('konu haritası: tıkla → durum değişir, yenilemede kalır; konu ekle',
   await page.getByRole('button', { name: 'Konu ekle' }).click()
   await expect(page.getByRole('button', { name: 'E2Ekonu Vektörler: Başlanmadı' })).toBeVisible({ timeout: 15_000 })
 })
+test('toplu kâğıt: planı olan öğrenci ayrı sayfada', async ({ page }) => {
+  await page.goto('/mentorluk/takip-kagitlari?hafta=2026-10-19')
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  await expect(page.getByRole('region', { name: o!.full_name })).toBeVisible({ timeout: 20_000 })
+  await expect(page.locator('section.break-after-page')).not.toHaveCount(0)
+})
+
 test.describe('idare', () => {
   test.use({ storageState: AUTH('mudur') })
   test('idare özet rakamı görür, görüşme notu görünmez', async ({ page }) => {
