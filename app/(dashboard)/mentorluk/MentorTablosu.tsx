@@ -4,8 +4,10 @@ import { dersOzetiMetni } from '@/src/domains/homework/lib/stats'
 import type { MentorTablo } from '@/src/domains/mentor/lib/mentorTablosu'
 
 /** Öğrenci × ders. Renk yalnız rakamda (kırmızı = geride). Telefonda satır + ders metni. */
-export default function MentorTablosu({ tablo, sonGorusme, bas, baglanti = true }: {
+export default function MentorTablosu({ tablo, sonGorusme, bas, baglanti = true, takip }: {
   tablo: MentorTablo; sonGorusme: Record<string, string | null>; bas: string; baglanti?: boolean
+  /** Haftalık takip açıksa öğrenci → bu haftanın durumu */
+  takip?: Record<string, string>
 }) {
   const ad = (id: string, full: string) => baglanti
     ? <Link href={`/mentorluk/${id}?bas=${bas}`} className="font-medium text-gray-900 dark:text-slate-100 hover:text-blue-600">{full}</Link>
@@ -21,6 +23,7 @@ export default function MentorTablosu({ tablo, sonGorusme, bas, baglanti = true 
               <th className="py-2 pr-3 font-semibold">Öğrenci</th>
               <th className="py-2 pr-3 font-semibold">Sınıf</th>
               {tablo.dersler.map(d => <th key={d} className="py-2 px-2 font-semibold text-center">{d}</th>)}
+              {takip && <th className="py-2 px-2 font-semibold">Bu hafta</th>}
               <th className="py-2 pl-3 font-semibold">Son görüşme</th>
             </tr>
           </thead>
@@ -32,6 +35,7 @@ export default function MentorTablosu({ tablo, sonGorusme, bas, baglanti = true 
                 {s.hucreler.map((h, i) => (
                   <td key={tablo.dersler[i]} className={`py-2 px-2 text-center tabular-nums ${h.kirmizi ? 'text-red-700 dark:text-red-400 font-semibold' : 'text-gray-800 dark:text-slate-200'}`}>{h.metin}</td>
                 ))}
+                {takip && <td className="py-2 px-2 whitespace-nowrap">{takip[s.id]}</td>}
                 <td className="py-2 pl-3 text-gray-600 dark:text-slate-400">{gorusme(s.id)}</td>
               </tr>
             ))}
@@ -45,6 +49,7 @@ export default function MentorTablosu({ tablo, sonGorusme, bas, baglanti = true 
               <span>{ad(s.id, s.full_name)} <span className="text-xs text-gray-500 dark:text-slate-400">· {s.class_name ?? '—'}</span></span>
               <span className="text-xs text-gray-500 dark:text-slate-400 shrink-0">{gorusme(s.id)}</span>
             </div>
+            {takip && <p className="text-xs mt-0.5">Bu hafta: {takip[s.id]}</p>}
             <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-gray-700 dark:text-slate-300">
               {s.dersler.length === 0 ? 'Bu aralıkta ödev yok' : s.dersler.map(d => <span key={d.ders}>{dersOzetiMetni(d)}</span>)}
             </p>

@@ -8,6 +8,9 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { todayLocalISO } from '@/src/shared/date'
 import { donemBasi } from '@/src/shared/utils'
 import { basTarihi, mentorTablosu } from '@/src/domains/mentor/lib/mentorTablosu'
+import { TakipService } from '@/src/domains/mentor/services/TakipService'
+import { weekStartOf } from '@/src/domains/studyPlan/planMath'
+import { haftaDurumu, programYuzde } from '@/src/domains/mentor/takip/takipMath'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 import MentorTablosu from './MentorTablosu'
 
@@ -53,6 +56,14 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
     id: o.id, full_name: o.full_name, class_name: o.class_name, homeworks: o.homeworks,
   })))
   const sonGorusme = Object.fromEntries(rows.map(r => [r.student_id, r.last_report_date]))
+  // Haftalık takip açık mentörde: bu haftanın durumu (Plan yok / Kâğıtta / İşlendi · %)
+  const takipAcik = await TakipService.acikMi()
+  const durum = takipAcik ? await TakipService.durumlar(rows.map(r => r.student_id), weekStartOf(bugun)) : null
+  const takip = durum ? Object.fromEntries(rows.map(r => {
+    const s = durum.get(r.student_id) ?? null
+    const d = haftaDurumu(s)
+    return [r.student_id, d === 'yok' ? 'Plan yok' : d === 'kagitta' ? 'Kâğıtta' : `İşlendi · %${programYuzde(s!) ?? 0}`]
+  })) : undefined
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto">
@@ -93,7 +104,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
         </div>
       ) : (
         <div className="mb-6">
-          <MentorTablosu tablo={tablo} sonGorusme={sonGorusme} bas={bas} />
+          <MentorTablosu tablo={tablo} sonGorusme={sonGorusme} bas={bas} takip={takip} />
         </div>
       )}
 

@@ -104,3 +104,11 @@ test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
   const { data } = await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).single()
   expect((data!.gorusme as { iyi: string }).iyi).toBe('Birinci sekme')
 })
+test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
+  const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
+  await page.goto('/mentorluk')
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
+  const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
+  await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
+})
