@@ -27,6 +27,10 @@ describe('YEDEKLENEN_TABLOLAR', () => {
       expect(YEDEKLENEN_TABLOLAR).toContain(t)
     }
     for (const t of ['study_plan_items', 'student_sources']) expect(YEDEKLENEN_TABLOLAR).not.toContain(t)
+    // 2026-10-17 kaldırılanlar (tablolar DROP edildi → yedek listede kalırsa haftalık yedek hata verir)
+    for (const t of ['parent_meetings', 'parent_contact_logs', 'grade_entries', 'grade_columns', 'mentor_profiles']) {
+      expect(YEDEKLENEN_TABLOLAR).not.toContain(t)
+    }
   })
 
   it('liste tekrarsızdır', () => {

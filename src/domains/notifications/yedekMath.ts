@@ -18,12 +18,12 @@ export const YEDEKLENEN_TABLOLAR = [
   'homework_submission_logs',
   'veli_tokens', 'notification_preferences', 'platform_admins',
   // Öğrenci takibi
-  'mentorships', 'mentor_profiles', 'mentor_reports', 'bulten_gonderimleri',
+  'mentorships', 'mentor_reports', 'bulten_gonderimleri',
   'mentor_haftalari', 'mentor_kitaplari', 'konu_listesi', 'ogrenci_konu_durumu', 'mentor_takip_kullanicilari',
-  'student_notes', 'kanaat_notlari', 'parent_meetings', 'parent_contact_logs',
+  'student_notes', 'kanaat_notlari',
   'homework_sources',
   // Değerlendirme
-  'grade_columns', 'grade_entries', 'common_exams', 'exam_entries',
+  'common_exams', 'exam_entries',
   'notebook_checks', 'sok_reports', 'curriculum_progress',
   'annual_plans', 'daily_plans', 'zumre_meetings', 'zumre_meeting_templates',
   'ogretmen_dosyasi', 'tasks',
