@@ -6,6 +6,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { todayLocalISO } from '@/src/shared/date'
 import { haftaSec, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { mentorListesi } from '@/src/domains/dashboard/lib/yoneticiOzeti'
+import { programYuzde, dogrulukYuzde } from '@/src/domains/mentor/takip/takipMath'
 
 export const metadata = { title: 'Mentörlük' }
 
@@ -19,13 +20,16 @@ export default async function YonetimMentorlukPage() {
 
   const supabase = await createClient()
   const hafta = haftaSec(todayLocalISO())
-  const [mentorluk, gonderim, ogrenci, sinif] = await Promise.all([
+  const [mentorluk, gonderim, ogrenci, sinif, takipOzet] = await Promise.all([
     supabase.rpc('ogrenci_mentor_adlari'),
     supabase.from('bulten_gonderimleri').select('student_id').eq('school_id', sid).eq('hafta', hafta),
     supabase.from('students').select('id, full_name, class_id').eq('school_id', sid).is('deleted_at', null).limit(1000),
     supabase.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
+    // Haftalık takip: yalnız rakamlar (RPC görüşme notu/içerik döndürmez)
+    supabase.rpc('mentor_takip_ozet'),
   ])
-  for (const r of [mentorluk, gonderim, ogrenci, sinif]) if (r.error) throw new Error(r.error.message)
+  for (const r of [mentorluk, gonderim, ogrenci, sinif, takipOzet]) if (r.error) throw new Error(r.error.message)
+  const takip = new Map((takipOzet.data ?? []).map(t => [t.student_id, t]))
 
   const ogrenciler = ogrenci.data ?? []
   const siniflar = new Map((sinif.data ?? []).map(c => [c.id, c.name]))
@@ -73,6 +77,12 @@ export default async function YonetimMentorlukPage() {
                       {o.ad}
                     </Link>
                     <span className={`w-12 shrink-0 text-xs ${soluk}`}>{o.sinif}</span>
+                    {(() => {
+                      const t = takip.get(o.id)
+                      if (!t) return null
+                      const d = dogrulukYuzde(t)
+                      return <span className={`shrink-0 text-xs ${soluk}`} title={`Son işlenen hafta: ${haftaEtiketi(t.hafta_basi)}`}>Program %{programYuzde(t) ?? 0}{d !== null && ` · Doğruluk %${d}`}</span>
+                    })()}
                     <span className={`w-20 shrink-0 text-right text-xs ${o.bulten ? 'text-emerald-700 dark:text-emerald-400' : soluk}`}>
                       {o.bulten ? 'Bülten ✓' : 'Bülten —'}
                     </span>
