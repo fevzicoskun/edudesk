@@ -308,6 +308,8 @@ export async function getClassWeekLoad(
   if (!user || !profile?.school_id) return []
 
   const { start, end } = weekRange(weekOf)
+  // Yıl elle yazılırken ara değerler (0002-10-16…) geçersiz → boş aralıkla sorgu 400 dönerdi (2026-10-17)
+  if (!start || !end) return []
 
   const { data, error } = await HomeworkRepository.findWeekLoadRows(
     profile.school_id, validIds, start, end,
