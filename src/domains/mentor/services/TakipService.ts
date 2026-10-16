@@ -1,5 +1,6 @@
 // src/domains/mentor/services/TakipService.ts
 import { requireAbility } from '@/src/shared/authorization/server'
+import { logger } from '@/src/infrastructure/observability/logger'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { TakipRepository as R } from '../repositories/TakipRepository'
@@ -63,8 +64,17 @@ export const TakipService = {
       gecmis ? R.gecmis(ab.schoolId, studentId) : Promise.resolve([]),
     ])
     if ('error' in profil) throw new Error(profil.error)
-    if (sinif in MATEMATIK_KONULARI) await R.konuTohumla(ab.schoolId, ab.userId, sinif, MATEMATIK_KONULARI[sinif as 9])
-    const konular = await R.konular(ab.schoolId, sinif)
+    let konular = await R.konular(ab.schoolId, sinif)
+    // Matematik listesi yalnız okulda o sınıf için hiç yoksa tohumlanır (her açılışta yazma yok). Konu önerisi
+    // yardımcıdır: tohum yazılamazsa sayfa yine açılır, hata loglanır (2026-10-17 tarama).
+    if (sinif in MATEMATIK_KONULARI && !konular.some(k => k.ders === 'Matematik')) {
+      try {
+        await R.konuTohumla(ab.schoolId, ab.userId, sinif, MATEMATIK_KONULARI[sinif as 9])
+        konular = await R.konular(ab.schoolId, sinif)
+      } catch (e) {
+        logger.warn({ event: 'mentor_takip_konu_tohum_failed', userId: ab.userId, err: e instanceof Error ? e.message : String(e) }, 'Matematik konu listesi tohumlanamadı')
+      }
+    }
     return {
       ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id, veliTelefon: o.veli_telefon },
       hafta,
