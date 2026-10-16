@@ -20,10 +20,19 @@ test('yazdırılan raporda yazı kâğıt kenarından en az 10 mm içeride', asy
   // preferCSSPageSize: kenarı yalnız @page belirler ("Kenar boşlukları: Yok" seçen kullanıcı gibi)
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const pdf = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
-  const sayfa = await pdf.getPage(1)
-  const [, , W, H] = sayfa.view
-  const yazilar = (await sayfa.getTextContent()).items.filter(i => 'str' in i && i.str.trim()) as { transform: number[]; width: number }[]
-  expect(mm(Math.min(...yazilar.map(i => i.transform[4])))).toBeGreaterThanOrEqual(10)
-  expect(mm(W - Math.max(...yazilar.map(i => i.transform[4] + i.width)))).toBeGreaterThanOrEqual(10)
-  expect(mm(H - Math.max(...yazilar.map(i => i.transform[5])))).toBeGreaterThanOrEqual(10)
+  // 2026-10-16: @page kenarı 0 olmalı — yoksa Chrome tarih/saat + URL üstbilgi/altbilgisini basıyor
+  const kenar = await page.evaluate(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules] } catch { return [] } })
+    .filter((r): r is CSSPageRule => r instanceof CSSPageRule && !!r.style.margin).map(r => r.style.margin))
+  expect(kenar).toEqual(['0px'])
+  // Boşluk body dolgusundan gelir ve her sayfada tekrar etmeli (box-decoration-break: clone)
+  for (let n = 1; n <= pdf.numPages; n++) {
+    const sayfa = await pdf.getPage(n)
+    const [, , W, H] = sayfa.view
+    const yazilar = (await sayfa.getTextContent()).items.filter(i => 'str' in i && i.str.trim()) as { transform: number[]; width: number; height: number }[]
+    if (!yazilar.length) continue
+    expect(mm(Math.min(...yazilar.map(i => i.transform[4])))).toBeGreaterThanOrEqual(10)
+    expect(mm(W - Math.max(...yazilar.map(i => i.transform[4] + i.width)))).toBeGreaterThanOrEqual(10)
+    expect(mm(H - Math.max(...yazilar.map(i => i.transform[5] + i.height)))).toBeGreaterThanOrEqual(10)
+    expect(mm(Math.min(...yazilar.map(i => i.transform[5])))).toBeGreaterThanOrEqual(10)
+  }
 })

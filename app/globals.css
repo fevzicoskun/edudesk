@@ -189,9 +189,10 @@ body {
   --color-ring: var(--ring);
 }
 
-/* Kâğıt kenar boşluğu — rapor sayfaları print:p-0 ile kendi boşluğunu sıfırlıyor; bu olmadan yazı kâğıdın
-   kenarına dayanıyordu (2026-10-10 kullanıcı). Sayfaya özel @page (ör. size: landscape) bununla birleşir. */
-@page { margin: 15mm 14mm; }
+/* @page kenarı 0: Chrome tarih/saat + URL üstbilgi/altbilgisini yalnız kenar boşluğu olmayınca basmaz
+   (2026-10-16 kullanıcı). Kâğıt boşluğu body dolgusundan gelir; clone ile her basılan sayfada tekrar eder
+   (2026-10-10: yoksa yazı kâğıt kenarına dayanıyordu). Sayfaya özel @page (ör. size: landscape) bununla birleşir. */
+@page { margin: 0; }
 
 @media print {
   /* Sidebar ve mobile header gizle */
@@ -208,6 +209,9 @@ body {
   /* Renkleri koru (rozetler) — ama sayfa zemini beyaz: aşağıdaki kural olmadan gri/koyu zemin basılıyordu */
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   html, body { background: #fff !important; }
+  /* h-full body tek sayfa boyunda kalıp içeriği taşırıyordu → dolgu 2. sayfada tekrar etmiyordu */
+  html, body { height: auto !important; }
+  body { padding: 15mm 14mm; -webkit-box-decoration-break: clone; box-decoration-break: clone; }
   /* Okul logosu filigranı: position:fixed öğe Chrome'da her basılan sayfada tekrar eder. Üstte ama çok soluk,
      tıklanmaz → içerik okunur kalır (zemine konsa beyaz sayfa zemini örterdi). Opaklık PDF'lerle aynı (createPdf.ts). */
   .filigran {
