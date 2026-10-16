@@ -77,3 +77,30 @@ test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
   await expect(page.getByLabel('Kitap').first()).toHaveValue(/.+/)
   await expect(page.getByLabel('Kitap').first().locator('option:checked')).toHaveText('E2E Soru Bankası')
 })
+test('sonuç: kâğıttan işleme → yenile → yerinde; doğru>soru girilemez', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
+  const satir = page.getByRole('row', { name: /Matematik soru bankası/ }).first()
+  await satir.getByRole('checkbox', { name: 'Yaptı' }).check()
+  await satir.getByLabel('Soru').fill('40')
+  await satir.getByLabel('Doğru').fill('50')
+  await expect(satir.getByLabel('Doğru')).toHaveValue('40') // sorudan büyük girilemez
+  await satir.getByLabel('Doğru').fill('30')
+  await kaydedildi(page)
+  await page.reload()
+  await expect(page.getByRole('row', { name: /Matematik soru bankası/ }).first().getByLabel('Soru')).toHaveValue('40')
+  await expect(page.getByText('Doğruluk').locator('..')).toContainText('%75')
+  const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi').eq('student_id', ogrId).single()
+  expect(data).toEqual({ soru: 40, dogru: 30, islendi: true })
+})
+
+test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
+  const url = `/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`
+  const ikinci = await context.newPage()
+  await Promise.all([page.goto(url), ikinci.goto(url)])
+  await page.getByLabel('İyi giden').fill('Birinci sekme')
+  await kaydedildi(page)
+  await ikinci.getByLabel('İyi giden').fill('İkinci sekme')
+  await expect(ikinci.getByRole('alert').filter({ hasText: 'Başka bir ekranda değişti' })).toBeVisible({ timeout: 15_000 })
+  const { data } = await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).single()
+  expect((data!.gorusme as { iyi: string }).iyi).toBe('Birinci sekme')
+})
