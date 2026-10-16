@@ -4,8 +4,6 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { createClient } from '@/src/infrastructure/supabase/server'
-import TanimaKarti from './TanimaKarti'
-import MentorlukDuzeni from './MentorlukDuzeni'
 import ListedenCikarButonu from './ListedenCikarButonu'
 import OdevDurumu from './OdevDurumu'
 import CopyVeliLink from '../../siniflar/[id]/ogrenciler/[studentId]/CopyVeliLink'
@@ -30,25 +28,17 @@ export default async function MentorlukDetayPage({
   if (!profile?.school_id) redirect('/anasayfa')
   if (!isTeachingRole(profile.role)) redirect('/anasayfa')
 
-  // Öğrenci mentörlük listemde mi? Değilse önceki öğrencim mi (salt okunur notlar)? İkisi de değilse sayfa yok.
-  const rows = await MentorService.getMyMentorships()
-  const simdiki = rows.find(r => r.student_id === studentId)
-  const eski = simdiki ? undefined : (await MentorService.getEskiOgrencilerim()).find(r => r.student_id === studentId)
-  const satir = simdiki ?? eski
+  // Yalnız güncel mentörlük: önceki öğrencim / salt okunur görünüm kaldırıldı (2026-10-17)
+  const satir = (await MentorService.getMyMentorships()).find(r => r.student_id === studentId)
   if (!satir) notFound()
-  const salt = !simdiki
-  const takipAcik = !salt && await TakipService.acikMi()
+  const takipAcik = await TakipService.acikMi()
 
   const supabase = await createClient()
-  const [karte, ogrenciRes] = await Promise.all([
-    MentorService.getMentorProfile(studentId),
-    supabase.from('students').select('class_id, veli_ad').eq('id', studentId).eq('school_id', profile.school_id).single(),
-  ])
+  const ogrenciRes = await supabase.from('students').select('class_id, veli_ad').eq('id', studentId).eq('school_id', profile.school_id).single()
   if (ogrenciRes.error || !ogrenciRes.data) throw new Error(ogrenciRes.error?.message ?? 'Öğrenci okunamadı')
   const classId = ogrenciRes.data.class_id
-  // Ödev durumu yalnız güncel mentörlükte (önceki mentör yalnız kendi notlarını görür)
-  const profil = salt ? null : await HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true, bas })
-  if (profil && 'error' in profil) throw new Error(profil.error)
+  const profil = await HomeworkService.getStudentHomeworkProfile(studentId, classId, { tumOdevler: true, bas })
+  if ('error' in profil) throw new Error(profil.error)
 
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto">
@@ -61,7 +51,7 @@ export default async function MentorlukDetayPage({
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{satir.full_name}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">{satir.class_name ?? '—'}</p>
         </div>
-        {!salt && simdiki && <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           {takipAcik && (
             <Link href={`/mentorluk/${studentId}/takip`} className="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700">Haftalık takip</Link>
           )}
@@ -71,24 +61,15 @@ export default async function MentorlukDetayPage({
           >
             Yazdır
           </Link>
-          {simdiki.idare_atadi
+          {satir.idare_atadi
             ? <span className="text-xs text-gray-500 dark:text-slate-400">İdare atadı</span>
             : <ListedenCikarButonu studentId={studentId} ad={satir.full_name} />}
-        </div>}
+        </div>
       </div>
 
-      {salt && (
-        <p role="status" className="mb-6 text-sm rounded-xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 px-4 py-3 text-gray-700 dark:text-slate-300">
-          Bu öğrencinin mentörlüğü artık sizde değil. Tanıma kartınızı yalnız okuyabilirsiniz.
-        </p>
-      )}
-
       <div className="space-y-6">
-        {profil && <OdevDurumu homeworks={profil.homeworks} />}
-        {!salt && <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} okulAdi={profile?.schools?.name} />}
-        <TanimaKarti studentId={studentId} profil={karte} salt={salt} />
-        {/* Görüşme notları okulda Metodbox'a giriliyor; burada bölüm yok (2026-10-11). */}
-        {!salt && <MentorlukDuzeni studentId={studentId} anlatildiTarihi={karte?.rules_explained_at ?? null} />}
+        <OdevDurumu homeworks={profil.homeworks} />
+        <CopyVeliLink studentId={studentId} studentName={satir.full_name} veliAd={ogrenciRes.data.veli_ad} okulAdi={profile?.schools?.name} />
       </div>
     </div>
   )

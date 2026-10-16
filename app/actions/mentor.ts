@@ -107,34 +107,6 @@ export async function removeMentorship(studentId: string): Promise<ActionResult>
 
 // ── Tanıma kartı ─────────────────────────────────────────────────────────────
 
-export async function saveMentorProfile(studentId: string, formData: FormData): Promise<ActionResult> {
-  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
-
-  const result = await MentorService.saveMentorProfile(studentId, {
-    goals_short:       String(formData.get('goals_short') ?? ''),
-    goals_long:        String(formData.get('goals_long') ?? ''),
-    interests:         String(formData.get('interests') ?? ''),
-    family_info:       String(formData.get('family_info') ?? ''),
-    study_environment: String(formData.get('study_environment') ?? ''),
-    special_note:      String(formData.get('special_note') ?? ''),
-    support_request:   String(formData.get('support_request') ?? ''),
-  })
-  if (result.error) return { error: result.error }
-
-  revalidatePath(`/mentorluk/${studentId}`)
-  return {}
-}
-
-export async function markRulesExplained(studentId: string): Promise<ActionResult> {
-  try { UUID.parse(studentId) } catch { return { error: 'Geçersiz ID' } }
-
-  const result = await MentorService.markRulesExplained(studentId)
-  if (result.error) return { error: result.error }
-
-  revalidatePath(`/mentorluk/${studentId}`)
-  return {}
-}
-
 // ── Haftalık bülten gönderim işareti ─────────────────────────────────────────
 
 const bultenSchema = z.object({

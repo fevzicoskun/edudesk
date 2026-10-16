@@ -134,41 +134,28 @@ test.describe.serial('Mentör dağılımı', () => {
     await ctx.close()
   }
 
-  test('mentör değişince eski mentör öğrenciyi salt okunur görür', async ({ browser }) => {
+  test('mentör değişince eski mentör öğrenciyi artık açamaz; Önceki öğrencilerim yok (2026-10-17)', async ({ browser }) => {
     test.setTimeout(240_000)
     const ctx = await browser.newContext({ storageState: AUTH('ogretmen') })
     const page = await ctx.newPage()
-    // 1) Güncel mentör tanıma kartını doldurur (dolu kart öğrenciyi "önceki öğrencilerim"e taşır)
-    const hedef = `Salt okunur e2e ${Date.now()}`
+    // 1) Öğrencinin mentörlük sayfa adresini al
     await page.goto('/mentorluk')
     await page.getByRole('link', { name: ogrenciAdlari[0] }).first().click()
-    await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
-    await page.getByRole('button', { name: 'Düzenle' }).click()
-    await page.getByLabel('Kısa vadeli hedefleri').fill(hedef)
-    await page.getByRole('button', { name: 'Kaydet' }).click()
-    await expect(page.getByText(hedef)).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByRole('heading', { name: 'Ödev durumu' })).toBeVisible({ timeout: 15_000 })
+    const adres = page.url()
 
     // 2) İdare öğrenciyi zümre başkanına verir
     await tekAta(browser, ogrenciAdlari[0], 'PW Test zumre_baskani')
 
-    // 3) Eski mentör: Önceki öğrencilerim → salt okunur sayfa (görüşme notları Metodbox'ta, bölüm yok)
+    // 3) Eski mentör: liste bölümü yok, sayfa bulunamadı (loading.tsx akışı → içerik bazlı 404)
     await page.goto('/mentorluk')
-    const onceki = page.locator('section').filter({ hasText: 'Önceki öğrencilerim' })
-    await expect(onceki.getByRole('link', { name: new RegExp(ogrenciAdlari[0]) })).toBeVisible()
-    await onceki.getByRole('link', { name: new RegExp(ogrenciAdlari[0]) }).click()
-    await expect(page.getByRole('status')).toContainText('mentörlüğü artık sizde değil')
-    await expect(page.getByText(hedef)).toBeVisible()
-    await expect(page.getByRole('button', { name: 'Düzenle' })).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: 'Ödev durumu' })).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Mentörlüğüm' })).toBeVisible()
+    await expect(page.getByText('Önceki öğrencilerim')).toHaveCount(0)
+    await page.goto(adres)
+    await expect(page.getByRole('heading', { name: 'Sayfa bulunamadı' })).toBeVisible({ timeout: 20_000 })
 
-    // 4) Temizlik: geri ata, kartı boşalt (canlı veride içerik bırakma)
+    // 4) Temizlik: geri ata
     await tekAta(browser, ogrenciAdlari[0], ogretmenAdi)
-    await page.reload()
-    await page.getByRole('button', { name: 'Düzenle' }).click()
-    await page.getByLabel('Kısa vadeli hedefleri').fill('')
-    await page.getByRole('button', { name: 'Kaydet' }).click()
-    await expect(page.getByText(hedef)).toHaveCount(0, { timeout: 10_000 })
     await ctx.close()
   })
 

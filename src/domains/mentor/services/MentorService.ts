@@ -2,7 +2,6 @@ import { MentorRepository } from '../repositories/MentorRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { logger } from '@/src/infrastructure/observability/logger'
-import { mentorProfileSchema, type MentorProfileInput } from '../validators'
 import { todayLocalISO } from '@/src/shared/date'
 
 // Öğrencilere mentör atayabilen roller (yalnızca idare)
@@ -16,17 +15,6 @@ export type MentorshipRow = {
   last_report_date: string | null
   /** atamayı idare yaptı → mentör listeden kendisi çıkaramaz */
   idare_atadi:      boolean
-}
-
-export type MentorProfileRow = {
-  goals_short:        string | null
-  goals_long:         string | null
-  interests:          string | null
-  family_info:        string | null
-  study_environment:  string | null
-  special_note:       string | null
-  support_request:    string | null
-  rules_explained_at: string | null
 }
 
 export const MentorService = {
@@ -60,31 +48,6 @@ export const MentorService = {
     })
   },
 
-  /** Önceki mentörlük: notunu/kartını yazdığım ama artık listemde olmayan öğrenciler (salt okunur, 2026-10-07). */
-  async getEskiOgrencilerim(): Promise<{ student_id: string; full_name: string; class_name: string | null }[]> {
-    const ability = await requireAbility()
-    const [simdiki, profiller, notlar] = await Promise.all([
-      MentorService.getMyMentorships(),
-      MentorRepository.myProfileStudentIds(ability.userId, ability.schoolId),
-      MentorRepository.myReportStudentIds(ability.userId, ability.schoolId),
-    ])
-    const hata = profiller.error ?? notlar.error
-    if (hata) throw new Error(hata.message)
-    const simdi = new Set(simdiki.map(r => r.student_id))
-    // İçi boş tanıma kartı okunacak bir şey değil — yalnız dolu kart ya da not "önceki öğrenci" yapar
-    const doluKart = (profiller.data ?? []).filter(p =>
-      Object.entries(p).some(([k, v]) => k !== 'student_id' && typeof v === 'string' && v.trim() !== ''))
-    const ids = [...new Set([...doluKart, ...(notlar.data ?? [])].map(r => r.student_id))]
-      .filter(id => !simdi.has(id))
-    if (ids.length === 0) return []
-    const { data, error } = await MentorRepository.findStudentsInSchool(ids, ability.schoolId)
-    if (error) throw new Error(error.message)
-    return (data ?? [])
-      .map(s => ({ student_id: s.id, full_name: s.full_name, class_name: (s.classes as { name: string } | null)?.name ?? null }))
-      .sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
-  },
-
-  /** Okuldaki tüm atamalar: öğrenci id → mentör (ekleme kutusu, sınıf ve öğrenci sayfası). */
   async getMentorAdlari(): Promise<Map<string, { mentor_id: string; ad: string }>> {
     await requireAbility()
     const { data, error } = await MentorRepository.mentorAdlari()
@@ -210,56 +173,4 @@ export const MentorService = {
     return {}
   },
 
-  // ── Tanıma kartı ─────────────────────────────────────────────────────────
-
-  async getMentorProfile(studentId: string): Promise<MentorProfileRow | null> {
-    const ability = await requireAbility()
-    const { data, error } = await MentorRepository.getMentorProfile(studentId, ability.userId, ability.schoolId)
-    // Okuma hatası boş kart gibi görünürse mentör tek alan yazıp kaydeder ve diğer 6 alanı siler (upsert)
-    if (error) throw new Error(`Tanıma kartı okunamadı: ${error.message}`)
-    return (data as MentorProfileRow | null) ?? null
-  },
-
-  async saveMentorProfile(studentId: string, input: MentorProfileInput): Promise<{ error?: string }> {
-    const ability = await requireAbility()
-
-    const parsed = mentorProfileSchema.safeParse(input)
-    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Geçersiz veri' }
-
-    // Yetki: öğrenci mentörün kişisel listesinde olmalı (mentorships satırı school_id'ye bağlı)
-    const { data: mentorship } = await MentorRepository.findMentorship(studentId, ability.userId, ability.schoolId)
-    if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
-
-    // Boş string -> null; "silindi" ile "hiç girilmedi" aynı kabul edilir
-    const alanlar = Object.fromEntries(
-      Object.entries(parsed.data).map(([k, v]) => [k, v?.trim() ? v.trim() : null]),
-    )
-
-    const { error } = await MentorRepository.upsertMentorProfile({
-      mentor_id:  ability.userId,
-      student_id: studentId,
-      school_id:  ability.schoolId,
-      updated_at: new Date().toISOString(),
-      ...alanlar,
-    })
-    if (error) return { error: error.message }
-    return {}
-  },
-
-  async markRulesExplained(studentId: string): Promise<{ error?: string }> {
-    const ability = await requireAbility()
-    // Yetki: öğrenci mentörün kişisel listesinde olmalı (mentorships satırı school_id'ye bağlı)
-    const { data: mentorship } = await MentorRepository.findMentorship(studentId, ability.userId, ability.schoolId)
-    if (!mentorship) return { error: 'Bu öğrenci mentörlük listenizde değil' }
-
-    const { error } = await MentorRepository.upsertMentorProfile({
-      mentor_id:          ability.userId,
-      student_id:         studentId,
-      school_id:          ability.schoolId,
-      updated_at:         new Date().toISOString(),
-      rules_explained_at: todayLocalISO(),
-    })
-    if (error) return { error: error.message }
-    return {}
-  },
 }

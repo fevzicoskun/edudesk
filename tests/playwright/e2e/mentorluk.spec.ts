@@ -51,53 +51,20 @@ test.describe('Mentörlük', () => {
     // Temizlik: eklenen öğrenciyi detay sayfasından geri çıkar (canlı veriye artık kalmasın)
     await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
     // İlk ziyarette /mentorluk/[studentId] soğuk derlenebilir — geniş zaman aşımı
-    await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByRole('heading', { name: 'Ödev durumu' })).toBeVisible({ timeout: 15_000 })
 
     await listedenCikar(page)
     await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })
 
-  test('detay sayfası: bölümler görünür, tanıma kartı kaydedilir, görüşme notu bölümü yok', async ({ page }) => {
-    // Kendi kendine yeten test: kendi öğrencisini ekler, doğrular, sonunda temizler.
-    // (Önceki testler kendi öğrencisini geri çıkardığı için burada listenin boş
-    // olabileceği varsayılır — bu yüzden `skip` yerine kendi verisini üretir.)
+  test('detay sayfası: ödev durumu görünür; tanıma kartı, mentörlük düzeni, görüşme notu yok (2026-10-17 kaldırıldı)', async ({ page }) => {
     const ad = await ogrenciEkle(page)
     await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
-
     // İlk ziyarette /mentorluk/[studentId] soğuk derlenebilir — geniş zaman aşımı
-    await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 15_000 })
-    await expect(page.getByRole('heading', { name: 'Görüşme notları' })).toHaveCount(0) // Metodbox'ta
-    await expect(page.getByRole('heading', { name: 'Mentörlük düzenimiz' })).toBeVisible()
-
-    // ── Tanıma kartı: düzenle → kaydet → yenile → hâlâ orada mı? ──
-    const hedefMetni = `E2E hedef notu ${Date.now()}`
-    await page.getByRole('button', { name: 'Düzenle' }).click()
-
-    const hedefAlani = page.getByLabel('Kısa vadeli hedefleri')
-    await expect(hedefAlani).toBeVisible()
-    await hedefAlani.fill(hedefMetni)
-
-    await page.getByRole('button', { name: 'Kaydet' }).click()
-    // Kaydet sonrası form kapanır, salt-okunur görünüme döner
-    await expect(page.getByRole('button', { name: 'Düzenle' })).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(hedefMetni)).toBeVisible()
-
-    // Sunucudan gerçekten kalıcı yazıldığını kanıtla — sayfayı tazele
-    await page.reload()
-    await expect(page.getByRole('heading', { name: 'Tanıma kartı' })).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(hedefMetni)).toBeVisible()
-
-    // ── Temizlik ──
-    // 1) Tanıma kartı alanını boşalt (removeMentorship mentor_profiles'ı da
-    //    kaskad silmiyor; en azından içerik bırakmayalım)
-    await page.getByRole('button', { name: 'Düzenle' }).click()
-    await expect(hedefAlani).toBeVisible()
-    await hedefAlani.fill('')
-    await page.getByRole('button', { name: 'Kaydet' }).click()
-    await expect(page.getByRole('button', { name: 'Düzenle' })).toBeVisible({ timeout: 10_000 })
-    await expect(page.getByText(hedefMetni)).toHaveCount(0)
-
-    // 2) Mentörlük kaydını geri çıkar
+    await expect(page.getByRole('heading', { name: 'Ödev durumu' })).toBeVisible({ timeout: 15_000 })
+    for (const yok of ['Tanıma kartı', 'Mentörlük düzenimiz', 'Görüşme notları']) {
+      await expect(page.getByRole('heading', { name: yok })).toHaveCount(0)
+    }
     await listedenCikar(page)
     await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toHaveCount(0)
   })

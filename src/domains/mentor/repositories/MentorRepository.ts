@@ -83,33 +83,6 @@ export const MentorRepository = {
     return supabase.rpc('ogrenci_mentor_adlari')
   },
 
-  // ── Önceki mentörlük (salt okunur) ──────────────────────────────────────
-
-  async myProfileStudentIds(mentorId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_profiles')
-      .select('student_id, goals_short, goals_long, interests, family_info, study_environment, special_note, support_request')
-      .eq('mentor_id', mentorId)
-      .eq('school_id', schoolId)
-  },
-
-  async myReportStudentIds(mentorId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase.from('mentor_reports').select('student_id').eq('mentor_id', mentorId).eq('school_id', schoolId)
-  },
-
-  async findStudentsInSchool(studentIds: string[], schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('students')
-      .select('id, full_name, classes(name)')
-      .in('id', studentIds)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-  },
-
-  // Menü: silinmemiş öğrencisi olan mentörlük sayısı (listMentorships ile aynı süzme)
   async countActiveMentorships(mentorId: string) {
     const supabase = await createClient()
     return supabase
@@ -205,29 +178,4 @@ export const MentorRepository = {
     return { error: null }
   },
 
-  // ── Tanıma kartı ─────────────────────────────────────────────────────────
-
-  async getMentorProfile(studentId: string, mentorId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_profiles')
-      .select('goals_short, goals_long, interests, family_info, study_environment, special_note, support_request, rules_explained_at')
-      .eq('student_id', studentId)
-      .eq('mentor_id', mentorId)
-      .eq('school_id', schoolId)
-      .maybeSingle()
-  },
-
-  async upsertMentorProfile(row: {
-    mentor_id:  string
-    student_id: string
-    school_id:  string
-    updated_at: string
-    [alan: string]: string | null
-  }) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_profiles')
-      .upsert(row as never, { onConflict: 'mentor_id,student_id' })
-  },
 }
