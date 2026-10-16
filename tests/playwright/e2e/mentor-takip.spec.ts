@@ -139,6 +139,7 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
   const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
+  await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toBeVisible()
 })
 test('veli mesajı ve veli raporu', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
@@ -216,7 +217,7 @@ test.describe('erişim', () => {
       await page.goto(`/mentorluk/${ogrId}`)
       await expect(page.getByRole('link', { name: 'Haftalık takip' })).toHaveCount(0)
       await page.goto('/mentorluk')
-      await expect(page.getByRole('link', { name: 'Bu haftanın kâğıtları' })).toHaveCount(0)
+      await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toHaveCount(0)
     } finally {
       await db.from('mentor_takip_kullanicilari').upsert({ user_id: mentor.id, school_id: mentor.school_id })
     }

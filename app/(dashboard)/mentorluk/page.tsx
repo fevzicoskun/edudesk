@@ -91,7 +91,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
             <Link href={`/mentorluk/tablo?bas=${bas}`} className={ikincilButon}>Tabloyu yazdır</Link>
             <Link href={`/mentorluk/yazdir?bas=${bas}`} className={ikincilButon}>Hepsini yazdır</Link>
             <Link href="/mentorluk/bulten" className={ikincilButon}>Haftalık veli bülteni</Link>
-            {takipAcik && <Link href="/mentorluk/takip-kagitlari" className={ikincilButon}>Bu haftanın kâğıtları</Link>}
+            {takipAcik && <Link href="/mentorluk/takip-kagitlari" className={ikincilButon}>Bu haftanın planları</Link>}
           </div>
         </div>
       )}
