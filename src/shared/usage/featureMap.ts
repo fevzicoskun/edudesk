@@ -2,7 +2,7 @@
 // app/(dashboard)/ altındaki kök segment'lerle birebir; /platform bilinçli olarak dışarıda.
 export const FEATURES = [
   'anasayfa', 'yoklama', 'odevler', 'takvim', 'ders-programi',
-  'randevular', 'rapor', 'siniflar', 'kullanicilar', 'nobet',
+  'rapor', 'siniflar', 'kullanicilar', 'nobet',
   'yonetim', 'ayarlar', 'profil', 'mentorluk',
 ] as const
 

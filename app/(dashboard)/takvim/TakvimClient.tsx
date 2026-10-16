@@ -13,7 +13,6 @@ const TYPE_STYLE: Record<CalendarEvent['type'], { dot: string; label: string }> 
   tatil:    { dot: 'bg-rose-500',    label: 'Tatil' },
   etkinlik: { dot: 'bg-violet-500',  label: 'Etkinlik' },
   nobet:    { dot: 'bg-amber-500',   label: 'Nöbet' },
-  randevu:  { dot: 'bg-sky-500',     label: 'Veli randevusu' },
   odev:     { dot: 'bg-emerald-500', label: 'Ödev teslimi' },
 }
 

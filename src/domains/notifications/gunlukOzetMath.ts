@@ -6,7 +6,6 @@ export interface GunlukOzetInput {
   nobetSatirlari: string[] // formatDutyReminder çıktıları (öneksiz)
   eksikYoklamaSiniflari: string[] // dün yoklaması alınmamış mentor sınıf adları
   bugunTeslimOdevler: string[] // bugün teslim ödev başlıkları
-  randevular: { period: number; studentName: string }[]
 }
 
 // Önceki okul gününe kaç gün geri gidilir: Pazartesi(1) → 3 (Cuma), diğerleri → 1.
@@ -30,10 +29,6 @@ export function formatGunlukOzet(i: GunlukOzetInput): { title: string; body: str
     lines.push(`📚 Bugün teslim: "${i.bugunTeslimOdevler[0]}"`)
   } else if (i.bugunTeslimOdevler.length > 1) {
     lines.push(`📚 Bugün teslim: "${i.bugunTeslimOdevler[0]}" (+${i.bugunTeslimOdevler.length - 1} ödev)`)
-  }
-
-  for (const m of [...i.randevular].sort((a, b) => a.period - b.period)) {
-    lines.push(`👤 Veli görüşmesi: ${m.period}. ders ${m.studentName}`)
   }
 
   if (!lines.length) return null

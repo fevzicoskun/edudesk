@@ -22,8 +22,6 @@ import { schoolYearStart } from '@/src/shared/utils'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { ATTENDANCE_WARN_DAYS, ATTENDANCE_LIMIT_DAYS } from '@/src/shared/constants/attendance'
 import { LABELS } from '@/app/(dashboard)/odevler/[id]/statusboard/types'
-import VeliGorusmeleriSection, { type MeetingRow } from './VeliGorusmeleriSection'
-import { MeetingRepository } from '@/src/domains/meetings/repositories/MeetingRepository'
 import ZamanCizelgesiSection from './ZamanCizelgesiSection'
 import { buildStudentTimeline } from '@/src/domains/classes/lib/timelineMath'
 import { donemBasi } from '@/src/shared/utils'
@@ -111,17 +109,6 @@ export default async function OgrenciDetayPage({
 
   const studentTasks = await TaskService.getStudentTasks(studentId)
 
-  // Öğrenci 360: veli görüşmeleri (RLS görünürlüğü kırpar) + öğretmen adları.
-  const meetingsRes = await MeetingRepository.listByStudent(studentId, schoolId)
-  const meetingsRows = (meetingsRes.data ?? []) as MeetingRow[]
-  const meetingTeacherIds = [...new Set(meetingsRows.map(m => m.teacher_id))]
-  const teacherNames: Record<string, string> = {}
-  if (meetingTeacherIds.length) {
-    const { data: teacherProfiles } = await supabase
-      .from('profiles').select('id, full_name').in('id', meetingTeacherIds)
-    for (const p of teacherProfiles ?? []) teacherNames[p.id as string] = p.full_name as string
-  }
-
   const cls = classResult.data
   const student = studentResult.data
   if ('error' in odevRes) throw new Error(odevRes.error)
@@ -162,9 +149,6 @@ export default async function OgrenciDetayPage({
     grades: grades.map(g => ({
       examDate: g.grade_columns.exam_date, title: g.grade_columns.title,
       score: g.score, maxScore: g.grade_columns.max_score,
-    })),
-    meetings: meetingsRes.error ? [] : meetingsRows.map(m => ({
-      date: m.meet_date, status: m.status, teacherName: teacherNames[m.teacher_id] ?? 'Öğretmen',
     })),
     mentorReports: [], // görüşme notları Metodbox'ta (2026-10-11)
     contactLogs: (contactLogsRes.data ?? []).map(c => ({ date: c.contacted_at, method: c.contact_method })),
@@ -313,12 +297,6 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
-
-      <VeliGorusmeleriSection
-        meetings={meetingsRows}
-        teacherNames={teacherNames}
-        hasError={!!meetingsRes.error}
-      />
 
       <NotGecmisiSection grades={grades} />
 

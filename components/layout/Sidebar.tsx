@@ -80,8 +80,7 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     grup: 'diger',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>,
   },
-  // ponytail: Veli Görüşmeleri (/randevular) menüden gizli (kullanıcı isteği 2026-09-30); sayfa duruyor,
-  // geri açmak için girdiyi git geçmişinden geri al. Mentörlük 2026-10-07'den beri yalnız mentörlüğü olana görünür.
+  // Mentörlük 2026-10-07'den beri yalnız mentörlüğü olana görünür.
   {
     href: '/mentorluk',
     label: 'Mentörlük',

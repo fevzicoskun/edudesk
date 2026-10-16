@@ -40,7 +40,7 @@ test.describe('Sayfa genişlikleri — öğretmen', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json'), viewport: { width: 1600, height: 900 } })
   test('genel bakış sayfalarında başlık aynı hizada', async ({ page }) => {
     const ref = await baslikX(page, '/odevler')
-    for (const y of ['/siniflar', '/mentorluk', '/takvim', '/ders-programi', '/randevular']) {
+    for (const y of ['/siniflar', '/mentorluk', '/takvim', '/ders-programi']) {
       expect(await baslikX(page, y), y).toBe(ref)
     }
   })

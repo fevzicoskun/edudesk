@@ -6,7 +6,6 @@ const bos = {
   nobetSatirlari: [] as string[],
   eksikYoklamaSiniflari: [] as string[],
   bugunTeslimOdevler: [] as string[],
-  randevular: [] as { period: number; studentName: string }[],
 }
 
 describe('previousSchoolDayGap', () => {
@@ -28,20 +27,18 @@ describe('formatGunlukOzet', () => {
     expect(formatGunlukOzet({ ...bos, bugunTeslimOdevler: ['Kesirler'] })?.title).toBe('Günlük özet')
   })
 
-  it('tam gövde: satır sırası ders → nöbet → yoklama → ödev → randevu', () => {
+  it('tam gövde: satır sırası ders → nöbet → yoklama → ödev', () => {
     const r = formatGunlukOzet({
       dersSatiri: '1. ders 9-A',
       nobetSatirlari: ['Bugün nöbettesin: 12:00 · Bahçe'],
       eksikYoklamaSiniflari: ['9-A'],
       bugunTeslimOdevler: ['Kesirler'],
-      randevular: [{ period: 3, studentName: 'Ayşe Yılmaz' }],
     })
     expect(r?.body.split('\n')).toEqual([
       '1. ders 9-A',
       '🔔 Bugün nöbettesin: 12:00 · Bahçe',
       '⚠️ Dün 9-A yoklaması alınmadı',
       '📚 Bugün teslim: "Kesirler"',
-      '👤 Veli görüşmesi: 3. ders Ayşe Yılmaz',
     ])
   })
 
@@ -55,17 +52,4 @@ describe('formatGunlukOzet', () => {
     expect(r?.body).toBe('📚 Bugün teslim: "Kesirler" (+2 ödev)')
   })
 
-  it('randevular period sırasına dizilir, her biri ayrı satır', () => {
-    const r = formatGunlukOzet({
-      ...bos,
-      randevular: [
-        { period: 5, studentName: 'Ali Kaya' },
-        { period: 2, studentName: 'Ayşe Yılmaz' },
-      ],
-    })
-    expect(r?.body.split('\n')).toEqual([
-      '👤 Veli görüşmesi: 2. ders Ayşe Yılmaz',
-      '👤 Veli görüşmesi: 5. ders Ali Kaya',
-    ])
-  })
 })

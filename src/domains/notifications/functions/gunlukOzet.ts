@@ -1,5 +1,5 @@
 // Günlük Özet: hafta içi 07:30'da öğretmene tek sabah bildirimi
-// (dersler + nöbet + dün eksik yoklama + bugün teslim ödev + bugünkü veli randevuları).
+// (dersler + nöbet + dün eksik yoklama + bugün teslim ödev).
 // dersProgramiOzeti'nin evrimi. Spec: docs/superpowers/specs/2026-07-04-gunluk-ozet-design.md
 import { inngest } from '@/src/infrastructure/inngest'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
@@ -29,17 +29,16 @@ export const gunlukOzetFn = inngest.createFunction(
       dun.setDate(dun.getDate() - previousSchoolDayGap(today))
       const dunISO = istDate(dun)
 
-      // 6 toplu okul-geneli sorgu (RLS bypass). Fail-quiet: hatalı sorgunun bölümü boş kalır.
-      const [schedules, classes, duties, attendance, homeworks, meetings] = await Promise.all([
+      // 5 toplu okul-geneli sorgu (RLS bypass). Fail-quiet: hatalı sorgunun bölümü boş kalır.
+      const [schedules, classes, duties, attendance, homeworks] = await Promise.all([
         // Tüm okullar tek sorguda → max_rows=1000 aşılır (dünkü yoklama tek başına okul başına öğrenci sayısı kadar); sayfalı
         fetchAllResult((f, t) => db.from('lesson_schedules').select('teacher_id, school_id, slots, periods').not('teacher_id', 'is', null).order('id').range(f, t)),
         fetchAllResult((f, t) => db.from('classes').select('id, name, school_id, mentor_teacher_id').is('deleted_at', null).order('id').range(f, t)),
         fetchAllResult((f, t) => db.from('teacher_duties').select('teacher_id, school_id, day_of_week, time_range, location, notes').eq('day_of_week', today).order('id').range(f, t)),
         fetchAllResult((f, t) => db.from('attendance').select('class_id, school_id').eq('date', dunISO).order('id').range(f, t)),
         fetchAllResult((f, t) => db.from('homeworks').select('teacher_id, school_id, title').eq('due_date', todayISO).is('deleted_at', null).order('id').range(f, t)),
-        fetchAllResult((f, t) => db.from('parent_meetings').select('teacher_id, school_id, period, students(full_name)').eq('meet_date', todayISO).eq('status', 'planlandi').order('id').range(f, t)),
       ])
-      for (const [name, r] of Object.entries({ schedules, classes, duties, attendance, homeworks, meetings })) {
+      for (const [name, r] of Object.entries({ schedules, classes, duties, attendance, homeworks })) {
         if (r.error) logger.error({ event: 'gunluk_ozet_query_failed', query: name, err: r.error.message }, 'Günlük özet sorgusu başarısız')
       }
 
@@ -67,15 +66,6 @@ export const gunlukOzetFn = inngest.createFunction(
         hwByTeacher.set(h.teacher_id as string, list)
       }
 
-      // Bölüm: bugünkü veli randevuları
-      const meetingsByTeacher = new Map<string, { period: number; studentName: string; school_id: string }[]>()
-      for (const m of meetings.data ?? []) {
-        const student = m.students
-        const list = meetingsByTeacher.get(m.teacher_id as string) ?? []
-        list.push({ period: m.period as number, studentName: student?.full_name ?? '?', school_id: m.school_id as string })
-        meetingsByTeacher.set(m.teacher_id as string, list)
-      }
-
       // Bölüm: nöbetler
       const dutiesByTeacher = new Map<string, { school_id: string; lines: string[] }>()
       for (const d of duties.data ?? []) {
@@ -98,7 +88,7 @@ export const gunlukOzetFn = inngest.createFunction(
       // Alıcı kümesi = tüm kaynakların birleşimi; school_id ilk bulunan kaynaktan.
       const teacherIds = new Set<string>([
         ...dersByTeacher.keys(), ...dutiesByTeacher.keys(), ...missingByMentor.keys(),
-        ...hwByTeacher.keys(), ...meetingsByTeacher.keys(),
+        ...hwByTeacher.keys(),
       ])
 
       const notifs: { user_id: string; school_id: string; title: string; body: string }[] = []
@@ -110,15 +100,13 @@ export const gunlukOzetFn = inngest.createFunction(
           nobetSatirlari: dutiesByTeacher.get(tid)?.lines ?? [],
           eksikYoklamaSiniflari: (missingByMentor.get(tid) ?? []).map(x => x.name),
           bugunTeslimOdevler: (hwByTeacher.get(tid) ?? []).map(x => x.title),
-          randevular: (meetingsByTeacher.get(tid) ?? []).map(x => ({ period: x.period, studentName: x.studentName })),
         }
         const ozet = formatGunlukOzet(input)
         if (!ozet) continue
 
         const schoolId =
           dersByTeacher.get(tid)?.school_id ?? dutiesByTeacher.get(tid)?.school_id ??
-          missingByMentor.get(tid)?.[0]?.school_id ?? hwByTeacher.get(tid)?.[0]?.school_id ??
-          meetingsByTeacher.get(tid)?.[0]?.school_id ?? ''
+          missingByMentor.get(tid)?.[0]?.school_id ?? hwByTeacher.get(tid)?.[0]?.school_id ?? ''
         if (!schoolId) continue
 
         notifs.push({ user_id: tid, school_id: schoolId, title: ozet.title, body: ozet.body })

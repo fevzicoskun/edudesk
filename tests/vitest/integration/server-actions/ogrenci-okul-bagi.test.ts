@@ -1,5 +1,5 @@
 /**
- * 2026-10-03: veli görüşme notu (addParentContactLog) ve veli randevusu (MeetingService.create) öğrencinin
+ * 2026-10-03: veli görüşme notu (addParentContactLog) öğrencinin
  * kendi okulunda olduğunu doğrulamıyordu (öğrenci notu ve mentörlük doğruluyordu). Service client RLS'i
  * atladığı için bu test tam olarak servis kontrolünü ölçer.
  */
@@ -19,7 +19,6 @@ vi.mock('@/src/infrastructure/supabase/server', () => ({
 
 const { getCurrentUser, getCurrentProfile, getCurrentPermissions, requireSchoolId } = await import('@/src/shared/auth')
 const { ClassService } = await import('@/src/domains/classes/services/ClassService')
-const { MeetingService } = await import('@/src/domains/meetings/services/MeetingService')
 
 let okul: TestSchool, digerOkul: TestSchool, ogretmen: TestUser
 let yabanciOgrenci: string, kendiOgrenci: string
@@ -38,7 +37,6 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await serviceDb.from('parent_contact_logs').delete().in('school_id', [okul.id, digerOkul.id])
-  await serviceDb.from('parent_meetings').delete().in('school_id', [okul.id, digerOkul.id])
   await cleanupTestData({ userIds: [ogretmen.id], schoolIds: [okul.id, digerOkul.id] })
 })
 
@@ -57,13 +55,6 @@ describe('öğrenci başka okuldaysa kayıt açılmaz', () => {
       note: 'x', contact_method: 'telefon', contacted_at: new Date().toISOString(),
     })).rejects.toThrow()
     const { data } = await serviceDb.from('parent_contact_logs').select('id').eq('student_id', yabanciOgrenci)
-    expect(data ?? []).toHaveLength(0)
-  })
-
-  it('veli randevusu: başka okulun öğrencisi → hata, satır yok', async () => {
-    const r = await MeetingService.create({ studentId: yabanciOgrenci, meetDate: '2099-06-01', period: 1, note: null })
-    expect(r.error).toBeTruthy()
-    const { data } = await serviceDb.from('parent_meetings').select('id').eq('student_id', yabanciOgrenci)
     expect(data ?? []).toHaveLength(0)
   })
 

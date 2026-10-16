@@ -7,25 +7,10 @@ export type CalendarDb = SupabaseClient<Database>
 
 // Okuma metodları client'ı parametre alır:
 //   /takvim → createClient (kullanıcı oturumu, RLS uygular):
-//     parent_meetings: öğretmen kendi satırları, müdür/MY okul geneli (20260704120000).
 //     school_events: SELECT okul üyeleri, yazma müdür/MY (20260705120000).
 //   ICS beslemesi → service-role (RLS YOK). Bu yüzden kapsam RLS'e bırakılmaz: her sorgu school_id ile,
 //   yönetici değilse teacherId ile AÇIKÇA filtrelenir (RLS ile aynı sonuç; çerezli yolda savunma katmanı).
 export const CalendarRepository = {
-  // Aralıktaki randevular (iptal hariç). teacherId verilirse yalnız o öğretmenin.
-  async listMeetings(db: CalendarDb, schoolId: string, from: string, to: string, teacherId: string | null) {
-    let q = db
-      .from('parent_meetings')
-      .select('id, meet_date, period, students(full_name)')
-      .eq('school_id', schoolId)
-      .gte('meet_date', from)
-      .lte('meet_date', to)
-      .neq('status', 'iptal')
-    if (teacherId) q = q.eq('teacher_id', teacherId)
-    q = q.order('id')
-    return fetchAllResult((f, t) => q.range(f, t)) // .limit(1000) = max_rows: sessiz kesilirdi
-  },
-
   // Aralıkta teslim tarihi olan ödevler. teacherId verilirse yalnız o öğretmenin.
   async listHomeworks(db: CalendarDb, schoolId: string, from: string, to: string, teacherId: string | null) {
     let q = db

@@ -1,8 +1,9 @@
-// Öğrenci 360 zaman çizelgesi: 7 kaynağı tek kronolojik akışta birleştiren saf mantık.
+// Öğrenci 360 zaman çizelgesi: kaynakları tek kronolojik akışta birleştiren saf mantık.
+// Veli randevuları kaldırıldı (2026-10-17, hiç kullanılmadı).
 // Spec: docs/superpowers/specs/2026-07-04-ogrenci-360-design.md
 
 export type TimelineKind =
-  | 'devamsizlik' | 'odev' | 'not' | 'gorusme' | 'rehberlik' | 'veli_iletisim' | 'ogretmen_notu'
+  | 'devamsizlik' | 'odev' | 'not' | 'rehberlik' | 'veli_iletisim' | 'ogretmen_notu'
 
 export interface TimelineEvent {
   date: string
@@ -14,7 +15,6 @@ export interface TimelineSources {
   attendance: { date: string; status: string }[]
   submissions: { status: string; dueDate: string | null; title: string | null }[]
   grades: { examDate: string | null; title: string; score: number | null; maxScore: number }[]
-  meetings: { date: string; status: string; teacherName: string }[]
   mentorReports: { date: string }[]
   contactLogs: { date: string; method: string }[]
   studentNotes: { date: string; body: string }[]
@@ -50,13 +50,6 @@ export function buildStudentTimeline(s: TimelineSources, windowStart: string): T
   for (const g of s.grades) {
     if (inWindow(g.examDate, windowStart)) {
       events.push({ date: g.examDate, kind: 'not', label: `"${g.title}": ${g.score ?? '—'}/${g.maxScore}` })
-    }
-  }
-  for (const m of s.meetings) {
-    if (m.status === 'iptal') continue
-    if (inWindow(m.date, windowStart)) {
-      const durum = m.status === 'yapildi' ? 'yapıldı' : 'planlandı'
-      events.push({ date: m.date, kind: 'gorusme', label: `Veli görüşmesi (${durum}) — ${m.teacherName}` })
     }
   }
   for (const r of s.mentorReports) {
