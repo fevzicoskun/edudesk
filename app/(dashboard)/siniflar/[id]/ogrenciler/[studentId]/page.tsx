@@ -12,7 +12,6 @@ import type { SubmissionStatus } from '@/src/shared/types'
 import OdevGecmisiSection from './OdevGecmisiSection'
 import { genelDurum, odevSeviyesi, MIN_DEGERLENDIRILEN, type GenelDurum } from '@/src/domains/classes/lib/genelDurum'
 import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
-import NotGecmisiSection from './NotGecmisiSection'
 import OgrenciHatirlaticilar from './OgrenciHatirlaticilar'
 import { TaskService } from '@/src/domains/tasks/services/TaskService'
 import DevamsizlikPaneli from './DevamsizlikPaneli'
@@ -84,7 +83,7 @@ export default async function OgrenciDetayPage({
   // Yoklama modülü kapalıysa devamsızlık sorgusu, çubuğu ve paneli yok
   const yoklama = await okulYoklamaAktif(schoolId)
   const kapsam = (await HomeworkService.getOdevKapsami()) ?? { tumu: false as const, ogretmenIds: [currentProfile.id] }
-  const [classResult, studentResult, odevRes, notesResult, attendanceRes, gradesRes] = await Promise.all([
+  const [classResult, studentResult, odevRes, notesResult, attendanceRes] = await Promise.all([
     supabase.from('classes').select('id, name').eq('id', classId).eq('school_id', schoolId).single(),
     supabase.from('students').select('id, full_name, student_number, class_id, veli_email, veli_telefon, veli_ad').eq('id', studentId).eq('class_id', classId).eq('school_id', schoolId).single(),
     // 2026-09-28: okuldaki öğretmen öğrencinin TÜM ödevlerini salt-okunur görür. Yazdırılabilir özetle
@@ -94,7 +93,6 @@ export default async function OgrenciDetayPage({
     yoklama
       ? supabase.from('attendance').select('date, status').eq('student_id', studentId).eq('school_id', schoolId).in('status', ['absent', 'late', 'excused']).gte('date', schoolYearStart()).order('date', { ascending: false })
       : Promise.resolve({ data: [] as { date: string; status: string }[], error: null }),
-    supabase.from('grade_entries').select('score, grade_columns!inner(title, grade_type, max_score, exam_date, class_id)').eq('student_id', studentId).eq('school_id', schoolId).eq('grade_columns.class_id', classId),
   ])
 
   if (!classResult.data || !studentResult.data) notFound()
@@ -129,8 +127,6 @@ export default async function OgrenciDetayPage({
   const { etiket: riskLabel, renk: riskColor } = DURUM_ROZET[durum]
 
   // Not defteri
-  type GradeRow = { score: number | null; grade_columns: { title: string; grade_type: string; max_score: number; exam_date: string | null; class_id: string } }
-  const grades = (gradesRes.data ?? []) as GradeRow[]
 
   const mentor = (await MentorService.getMentorAdlari()).get(studentId) ?? null
 
@@ -138,10 +134,6 @@ export default async function OgrenciDetayPage({
   const timelineEvents = buildStudentTimeline({
     attendance: attendanceRecords,
     submissions: odevler.flatMap(h => h.status ? [{ status: h.status, dueDate: h.due_date, title: h.title }] : []),
-    grades: grades.map(g => ({
-      examDate: g.grade_columns.exam_date, title: g.grade_columns.title,
-      score: g.score, maxScore: g.grade_columns.max_score,
-    })),
     mentorReports: [], // görüşme notları Metodbox'ta (2026-10-11)
     studentNotes: notes.map(n => ({ date: n.created_at, body: n.body })),
   }, donemBasi())
@@ -288,8 +280,6 @@ export default async function OgrenciDetayPage({
           )}
         </section>
       </div>
-
-      <NotGecmisiSection grades={grades} />
 
       <OgrenciHatirlaticilar initial={studentTasks} studentId={studentId} classId={classId} />
 

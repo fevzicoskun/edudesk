@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildStudentTimeline, type TimelineSources } from '@/src/domains/classes/lib/timelineMath'
 
 const bos: TimelineSources = {
-  attendance: [], submissions: [], grades: [],
+  attendance: [], submissions: [],
   mentorReports: [], studentNotes: [],
 }
 const W = '2026-02-01' // pencere başı
@@ -30,7 +30,7 @@ describe('buildStudentTimeline', () => {
         { date: 'garbage', status: 'absent' },      // bozuk
         { date: '2026-03-01', status: 'late' },     // geçerli
       ],
-      grades: [{ examDate: null, title: 'Yazılı', score: 80, maxScore: 100 }], // null tarih
+      studentNotes: [{ date: '', body: 'boş tarih' }], // boş tarih
     }, W)
     expect(r).toHaveLength(1)
     expect(r[0].label).toBe('Geç geldi')
@@ -52,12 +52,11 @@ describe('buildStudentTimeline', () => {
   it('etiket biçimleri doğru', () => {
     const r = buildStudentTimeline({
       ...bos,
-      grades: [{ examDate: '2026-03-02', title: '1. Yazılı', score: 85, maxScore: 100 }],
       mentorReports: [{ date: '2026-03-04' }],
       studentNotes: [{ date: '2026-03-06', body: 'a'.repeat(100) }],
     }, W)
     const byKind = Object.fromEntries(r.map(e => [e.kind, e.label]))
-    expect(byKind['not']).toBe('"1. Yazılı": 85/100')
+    expect(byKind).not.toHaveProperty('not') // not geçmişi kaldırıldı (2026-10-17)
     expect(byKind).not.toHaveProperty('gorusme') // veli randevuları kaldırıldı (2026-10-17)
     expect(byKind['rehberlik']).toBe('Rehberlik görüşmesi')
     expect(byKind).not.toHaveProperty('veli_iletisim') // veli iletişim kayıtları kaldırıldı (2026-10-17)
