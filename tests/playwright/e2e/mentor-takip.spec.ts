@@ -235,6 +235,51 @@ test('kayıt hatasının nedeni ekranda görünür (boş görev adı)', async ({
   await expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 })
 
+test('geçen haftayı kopyala: plan gelir, kitap sayfası kaldığı yerden (45–60 → 61–76)', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-26`)
+  await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible({ timeout: 20_000 })
+  await page.getByRole('button', { name: 'Geçen haftayı kopyala' }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'planı kopyalandı' })).toBeVisible({ timeout: 15_000 })
+  await kaydedildi(page)
+  await expect(page.getByLabel('Başlangıç sayfası').first()).toHaveValue('61')
+  await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('76')
+  const { data } = await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-26').single()
+  const bagli = (data!.icerik as { gorevler: { kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(g => g.kitapAdi === 'E2E Acil Mat')
+  expect(bagli?.sayfaBas).toBe(61)
+  // 19 Ekim haftasının kendisine dokunulmadı
+  const { data: eski } = await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single()
+  expect((eski!.icerik as { gorevler: { kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(g => g.kitapAdi === 'E2E Acil Mat')?.sayfaBas).toBe(45)
+})
+
+test('bu planı tüm mentilerime uygula: planı olmayan mentiye kitabıyla kopyalanır', async ({ page }) => {
+  const HAFTA = '2026-10-19'
+  const { data: alinan } = await db.from('mentorships').select('student_id').eq('school_id', mentor.school_id)
+  const dolu = new Set((alinan ?? []).map(r => r.student_id))
+  const { data: ogr } = await db.from('students').select('id').eq('school_id', mentor.school_id).is('deleted_at', null).limit(200)
+  const ikinci = ogr!.find(o => !dolu.has(o.id))!.id
+  await db.from('mentorships').insert({ school_id: mentor.school_id, mentor_id: mentor.id, student_id: ikinci, assigned_by: mentor.id })
+  const { data: mentiler } = await db.from('mentorships').select('student_id').eq('mentor_id', mentor.id)
+  const { data: once } = await db.from('mentor_haftalari').select('student_id').eq('hafta_basi', HAFTA).in('student_id', mentiler!.map(m => m.student_id))
+  const oncedenVar = new Set((once ?? []).map(r => r.student_id))
+  try {
+    await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}`)
+    page.on('dialog', d => d.accept())
+    await page.getByRole('button', { name: 'Bu planı tüm mentilerime uygula' }).click()
+    await expect(page.getByRole('status').filter({ hasText: /\d+ öğrenciye uygulandı/ })).toBeVisible({ timeout: 20_000 })
+    const { data: h } = await db.from('mentor_haftalari').select('icerik, islendi').eq('student_id', ikinci).eq('hafta_basi', HAFTA).single()
+    expect(h!.islendi).toBe(false)
+    const g = (h!.icerik as { gorevler: { kitapId?: string; kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(x => x.kitapAdi === 'E2E Acil Mat')
+    expect(g?.sayfaBas).toBe(45)
+    const { data: kitap } = await db.from('mentor_kitaplari').select('id, ders').eq('student_id', ikinci).eq('ad', 'E2E Acil Mat').single()
+    expect(kitap).toEqual({ id: g!.kitapId, ders: 'Matematik' })
+  } finally {
+    const yazilan = mentiler!.map(m => m.student_id).filter(id => id !== ogrId && !oncedenVar.has(id))
+    await db.from('mentor_haftalari').delete().eq('hafta_basi', HAFTA).in('student_id', yazilan)
+    await db.from('mentor_kitaplari').delete().eq('ad', 'E2E Acil Mat').in('student_id', yazilan)
+    await db.from('mentorships').delete().eq('student_id', ikinci).eq('mentor_id', mentor.id)
+  }
+})
+
 test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddeder; sonuç kâğıdı tek A4; kilidi aç', async ({ page }) => {
   const HAFTA = '2026-11-02'
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()

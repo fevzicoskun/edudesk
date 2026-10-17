@@ -7,7 +7,7 @@ vi.mock('@/src/domains/mentor/repositories/TakipRepository', () => ({
   TakipRepository: {
     acikMi: vi.fn(), mentoruMu: vi.fn(), haftaEkle: vi.fn(), haftaGuncelle: vi.fn(),
     ogrenci: vi.fn(), hafta: vi.fn(), oncekiHafta: vi.fn(), kitaplar: vi.fn(), konuDurumlari: vi.fn(),
-    gecmis: vi.fn(), konular: vi.fn(), konuTohumla: vi.fn(), haftaKapat: vi.fn(), kilidiAc: vi.fn(),
+    gecmis: vi.fn(), konular: vi.fn(), konuTohumla: vi.fn(), haftaKapat: vi.fn(), kilidiAc: vi.fn(), mentiler: vi.fn(), durumlar: vi.fn(), kitapEkle: vi.fn(),
   },
 }))
 vi.mock('@/src/domains/homework/services/HomeworkService', () => ({
@@ -152,5 +152,55 @@ describe('TakipService — haftayı kapat (2026-10-17)', () => {
     vi.mocked(R.kilidiAc).mockResolvedValue(undefined as never)
     expect(await TakipService.kilidiAc(SID, '2026-10-19')).toEqual({})
     expect(R.kilidiAc).toHaveBeenCalledWith('s1', SID, '2026-10-19')
+  })
+})
+
+describe('TakipService — kopyala / herkese uygula (2026-10-17)', () => {
+  const B = '22222222-2222-4222-8222-222222222222', C = '33333333-3333-4333-8333-333333333333'
+  const plan = () => {
+    const h = yeniHafta(null, 9)
+    h.icerik.gorevler[1] = { ...h.icerik.gorevler[1], kitapId: 'kA', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 60, yapti: true }
+    h.icerik.sonuclar = [{ anahtar: 'k:kA', ad: 'Acil Mat', ders: 'Matematik', sayfa: '', cozulen: 40, dogru: 30, yanlis: 8, bos: 2 }]
+    return h
+  }
+  const satir = (h = plan()) => ({ hafta_basi: '2026-10-12', seviye: h.seviye, soru_hedefi: h.soruHedefi, icerik: h.icerik, gorusme: { iyi: 'not' }, updated_at: 't0', kapali_at: null })
+
+  it('geçen haftayı kopyala: önceki kayıttan sonuçsuz plan, sayfa devam eder; yazmaz', async () => {
+    vi.mocked(R.oncekiHafta).mockResolvedValue(satir() as never)
+    const r = await TakipService.oncekiPlan(SID, '2026-10-19')
+    expect(r.kaynak).toBe('2026-10-12')
+    expect(r.veri!.icerik.gorevler[1]).toMatchObject({ kitapId: 'kA', sayfaBas: 61, sayfaSon: 76, yapti: false })
+    expect(r.veri!.icerik.sonuclar ?? []).toEqual([])
+    expect(R.haftaEkle).not.toHaveBeenCalled()
+  })
+  it('önceki kayıt yoksa anlaşılır hata', async () => {
+    vi.mocked(R.oncekiHafta).mockResolvedValue(null as never)
+    expect((await TakipService.oncekiPlan(SID, '2026-10-19')).error).toMatch(/plan yok/)
+  })
+
+  it('herkese uygula: planı olan atlanır; kitap yoksa tanımlanır, varsa (ad+ders) eşlenir; sonuç/görüşme taşınmaz', async () => {
+    vi.mocked(R.hafta).mockResolvedValue({ ...satir(), hafta_basi: '2026-10-19' } as never)
+    vi.mocked(R.mentiler).mockResolvedValue([SID, B, C, 'D'])
+    vi.mocked(R.durumlar).mockResolvedValue([{ student_id: 'D' }] as never) // D'nin bu hafta planı var
+    vi.mocked(R.kitaplar).mockImplementation(async (_s, ogr) => (
+      ogr === SID ? [{ id: 'kA', ad: 'Acil Mat', ders: 'Matematik' }]
+        : ogr === B ? [{ id: 'kB', ad: 'Acil Mat', ders: 'Matematik' }] : []) as never)
+    vi.mocked(R.kitapEkle).mockResolvedValue({ data: { id: 'kC', ad: 'Acil Mat', ders: 'Matematik' }, error: null } as never)
+
+    expect(await TakipService.herkeseUygula(SID, '2026-10-19')).toEqual({ uygulanan: 2, atlanan: 1 })
+    expect(R.kitapEkle).toHaveBeenCalledTimes(1)
+    expect(R.kitapEkle).toHaveBeenCalledWith('s1', C, 'Acil Mat', 'Matematik')
+    const yazilan = vi.mocked(R.haftaEkle).mock.calls.map(c => c[0])
+    expect(yazilan.map(y => y.student_id)).toEqual([B, C])
+    const gorev = (y: typeof yazilan[0]) => (y.icerik as { gorevler: { kitapId: string; sayfaBas: number; yapti: boolean }[] }).gorevler[1]
+    expect(gorev(yazilan[0])).toMatchObject({ kitapId: 'kB', sayfaBas: 45, yapti: false })
+    expect(gorev(yazilan[1])).toMatchObject({ kitapId: 'kC', sayfaBas: 45 })
+    expect((yazilan[0].icerik as { sonuclar?: unknown[] }).sonuclar ?? []).toEqual([])
+    expect(yazilan[0]).toMatchObject({ gorev_yapilan: 0, islendi: false, soru: 0 })
+  })
+  it('herkese uygula: bu haftanın planı kaydedilmemişse hata, kimseye yazmaz', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(null as never)
+    expect((await TakipService.herkeseUygula(SID, '2026-10-19')).error).toBeTruthy()
+    expect(R.haftaEkle).not.toHaveBeenCalled()
   })
 })

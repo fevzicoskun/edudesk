@@ -148,20 +148,44 @@ export function fark(bu: Ozet, onceki: Ozet | null): number | null {
 
 const sonucsuz = (g: Gorev): Gorev => ({ ...g, konu: '', sayfa: '', yapti: false, soru: null, dogru: null })
 
+/** Kitap başına sayfa kaydırma: haftadaki aralığın tamamı (min başlangıç–max bitiş) kadar ileri.
+ *  45–60 → 61–76; aynı kitap iki görevde 45–50 + 51–56 → 57–62 + 63–68. */
+function sayfaKaydir(gorevler: Gorev[]): Gorev[] {
+  const aralik = new Map<string, { bas: number; son: number }>()
+  for (const g of gorevler) {
+    if (!g.kitapId || g.sayfaBas == null) continue
+    const son = g.sayfaSon ?? g.sayfaBas
+    const a = aralik.get(g.kitapId)
+    aralik.set(g.kitapId, a ? { bas: Math.min(a.bas, g.sayfaBas), son: Math.max(a.son, son) } : { bas: g.sayfaBas, son })
+  }
+  return gorevler.map(g => {
+    const a = g.kitapId ? aralik.get(g.kitapId) : undefined
+    if (!a || g.sayfaBas == null) return g
+    const ofset = a.son - a.bas + 1
+    return { ...g, sayfaBas: g.sayfaBas + ofset, sayfaSon: g.sayfaSon == null ? g.sayfaSon : g.sayfaSon + ofset }
+  })
+}
+
+/** Önceki haftanın planı bu haftaya: görevler (bağlı kitap, sayfa kaldığı yerden), seviye, hedef, düzen, bitmemiş okuma.
+ *  Sonuç, görüşme ve mentör ödevi taşınmaz. "Geçen haftayı kopyala" ve yeni haftanın taslağı bunu kullanır. */
+export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
+  const ok = onceki.icerik.okuma
+  return {
+    seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
+    icerik: {
+      duzen: onceki.icerik.duzen, gorevler: sayfaKaydir(onceki.icerik.gorevler).map(sonucsuz), mentorOdevleri: [],
+      okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
+    },
+  }
+}
+
 /** Yeni hafta: önceki haftanın planı (sonuçsuz), seviye, hedef, düzen; bitmemiş kitap. Yoksa sınıf şablonu + Hafif. */
 export function yeniHafta(onceki: HaftaVerisi | null, sinif: number): HaftaVerisi {
   if (!onceki) return {
     seviye: 0, soruHedefi: varsayilanHedef(sinif, 0), gorusme: BOS_GORUSME,
     icerik: { duzen: VARSAYILAN_DUZEN, gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null },
   }
-  const ok = onceki.icerik.okuma
-  return {
-    seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
-    icerik: {
-      duzen: onceki.icerik.duzen, gorevler: onceki.icerik.gorevler.map(sonucsuz), mentorOdevleri: [],
-      okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
-    },
-  }
+  return planKopyala(onceki)
 }
 
 export type OkulOdevi = { id: string; subject: string; title: string; due_date: string; status: string | null; bekliyor: boolean }

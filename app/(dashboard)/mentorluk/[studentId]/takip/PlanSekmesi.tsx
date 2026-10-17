@@ -1,10 +1,10 @@
 'use client'
 import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
-import { kitapEkle, kitapSil } from '@/app/actions/mentor-takip'
+import { kitapEkle, kitapSil, oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
 import { GUNLER, SEVIYE_ADI, miktarYaz, varsayilanHedef, type Gorev, type Seviye } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu } from '@/src/domains/mentor/takip/sablonlar'
-import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import { dersKisa, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
 const kutu = 'w-full rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
@@ -15,7 +15,28 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
   const [kitaplar, setKitaplar] = useState(v.kitaplar)
   const [kitapAdi, setKitapAdi] = useState(''); const [kitapDers, setKitapDers] = useState('')
   const [hata, setHata] = useState<string | null>(null)
-  const [, basla] = useTransition()
+  const [bilgi, setBilgi] = useState<string | null>(null)
+  const [ustHata, setUstHata] = useState<string | null>(null)
+  const [isliyor, basla] = useTransition()
+  const kopyala = () => basla(async () => {
+    setBilgi(null); setUstHata(null)
+    const r = await oncekiPlan(v.ogrenci.id, v.hafta)
+    if (r.error || !r.veri) { setUstHata(r.error ?? 'Kopyalanamadı.'); return }
+    if (v.kayit && !confirm(`Bu haftanın planı ve girilmiş sonuçları, ${haftaEtiketi(r.kaynak!)} haftasının planıyla değiştirilsin mi?`)) return
+    const yeni = r.veri
+    degistir(() => yeni, true)
+    setBilgi(`${haftaEtiketi(r.kaynak!)} haftasının planı kopyalandı; kitap sayfaları kaldığı yerden devam ediyor.`)
+  })
+  const herkese = () => {
+    if (!confirm('Bu plan (bağlı kitaplar ve sayfalar dahil), bu hafta planı olmayan diğer mentilerinize kopyalansın mı?')) return
+    basla(async () => {
+      setBilgi(null); setUstHata(null)
+      if (!(await bosalt())) { setUstHata('Önce kayıt hatasını giderin.'); return }
+      const r = await herkeseUygula(v.ogrenci.id, v.hafta)
+      if (r.error) { setUstHata(r.error); return }
+      setBilgi(`${r.uygulanan} öğrenciye uygulandı${r.atlanan ? `; bu hafta planı olan ${r.atlanan} öğrenci atlandı` : ''}.`)
+    })
+  }
   const gorev = (id: string, p: Partial<Gorev>, hemen = false) =>
     degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => g.id === id ? { ...g, ...p } : g) } }), hemen)
   const konuListesi = (ders: string | null) => v.konular.filter(k => k.ders === (ders ?? ''))
@@ -41,9 +62,12 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
           onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Bu haftaki görevler silinir.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: sinifSablonu(v.ogrenci.sinif) } }), true) }}>
           Sınıf şablonuna dön
         </button>
+        <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={kopyala}>Geçen haftayı kopyala</button>
+        <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={herkese}>Bu planı tüm mentilerime uygula</button>
         <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={bosalt} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
 
+      {(bilgi || ustHata) && <p role={ustHata ? 'alert' : 'status'} className={`text-sm -mt-3 ${ustHata ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{ustHata ?? bilgi}</p>}
       <section aria-label="Program">
         {GUNLER.map((gunAdi, gun) => {
           const satirlar = veri.icerik.gorevler.filter(g => g.gun === gun)

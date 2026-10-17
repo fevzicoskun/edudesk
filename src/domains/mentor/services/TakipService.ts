@@ -8,7 +8,7 @@ import { kaydetSchema } from '../validators/takip'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
+  yeniHafta, planKopyala, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
   type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
 } from '../takip/takipMath'
 
@@ -131,6 +131,52 @@ export const TakipService = {
     }
     await R.haftaKapat(ab.schoolId, studentId, hafta, v.okulOdevleri as unknown as Json)
     return {}
+  },
+
+  /** "Geçen haftayı kopyala": en yakın önceki kaydın planı (sayfa kaldığı yerden). Yazmaz — istemci kendi kaydına koyar. */
+  async oncekiPlan(studentId: string, hafta: string): Promise<{ error?: string; veri?: HaftaVerisi; kaynak?: string }> {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    const o = await R.oncekiHafta(ab.schoolId, studentId, hafta)
+    if (!o) return { error: 'Önceki haftalarda plan yok.' }
+    return { veri: planKopyala(veriOf(o)), kaynak: o.hafta_basi }
+  },
+
+  /** Bu haftanın kayıtlı planı (görevler, bağlı kitap ve sayfalar, seviye, hedef, düzen) diğer mentilerin aynı haftasına.
+   *  Bu hafta kaydı olan atlanır. Kitap öğrencide ad+ders ile aranır, yoksa tanımlanır. Sonuç/görüşme/okuma taşınmaz. */
+  async herkeseUygula(studentId: string, hafta: string): Promise<{ error?: string; uygulanan?: number; atlanan?: number }> {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    const kaynak = await R.hafta(ab.schoolId, studentId, hafta)
+    if (!kaynak) return { error: 'Önce bu haftanın planını kaydedin (bir alanı değiştirin).' }
+    const k = veriOf(kaynak)
+    const kaynakDers = new Map((await R.kitaplar(ab.schoolId, studentId)).map(x => [x.id, x.ders]))
+    const hedefler = (await R.mentiler(ab.userId, ab.schoolId)).filter(id => id !== studentId)
+    const dolu = new Set((await R.durumlar(ab.schoolId, hedefler, hafta)).map(r => r.student_id))
+    let uygulanan = 0
+    for (const hedef of hedefler.filter(id => !dolu.has(id))) {
+      const mevcut = await R.kitaplar(ab.schoolId, hedef)
+      const esle = new Map<string, string>()
+      for (const g of k.icerik.gorevler) {
+        if (!g.kitapId || esle.has(g.kitapId)) continue
+        const ad = g.kitapAdi ?? '', ders = kaynakDers.get(g.kitapId) ?? ''
+        const var_ = mevcut.find(x => x.ad === ad && x.ders === ders)
+        if (var_) { esle.set(g.kitapId, var_.id); continue }
+        const { data, error } = await R.kitapEkle(ab.schoolId, hedef, ad, ders)
+        if (error || !data) throw new Error(error?.message ?? 'Kitap tanımlanamadı')
+        mevcut.push(data); esle.set(g.kitapId, data.id)
+      }
+      const icerik = {
+        duzen: k.icerik.duzen, mentorOdevleri: [], okuma: null,
+        gorevler: k.icerik.gorevler.map(g => ({ ...g, yapti: false, soru: null, dogru: null, ...(g.kitapId && { kitapId: esle.get(g.kitapId)! }) })),
+      }
+      const r = await R.haftaEkle({
+        school_id: ab.schoolId, student_id: hedef, hafta_basi: hafta, seviye: k.seviye, soru_hedefi: k.soruHedefi,
+        icerik: icerik as unknown as Json, gorusme: BOS_GORUSME as unknown as Json, updated_by: ab.userId, ...ozetHesapla(icerik),
+      })
+      if (!r.cakisma) uygulanan++ // bu arada başka ekrandan plan yazıldıysa dokunulmaz
+    }
+    return { uygulanan, atlanan: dolu.size }
   },
 
   async kilidiAc(studentId: string, hafta: string): Promise<{ error?: string }> {

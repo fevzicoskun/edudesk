@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -222,5 +222,29 @@ describe('soru sonuçları: kitap/ders başına tek satır (2026-10-17)', () => 
   it('yeni hafta sonuçları taşımaz', () => {
     const h = yeniHafta({ seviye: 1, soruHedefi: 200, icerik: { ...plan, sonuclar: [{ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: '', cozulen: 1, dogru: 1, yanlis: 0, bos: 0 }] }, gorusme: BOS_GORUSME }, 9)
     expect(h.icerik.sonuclar ?? []).toEqual([])
+  })
+})
+
+describe('planKopyala: kitap sayfası kaldığı yerden devam (2026-10-17)', () => {
+  const onceki = (gorevler: Gorev[]) => ({ seviye: 2 as const, soruHedefi: 350, icerik: icerik({ duzen: 'D', gorevler,
+    sonuclar: [{ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: '', cozulen: 1, dogru: 1, yanlis: 0, bos: 0 }] }), gorusme: { ...BOS_GORUSME, iyi: 'x' } })
+  it('tek görev 45–60 → 61–76', () => {
+    const h = planKopyala(onceki([g({ kitapId: 'k1', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60, yapti: true })]))
+    expect(h.icerik.gorevler[0]).toMatchObject({ kitapId: 'k1', sayfaBas: 61, sayfaSon: 76, yapti: false })
+  })
+  it('aynı kitap iki görevde (45–50, 51–56) → blok birlikte kayar (57–62, 63–68); başka kitap kendi aralığıyla', () => {
+    const h = planKopyala(onceki([
+      g({ id: 'a', kitapId: 'k1', sayfaBas: 45, sayfaSon: 50 }), g({ id: 'b', kitapId: 'k1', sayfaBas: 51, sayfaSon: 56 }),
+      g({ id: 'c', kitapId: 'k2', sayfaBas: 10, sayfaSon: 10 }), g({ id: 'd', kitapId: 'k3' }),
+    ]))
+    expect(h.icerik.gorevler.map(x => [x.sayfaBas, x.sayfaSon])).toEqual([[57, 62], [63, 68], [11, 11], [undefined, undefined]])
+  })
+  it('seviye, hedef, düzen taşınır; sonuç ve görüşme taşınmaz', () => {
+    const h = planKopyala(onceki([g()]))
+    expect([h.seviye, h.soruHedefi, h.icerik.duzen]).toEqual([2, 350, 'D'])
+    expect(h.icerik.sonuclar ?? []).toEqual([]); expect(h.gorusme).toEqual(BOS_GORUSME)
+  })
+  it('yeni haftanın otomatik taslağı da sayfayı devam ettirir', () => {
+    expect(yeniHafta(onceki([g({ kitapId: 'k1', sayfaBas: 45, sayfaSon: 60 })]), 9).icerik.gorevler[0]).toMatchObject({ sayfaBas: 61, sayfaSon: 76 })
   })
 })

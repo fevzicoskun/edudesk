@@ -83,6 +83,14 @@ export const TakipRepository = {
     if (error) throw new Error(error.message)
   },
 
+  /** Mentörün güncel mentileri (öğrenci id). */
+  async mentiler(userId: string, schoolId: string): Promise<string[]> {
+    const db = await createClient()
+    const { data, error } = await db.from('mentorships').select('student_id').eq('school_id', schoolId).eq('mentor_id', userId)
+    if (error) throw new Error(error.message)
+    return (data ?? []).map(r => r.student_id)
+  },
+
   async kitaplar(schoolId: string, studentId: string) {
     const db = await createClient()
     const { data, error } = await db.from('mentor_kitaplari').select('id, ad, ders')
