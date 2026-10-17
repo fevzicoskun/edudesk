@@ -10,7 +10,6 @@ import DevamsizlikRiskiWidget from './DevamsizlikRiskiWidget'
 import { BugunBolumu, OdevBolumu, OgretmenBolumu, MentorlukBolumu } from './YoneticiBolumleri'
 import KarneIndirButton from '../yonetim/KarneIndirButton'
 import AylikRaporButton from '../yonetim/AylikRaporButton'
-import UyariBandi from '../yonetim/UyariBandi'
 import BugunYoklamaWidget from '../yonetim/BugunYoklamaWidget'
 import AylikDevamsizlikWidget from '../yonetim/AylikDevamsizlikWidget'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
@@ -82,9 +81,6 @@ async function YoneticiWidgets({ fullName, classCount, mudur }: { fullName: stri
 
       <Suspense fallback={<><WidgetSkeleton /><WidgetSkeleton /></>}>
         <MYStatsWidget />
-      </Suspense>
-      <Suspense fallback={null}>
-        <UyariBandi />
       </Suspense>
 
       {([
