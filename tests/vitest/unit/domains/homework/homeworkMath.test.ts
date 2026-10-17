@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, basHarfleriBuyut, gunEkle, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
+import { kategorizeOdev, hicIsaretlenmedi, ayniKaynak, kaynakSec, kaynakAdiDuzelt, onerilenBaslik, basHarfleriBuyut, gunEkle, dersEslestir, type KategoriGirdi } from '@/src/domains/homework/homeworkMath'
 
 const BUGUN = new Date('2026-09-19T12:00:00+03:00')
 
@@ -168,5 +168,16 @@ describe('gunEkle', () => {
   })
   it('yaz saati / saat dilimi kayması yapmaz', () => {
     expect(gunEkle('2026-03-28', 1)).toBe('2026-03-29')
+  })
+})
+
+describe('dersEslestir', () => {
+  const liste = ['Matematik', 'İngilizce']
+  it('harf/boşluk farkı okulun yazımına çevrilir', () => {
+    expect(dersEslestir('MATEMATİK', liste)).toBe('Matematik')
+    expect(dersEslestir('  ingilizce ', liste)).toBe('İngilizce')
+  })
+  it('eşleşme yoksa yazılan kalır', () => {
+    expect(dersEslestir('Matematik 1.Aşama', liste)).toBe('Matematik 1.Aşama')
   })
 })

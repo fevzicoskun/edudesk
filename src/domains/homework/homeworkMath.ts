@@ -101,3 +101,10 @@ export function gunEkle(iso: string, gun: number): string {
   d.setUTCDate(d.getUTCDate() + gun)
   return d.toISOString().slice(0, 10)
 }
+
+/** Ders adı okulda kayıtlı bir dersle yalnız büyük/küçük harf ve boşlukta ayrışıyorsa okulun yazımına çevrilir
+ *  ("MATEMATİK" → "Matematik"); raporlarda aynı ders iki satır olmasın. Eşleşme yoksa yazılan kalır. */
+export function dersEslestir(deger: string, dersler: string[]): string {
+  const k = deger.trim().toLocaleLowerCase('tr')
+  return dersler.find(d => d.toLocaleLowerCase('tr') === k) ?? deger.trim()
+}

@@ -6,6 +6,7 @@ import { updateHomework, getClassWeekLoad } from '@/app/actions/homework'
 import Link from 'next/link'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
+import DersInput from '@/app/(dashboard)/odevler/DersInput'
 
 type HwData = {
   id: string
@@ -36,11 +37,13 @@ export default function OdevDuzenleForm({
   classes,
   sources,
   submissionCount,
+  dersler,
 }: {
   hw: HwData
   classes: ClassItem[]
   sources: SourceItem[]
   submissionCount: number
+  dersler: string[]
 }) {
   const [state, formAction, isPending] = useActionState(updateHomework, null)
 
@@ -126,7 +129,7 @@ export default function OdevDuzenleForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-              <input name="subject" type="text" required maxLength={100} className={field} defaultValue={hw.subject} />
+              <DersInput dersler={dersler} className={field} defaultValue={hw.subject} />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">

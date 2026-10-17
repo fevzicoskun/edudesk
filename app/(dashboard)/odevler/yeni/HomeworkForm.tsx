@@ -6,6 +6,7 @@ import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 import ClassWeekLoadSection from './ClassWeekLoadSection'
 import { onerilenBaslik } from '@/src/domains/homework/homeworkMath'
+import DersInput from '../DersInput'
 
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
@@ -38,12 +39,15 @@ export default function HomeworkForm({
   sources,
   defaults,
   varsayilanDers = '',
+  dersler = [],
 }: {
   classes: ClassItem[]
   sources: SourceItem[]
   defaults?: Defaults
   /** Öğretmenin branşı (profiles.subject) — her ödevde elle yazmasın diye. */
   varsayilanDers?: string
+  /** Okulun ödev dersleri (dersListesi) — öneri listesi */
+  dersler?: string[]
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
   const [isTemplate, setIsTemplate] = useState(false)
@@ -167,7 +171,7 @@ export default function HomeworkForm({
           {/* Ders */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Ders</label>
-            <input name="subject" type="text" required maxLength={100} placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
+            <DersInput dersler={dersler} placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
           </div>
 
           {/* Kaynak + Sayfa */}

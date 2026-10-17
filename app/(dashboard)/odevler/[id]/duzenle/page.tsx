@@ -4,6 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { isTeachingRole } from '@/src/shared/types'
 import Link from 'next/link'
 import OdevDuzenleForm from './OdevDuzenleForm'
+import { TakipService } from '@/src/domains/mentor/services/TakipService'
 
 export const metadata = { title: 'Ödev Düzenle' }
 
@@ -19,7 +20,7 @@ export default async function OdevDuzenle({
 
   const supabase = await createClient()
 
-  const [hwRes, sourcesRes, classesRes, subCountRes] = await Promise.all([
+  const [hwRes, sourcesRes, classesRes, subCountRes, dersler] = await Promise.all([
     supabase
       .from('homeworks')
       .select('id, title, subject, description, due_date, assigned_date, teacher_id, source_id, class_id, is_template')
@@ -45,6 +46,7 @@ export default async function OdevDuzenle({
       .from('homework_submissions')
       .select('homework_id', { count: 'exact', head: true })
       .eq('homework_id', id),
+    TakipService.dersSecenekleri(),
   ])
 
   const hw = hwRes.data
@@ -88,6 +90,7 @@ export default async function OdevDuzenle({
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
           submissionCount={subCountRes.count ?? 0}
+          dersler={dersler}
         />
       </div>
     </div>

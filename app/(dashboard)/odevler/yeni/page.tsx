@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import HomeworkForm, { type Defaults } from './HomeworkForm'
 import DeleteTemplateButton from './DeleteTemplateButton'
 import Link from 'next/link'
+import { TakipService } from '@/src/domains/mentor/services/TakipService'
 
 export default async function YeniOdevPage({
   searchParams,
@@ -18,7 +19,7 @@ export default async function YeniOdevPage({
   const { copy, template, templateSaved, guncellendi, tarih } = await searchParams
 
   const supabase = await createClient()
-  const [classesRes, sourcesRes, templatesRes] = await Promise.all([
+  const [classesRes, sourcesRes, templatesRes, dersler] = await Promise.all([
     supabase
       .from('classes')
       .select('id, name, grade')
@@ -41,6 +42,7 @@ export default async function YeniOdevPage({
       .eq('is_template', true)
       .is('deleted_at', null)
       .order('title'),
+    TakipService.dersSecenekleri(),
   ])
 
   const tarihDefault = tarih && /^\d{4}-\d{2}-\d{2}$/.test(tarih) ? tarih : undefined
@@ -188,6 +190,7 @@ export default async function YeniOdevPage({
           sources={sourcesRes.data ?? []}
           defaults={defaults ?? (tarihDefault ? { due_date: tarihDefault } : undefined)}
           varsayilanDers={profile.subject ?? ''}
+          dersler={dersler}
         />
       </div>
     </div>

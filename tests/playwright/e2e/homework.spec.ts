@@ -108,3 +108,18 @@ test.describe('Yeni ödev formu', () => {
     await expect(submitBtn).toBeEnabled({ timeout: 3_000 })
   })
 })
+
+test.describe('Ödev formu ders önerisi', () => {
+  test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
+
+  test('okul dersleri önerilir; farklı harfle yazılan ders okulun yazımına oturur', async ({ page }) => {
+    await page.goto('/odevler/yeni')
+    await page.waitForLoadState('networkidle')
+    const ders = page.locator('input[name="subject"]')
+    await expect(ders).toHaveAttribute('list', 'okul-dersleri')
+    expect(await page.locator('#okul-dersleri option[value="Matematik"]').count()).toBe(1)
+    await ders.fill('MATEMATİK')
+    await ders.blur()
+    await expect(ders).toHaveValue('Matematik')
+  })
+})
