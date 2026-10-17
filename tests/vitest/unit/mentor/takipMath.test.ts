@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
-  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
+  yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
   BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
@@ -93,6 +93,23 @@ describe('okulOdevleri / haftaDurumu', () => {
   it('Pzt–Paz arası, tarihe göre', () => {
     expect(okulOdevleri([k('b', '2026-10-25'), k('a', '2026-10-19'), k('d', '2026-10-26'), k('n', null)], '2026-10-19').map(o => o.id))
       .toEqual(['a', 'b'])
+  })
+  it('üç bölüm: tamamlanmamış (yapılmadı + teslimi geçmiş), bu hafta, gelecek hafta (2026-10-17)', () => {
+    const d = (id: string, due: string | null, status: HomeworkRecord['status']) => ({ ...k(id, due), status })
+    const b = okulOdevBolumleri([
+      d('eskiYapilmadi', '2026-10-08', 'yapilmadi'), d('eskiYapildi', '2026-10-09', 'yapildi'), d('eskiEksik', '2026-10-10', 'eksik'),
+      d('eskiIsaretsiz', '2026-10-12', null), d('buHafta', '2026-10-21', null), d('buHaftaYapilmadi', '2026-10-20', 'yapilmadi'),
+      d('gelecek', '2026-10-27', null), d('gelecekSonu', '2026-11-01', null), d('cokIleri', '2026-11-02', null), d('tarihsiz', null, 'yapilmadi'),
+    ], '2026-10-19')
+    expect(b.tamamlanmamis.map(o => o.id)).toEqual(['eskiYapilmadi'])
+    expect(b.buHafta.map(o => o.id)).toEqual(['buHaftaYapilmadi', 'buHafta'])
+    expect(b.gelecek.map(o => o.id)).toEqual(['gelecek', 'gelecekSonu'])
+  })
+  it('teslim durumu yalnız öğretmen işaretinden', () => {
+    const o = (status: string | null) => ({ id: 'x', subject: 'F', title: 'T', due_date: '2026-10-20', status, bekliyor: false })
+    expect(okulDurumYaz(o('yapildi'))).toBe('Yapıldı'); expect(okulDurumYaz(o('gec'))).toBe('Yapıldı (geç)')
+    expect(okulDurumYaz(o('yapilmadi'))).toBe('Yapılmadı'); expect(okulDurumYaz(o(null))).toBe('Henüz işaretlenmedi')
+    expect(okulDurumYaz(o('eksik'))).toBe('Eksik'); expect(okulDurumYaz(o('mazeretli'))).toBe('Mazeretli')
   })
   it('durum', () => {
     expect(haftaDurumu(null)).toBe('yok'); expect(haftaDurumu({ islendi: false })).toBe('kagitta'); expect(haftaDurumu({ islendi: true })).toBe('islendi')

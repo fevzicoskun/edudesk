@@ -1,13 +1,12 @@
 'use client'
 import {
-  GUNLER, miktarYaz, ozetHesapla, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
+  GUNLER, miktarYaz, ozetHesapla, okulDurumYaz, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
   sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk, type Gorev, type Gorusme, type Sonuc,
 } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
 const kutu = 'rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
-const DURUM: Record<string, string> = { yapildi: 'Yaptı', gec: 'Geç yaptı', eksik: 'Eksik', yapilmadi: 'Yapmadı', mazeretli: 'Mazeretli' }
 const netYaz = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 const sayi = (s: string) => (s === '' ? null : Math.max(0, Math.trunc(Number(s)) || 0))
 const GORUSME: [keyof Gorusme, string][] = [['iyi', 'İyi giden'], ['zor', 'Zorlandığı'], ['hedef', 'Gelecek hafta kendi hedefi'], ['odak', 'Gelecek haftanın odağı'], ['evde', 'Evde veliden ricam']]
@@ -117,9 +116,9 @@ export default function SonucSekmesi({ v, veri, degistir }: SekmeProps) {
 
       <section aria-label="Okul ödevleri">
         <h2 className="text-base font-semibold mb-2">Okul ödevleri <span className="text-xs font-normal text-gray-500 dark:text-slate-400">(dersin öğretmeninin işareti)</span></h2>
-        {v.okulOdevleri.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Bu hafta okul ödevi yok.</p>
-          : <ul className="text-sm space-y-1">{v.okulOdevleri.map(x => (
-              <li key={x.id}>{dersKisa(x.subject)} — {x.title}: <b>{x.status ? DURUM[x.status] ?? x.status : x.bekliyor ? 'Henüz kontrol edilmedi' : 'İşaretlenmedi'}</b></li>))}</ul>}
+        {v.okulOdevleri.buHafta.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Bu hafta okul ödevi yok.</p>
+          : <ul className="text-sm space-y-1">{v.okulOdevleri.buHafta.map(x => (
+              <li key={x.id}>{dersKisa(x.subject)} — {x.title}: <b className={x.status === 'yapilmadi' ? 'text-red-700 dark:text-red-400' : ''}>{okulDurumYaz(x)}</b></li>))}</ul>}
       </section>
 
       {mo.length > 0 && (

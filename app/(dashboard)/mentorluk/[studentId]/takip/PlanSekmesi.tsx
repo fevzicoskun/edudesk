@@ -97,11 +97,19 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
         })}
       </section>
 
-      <section aria-label="Okul ödevleri">
-        <h2 className="text-base font-semibold mb-2">Bu haftanın okul ödevleri</h2>
-        {v.okulOdevleri.length === 0
-          ? <p className="text-sm text-gray-500 dark:text-slate-400">Bu hafta son teslimli okul ödevi yok.</p>
-          : <ul className="text-sm space-y-1">{v.okulOdevleri.map(o => <li key={o.id}>{dersKisa(o.subject)} — {o.title} <span className="text-gray-500 dark:text-slate-400">({o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)})</span></li>)}</ul>}
+      <section aria-label="Okul ödevleri" className="space-y-3">
+        {([
+          ['Tamamlanmamış ödevler', v.okulOdevleri.tamamlanmamis, 'Yapılmadı işaretli, teslimi geçmiş ödev yok.', 'öğretmen yapıldı işaretleyene kadar her hafta görünür'],
+          ['Bu hafta teslim', v.okulOdevleri.buHafta, 'Bu hafta son teslimli okul ödevi yok.', null],
+          ['Gelecek hafta teslim', v.okulOdevleri.gelecek, 'Gelecek hafta teslimli verilmiş ödev yok.', 'şu ana kadar verilmiş olanlar'],
+        ] as const).map(([baslik, liste, bos, not]) => (
+          <div key={baslik}>
+            <h2 className="text-base font-semibold mb-1">{baslik}{not && <span className="text-xs font-normal text-gray-500 dark:text-slate-400"> ({not})</span>}</h2>
+            {liste.length === 0
+              ? <p className="text-sm text-gray-500 dark:text-slate-400">{bos}</p>
+              : <ul className="text-sm space-y-1">{liste.map(o => <li key={o.id} className={baslik === 'Tamamlanmamış ödevler' ? 'text-red-700 dark:text-red-400' : ''}>{dersKisa(o.subject)} — {o.title} <span className="text-gray-500 dark:text-slate-400">({o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)})</span></li>)}</ul>}
+          </div>
+        ))}
       </section>
 
       <section aria-label="Mentör ödevleri">

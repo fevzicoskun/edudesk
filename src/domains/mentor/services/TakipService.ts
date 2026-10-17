@@ -7,8 +7,8 @@ import { TakipRepository as R } from '../repositories/TakipRepository'
 import { kaydetSchema } from '../validators/takip'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, ozetHesapla, okulOdevleri, dersDogruluk, BOS_GORUSME,
-  type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevi, type Okuma,
+  yeniHafta, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
+  type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
 } from '../takip/takipMath'
 
 export type SayfaVerisi = {
@@ -18,7 +18,8 @@ export type SayfaVerisi = {
   taslak: HaftaVerisi
   onceki: { ozet: Ozet; hedef: string } | null
   kitaplar: { id: string; ad: string; ders: string }[]
-  okulOdevleri: OkulOdevi[]
+  /** Ödev modülünden salt okunur: tamamlanmamış (yapılmadı, teslimi geçmiş) · bu hafta · gelecek hafta */
+  okulOdevleri: OkulOdevBolumleri
   konular: { id: string; ders: string; ad: string; grup: string | null }[]
   /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
   konuDurumu: Record<string, number>
@@ -83,7 +84,7 @@ export const TakipService = {
       taslak: kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif),
       onceki: onceki ? { ozet: ozetOf(onceki), hedef: veriOf(onceki).gorusme.hedef } : null,
       kitaplar,
-      okulOdevleri: okulOdevleri(profil.homeworks, hafta),
+      okulOdevleri: okulOdevBolumleri(profil.homeworks, hafta),
       konular,
       konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
       gecmis: gecmisSat.map(r => ({

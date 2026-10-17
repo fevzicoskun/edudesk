@@ -167,13 +167,29 @@ export function yeniHafta(onceki: HaftaVerisi | null, sinif: number): HaftaVeris
 export type OkulOdevi = { id: string; subject: string; title: string; due_date: string; status: string | null; bekliyor: boolean }
 
 /** Haftanın (Pzt–Paz) son teslimli okul ödevleri; durum dersin öğretmeninin işareti. */
-export function okulOdevleri(kayitlar: HomeworkRecord[], pazartesi: string): OkulOdevi[] {
-  const son = addDaysISO(pazartesi, 6)
+export function okulOdevleri(kayitlar: HomeworkRecord[], pazartesi: string, sonGun = addDaysISO(pazartesi, 6)): OkulOdevi[] {
+  const son = sonGun
   return kayitlar
     .filter((k): k is HomeworkRecord & { due_date: string } => k.due_date !== null && k.due_date >= pazartesi && k.due_date <= son)
     .sort((a, b) => a.due_date.localeCompare(b.due_date) || a.subject.localeCompare(b.subject, 'tr'))
     .map(k => ({ id: k.id, subject: k.subject, title: k.title, due_date: k.due_date, status: k.status, bekliyor: k.bekliyor }))
 }
+
+export type OkulOdevBolumleri = { tamamlanmamis: OkulOdevi[]; buHafta: OkulOdevi[]; gelecek: OkulOdevi[] }
+
+/** Plan/kâğıt üç bölümü (2026-10-17). Tamamlanmamış: öğretmen "yapılmadı" işaretlemiş ve teslimi bu haftadan önce —
+ *  öğretmen işareti değiştirene kadar her hafta görünür. Gelecek hafta: teslimi P+7…P+13 (DB'de olan = verilmiş). */
+export function okulOdevBolumleri(kayitlar: HomeworkRecord[], pazartesi: string): OkulOdevBolumleri {
+  return {
+    tamamlanmamis: okulOdevleri(kayitlar.filter(k => k.status === 'yapilmadi'), '0000-01-01', addDaysISO(pazartesi, -1)),
+    buHafta: okulOdevleri(kayitlar, pazartesi),
+    gelecek: okulOdevleri(kayitlar, addDaysISO(pazartesi, 7)),
+  }
+}
+
+const OKUL_DURUM: Record<string, string> = { yapildi: 'Yapıldı', gec: 'Yapıldı (geç)', yapilmadi: 'Yapılmadı', eksik: 'Eksik', mazeretli: 'Mazeretli' }
+/** Teslim durumu yalnız dersin öğretmeninin işaretinden (elle giriş yok). */
+export const okulDurumYaz = (o: Pick<OkulOdevi, 'status'>) => (o.status ? OKUL_DURUM[o.status] ?? o.status : 'Henüz işaretlenmedi')
 
 export type HaftaDurumu = 'yok' | 'kagitta' | 'islendi'
 export const haftaDurumu = (s: { islendi: boolean } | null): HaftaDurumu => (!s ? 'yok' : s.islendi ? 'islendi' : 'kagitta')

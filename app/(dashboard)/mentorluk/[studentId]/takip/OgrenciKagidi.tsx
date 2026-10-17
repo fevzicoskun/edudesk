@@ -1,10 +1,34 @@
-import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, type HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
+import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi } from '@/src/domains/mentor/takip/takipMath'
 import { haftaEtiketi, dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
 const th = 'border border-gray-400 px-1.5 py-0.5 text-left font-semibold'
 const td = 'border border-gray-400 px-1.5 py-0.5 align-top'
+
+/** Okul ödevi bölümü, iki sütun: 11 ödev tek sütunda kâğıdı ikinci sayfaya taşıyordu (2026-10-16 kullanıcı).
+ *  `durumlu` → son sütun öğretmen işareti (sonuç kâğıdı), değilse öğrencinin ✓ kutusu. */
+export function OkulOdevTablosu({ baslik, liste, durumlu = false }: { baslik: string; liste: OkulOdevi[]; durumlu?: boolean }) {
+  if (liste.length === 0) return null
+  const yari = Math.ceil(liste.length / 2)
+  return (
+    <div className="mb-2 break-inside-avoid">
+      <p className="font-semibold">{baslik}</p>
+      <div className="grid grid-cols-2 gap-2 items-start">
+        {[liste.slice(0, yari), liste.slice(yari)].filter(y => y.length > 0).map((yarim, i) => (
+          <table key={i} aria-label={baslik} className="w-full border-collapse">
+            <thead><tr>{['Ders', 'Okul ödevi', 'Teslim', durumlu ? 'Durum' : '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
+            <tbody>{yarim.map(o => (
+              <tr key={o.id} className="break-inside-avoid"><td className={td}>{dersKisa(o.subject)}</td><td className={td}>{o.title}</td>
+                <td className={`${td} whitespace-nowrap`}>{o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)}</td>
+                {durumlu ? <td className={`${td} whitespace-nowrap ${o.status === 'yapilmadi' ? 'font-bold' : ''}`}>{okulDurumYaz(o)}</td> : <td className={`${td} w-6`} />}</tr>
+            ))}</tbody>
+          </table>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 /** A4 dikey öğrenci kâğıdı. Matematik satırı kalın + gri zemin (siyah-beyaz baskıda okunur). */
 export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVerisi }) {
@@ -43,22 +67,9 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         </tbody>
       </table>
 
-      {v.okulOdevleri.length > 0 && (
-        // İki sütun: 11 ödev tek sütunda kâğıdı ikinci sayfaya taşıyordu (2026-10-16 kullanıcı)
-        <div className="grid grid-cols-2 gap-2 mb-2 items-start">
-          {[v.okulOdevleri.slice(0, Math.ceil(v.okulOdevleri.length / 2)), v.okulOdevleri.slice(Math.ceil(v.okulOdevleri.length / 2))]
-            .filter(yarim => yarim.length > 0)
-            .map((yarim, i) => (
-              <table key={i} aria-label="Okul ödevleri" className="w-full border-collapse">
-                <thead><tr>{['Ders', 'Okul ödevi', 'Teslim', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
-                <tbody>{yarim.map(o => (
-                  <tr key={o.id} className="break-inside-avoid"><td className={td}>{dersKisa(o.subject)}</td><td className={td}>{o.title}</td>
-                    <td className={`${td} whitespace-nowrap`}>{o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)}</td><td className={`${td} w-6`} /></tr>
-                ))}</tbody>
-              </table>
-            ))}
-        </div>
-      )}
+      <OkulOdevTablosu baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
+      <OkulOdevTablosu baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
+      <OkulOdevTablosu baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
 
       {veri.icerik.mentorOdevleri.length > 0 && (
         <table aria-label="Mentör ödevleri" className="w-full border-collapse mb-2">

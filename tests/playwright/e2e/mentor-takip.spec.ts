@@ -72,23 +72,33 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   expect(kenar).toEqual(['0px'])
 })
 
-test('kâğıt: 24 görev + 12 okul ödeviyle tek A4 sayfa (2026-10-16 kullanıcı: 2 sayfaya taşıyordu)', async ({ page }) => {
+test('kâğıt: 24 görev + 12 bu hafta + 3 tamamlanmamış + 4 gelecek hafta ödeviyle tek A4 sayfa', async ({ page }) => {
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
-  const { data: eklenen, error } = await db.from('homeworks').insert(Array.from({ length: 12 }, (_, i) => ({
-    teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik',
-    title: `E2E kâğıt ödevi ${i + 1} biraz uzunca bir başlık`, due_date: `2026-10-${19 + (i % 5)}`,
-  }))).select('id')
+  const odev = (title: string, due_date: string) => ({ teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik', title, due_date, assigned_date: '2026-10-06' })
+  const { data: eklenen, error } = await db.from('homeworks').insert([
+    ...Array.from({ length: 12 }, (_, i) => odev(`E2E kâğıt ödevi ${i + 1} biraz uzunca bir başlık`, `2026-10-${19 + (i % 5)}`)),
+    ...Array.from({ length: 3 }, (_, i) => odev(`E2E eski ödev ${i + 1}`, `2026-10-${13 + i}`)),
+    ...Array.from({ length: 4 }, (_, i) => odev(`E2E gelecek ödev ${i + 1}`, `2026-10-${27 + i}`)),
+  ]).select('id, title')
   if (error) throw new Error(error.message)
   try {
+    // Eski üç ödev: öğretmen "yapılmadı" işaretlemiş → Tamamlanmamış bölümünde (işaret satırı ödevle birlikte oluşur)
+    const { error: e2 } = await db.from('homework_submissions').update({ status: 'yapilmadi', marked_at: new Date().toISOString() })
+      .eq('student_id', ogrId).in('homework_id', eklenen!.filter(h => h.title.startsWith('E2E eski')).map(h => h.id))
+    if (e2) throw new Error(e2.message)
     await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-    await expect(page.getByRole('table', { name: 'Okul ödevleri' }).first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('table', { name: 'Bu hafta teslim' }).first()).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('table', { name: 'Tamamlanmamış ödevler (teslimi geçti)' }).first()).toContainText('E2E eski ödev')
+    await expect(page.getByRole('table', { name: 'Gelecek hafta teslim' }).first()).toContainText('E2E gelecek ödev')
     await page.emulateMedia({ media: 'print' })
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
     if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
+    if (process.env.KAGIT_PNG) await page.screenshot({ path: process.env.KAGIT_PNG, fullPage: true })
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
     expect(pdf.numPages).toBe(1)
   } finally {
+    await db.from('homework_submissions').delete().in('homework_id', eklenen!.map(h => h.id))
     await db.from('homeworks').delete().in('id', eklenen!.map(h => h.id))
   }
 })
