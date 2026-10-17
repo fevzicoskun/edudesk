@@ -2,7 +2,7 @@
 import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import { oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
-import { GUNLER, SEVIYE_ADI, seviyeDegistir, normalizeIcerik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { GUNLER, SEVIYE_ADI, seviyeDegistir, normalizeIcerik, gunlukAralik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu } from '@/src/domains/mentor/takip/sablonlar'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
@@ -78,6 +78,11 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
               {g.sayfaBas != null && g.sayfaSon != null && g.sayfaSon < g.sayfaBas && <span role="alert" className="text-red-700 dark:text-red-400">bitiş başlangıçtan küçük</span>}
             </>}
           </span>
+        )}
+        {g.grup && g.soruSatiri && g.kitapId && g.sayfaBas != null && (g.sayfaSon ?? g.sayfaBas) >= g.sayfaBas && (
+          <p aria-label="Günlük sayfa dağılımı" className="basis-full text-xs font-normal text-gray-500 dark:text-slate-400 pl-1">
+            {GUNLER.slice(0, 5).map((gun, i) => { const a = gunlukAralik(g.sayfaBas!, g.sayfaSon ?? g.sayfaBas!, i); return `${gun} ${a ? (a[0] === a[1] ? a[0] : `${a[0]}–${a[1]}`) : '—'}` }).join(' · ')}
+          </p>
         )}
         <button type="button" aria-label={`${g.ad} görevini sil`} className="text-red-700 dark:text-red-400 text-sm ml-auto" onClick={() => sil(g)}>Sil</button>
       </div>

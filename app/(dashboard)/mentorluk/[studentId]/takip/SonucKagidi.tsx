@@ -1,5 +1,5 @@
 import {
-  GUNLER, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, type HaftaVerisi, takipHaftaEtiketi,
+  GUNLER, kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, type HaftaVerisi, takipHaftaEtiketi,
 } from '@/src/domains/mentor/takip/takipMath'
 
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
@@ -51,7 +51,8 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
             const n = sonucNet(s), y = sonucDogruluk(s)
             return (
               <tr key={s.anahtar} className="break-inside-avoid">
-                <td className={td}>{s.ad}{s.ders !== s.ad && ` · ${s.ders}`}</td><td className={`${td} whitespace-nowrap`}>{s.sayfa}</td>
+                <td className={td}>{s.ad}{s.ders !== s.ad && ` · ${s.ders}`}</td>
+                <td className={td}><span className="whitespace-nowrap">{s.sayfa}</span>{kaldigiMetni(s) && <span className="block font-bold">{kaldigiMetni(s)}</span>}</td>
                 <td className={td}>{s.cozulen ?? ''}</td><td className={td}>{s.dogru ?? ''}</td><td className={td}>{s.yanlis ?? ''}</td><td className={td}>{s.bos ?? ''}</td>
                 <td className={td}>{n === null ? '' : netYaz(n)}</td><td className={`${td} ${y !== null && y < 50 ? 'font-bold' : ''}`}>{y === null ? '' : `%${y}`}</td>
               </tr>

@@ -23,6 +23,8 @@ export type Okuma = { kitap: string; sayfa: number | null; bitti: boolean }
 export type Sonuc = {
   anahtar: string; ad: string; ders: string; sayfa: string
   cozulen: number | null; dogru: number | null; yanlis: number | null; bos: number | null
+  /** Kitaplı satır: planın son sayfası (plandan türer) ve öğrencinin kaldığı sayfa (null = plan sonu). */
+  planSon?: number | null; kaldigi?: number | null
 }
 /** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
 /** surum 2 (2026-10-17): miktar GERÇEK süre/miktar (seviye uygulanmış) + her gün grupları. Yoksa eski biçim → normalizeIcerik. */
@@ -116,13 +118,37 @@ export function seviyeDegistir(h: HaftaVerisi, yeni: Seviye, sinif: number): Haf
   }
 }
 
-/** Görev satırının kitap/sayfa metni (plan + kâğıt). Kitapsız görevde eski serbest `sayfa` metni. */
+/** Haftalık aralığın i. hafta içi günü (0=Pzt…4=Cum) payı: olabildiğince eşit, fazlası ilk günlere.
+ *  45–60 (16 sf) → 45–48, 49–51, 52–54, 55–57, 58–60. Payı olmayan gün null. */
+export function gunlukAralik(bas: number, son: number, i: number): [number, number] | null {
+  const n = son - bas + 1, taban = Math.floor(n / 5), artik = n % 5
+  const pay = (j: number) => taban + (j < artik ? 1 : 0)
+  if (pay(i) <= 0) return null
+  let b = bas
+  for (let j = 0; j < i; j++) b += pay(j)
+  return [b, b + pay(i) - 1]
+}
+
+const aralikYaz = (bas: number | null, son: number | null) =>
+  bas === null ? '' : son === null || son === bas ? `s. ${bas}` : `s. ${bas}–${son}`
+
+/** Görev satırının kitap/sayfa metni (kâğıt + Sonuç). Her gün görevi kendi gününün payını gösterir;
+ *  güne özel görev aralığı olduğu gibi. Kitapsız görevde eski serbest `sayfa` metni. */
 export function kitapSayfaYaz(g: Gorev): string {
   if (!g.kitapId) return g.sayfa
-  const bas = g.sayfaBas ?? null, son = g.sayfaSon ?? null
-  const s = bas === null ? '' : son === null || son === bas ? ` s. ${bas}` : ` s. ${bas}–${son}`
-  return `${g.kitapAdi ?? ''}${s}`
+  let bas = g.sayfaBas ?? null, son = g.sayfaSon ?? null
+  if (g.grup && g.gun <= 4 && bas !== null) {
+    const pay = gunlukAralik(bas, son ?? bas, g.gun)
+    if (!pay) return g.kitapAdi ?? ''
+    ;[bas, son] = pay
+  }
+  const s = aralikYaz(bas, son)
+  return `${g.kitapAdi ?? ''}${s && ` ${s}`}`
 }
+
+/** "planlanan s. 60, kaldığı s. 55" — yalnız öğrenci planın gerisinde kaldıysa. */
+export const kaldigiMetni = (s: Pick<Sonuc, 'planSon' | 'kaldigi'>) =>
+  s.planSon != null && s.kaldigi != null && s.kaldigi < s.planSon ? `planlanan s. ${s.planSon}, kaldığı s. ${s.kaldigi}` : null
 
 export function varsayilanHedef(sinif: number, seviye: Seviye): number {
   return (sinif >= 11 ? [200, 300, 400] : [120, 200, 300])[seviye]
@@ -163,9 +189,11 @@ export function sonucSatirlari(icerik: Icerik, kitaplar: { id: string; ders: str
   }
   const kayitli = new Map((icerik.sonuclar ?? []).map(s => [s.anahtar, s]))
   const planli = [...satirlar.values()].map(({ bas, son, ...s }) => {
-    const sayfa = bas === null ? '' : son === null || son === bas ? `s. ${bas}` : `s. ${bas}–${son}`
     const k = kayitli.get(s.anahtar)
-    return { ...s, sayfa, ...(k && { cozulen: k.cozulen, dogru: k.dogru, yanlis: k.yanlis, bos: k.bos }) }
+    return {
+      ...s, sayfa: aralikYaz(bas, son), ...(k && { cozulen: k.cozulen, dogru: k.dogru, yanlis: k.yanlis, bos: k.bos }),
+      ...(s.anahtar.startsWith('k:') && { planSon: son, kaldigi: k?.kaldigi ?? null }),
+    }
   })
   const yetim = (icerik.sonuclar ?? []).filter(s => !satirlar.has(s.anahtar) && [s.cozulen, s.dogru, s.yanlis, s.bos].some(x => x !== null))
   return [...planli, ...yetim]
@@ -208,7 +236,7 @@ const sonucsuz = (g: Gorev): Gorev => ({ ...g, konu: '', sayfa: '', yapti: false
 
 /** Kitap başına sayfa kaydırma: haftadaki aralığın tamamı (min başlangıç–max bitiş) kadar ileri.
  *  45–60 → 61–76; aynı kitap iki görevde 45–50 + 51–56 → 57–62 + 63–68. */
-function sayfaKaydir(gorevler: Gorev[]): Gorev[] {
+function sayfaKaydir(gorevler: Gorev[], kaldigi: Map<string, number> = new Map()): Gorev[] {
   const aralik = new Map<string, { bas: number; son: number }>()
   for (const g of gorevler) {
     if (!g.kitapId || g.sayfaBas == null) continue
@@ -219,7 +247,8 @@ function sayfaKaydir(gorevler: Gorev[]): Gorev[] {
   return gorevler.map(g => {
     const a = g.kitapId ? aralik.get(g.kitapId) : undefined
     if (!a || g.sayfaBas == null) return g
-    const ofset = a.son - a.bas + 1
+    // Öğrencinin kaldığı sayfa girildiyse oradan (+1), yoksa planın sonundan devam; uzunluk aynı
+    const ofset = (kaldigi.get(g.kitapId!) ?? a.son) + 1 - a.bas
     return { ...g, sayfaBas: g.sayfaBas + ofset, sayfaSon: g.sayfaSon == null ? g.sayfaSon : g.sayfaSon + ofset }
   })
 }
@@ -232,7 +261,8 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
   return {
     seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
     icerik: {
-      surum: 2, duzen: ic.duzen, gorevler: sayfaKaydir(ic.gorevler).map(sonucsuz), mentorOdevleri: [],
+      surum: 2, duzen: ic.duzen, mentorOdevleri: [],
+      gorevler: sayfaKaydir(ic.gorevler, new Map((ic.sonuclar ?? []).flatMap(s => (s.anahtar.startsWith('k:') && s.kaldigi != null ? [[s.anahtar.slice(2), s.kaldigi] as const] : [])))).map(sonucsuz),
       okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
     },
   }

@@ -170,9 +170,13 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   await kaydedildi(page)
   await page.reload()
   await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('60')
+  // Her gün görevinde haftalık aralık Pzt–Cum'a bölünür (16 sf → 4,3,3,3,3); planda önizleme
+  await expect(page.getByLabel('Günlük sayfa dağılımı').first()).toHaveText('Pzt 45–48 · Sal 49–51 · Çar 52–54 · Per 55–57 · Cum 58–60')
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  // Her gün görevi (Matematik soru bankası) → kâğıtta Pzt–Cum beş satırın hepsinde
-  await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'Matematik soru bankası' }).filter({ hasText: 'E2E Acil Mat s. 45–60' })).toHaveCount(5)
+  const banka = page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'Matematik soru bankası' })
+  await expect(banka).toHaveCount(5)
+  await expect(banka.nth(0)).toContainText('E2E Acil Mat s. 45–48')
+  await expect(banka.nth(4)).toContainText('E2E Acil Mat s. 58–60')
 })
 test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç girilemez; yenilemede kalır', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
@@ -181,9 +185,15 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   // Görev satırlarında soru/doğru kutusu artık yok (2026-10-17)
   await expect(page.getByRole('region', { name: 'Görevler' }).getByLabel('Doğru')).toHaveCount(0)
   const satir = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'Matematik', exact: true })
+  // İlk değer girilince tablo aşağı kaymamalı ("Ders bazında doğruluk" ve uyarı satırı hep yer tutar)
+  await page.waitForLoadState('networkidle')
+  const tabloY = async () => (await page.getByRole('region', { name: 'Soru sonuçları' }).boundingBox())!.y
+  const ilkY = await tabloY()
+  await expect(page.getByLabel('Ders bazında doğruluk')).toContainText('—')
   await satir.getByLabel('Çözülen').fill('40')
   await satir.getByLabel('Doğru').fill('50')
   await expect(satir.getByLabel('Doğru')).toHaveValue('40') // çözülenden büyük girilemez
+  expect(await tabloY()).toBe(ilkY)
   await satir.getByLabel('Doğru').fill('30')
   await satir.getByLabel('Yanlış').fill('9')
   await satir.getByLabel('Boş').fill('2')
@@ -192,7 +202,9 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   await expect(satir.getByRole('alert')).toHaveCount(0)
   await expect(satir).toContainText('28') // net = 30 − 8/4
   await expect(satir).toContainText('%75')
-  await kaydedildi(page)
+  // "Kaydedildi" önceki kayıttan kalmış olabilir → son yazımı DB'den bekle
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.icerik as { sonuclar?: { anahtar: string; yanlis: number | null }[] }).sonuclar?.find(s => s.anahtar === 'd:Matematik')?.yanlis, { timeout: 15_000 }).toBe(8)
   await page.reload()
   const yeni = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'Matematik', exact: true })
   await expect(yeni.getByLabel('Yanlış')).toHaveValue('8')
@@ -336,17 +348,31 @@ test('kayıt hatasının nedeni ekranda görünür (boş görev adı)', async ({
   await expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 })
 
-test('geçen haftayı kopyala: plan gelir, kitap sayfası kaldığı yerden (45–60 → 61–76)', async ({ page }) => {
+test("kaldığı sayfa: sonuçta 55 → kâğıtta/veli mesajında geride; sonraki hafta 56'dan aynı uzunlukta (56–71)", async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
+  const kitapSatiri = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'E2E Acil Mat' })
+  await expect(kitapSatiri.getByLabel('Kaldığı sayfa')).toHaveValue('60') // varsayılan: planın sonu
+  await page.waitForLoadState('networkidle')
+  await kitapSatiri.getByLabel('Kaldığı sayfa').fill('55')
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.icerik as { sonuclar?: { anahtar: string; kaldigi?: number }[] }).sonuclar?.find(s => s.anahtar.startsWith('k:'))?.kaldigi, { timeout: 15_000 }).toBe(55)
+  await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
+  await expect(page.getByRole('table', { name: 'Soru sonuçları' })).toContainText('planlanan s. 60, kaldığı s. 55', { timeout: 20_000 })
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
+  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/• Kaynaklar: E2E Acil Mat planlanan s\. 60, kaldığı s\. 55/)
+})
+
+test('geçen haftayı kopyala: plan gelir, kitap kaldığı sayfadan aynı uzunlukta (kaldığı 55 → 56–71)', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-26`)
   await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible({ timeout: 20_000 })
   await page.getByRole('button', { name: 'Geçen haftayı kopyala' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'planı kopyalandı' })).toBeVisible({ timeout: 15_000 })
   await kaydedildi(page)
-  await expect(page.getByLabel('Başlangıç sayfası').first()).toHaveValue('61')
-  await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('76')
+  await expect(page.getByLabel('Başlangıç sayfası').first()).toHaveValue('56')
+  await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('71')
   const { data } = await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-26').single()
   const bagli = (data!.icerik as { gorevler: { kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(g => g.kitapAdi === 'E2E Acil Mat')
-  expect(bagli?.sayfaBas).toBe(61)
+  expect(bagli?.sayfaBas).toBe(56)
   // 19 Ekim haftasının kendisine dokunulmadı
   const { data: eski } = await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single()
   expect((eski!.icerik as { gorevler: { kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(g => g.kitapAdi === 'E2E Acil Mat')?.sayfaBas).toBe(45)

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -324,5 +324,42 @@ describe('dersListesi: kitap dersi ödev modülündeki ders adlarından (2026-10
   })
   it('okulda henüz ödev yoksa standart ders listesi (kaynak eklenebilsin)', () => {
     expect(dersListesi([])).toContain('Matematik'); expect(dersListesi(['Tek'])).toContain('Türk Dili ve Edebiyatı')
+  })
+})
+
+describe('her gün görevinde sayfa aralığı günlere bölünür (2026-10-17)', () => {
+  it('16 sayfa → 45–48, 49–51, 52–54, 55–57, 58–60 (fazlası ilk günlere)', () => {
+    expect([0, 1, 2, 3, 4].map(i => gunlukAralik(45, 60, i))).toEqual([[45, 48], [49, 51], [52, 54], [55, 57], [58, 60]])
+  })
+  it('5 sayfadan az → bazı günler boş; tek sayfa', () => {
+    expect([0, 1, 2, 3, 4].map(i => gunlukAralik(10, 12, i))).toEqual([[10, 10], [11, 11], [12, 12], null, null])
+  })
+  it('kâğıt/sonuç metni: her gün görevi kendi gününün aralığı; güne özel bölünmez', () => {
+    const k = { kitapId: 'k', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 60 }
+    expect(kitapSayfaYaz(g({ ...k, grup: 'h-1', gun: 0 }))).toBe('Acil Mat s. 45–48')
+    expect(kitapSayfaYaz(g({ ...k, grup: 'h-1', gun: 4 }))).toBe('Acil Mat s. 58–60')
+    expect(kitapSayfaYaz(g({ ...k, gun: 5 }))).toBe('Acil Mat s. 45–60')
+  })
+  it('sonuç satırı haftalık aralığı korur', () => {
+    const plan = icerik({ gorevler: [0, 1, 2, 3, 4].map(gun => g({ id: `a${gun}`, gun, grup: 'h-1', soruSatiri: true, kitapId: 'k1', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60 })) })
+    expect(sonucSatirlari(plan, [])[0].sayfa).toBe('s. 45–60')
+  })
+})
+
+describe('kaldığı sayfa (2026-10-17)', () => {
+  const plan = (sonuclar?: Icerik['sonuclar']) => ({ seviye: 1 as const, soruHedefi: 200, gorusme: BOS_GORUSME, icerik: icerik({ surum: 2, sonuclar,
+    gorevler: [g({ id: 'a', soruSatiri: true, kitapId: 'k1', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60 })] }) })
+  const satir = (o: object) => ({ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: 's. 45–60', cozulen: 10, dogru: 5, yanlis: 5, bos: 0, ...o })
+  it('sonuç satırında planın sonu varsayılan; girilen kaldığı sayfa saklanır', () => {
+    expect(sonucSatirlari(plan().icerik, [])[0]).toMatchObject({ planSon: 60, kaldigi: null })
+    expect(sonucSatirlari(plan([satir({ kaldigi: 55 })]).icerik, [])[0]).toMatchObject({ planSon: 60, kaldigi: 55 })
+  })
+  it('sonraki hafta kaldığı sayfa + 1\'den, aynı uzunlukta (55 → 56–71); girilmemişse plan sonundan (61–76)', () => {
+    expect(planKopyala(plan([satir({ kaldigi: 55 })])).icerik.gorevler[0]).toMatchObject({ sayfaBas: 56, sayfaSon: 71 })
+    expect(planKopyala(plan()).icerik.gorevler[0]).toMatchObject({ sayfaBas: 61, sayfaSon: 76 })
+  })
+  it('geride kalma metni yalnız kaldığı < plan sonu iken', () => {
+    expect(kaldigiMetni({ planSon: 60, kaldigi: 55 })).toBe('planlanan s. 60, kaldığı s. 55')
+    expect(kaldigiMetni({ planSon: 60, kaldigi: 60 })).toBeNull(); expect(kaldigiMetni({ planSon: 60, kaldigi: null })).toBeNull()
   })
 })

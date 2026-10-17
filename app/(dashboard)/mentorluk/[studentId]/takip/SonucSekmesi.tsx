@@ -54,7 +54,7 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
   const sonucYaz = (anahtar: string, x: Partial<Sonuc>) => degistir(h => ({
     ...h, icerik: { ...h.icerik, sonuclar: sonucSatirlari(h.icerik, v.kitaplar)
       .map(s => s.anahtar === anahtar ? { ...s, ...x } : s)
-      .filter(s => [s.cozulen, s.dogru, s.yanlis, s.bos].some(n => n !== null)) },
+      .filter(s => [s.cozulen, s.dogru, s.yanlis, s.bos, s.kaldigi ?? null].some(n => n !== null)) },
   }))
 
   return (
@@ -71,12 +71,11 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
         <Kart baslik="Okuma" deger={`${o.okuma_sayfa} sf`} />
       </section>
 
-      {dersler.length > 0 && (
-        <p aria-label="Ders bazında doğruluk" className="text-sm -mt-3">
-          <span className="text-gray-500 dark:text-slate-400">Ders bazında doğruluk: </span>
-          {dersler.map((x, i) => <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{x.ders} %{x.yuzde}</span>)}
-        </p>
-      )}
+      {/* Veri yokken de yer tutar ("—"): ilk değer girilince tablo aşağı kaymasın */}
+      <p aria-label="Ders bazında doğruluk" className="text-sm -mt-3">
+        <span className="text-gray-500 dark:text-slate-400">Ders bazında doğruluk: </span>
+        {dersler.length === 0 ? '—' : dersler.map((x, i) => <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{x.ders} %{x.yuzde}</span>)}
+      </p>
 
       <section aria-label="Soru sonuçları">
         <h2 className="text-base font-semibold mb-2">Soru sonuçları</h2>
@@ -84,7 +83,7 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
           <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead><tr className="text-left text-xs text-gray-500 dark:text-slate-400 border-b border-gray-300 dark:border-slate-600">
-                <th className="py-1 pr-2">Kitap / ders</th><th className="pr-2">Sayfa</th><th>Çözülen</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th className="pl-2">Net</th><th className="pl-2">Doğruluk</th></tr></thead>
+                <th className="py-1 pr-2">Kitap / ders</th><th className="pr-2">Sayfa</th><th>Çözülen</th><th>Doğru</th><th>Yanlış</th><th>Boş</th><th className="pl-2">Net</th><th className="pl-2">Doğruluk</th><th className="pl-2">Kaldığı sayfa</th></tr></thead>
               <tbody>
                 {satirlar.map(s => {
                   const uyari = sonucUyarisi(s), d = sonucDogruluk(s), n = sonucNet(s)
@@ -100,11 +99,17 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
                   return (
                     <tr key={s.anahtar} aria-label={s.ad} className="border-b border-gray-100 dark:border-slate-700 align-top">
                       <td className="py-1 pr-2">{s.ad}{s.ders !== s.ad && <span className="text-gray-500 dark:text-slate-400"> · {s.ders}</span>}
-                        {uyari && <p role="alert" className="text-xs text-amber-700 dark:text-amber-400">{uyari}</p>}</td>
+                        {/* Uyarı satırı hep yer tutar: belirince satır yüksekliği değişip tablo kaymasın */}
+                        <p role={uyari ? 'alert' : undefined} className="text-xs text-amber-700 dark:text-amber-400 min-h-4">{uyari}</p></td>
                       <td className="pr-2 whitespace-nowrap">{s.sayfa}</td>
                       <td>{alan('cozulen', 'Çözülen')}</td><td>{alan('dogru', 'Doğru')}</td><td>{alan('yanlis', 'Yanlış')}</td><td>{alan('bos', 'Boş')}</td>
                       <td className="pl-2 tabular-nums">{n === null ? '—' : netYaz(n)}</td>
                       <td className={`pl-2 tabular-nums ${d !== null && d < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}`}>{d === null ? '—' : `%${d}`}</td>
+                      <td className="pl-2">{s.anahtar.startsWith('k:') && s.planSon != null && (
+                        <input aria-label="Kaldığı sayfa" type="number" min={1} max={5000} inputMode="numeric" className={`${kutu} w-20`}
+                          value={s.kaldigi ?? s.planSon} title={`Plan sonu: s. ${s.planSon}`}
+                          onChange={e => sonucYaz(s.anahtar, { kaldigi: e.target.value === '' ? null : Math.min(5000, Math.max(1, Math.trunc(Number(e.target.value)) || 1)) })} />
+                      )}</td>
                     </tr>
                   )
                 })}

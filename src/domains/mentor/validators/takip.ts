@@ -26,6 +26,7 @@ export const icerikSchema = z.object({
   sonuclar: z.array(z.object({
     anahtar: z.string().min(3).max(200), ad: metin(150), ders: metin(60), sayfa: metin(60),
     cozulen: sayi.nullable(), dogru: sayi.nullable(), yanlis: sayi.nullable(), bos: sayi.nullable(),
+    planSon: z.number().int().min(1).max(5000).nullable().optional(), kaldigi: z.number().int().min(1).max(5000).nullable().optional(),
   }).refine(s => s.dogru === null || (s.cozulen !== null && s.dogru <= s.cozulen), {
     message: 'Doğru sayısı çözülen soru sayısından büyük olamaz', path: ['dogru'],
   })).max(60).optional(),

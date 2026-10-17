@@ -48,6 +48,14 @@ describe('takipVeliMesaji — haftanın verisinden otomatik (2026-10-17)', () =>
     expect(m).toContain('• Sizden ricam: Telefonu akşam alın')
     for (const s of ['• Program', '• Soru', '• Okul ödevleri', '• Önceki haftalardan', '• Ders bazında']) expect(m).not.toContain(s)
   })
+  it('öğrenci planın gerisinde kaldıysa kaynak satırı: planlanan / kaldığı sayfa', () => {
+    const g = temel()
+    g.veri.icerik.gorevler = [{ ...g.veri.icerik.gorevler[0], soruSatiri: true, kitapId: 'k1', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 60 }]
+    g.veri.icerik.sonuclar = [{ anahtar: 'k:k1', ad: 'Acil Mat', ders: 'Matematik', sayfa: 's. 45–60', cozulen: 10, dogru: 8, yanlis: 2, bos: 0, kaldigi: 55 }]
+    expect(takipVeliMesaji(g)).toContain('• Kaynaklar: Acil Mat planlanan s. 60, kaldığı s. 55')
+    g.veri.icerik.sonuclar[0].kaldigi = 60
+    expect(takipVeliMesaji(g)).not.toContain('• Kaynaklar')
+  })
   it('uzun listeler kısalır, mesaj ~10 satırı geçmez', () => {
     const g = temel()
     g.okul = { tamamlanmamis: Array.from({ length: 6 }, (_, i) => odev(`e${i}`, 'Kimya', 'yapilmadi')),
