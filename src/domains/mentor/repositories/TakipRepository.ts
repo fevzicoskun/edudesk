@@ -55,15 +55,32 @@ export const TakipRepository = {
     return { updatedAt: data.updated_at }
   },
 
-  /** İyimser kilit: yalnız son bilinen updated_at eşleşirse yazar; 0 satır = çakışma. */
-  async haftaGuncelle(s: HaftaSatiri, sonBilinen: string): Promise<{ updatedAt?: string; cakisma?: boolean }> {
+  /** İyimser kilit: yalnız son bilinen updated_at eşleşirse yazar; 0 satır = çakışma.
+   *  Kapalı hafta: DB tetikleyicisi P0001 ile reddeder (mentor_haftalari_kapali_koru). */
+  async haftaGuncelle(s: HaftaSatiri, sonBilinen: string): Promise<{ updatedAt?: string; cakisma?: boolean; kapali?: boolean }> {
     const db = await createClient()
     const { data, error } = await db.from('mentor_haftalari')
       .update({ ...s, updated_at: new Date().toISOString() })
       .eq('school_id', s.school_id).eq('student_id', s.student_id).eq('hafta_basi', s.hafta_basi).eq('updated_at', sonBilinen)
       .select('updated_at')
+    if (error?.code === 'P0001') return { kapali: true }
     if (error) throw new Error(error.message)
     return data.length ? { updatedAt: data[0].updated_at } : { cakisma: true }
+  },
+
+  /** Kapatır + okul ödevi anlık görüntüsü. updated_at DEĞİŞMEZ (açık sekmelerin iyimser kilidi bozulmasın). */
+  async haftaKapat(schoolId: string, studentId: string, hafta: string, okulOdevleri: Json) {
+    const db = await createClient()
+    const { error } = await db.from('mentor_haftalari').update({ kapali_at: new Date().toISOString(), okul_odevleri: okulOdevleri })
+      .eq('school_id', schoolId).eq('student_id', studentId).eq('hafta_basi', hafta).is('kapali_at', null)
+    if (error) throw new Error(error.message)
+  },
+
+  async kilidiAc(schoolId: string, studentId: string, hafta: string) {
+    const db = await createClient()
+    const { error } = await db.from('mentor_haftalari').update({ kapali_at: null, okul_odevleri: null })
+      .eq('school_id', schoolId).eq('student_id', studentId).eq('hafta_basi', hafta)
+    if (error) throw new Error(error.message)
   },
 
   async kitaplar(schoolId: string, studentId: string) {
@@ -112,7 +129,7 @@ export const TakipRepository = {
   async gecmis(schoolId: string, studentId: string) {
     const db = await createClient()
     const { data, error } = await db.from('mentor_haftalari')
-      .select('hafta_basi, seviye, icerik, gorev_toplam, gorev_yapilan, soru, dogru, okuma_sayfa, islendi')
+      .select('hafta_basi, seviye, icerik, gorev_toplam, gorev_yapilan, soru, dogru, okuma_sayfa, islendi, kapali_at')
       .eq('school_id', schoolId).eq('student_id', studentId).order('hafta_basi').limit(200)
     if (error) throw new Error(error.message)
     return data ?? []

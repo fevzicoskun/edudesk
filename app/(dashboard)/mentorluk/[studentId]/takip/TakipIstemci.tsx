@@ -1,7 +1,7 @@
 'use client'
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
-import { haftaKaydet } from '@/app/actions/mentor-takip'
+import { useCallback, useState, useTransition } from 'react'
+import { haftaKaydet, haftaKilidiAc } from '@/app/actions/mentor-takip'
 import { haftaKaydir, haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { todayLocalISO } from '@/src/shared/date'
@@ -28,6 +28,23 @@ function Durum({ d, tekrar }: { d: KayitDurumu; tekrar: () => void }) {
   if (d.tur === 'cakisma') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Başka bir ekranda değişti ya da bu sayfa eski kaldı; son değişiklikler kaydedilmedi — <button className="underline" onClick={() => location.reload()}>yenileyin</button></span>
   if (d.tur === 'hata') return <span role="alert" className="text-sm text-red-700 dark:text-red-400">Kaydedilemedi: {d.mesaj} · <button className="underline" onClick={tekrar}>Tekrar dene</button></span>
   return null
+}
+
+function KapaliBandi({ v }: { v: SayfaVerisi }) {
+  const [hata, setHata] = useState<string | null>(null)
+  const [bekliyor, basla] = useTransition()
+  const tarih = new Date(v.kayit!.kapaliAt!).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', timeZone: 'Europe/Istanbul' })
+  return (
+    <div role="status" className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950 px-3 py-2 text-sm">
+      <span>🔒 Bu hafta {tarih} tarihinde kapatıldı; plan, sonuç ve okul ödevi durumu sabit.</span>
+      <button type="button" disabled={bekliyor} className="underline"
+        onClick={() => { if (confirm('Kilit açılsın mı? Okul ödevleri yeniden ödev modülünden canlı okunur.')) basla(async () => {
+          const r = await haftaKilidiAc(v.ogrenci.id, v.hafta)
+          if (r.error) setHata(r.error); else location.reload()
+        }) }}>Kilidi aç</button>
+      {hata && <span role="alert" className="text-red-700 dark:text-red-400">{hata}</span>}
+    </div>
+  )
 }
 
 /** key = öğrenci+hafta: sekme değişince bileşen kalır, yerel `veri` korunur; hafta değişince sıfırdan açılır. */
@@ -67,8 +84,12 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
           ))}
         </nav>
       )}
-      {sekme === 'plan' && <PlanSekmesi {...props} />}
-      {sekme === 'sonuc' && <SonucSekmesi {...props} />}
+      {v.kayit?.kapaliAt && <KapaliBandi v={v} />}
+      {/* Kapalı hafta salt okunur: fieldset tüm alanları/düğmeleri kapatır; yazdırma bağlantıları (a) çalışır */}
+      <fieldset disabled={!!v.kayit?.kapaliAt} className="min-w-0">
+        {sekme === 'plan' && <PlanSekmesi {...props} />}
+        {sekme === 'sonuc' && <SonucSekmesi {...props} />}
+      </fieldset>
       {sekme === 'veli' && <VeliSekmesi {...props} />}
       {sekme === 'dosya' && <DosyaSekmesi {...props} />}
     </div>

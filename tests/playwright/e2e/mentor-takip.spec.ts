@@ -41,7 +41,7 @@ test.afterAll(async () => {
 const bulunamadi = async (page: Page, url: string) => {
   await page.goto(url)
   await expect(page.getByRole('heading', { name: 'Sayfa bulunamadı' })).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByRole('heading', { name: /Haftalık (Takip|Çalışma Planı|Mentörlük Raporu)/ })).toHaveCount(0)
+  await expect(page.getByRole('heading', { name: /Haftalık (Takip|Çalışma Planı|Mentörlük Raporu|Sonuç)/ })).toHaveCount(0)
 }
 const kaydedildi = (page: Page) => expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 
@@ -235,6 +235,66 @@ test('kayıt hatasının nedeni ekranda görünür (boş görev adı)', async ({
   await expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 })
 
+test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddeder; sonuç kâğıdı tek A4; kilidi aç', async ({ page }) => {
+  const HAFTA = '2026-11-02'
+  const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
+  const { data: hw, error } = await db.from('homeworks').insert({
+    teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Kimya',
+    title: 'E2E kapanış ödevi', due_date: '2026-11-03', assigned_date: '2026-10-20',
+  }).select('id').single()
+  if (error) throw new Error(error.message)
+  const isaretle = (status: string) => db.from('homework_submissions').update({ status, marked_at: new Date().toISOString() })
+    .eq('homework_id', hw!.id).eq('student_id', ogrId)
+  try {
+    await isaretle('yapildi')
+    await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}&sekme=sonuc`)
+    await expect(page.getByRole('region', { name: 'Okul ödevleri' })).toContainText('E2E kapanış ödevi: Yapıldı', { timeout: 20_000 })
+    page.on('dialog', d => d.accept())
+    await page.getByRole('button', { name: 'Haftayı kapat' }).click()
+    await expect(page.getByText(/Bu hafta .* tarihinde kapatıldı/)).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('button', { name: 'Tümü yapıldı' })).toBeDisabled()
+    await expect(page.getByLabel('İyi giden')).toBeDisabled()
+    const { data: r } = await db.from('mentor_haftalari').select('kapali_at, okul_odevleri').eq('student_id', ogrId).eq('hafta_basi', HAFTA).single()
+    expect(r!.kapali_at).not.toBeNull()
+
+    // Öğretmen işareti sonradan değişir → kapalı haftada kayıt sabit kalır
+    await isaretle('yapilmadi')
+    await page.reload()
+    await expect(page.getByRole('region', { name: 'Okul ödevleri' })).toContainText('E2E kapanış ödevi: Yapıldı')
+
+    // DB tetikleyicisi: kapalı haftaya doğrudan yazım reddedilir
+    const { error: yaz } = await db.from('mentor_haftalari').update({ soru_hedefi: 999 }).eq('student_id', ogrId).eq('hafta_basi', HAFTA)
+    expect(yaz?.message).toMatch(/kapalı/)
+
+    // Sonuç kâğıdı: tek A4, özet + öğretmen notu + veli imzası
+    await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=${HAFTA}`)
+    await expect(page.getByRole('heading', { name: 'Haftalık Sonuç' })).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText('Öğretmen notu')).toBeVisible()
+    await expect(page.getByText('Veli imzası')).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).toContainText('Yapıldı')
+    await page.emulateMedia({ media: 'print' })
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
+    expect(pdf.numPages).toBe(1)
+    if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG, fullPage: true })
+    await page.emulateMedia({ media: 'screen' })
+
+    // Geçmiş haftalarda kilit işareti
+    await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}&sekme=dosya`)
+    await expect(page.getByRole('region', { name: 'Geçmiş haftalar' }).getByLabel('kapalı')).toHaveCount(1, { timeout: 20_000 })
+
+    // Kilidi aç → canlı veri + düzenlenebilir
+    await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}&sekme=sonuc`)
+    await page.getByRole('button', { name: 'Kilidi aç' }).click()
+    await expect(page.getByRole('button', { name: 'Tümü yapıldı' })).toBeEnabled({ timeout: 20_000 })
+    await expect(page.getByRole('region', { name: 'Okul ödevleri' })).toContainText('E2E kapanış ödevi: Yapılmadı')
+  } finally {
+    await db.from('mentor_haftalari').update({ kapali_at: null }).eq('student_id', ogrId).eq('hafta_basi', HAFTA)
+    await db.from('homework_submissions').delete().eq('homework_id', hw!.id)
+    await db.from('homeworks').delete().eq('id', hw!.id)
+  }
+})
+
 test.describe('idare', () => {
   test.use({ storageState: AUTH('mudur') })
   test('idare özet rakamı görür, görüşme notu görünmez', async ({ page }) => {
@@ -248,7 +308,7 @@ test.describe('erişim', () => {
   test('başka öğretmen (mentörü değil) → 404, kâğıt da 404', async ({ browser }) => {
     const ctx = await browser.newContext({ storageState: AUTH('zumre_baskani') })
     const p = await ctx.newPage()
-    for (const yol of ['takip', 'takip/kagit', 'takip/veli-raporu']) await bulunamadi(p, `/mentorluk/${ogrId}/${yol}?hafta=2026-10-19`)
+    for (const yol of ['takip', 'takip/kagit', 'takip/sonuc-kagidi', 'takip/veli-raporu']) await bulunamadi(p, `/mentorluk/${ogrId}/${yol}?hafta=2026-10-19`)
     await ctx.close()
   })
 

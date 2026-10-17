@@ -1,4 +1,7 @@
 'use client'
+import { useState, useTransition } from 'react'
+import { haftaKapat } from '@/app/actions/mentor-takip'
+import YazdirBaglantisi from './YazdirBaglantisi'
 import {
   GUNLER, miktarYaz, ozetHesapla, okulDurumYaz, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
   sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk, type Gorev, type Gorusme, type Sonuc,
@@ -21,7 +24,24 @@ function Kart({ baslik, deger, alt }: { baslik: string; deger: string; alt?: str
   )
 }
 
-export default function SonucSekmesi({ v, veri, degistir }: SekmeProps) {
+function KapatDugmesi({ v, bosalt }: Pick<SekmeProps, 'v' | 'bosalt'>) {
+  const [hata, setHata] = useState<string | null>(null)
+  const [bekliyor, basla] = useTransition()
+  if (v.kayit?.kapaliAt) return null
+  return (
+    <>
+      <button type="button" disabled={bekliyor} className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-slate-600 text-sm font-medium"
+        onClick={() => { if (confirm('Hafta kapatılsın mı? Plan, sonuç ve okul ödevlerinin şu anki durumu sabitlenir; sonra yalnız "Kilidi aç" ile düzenlenir.')) basla(async () => {
+          if (!(await bosalt())) { setHata('Önce kayıt hatasını giderin'); return }
+          const r = await haftaKapat(v.ogrenci.id, v.hafta)
+          if (r.error) setHata(r.error); else location.reload()
+        }) }}>{bekliyor ? 'Kapatılıyor…' : 'Haftayı kapat'}</button>
+      {hata && <span role="alert" className="text-sm text-red-700 dark:text-red-400">{hata}</span>}
+    </>
+  )
+}
+
+export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
   const o = ozetHesapla(veri.icerik)
   const p = programYuzde(o), d = dogrulukYuzde(o), f = fark(o, v.onceki?.ozet ?? null)
   const mo = veri.icerik.mentorOdevleri
@@ -39,6 +59,10 @@ export default function SonucSekmesi({ v, veri, degistir }: SekmeProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/sonuc-kagidi?hafta=${v.hafta}`} bosalt={bosalt} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Sonuç kâğıdını yazdır</YazdirBaglantisi>
+        <KapatDugmesi v={v} bosalt={bosalt} />
+      </div>
       <section aria-label="Özet" className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Kart baslik="Program" deger={p === null ? '—' : `%${p}`} alt={`${o.gorev_yapilan}/${o.gorev_toplam}`} />
         <Kart baslik="Soru" deger={`${o.soru}`} alt={`hedef ${veri.soruHedefi}${o.soru ? ` · net ${netYaz(net)}` : ''}`} />

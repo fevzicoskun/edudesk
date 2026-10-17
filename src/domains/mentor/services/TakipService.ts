@@ -5,6 +5,7 @@ import { getCurrentProfile } from '@/src/shared/auth'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { TakipRepository as R } from '../repositories/TakipRepository'
 import { kaydetSchema } from '../validators/takip'
+import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
   yeniHafta, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
@@ -14,7 +15,7 @@ import {
 export type SayfaVerisi = {
   ogrenci: { id: string; ad: string; sinifAdi: string; sinif: number; classId: string; veliTelefon: string | null }
   hafta: string
-  kayit: { veri: HaftaVerisi; updatedAt: string } | null
+  kayit: { veri: HaftaVerisi; updatedAt: string; kapaliAt: string | null } | null
   taslak: HaftaVerisi
   onceki: { ozet: Ozet; hedef: string } | null
   kitaplar: { id: string; ad: string; ders: string }[]
@@ -24,7 +25,7 @@ export type SayfaVerisi = {
   /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
   konuDurumu: Record<string, number>
   /** yalnız Öğrenci dosyası sekmesinde dolu (gecmis: true) */
-  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk> }[]
+  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk>; kapali: boolean }[]
   mentorAdi: string
   okulAdi: string
 }
@@ -79,17 +80,19 @@ export const TakipService = {
     return {
       ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id, veliTelefon: o.veli_telefon },
       hafta,
-      kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at } : null,
+      kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at, kapaliAt: kayit.kapali_at } : null,
       // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
       taslak: kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif),
       onceki: onceki ? { ozet: ozetOf(onceki), hedef: veriOf(onceki).gorusme.hedef } : null,
       kitaplar,
-      okulOdevleri: okulOdevBolumleri(profil.homeworks, hafta),
+      // Kapalı hafta: kapatma anındaki görüntü (öğretmen işareti sonradan değişse de kayıt sabit)
+      okulOdevleri: kayit?.kapali_at && kayit.okul_odevleri
+        ? kayit.okul_odevleri as unknown as OkulOdevBolumleri : okulOdevBolumleri(profil.homeworks, hafta),
       konular,
       konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
       gecmis: gecmisSat.map(r => ({
         hafta: r.hafta_basi, seviye: r.seviye as Seviye, okuma: (r.icerik as unknown as Icerik).okuma,
-        dersler: dersDogruluk((r.icerik as unknown as Icerik).sonuclar ?? []),
+        dersler: dersDogruluk((r.icerik as unknown as Icerik).sonuclar ?? []), kapali: r.kapali_at !== null,
         ozet: { gorev_toplam: r.gorev_toplam, gorev_yapilan: r.gorev_yapilan, soru: r.soru, dogru: r.dogru, okuma_sayfa: r.okuma_sayfa, islendi: r.islendi },
       })),
       mentorAdi: profile?.full_name ?? '',
@@ -107,7 +110,34 @@ export const TakipService = {
       school_id: ab.schoolId, student_id: g.studentId, hafta_basi: g.hafta, seviye: g.seviye, soru_hedefi: g.soruHedefi,
       icerik: g.icerik, gorusme: g.gorusme, updated_by: ab.userId, ...ozetHesapla(g.icerik),
     }
-    return g.sonBilinen === null ? R.haftaEkle(satir) : R.haftaGuncelle(satir, g.sonBilinen)
+    const r = g.sonBilinen === null ? await R.haftaEkle(satir) : await R.haftaGuncelle(satir, g.sonBilinen)
+    return 'kapali' in r && r.kapali ? { error: 'Bu hafta kapalı; düzenlemek için kilidi açın.' } : r
+  },
+
+  /** Plan + sonuç + o anki okul ödevi durumu sabitlenir. Kayıt yoksa ekranda görülen taslak önce yazılır. */
+  async kapat(studentId: string, hafta: string): Promise<{ error?: string }> {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    const v = await TakipService.sayfaVerisi(studentId, hafta)
+    if (!v) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    if (v.kayit?.kapaliAt) return {}
+    if (!v.kayit) {
+      const t = v.taslak
+      const r = await R.haftaEkle({
+        school_id: ab.schoolId, student_id: studentId, hafta_basi: hafta, seviye: t.seviye, soru_hedefi: t.soruHedefi,
+        icerik: t.icerik as unknown as Json, gorusme: t.gorusme as unknown as Json, updated_by: ab.userId, ...ozetHesapla(t.icerik),
+      })
+      if (r.cakisma) return { error: 'Bu hafta başka bir ekranda değişti; sayfayı yenileyip tekrar deneyin.' }
+    }
+    await R.haftaKapat(ab.schoolId, studentId, hafta, v.okulOdevleri as unknown as Json)
+    return {}
+  },
+
+  async kilidiAc(studentId: string, hafta: string): Promise<{ error?: string }> {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    await R.kilidiAc(ab.schoolId, studentId, hafta)
+    return {}
   },
 
   async kitapEkle(studentId: string, ad: string, ders: string) {

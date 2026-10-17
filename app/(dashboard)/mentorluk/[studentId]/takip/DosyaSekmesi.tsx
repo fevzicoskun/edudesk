@@ -72,13 +72,14 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
             const p = programYuzde(h.ozet), d = dogrulukYuzde(h.ozet)
             return (
               <tr key={h.hafta} className="border-b border-gray-100 dark:border-slate-700">
-                <td className="py-1">{haftaEtiketi(h.hafta)}</td><td>{SEVIYE_ADI[h.seviye]}</td>
+                <td className="py-1">{haftaEtiketi(h.hafta)}{h.kapali && <span title="Hafta kapatıldı" aria-label="kapalı"> 🔒</span>}</td><td>{SEVIYE_ADI[h.seviye]}</td>
                 <td>{h.ozet.islendi && p !== null ? `%${p}` : '—'}</td><td>{h.ozet.soru || '—'}</td>
                 <td>{d === null ? '—' : `%${d}`}</td>
                 <td className="text-xs">{h.dersler.length === 0 ? '—' : h.dersler.map((x, i) => (
                   <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{dersKisa(x.ders)} %{x.yuzde}</span>))}</td>
                 <td>{h.ozet.okuma_sayfa || '—'}</td>
-                <td><Link className="text-blue-600 hover:underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${h.hafta}&sekme=sonuc`}>Aç</Link></td>
+                <td className="whitespace-nowrap"><Link className="text-blue-600 hover:underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${h.hafta}&sekme=sonuc`}>Aç</Link>
+                  {' · '}<a className="text-blue-600 hover:underline" target="_blank" rel="noopener" href={`/mentorluk/${v.ogrenci.id}/takip/sonuc-kagidi?hafta=${h.hafta}`}>Yazdır</a></td>
               </tr>)
           })}</tbody>
         </table>

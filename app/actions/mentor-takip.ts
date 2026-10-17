@@ -4,6 +4,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { UUID } from '@/src/shared/validation'
+import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import type { ActionResult } from '@/src/shared/types/index'
 
@@ -40,4 +41,21 @@ export async function konuEkle(studentId: string, ders: string, ad: string): Pro
 export async function konuDurumu(studentId: string, konuId: string, durum: number): Promise<ActionResult> {
   if (!UUID.safeParse(studentId).success || !UUID.safeParse(konuId).success || ![0, 1, 2].includes(durum)) return { error: 'Geçersiz veri' }
   return TakipService.konuDurumuYaz(studentId, konuId, durum as 0 | 1 | 2)
+}
+
+const haftaSchema = z.object({ studentId: UUID, hafta: z.string().refine(pazartesiMi, 'Hafta pazartesi olmalı') })
+/** Haftayı kapat: plan + sonuç + o anki okul ödevi durumu sabitlenir, hafta salt okunur olur. */
+export async function haftaKapat(studentId: string, hafta: string): Promise<ActionResult> {
+  const p = haftaSchema.safeParse({ studentId, hafta })
+  if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const r = await TakipService.kapat(p.data.studentId, p.data.hafta)
+  if (!r.error) revalidatePath(`/mentorluk/${studentId}`, 'layout')
+  return r
+}
+export async function haftaKilidiAc(studentId: string, hafta: string): Promise<ActionResult> {
+  const p = haftaSchema.safeParse({ studentId, hafta })
+  if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const r = await TakipService.kilidiAc(p.data.studentId, p.data.hafta)
+  if (!r.error) revalidatePath(`/mentorluk/${studentId}`, 'layout')
+  return r
 }

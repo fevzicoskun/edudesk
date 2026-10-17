@@ -7,7 +7,7 @@ vi.mock('@/src/domains/mentor/repositories/TakipRepository', () => ({
   TakipRepository: {
     acikMi: vi.fn(), mentoruMu: vi.fn(), haftaEkle: vi.fn(), haftaGuncelle: vi.fn(),
     ogrenci: vi.fn(), hafta: vi.fn(), oncekiHafta: vi.fn(), kitaplar: vi.fn(), konuDurumlari: vi.fn(),
-    gecmis: vi.fn(), konular: vi.fn(), konuTohumla: vi.fn(),
+    gecmis: vi.fn(), konular: vi.fn(), konuTohumla: vi.fn(), haftaKapat: vi.fn(), kilidiAc: vi.fn(),
   },
 }))
 vi.mock('@/src/domains/homework/services/HomeworkService', () => ({
@@ -96,5 +96,61 @@ describe('TakipService.sayfaVerisi — matematik konu tohumu (2026-10-17 tarama)
     expect(v).not.toBeNull()
     expect(v?.konular).toEqual([])
     expect(logger.warn).toHaveBeenCalled()
+  })
+})
+
+const { HomeworkService } = await import('@/src/domains/homework/services/HomeworkService')
+
+describe('TakipService — haftayı kapat (2026-10-17)', () => {
+  const odev = (id: string, due: string, status: string | null) => ({ id, title: id, subject: 'Fizik', due_date: due, status, note: null, teacher_id: 't', bekliyor: false })
+  const satir = (o: object = {}) => ({
+    hafta_basi: '2026-10-19', seviye: 1, soru_hedefi: 200, icerik: yeniHafta(null, 9).icerik, gorusme: {}, updated_at: 't0',
+    gorev_toplam: 0, gorev_yapilan: 0, soru: 0, dogru: 0, okuma_sayfa: 0, islendi: false, kapali_at: null, okul_odevleri: null, ...o,
+  })
+  beforeEach(() => {
+    vi.mocked(R.ogrenci).mockResolvedValue({ id: SID, full_name: 'Ali', class_id: 'c1', veli_telefon: null, classes: { name: '9-A', grade: 9 } } as never)
+    vi.mocked(R.oncekiHafta).mockResolvedValue(null as never)
+    vi.mocked(R.kitaplar).mockResolvedValue([])
+    vi.mocked(R.konuDurumlari).mockResolvedValue([])
+    vi.mocked(R.konular).mockResolvedValue([{ id: 'k', ders: 'Matematik', ad: 'A', grup: null }] as never)
+    vi.mocked(R.haftaKapat).mockResolvedValue(undefined as never)
+    vi.mocked(HomeworkService.getStudentHomeworkProfile).mockResolvedValue({ homeworks: [odev('h1', '2026-10-20', 'yapildi')] } as never)
+  })
+
+  it('kayıt yoksa ekranda görülen taslak kaydedilir, sonra kapatılır; okul ödevleri o anki hâliyle sabitlenir', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(null as never)
+    expect(await TakipService.kapat(SID, '2026-10-19')).toEqual({})
+    expect(R.haftaEkle).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(R.haftaEkle).mock.calls[0][0]).toMatchObject({ student_id: SID, hafta_basi: '2026-10-19', school_id: 's1' })
+    const [okul, ogr, hafta, anlik] = vi.mocked(R.haftaKapat).mock.calls[0]
+    expect([okul, ogr, hafta]).toEqual(['s1', SID, '2026-10-19'])
+    expect((anlik as { buHafta: { id: string; status: string }[] }).buHafta.map(o => [o.id, o.status])).toEqual([['h1', 'yapildi']])
+  })
+  it('kayıt varsa yalnız kapatılır', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(satir() as never)
+    expect(await TakipService.kapat(SID, '2026-10-19')).toEqual({})
+    expect(R.haftaEkle).not.toHaveBeenCalled()
+    expect(R.haftaKapat).toHaveBeenCalledTimes(1)
+  })
+  it('mentörü değil → kapatamaz', async () => {
+    vi.mocked(R.mentoruMu).mockResolvedValue(false)
+    expect((await TakipService.kapat(SID, '2026-10-19')).error).toBeTruthy()
+    expect(R.haftaKapat).not.toHaveBeenCalled()
+  })
+  it('kapalı haftada okul ödevleri canlı veriden değil kapatma anından okunur', async () => {
+    const anlik = { tamamlanmamis: [], buHafta: [odev('h1', '2026-10-20', 'yapilmadi')], gelecek: [] }
+    vi.mocked(R.hafta).mockResolvedValue(satir({ kapali_at: '2026-10-26T10:00:00Z', okul_odevleri: anlik }) as never)
+    const v = await TakipService.sayfaVerisi(SID, '2026-10-19')
+    expect(v!.kayit!.kapaliAt).toBe('2026-10-26T10:00:00Z')
+    expect(v!.okulOdevleri.buHafta[0].status).toBe('yapilmadi') // canlıda 'yapildi'
+  })
+  it('kapalı haftaya kayıt DB tetikleyicisinden döner → anlaşılır hata', async () => {
+    vi.mocked(R.haftaGuncelle).mockResolvedValue({ kapali: true })
+    expect((await TakipService.kaydet(girdi('2026-10-16T10:00:00.000Z'))).error).toMatch(/kapalı/)
+  })
+  it('kilidi aç', async () => {
+    vi.mocked(R.kilidiAc).mockResolvedValue(undefined as never)
+    expect(await TakipService.kilidiAc(SID, '2026-10-19')).toEqual({})
+    expect(R.kilidiAc).toHaveBeenCalledWith('s1', SID, '2026-10-19')
   })
 })

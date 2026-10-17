@@ -1306,7 +1306,9 @@ export type Database = {
           icerik: Json
           id: string
           islendi: boolean
+          kapali_at: string | null
           okuma_sayfa: number
+          okul_odevleri: Json | null
           school_id: string
           seviye: number
           soru: number
@@ -1324,7 +1326,9 @@ export type Database = {
           icerik: Json
           id?: string
           islendi?: boolean
+          kapali_at?: string | null
           okuma_sayfa?: number
+          okul_odevleri?: Json | null
           school_id: string
           seviye: number
           soru?: number
@@ -1342,7 +1346,9 @@ export type Database = {
           icerik?: Json
           id?: string
           islendi?: boolean
+          kapali_at?: string | null
           okuma_sayfa?: number
+          okul_odevleri?: Json | null
           school_id?: string
           seviye?: number
           soru?: number

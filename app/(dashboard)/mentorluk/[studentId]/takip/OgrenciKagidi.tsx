@@ -3,8 +3,8 @@ import { haftaEtiketi, dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
-const th = 'border border-gray-400 px-1.5 py-0.5 text-left font-semibold'
-const td = 'border border-gray-400 px-1.5 py-0.5 align-top'
+export const th = 'border border-gray-400 px-1.5 py-0.5 text-left font-semibold'
+export const td = 'border border-gray-400 px-1.5 py-0.5 align-top'
 
 /** Okul ödevi bölümü, iki sütun: 11 ödev tek sütunda kâğıdı ikinci sayfaya taşıyordu (2026-10-16 kullanıcı).
  *  `durumlu` → son sütun öğretmen işareti (sonuç kâğıdı), değilse öğrencinin ✓ kutusu. */
