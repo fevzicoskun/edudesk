@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -26,9 +26,9 @@ describe('sureYaz / miktarYaz', () => {
     expect(sureYaz(135)).toBe('2 saat 15 dk'); expect(sureYaz(165)).toBe('2 saat 45 dk')
   })
   it('birim', () => {
-    expect(miktarYaz({ miktar: 60, birim: 'dk' }, 2)).toBe('1 saat 15 dk')
-    expect(miktarYaz({ miktar: 20, birim: 'soru' }, 1)).toBe('20 soru')
-    expect(miktarYaz({ miktar: null, birim: 'serbest' }, 1)).toBe('')
+    expect(miktarYaz({ miktar: 75, birim: 'dk' })).toBe('1 saat 15 dk')
+    expect(miktarYaz({ miktar: 20, birim: 'soru' })).toBe('20 soru')
+    expect(miktarYaz({ miktar: null, birim: 'serbest' })).toBe('')
   })
 })
 
@@ -65,7 +65,7 @@ describe('yeniHafta', () => {
   it('önceki yoksa sınıf şablonu + Hafif + varsayılan hedef', () => {
     const h = yeniHafta(null, 10)
     expect(h.seviye).toBe(0); expect(h.soruHedefi).toBe(120)
-    expect(h.icerik.gorevler).toEqual(sinifSablonu(10)); expect(h.icerik.duzen).toBe(VARSAYILAN_DUZEN)
+    expect(h.icerik.gorevler.map(x => x.id)).toEqual(sinifSablonu(10).map(x => x.id)); expect(h.icerik.duzen).toBe(VARSAYILAN_DUZEN)
     expect(h.gorusme).toEqual(BOS_GORUSME)
   })
   it('öncekinden görevler sonuçsuz kopyalanır; mentör ödevi, görüşme, bitmiş kitap taşınmaz', () => {
@@ -78,7 +78,7 @@ describe('yeniHafta', () => {
     }
     const h = yeniHafta(onceki, 11)
     expect(h.seviye).toBe(2); expect(h.soruHedefi).toBe(350); expect(h.icerik.duzen).toBe('D')
-    expect(h.icerik.gorevler[0]).toEqual(g({}))
+    expect(h.icerik.gorevler[0]).toEqual(g({ miktar: 75 })) // eski biçim: Yoğun 60 → gerçek süre 75
     expect(h.icerik.mentorOdevleri).toEqual([]); expect(h.icerik.okuma).toBeNull(); expect(h.gorusme).toEqual(BOS_GORUSME)
   })
   it('bitmemiş kitap sayfası boş olarak taşınır', () => {
@@ -262,5 +262,57 @@ describe('gecenHaftaOzeti (mentörlük tablosu "Geçen hafta")', () => {
   it('program ve doğruluk yüzdesi; soru yoksa doğruluk null', () => {
     expect(gecenHaftaOzeti({ islendi: true, gorev_toplam: 24, gorev_yapilan: 18, soru: 40, dogru: 18 })).toEqual({ program: 75, dogruluk: 45 })
     expect(gecenHaftaOzeti({ islendi: true, gorev_toplam: 4, gorev_yapilan: 1, soru: 0, dogru: 0 })).toEqual({ program: 25, dogruluk: null })
+  })
+})
+
+describe('plan sadeleştirme: her gün grubu + tek süre (2026-10-17 ikinci tur)', () => {
+  const gun5 = (o: Partial<Gorev>, idOn: string) => [0, 1, 2, 3, 4].map(gun => g({ ...o, id: `${idOn}${gun}`, gun }))
+  it('eski plan: Pzt–Cum beşinde de aynı görev → tek grup; eksik gün ya da farklı süre → güne özel', () => {
+    const eski = icerik({ gorevler: [
+      ...gun5({ ad: 'Okul tekrarı', miktar: 15 }, 'o'),
+      ...gun5({ ad: 'Paragraf', miktar: 15, birim: 'soru', soruSatiri: true }, 'p').slice(0, 4), // Cuma yok
+      ...gun5({ ad: 'Mat', miktar: 60 }, 'm').map((x, i) => (i === 2 ? { ...x, miktar: 45 } : x)), // Çarşamba farklı
+      g({ id: 'f', ad: 'Fizik', gun: 1 }),
+    ] })
+    const n = normalizeIcerik(eski, 1)
+    const okul = n.gorevler.filter(x => x.ad === 'Okul tekrarı')
+    expect(new Set(okul.map(x => x.grup)).size).toBe(1); expect(okul[0].grup).toBeTruthy()
+    expect(n.gorevler.filter(x => x.ad !== 'Okul tekrarı').every(x => !x.grup)).toBe(true)
+    expect(n.gorevler).toHaveLength(eski.gorevler.length) // hiçbir görev kaybolmaz
+    expect(n.surum).toBe(2)
+  })
+  it('eski plan: süreler seçili seviyeyle bir kez gerçek süreye çevrilir (Hafif 15 → 10); ikinci normalleştirme değiştirmez', () => {
+    const n = normalizeIcerik(icerik({ gorevler: [g({ miktar: 15 }), g({ id: 's', miktar: null, birim: 'serbest' })] }), 0)
+    expect(n.gorevler.map(x => x.miktar)).toEqual([10, null])
+    expect(normalizeIcerik(n, 0)).toBe(n)
+  })
+  it('tek süre: miktarYaz saklanan değeri yazar', () => {
+    expect(miktarYaz({ miktar: 90, birim: 'dk' })).toBe('1,5 saat'); expect(miktarYaz({ miktar: 20, birim: 'soru' })).toBe('20 soru')
+  })
+  it('seviye değişince süreler bir kez ölçeklenir (Normal 60 → Yoğun 75 → Hafif 40), hedef varsayılana', () => {
+    const h = { seviye: 1 as const, soruHedefi: 200, icerik: icerik({ surum: 2, gorevler: [g({ miktar: 60 }), g({ id: 's', miktar: null, birim: 'serbest' })] }), gorusme: BOS_GORUSME }
+    const y = seviyeDegistir(h, 2, 9)
+    expect(y.icerik.gorevler.map(x => x.miktar)).toEqual([75, null]); expect(y.soruHedefi).toBe(300)
+    expect(seviyeDegistir(y, 0, 9).icerik.gorevler[0].miktar).toBe(40)
+  })
+  it('yeni şablon haftası: günlük görevler gruplu, süreler Hafif uygulanmış', () => {
+    const h = yeniHafta(null, 9)
+    expect(h.icerik.surum).toBe(2)
+    const paragraf = h.icerik.gorevler.filter(x => x.ad === 'Paragraf')
+    expect(paragraf).toHaveLength(5); expect(new Set(paragraf.map(x => x.grup)).size).toBe(1)
+    expect(h.icerik.gorevler.find(x => x.ad === 'Okul tekrarı')!.miktar).toBe(10)
+  })
+})
+
+describe('görüşme notları 5 → 2 (2026-10-17)', () => {
+  it('eski alanlar: iyi/zor/hedef/odak → Öğretmen notu (başlıklı, boşlar atlanır); evde → Veliden ricam', () => {
+    expect(gorusmeNormalize({ iyi: 'Türev iyi', zor: '', hedef: '150 soru', odak: 'Limit', evde: 'Telefonu alın' })).toEqual({
+      not: 'İyi giden: Türev iyi\nKendi hedefi: 150 soru\nOdak: Limit', rica: 'Telefonu alın', veliMesaji: null,
+    })
+  })
+  it('yeni biçim aynen; boş/eksik → boş', () => {
+    expect(gorusmeNormalize({ not: 'N', rica: 'R', veliMesaji: 'M' })).toEqual({ not: 'N', rica: 'R', veliMesaji: 'M' })
+    expect(gorusmeNormalize({})).toEqual({ not: '', rica: '', veliMesaji: null })
+    expect(gorusmeNormalize(null)).toEqual({ not: '', rica: '', veliMesaji: null })
   })
 })

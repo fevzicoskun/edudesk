@@ -1,38 +1,40 @@
-import { haftaEtiketi } from '../lib/bultenMath'
-import { ozetHesapla, programYuzde, dogrulukYuzde, fark, type HaftaVerisi, type Ozet } from './takipMath'
+import {
+  ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, dersDogruluk, takipHaftaEtiketi,
+  type HaftaVerisi, type Ozet, type OkulOdevBolumleri, type OkulOdevi,
+} from './takipMath'
 
-/** Konu haritasından veli mesajı listeleri (client + server ortak). */
-export function konuAdlari(konular: { id: string; ad: string }[], durum: Record<string, number>) {
-  const ad = (d: number) => konular.filter(k => durum[k.id] === d).map(k => k.ad)
-  return { oturan: ad(2), calisilan: ad(1) }
-}
+const YAPILDI = new Set(['yapildi', 'gec'])
+/** En fazla 3 ad; kalan "ve N ödev daha" — WhatsApp'ta mesaj kısa kalsın. */
+const adlar = (liste: OkulOdevi[]) =>
+  liste.slice(0, 3).map(o => o.title).join(', ') + (liste.length > 3 ? ` ve ${liste.length - 3} ödev daha` : '')
 
-/** Spec §5 şablonu; boş satırlar atlanır. */
+/** Haftanın verisinden otomatik veli mesajı (madde işaretli, ~10 satır). Mentör düzenlerse gorusme.veliMesaji'de saklanır. */
 export function takipVeliMesaji(g: {
   ogrenciAdi: string; pazartesi: string; veri: HaftaVerisi; onceki: Ozet | null
-  konular: { oturan: string[]; calisilan: string[] }; mentorAdi: string
+  okul: OkulOdevBolumleri; kitaplar: { id: string; ders: string }[]; mentorAdi: string
 }): string {
-  const o = ozetHesapla(g.veri.icerik), d = dogrulukYuzde(o), f = fark(o, g.onceki)
-  const gk = g.veri.gorusme, ok = g.veri.icerik.okuma, mo = g.veri.icerik.mentorOdevleri
-  const farkMetni = f === null || f === 0 ? '' : `, geçen haftaya göre ${Math.abs(f)} puan ${f > 0 ? 'arttı' : 'düştü'}`
+  const o = ozetHesapla(g.veri.icerik), d = dogrulukYuzde(o)
+  const oncekiD = g.onceki?.islendi ? dogrulukYuzde(g.onceki) : null
+  const dersler = dersDogruluk(sonucSatirlari(g.veri.icerik, g.kitaplar))
+  const bu = g.okul.buHafta
+  const yapilan = bu.filter(x => x.status && YAPILDI.has(x.status)).length
+  const yapilmayan = bu.filter(x => x.status === 'yapilmadi')
+  const isaretsiz = bu.filter(x => !x.status).length
+  const { not, rica } = g.veri.gorusme
   const satir = (kosul: unknown, metin: string) => (kosul ? [metin] : [])
   return [
-    `Sayın Veli, ${g.ogrenciAdi} için ${haftaEtiketi(g.pazartesi)} haftasının özeti:`,
+    `Sayın Veli, ${g.ogrenciAdi} için ${takipHaftaEtiketi(g.pazartesi)} haftasının özeti:`,
+    ...satir(bu.length, `• Okul ödevleri: ${yapilan}/${bu.length} yapıldı`
+      + (isaretsiz ? `, ${isaretsiz} tanesi henüz kontrol edilmedi` : '') + '.'
+      + (yapilmayan.length ? ` Yapılmayan: ${adlar(yapilmayan)}` : '')),
+    ...satir(g.okul.tamamlanmamis.length, `• Önceki haftalardan tamamlanmamış: ${adlar(g.okul.tamamlanmamis)}`),
+    // İşlenmemiş hafta (hiç ✓/sonuç yok) → "%0" yazılmaz
+    ...satir(o.islendi && o.gorev_toplam, `• Program: %${programYuzde(o)} (${o.gorev_yapilan}/${o.gorev_toplam} görev)`),
+    ...satir(o.soru, `• Soru: ${o.soru} soru, doğruluk %${d}${oncekiD !== null ? ` (geçen hafta %${oncekiD})` : ''}`),
+    ...satir(dersler.length, `• Ders bazında: ${dersler.map(x => `${x.ders} %${x.yuzde}`).join(' · ')}`),
+    ...satir(not.trim(), `• Öğretmen notu: ${not.trim()}`),
+    ...satir(rica.trim(), `• Sizden ricam: ${rica.trim()}`),
     '',
-    // Görev + mentör ödevi (programYuzde): veli raporu kutusu ve Sonuç kartıyla aynı oran. İşlenmemiş hafta → satır yok.
-    ...satir(o.islendi && o.gorev_toplam, `• Program: ${o.gorev_toplam} görevin ${o.gorev_yapilan} tanesini tamamladı (%${programYuzde(o)}).`),
-    ...satir(o.soru, `• Soru: ${o.soru} soru çözdü (hedef ${g.veri.soruHedefi}), doğruluk %${d}${farkMetni}.`),
-    ...satir(mo.length, `• Ekstra ödevler: ${mo.length} ödevin ${mo.filter(m => m.yapti).length} tanesi yapıldı.`),
-    ...satir(ok && (ok.sayfa || ok.bitti), ok?.bitti ? `• Okuma: ${ok.kitap} kitabını bitirdi${ok.sayfa ? ` (bu hafta ${ok.sayfa} sayfa)` : ''}.` : `• Okuma: ${ok?.kitap} kitabından ${ok?.sayfa} sayfa okudu.`),
-    ...satir(g.konular.oturan.length, `• Oturan konular: ${g.konular.oturan.join(', ')}`),
-    ...satir(g.konular.calisilan.length, `• Üzerinde çalıştığımız konular: ${g.konular.calisilan.join(', ')}`),
-    ...satir(gk.iyi.trim(), `• İyi giden: ${gk.iyi.trim()}`),
-    ...satir(gk.zor.trim(), `• Zorlandığı yer: ${gk.zor.trim()}`),
-    ...satir(gk.hedef.trim(), `• Gelecek hafta için kendi koyduğu hedef: “${gk.hedef.trim()}”`),
-    ...satir(gk.odak.trim(), `• Gelecek haftanın odağı: ${gk.odak.trim()}`),
-    ...satir(gk.evde.trim(), `\nEvde sizden ricam: ${gk.evde.trim()}`),
-    '',
-    'İlginiz için teşekkür ederim.',
     g.mentorAdi,
   ].join('\n')
 }

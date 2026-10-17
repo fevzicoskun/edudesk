@@ -12,7 +12,7 @@ import type { SekmeProps } from './TakipIstemci'
 const kutu = 'rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
 const netYaz = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 const sayi = (s: string) => (s === '' ? null : Math.max(0, Math.trunc(Number(s)) || 0))
-const GORUSME: [keyof Gorusme, string][] = [['iyi', 'İyi giden'], ['zor', 'Zorlandığı'], ['hedef', 'Gelecek hafta kendi hedefi'], ['odak', 'Gelecek haftanın odağı'], ['evde', 'Evde veliden ricam']]
+const GORUSME: [keyof Pick<Gorusme, 'not' | 'rica'>, string, number][] = [['not', 'Öğretmen notu', 2000], ['rica', 'Veliden ricam', 1000]]
 
 function Kart({ baslik, deger, alt }: { baslik: string; deger: string; alt?: string }) {
   return (
@@ -129,8 +129,8 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
           {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
             <tr key={g.id} aria-label={`${GUNLER[g.gun]} ${g.ad}`} className={`border-b border-gray-100 dark:border-slate-700 ${g.ders === 'Matematik' ? 'font-semibold' : ''}`}>
               <td className="py-1 pr-2">{GUNLER[g.gun]}</td>
-              <td className="pr-2">{g.ad}{(g.konu || kitapSayfaYaz(g)) && <span className="text-gray-500 dark:text-slate-400"> · {[g.konu, kitapSayfaYaz(g)].filter(Boolean).join(' · ')}</span>}</td>
-              <td className="pr-2 whitespace-nowrap">{miktarYaz(g, veri.seviye)}</td>
+              <td className="pr-2">{g.ad}{kitapSayfaYaz(g) && <span className="text-gray-500 dark:text-slate-400"> · {kitapSayfaYaz(g)}</span>}</td>
+              <td className="pr-2 whitespace-nowrap">{miktarYaz(g)}</td>
               <td><input type="checkbox" aria-label="Yaptı" className="w-5 h-5" checked={g.yapti} onChange={e => gorev(g.id, { yapti: e.target.checked }, true)} /></td>
             </tr>
           ))}
@@ -171,9 +171,9 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
       )}
 
       <section aria-label="Görüşme" className="grid md:grid-cols-2 gap-3">
-        {GORUSME.map(([k, ad]) => (
+        {GORUSME.map(([k, ad, sinir]) => (
           <label key={k} className="text-sm">{ad}
-            <textarea rows={2} maxLength={k === 'hedef' ? 300 : 1000} className={`${kutu} w-full block`} value={veri.gorusme[k]}
+            <textarea rows={3} maxLength={sinir} className={`${kutu} w-full block`} value={veri.gorusme[k]}
               onChange={e => degistir(h => ({ ...h, gorusme: { ...h.gorusme, [k]: e.target.value } }))} />
           </label>
         ))}

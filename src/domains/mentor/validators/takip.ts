@@ -11,10 +11,12 @@ const gorevSchema = z.object({
   soruSatiri: z.boolean(), konu: metin(120), sayfa: metin(60), yapti: z.boolean(), soru: sayi.nullable(), dogru: sayi.nullable(),
   kitapId: UUID.nullable().optional(), kitapAdi: metin(120).optional(),
   sayfaBas: z.number().int().min(1).max(5000).nullable().optional(), sayfaSon: z.number().int().min(1).max(5000).nullable().optional(),
+  grup: z.string().min(1).max(80).optional(),
 }).refine(g => g.dogru === null || (g.soru !== null && g.dogru <= g.soru), { message: 'Doğru sayısı soru sayısından büyük olamaz', path: ['dogru'] })
   .refine(g => g.sayfaBas == null || g.sayfaSon == null || g.sayfaBas <= g.sayfaSon, { message: 'Sayfa aralığı ters (bitiş başlangıçtan küçük)', path: ['sayfaSon'] })
 
 export const icerikSchema = z.object({
+  surum: z.literal(2).optional(),
   duzen: metin(300),
   gorevler: z.array(gorevSchema).max(120),
   mentorOdevleri: z.array(z.object({
@@ -29,7 +31,7 @@ export const icerikSchema = z.object({
   })).max(60).optional(),
 })
 
-export const gorusmeSchema = z.object({ iyi: metin(1000), zor: metin(1000), hedef: metin(300), odak: metin(1000), evde: metin(1000) })
+export const gorusmeSchema = z.object({ not: metin(2000), rica: metin(1000), veliMesaji: metin(2000).nullable() })
 
 export const kaydetSchema = z.object({
   studentId: UUID,

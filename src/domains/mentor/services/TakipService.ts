@@ -8,8 +8,8 @@ import { kaydetSchema } from '../validators/takip'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, planKopyala, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
-  type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
+  yeniHafta, planKopyala, normalizeIcerik, gorusmeNormalize, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
+  type HaftaVerisi, type Icerik, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
 } from '../takip/takipMath'
 
 export type SayfaVerisi = {
@@ -17,7 +17,7 @@ export type SayfaVerisi = {
   hafta: string
   kayit: { veri: HaftaVerisi; updatedAt: string; kapaliAt: string | null } | null
   taslak: HaftaVerisi
-  onceki: { ozet: Ozet; hedef: string } | null
+  onceki: { ozet: Ozet } | null
   kitaplar: { id: string; ad: string; ders: string }[]
   /** Ödev modülünden salt okunur: tamamlanmamış (yapılmadı, teslimi geçmiş) · bu hafta · gelecek hafta */
   okulOdevleri: OkulOdevBolumleri
@@ -33,7 +33,8 @@ export type SayfaVerisi = {
 type Satir = NonNullable<Awaited<ReturnType<typeof R.hafta>>>
 const veriOf = (s: Satir): HaftaVerisi => ({
   seviye: s.seviye as Seviye, soruHedefi: s.soru_hedefi,
-  icerik: s.icerik as unknown as Icerik, gorusme: { ...BOS_GORUSME, ...(s.gorusme as unknown as Partial<Gorusme>) },
+  // Eski biçim (seviye tabanlı süre, gruplanmamış günlük görev) okunurken çevrilir; ilk düzenlemede kalıcılaşır
+  icerik: normalizeIcerik(s.icerik as unknown as Icerik, s.seviye as Seviye), gorusme: gorusmeNormalize(s.gorusme),
 })
 const ozetOf = (s: Satir): Ozet => ({
   gorev_toplam: s.gorev_toplam, gorev_yapilan: s.gorev_yapilan, soru: s.soru, dogru: s.dogru, okuma_sayfa: s.okuma_sayfa, islendi: s.islendi,
@@ -83,7 +84,7 @@ export const TakipService = {
       kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at, kapaliAt: kayit.kapali_at } : null,
       // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
       taslak: kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif),
-      onceki: onceki ? { ozet: ozetOf(onceki), hedef: veriOf(onceki).gorusme.hedef } : null,
+      onceki: onceki ? { ozet: ozetOf(onceki) } : null,
       kitaplar,
       // Kapalı hafta: kapatma anındaki görüntü (öğretmen işareti sonradan değişse de kayıt sabit)
       okulOdevleri: kayit?.kapali_at && kayit.okul_odevleri
@@ -191,6 +192,22 @@ export const TakipService = {
     if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
     const { data, error } = await R.kitapEkle(ab.schoolId, studentId, ad, ders)
     return error ? { error: 'Kitap eklenemedi.' } : { kitap: data }
+  },
+
+  /** Aynı kitabı mentörün tüm öğrencilerine tanımlar; ad+ders (harf/boşluk duyarsız) zaten olanı atlar. */
+  async kitapHerkese(ad: string, ders: string): Promise<{ error?: string; eklenen?: number; atlanan?: number }> {
+    const ab = await requireAbility()
+    if (!(await R.acikMi())) return { error: 'Haftalık takip bu hesapta açık değil.' }
+    const esit = (a: string, b: string) => a.trim().toLocaleLowerCase('tr') === b.trim().toLocaleLowerCase('tr')
+    let eklenen = 0, atlanan = 0
+    for (const ogr of await R.mentiler(ab.userId, ab.schoolId)) {
+      const var_ = (await R.kitaplar(ab.schoolId, ogr)).some(k => esit(k.ad, ad) && esit(k.ders, ders))
+      if (var_) { atlanan++; continue }
+      const { error } = await R.kitapEkle(ab.schoolId, ogr, ad, ders)
+      if (error) return { error: `Kitap eklenemedi (${eklenen} öğrenciye eklendi).` }
+      eklenen++
+    }
+    return { eklenen, atlanan }
   },
 
   async kitapSil(studentId: string, kitapId: string) {

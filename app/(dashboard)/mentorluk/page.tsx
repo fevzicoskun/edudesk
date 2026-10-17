@@ -12,6 +12,7 @@ import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import { haftaBasi, haftaKaydir, haftaDurumu, programYuzde, gecenHaftaOzeti } from '@/src/domains/mentor/takip/takipMath'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 import MentorTablosu from './MentorTablosu'
+import KitapHerkeseFormu from './KitapHerkeseFormu'
 
 export const metadata = { title: 'Mentörlük' }
 
@@ -97,6 +98,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
           </div>
         </div>
       )}
+      {takipAcik && rows.length > 0 && <KitapHerkeseFormu />}
 
       {rows.length === 0 ? (
         <div className="mb-6 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8">

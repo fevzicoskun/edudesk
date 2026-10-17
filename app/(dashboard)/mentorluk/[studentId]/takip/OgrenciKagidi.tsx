@@ -46,18 +46,16 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
           <p>Seviye: {SEVIYE_ADI[veri.seviye]} · Soru hedefi: {veri.soruHedefi}</p>
         </div>
       </div>
-      {v.onceki?.hedef && <p className="border-2 border-black p-1.5 mb-2"><b>Bu haftaki hedefim:</b> {v.onceki.hedef}</p>}
       {veri.icerik.duzen && <p className="mb-2"><b>Hafta içi düzen:</b> {veri.icerik.duzen}</p>}
 
       <table aria-label="Program" className="w-full border-collapse mb-2">
-        <thead><tr>{['Gün', 'Görev', 'Süre', 'Konu', 'Kitap / sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
+        <thead><tr>{['Gün', 'Görev', 'Süre', 'Kitap / sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
         <tbody>
           {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
             <tr key={g.id} className={`break-inside-avoid ${g.ders === 'Matematik' ? 'font-bold bg-gray-100' : ''}`}>
               <td className={td}>{GUNLER[g.gun]}</td>
               <td className={td}>{g.ad}</td>
-              <td className={`${td} whitespace-nowrap`}>{miktarYaz(g, veri.seviye)}</td>
-              <td className={td}>{g.konu}</td>
+              <td className={`${td} whitespace-nowrap`}>{miktarYaz(g)}</td>
               <td className={td}>{kitapSayfaYaz(g)}</td>
               <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />
               <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />

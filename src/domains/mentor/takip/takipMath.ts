@@ -12,6 +12,8 @@ export type Gorev = {
   konu: string; sayfa: string; yapti: boolean; soru: number | null; dogru: number | null
   /** Bağlı kitap (2026-10-17). Ad saklanır: kitap silinse de eski haftada görünür. Eski kayıtlarda alan yok. */
   kitapId?: string | null; kitapAdi?: string; sayfaBas?: number | null; sayfaSon?: number | null
+  /** "Hafta içi her gün" görevi: Pzt–Cum beş kopya aynı grup kimliğini taşır; giriş ekranı tek satır gösterir. */
+  grup?: string
 }
 /** kitapAdi saklanır: kitap silinse de eski haftada adı görünür. */
 export type MentorOdevi = { id: string; kitapId: string | null; kitapAdi: string; konu: string; sayfalar: string; yapti: boolean }
@@ -23,8 +25,10 @@ export type Sonuc = {
   cozulen: number | null; dogru: number | null; yanlis: number | null; bos: number | null
 }
 /** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
-export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[] }
-export type Gorusme = { iyi: string; zor: string; hedef: string; odak: string; evde: string }
+/** surum 2 (2026-10-17): miktar GERÇEK süre/miktar (seviye uygulanmış) + her gün grupları. Yoksa eski biçim → normalizeIcerik. */
+export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2 }
+/** veliMesaji: mentörün düzenlediği veli mesajı; null = haftanın verisinden otomatik. */
+export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
 export type HaftaVerisi = { seviye: Seviye; soruHedefi: number; icerik: Icerik; gorusme: Gorusme }
 
@@ -41,7 +45,18 @@ export function takipHaftaEtiketi(pazartesi: string): string {
   return pazartesi.slice(5, 7) === pazar.slice(5, 7) ? `${Number(pazartesi.slice(8))}–${gunAy(pazar)}` : `${gunAy(pazartesi)} – ${gunAy(pazar)}`
 }
 
-export const BOS_GORUSME: Gorusme = { iyi: '', zor: '', hedef: '', odak: '', evde: '' }
+export const BOS_GORUSME: Gorusme = { not: '', rica: '', veliMesaji: null }
+
+/** 2026-10-17'ye kadar 5 alan vardı (iyi/zor/hedef/odak/evde): ilk dördü başlıklı olarak Öğretmen notuna,
+ *  "Evde veliden ricam" Veliden ricam'a birleşir. Yeni biçim aynen döner. */
+export function gorusmeNormalize(ham: unknown): Gorusme {
+  const g = (ham ?? {}) as Record<string, unknown>
+  const m = (k: string) => (typeof g[k] === 'string' ? (g[k] as string) : '')
+  if ('not' in g || 'rica' in g || 'veliMesaji' in g) return { not: m('not'), rica: m('rica'), veliMesaji: typeof g.veliMesaji === 'string' ? g.veliMesaji : null }
+  const not = ([['iyi', 'İyi giden'], ['zor', 'Zorlandığı'], ['hedef', 'Kendi hedefi'], ['odak', 'Odak']] as const)
+    .filter(([k]) => m(k).trim()).map(([k, ad]) => `${ad}: ${m(k).trim()}`).join('\n')
+  return { not, rica: m('evde').trim(), veliMesaji: null }
+}
 export const GUNLER = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const
 export const SEVIYE_ADI = ['Hafif', 'Normal', 'Yoğun'] as const
 
@@ -59,10 +74,46 @@ export function sureYaz(dk: number): string {
   return `${s} saat ${d} dk`
 }
 
-export function miktarYaz(g: Pick<Gorev, 'miktar' | 'birim'>, seviye: Seviye): string {
+export function miktarYaz(g: Pick<Gorev, 'miktar' | 'birim'>): string {
   if (g.miktar === null || g.birim === 'serbest') return ''
-  const m = seviyeMiktar(g.miktar, seviye)
-  return g.birim === 'dk' ? sureYaz(m) : `${m} soru`
+  return g.birim === 'dk' ? sureYaz(g.miktar) : `${g.miktar} soru`
+}
+
+const CARPAN = [0.7, 1, 1.25] as const
+const besle = (n: number) => Math.max(5, Math.round(n / 5) * 5)
+
+/** Pzt–Cum beşinde de birebir aynı (ad, ders, miktar, birim, soru, kitap) görev → ortak grup. Grupsuzlar güne özel kalır. */
+function gruplandir(gorevler: Gorev[]): Gorev[] {
+  const anahtar = (g: Gorev) => JSON.stringify([g.ad, g.ders, g.miktar, g.birim, g.soruSatiri, g.kitapId ?? null])
+  const gunleri = new Map<string, Gorev[]>()
+  for (const g of gorevler) {
+    if (g.grup || g.gun > 4) continue
+    gunleri.set(anahtar(g), [...(gunleri.get(anahtar(g)) ?? []), g])
+  }
+  const grupOf = new Map<string, string>()
+  for (const [k, liste] of gunleri) {
+    const gunler = liste.map(g => g.gun).sort()
+    if (liste.length === 5 && gunler.join() === '0,1,2,3,4') grupOf.set(k, `h-${liste[0].id}`)
+  }
+  return gorevler.map(g => (!g.grup && g.gun <= 4 && grupOf.has(anahtar(g)) ? { ...g, grup: grupOf.get(anahtar(g)) } : g))
+}
+
+/** Eski kaydı yeni biçime çevirir (okunurken; ilk düzenlemede kalıcılaşır): miktar seçili seviyeyle gerçek değere,
+ *  her gün görevleri gruplanır. surum 2 ise aynen döner. */
+export function normalizeIcerik(icerik: Icerik, seviye: Seviye): Icerik {
+  if (icerik.surum === 2) return icerik
+  const gercek = icerik.gorevler.map(g => (g.miktar === null || g.birim === 'serbest' ? g : { ...g, miktar: seviyeMiktar(g.miktar, seviye) }))
+  return { ...icerik, gorevler: gruplandir(gercek), surum: 2 }
+}
+
+/** Seviye düğmesi: tüm süreler/miktarlar bir kez ölçeklenir (Normal 60 → Yoğun 75), soru hedefi sınıf varsayılanına. */
+export function seviyeDegistir(h: HaftaVerisi, yeni: Seviye, sinif: number): HaftaVerisi {
+  if (yeni === h.seviye) return h
+  const oran = CARPAN[yeni] / CARPAN[h.seviye]
+  return {
+    ...h, seviye: yeni, soruHedefi: varsayilanHedef(sinif, yeni),
+    icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => (g.miktar === null || g.birim === 'serbest' ? g : { ...g, miktar: Math.min(600, besle(g.miktar * oran)) })) },
+  }
 }
 
 /** Görev satırının kitap/sayfa metni (plan + kâğıt). Kitapsız görevde eski serbest `sayfa` metni. */
@@ -177,10 +228,11 @@ function sayfaKaydir(gorevler: Gorev[]): Gorev[] {
  *  Sonuç, görüşme ve mentör ödevi taşınmaz. "Geçen haftayı kopyala" ve yeni haftanın taslağı bunu kullanır. */
 export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
   const ok = onceki.icerik.okuma
+  const ic = normalizeIcerik(onceki.icerik, onceki.seviye)
   return {
     seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
     icerik: {
-      duzen: onceki.icerik.duzen, gorevler: sayfaKaydir(onceki.icerik.gorevler).map(sonucsuz), mentorOdevleri: [],
+      surum: 2, duzen: ic.duzen, gorevler: sayfaKaydir(ic.gorevler).map(sonucsuz), mentorOdevleri: [],
       okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
     },
   }
@@ -190,7 +242,7 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
 export function yeniHafta(onceki: HaftaVerisi | null, sinif: number): HaftaVerisi {
   if (!onceki) return {
     seviye: 0, soruHedefi: varsayilanHedef(sinif, 0), gorusme: BOS_GORUSME,
-    icerik: { duzen: VARSAYILAN_DUZEN, gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null },
+    icerik: normalizeIcerik({ duzen: VARSAYILAN_DUZEN, gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null }, 0),
   }
   return planKopyala(onceki)
 }

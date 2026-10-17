@@ -97,6 +97,14 @@ test('kâğıt: 24 görev + 12 bu hafta + 3 tamamlanmamış + 4 gelecek hafta ö
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
     if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
     if (process.env.KAGIT_PNG) await page.screenshot({ path: process.env.KAGIT_PNG, fullPage: true })
+    // Sonuç kâğıdı da aynı yükle (19 ödev durumlu + yapılmayan 24 görev) tek A4
+    await page.emulateMedia({ media: 'screen' })
+    await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
+    await expect(page.getByRole('heading', { name: 'Haftalık Sonuç' })).toBeVisible({ timeout: 20_000 })
+    await page.emulateMedia({ media: 'print' })
+    const sonuc = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
+    expect(sonuc.numPages).toBe(1)
+    if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG, fullPage: true })
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
     expect(pdf.numPages).toBe(1)
   } finally {
@@ -105,15 +113,44 @@ test('kâğıt: 24 görev + 12 bu hafta + 3 tamamlanmamış + 4 gelecek hafta ö
   }
 })
 
-test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
+test('plan: her gün görevi tek satır girilir, kâğıtta Pzt–Cum beş güne açılır; konu sütunu yok', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
-  await page.getByLabel('Kitap adı').fill('E2E Soru Bankası')
-  await page.getByRole('button', { name: 'Kitap ekle' }).click()
+  const program = page.getByRole('region', { name: 'Program' })
+  const degerli = (ad: string) => program.getByLabel('Görev', { exact: true }).evaluateAll((els, ad) => els.filter(e => (e as HTMLInputElement).value === ad).length, ad)
+  await expect(program.getByLabel('Görev', { exact: true }).first()).toBeVisible({ timeout: 20_000 })
+  expect(await degerli('Paragraf')).toBe(1) // Pzt–Cum beş kopya tek satır
+  await expect(program.getByLabel('Konu', { exact: true })).toHaveCount(0)
+  await page.getByRole('button', { name: '+ Her gün görevi ekle' }).click()
+  await expect.poll(() => degerli('Yeni görev')).toBe(1)
+  await program.locator('input[aria-label="Görev"]').nth((await program.getByLabel('Görev', { exact: true }).evaluateAll(els => els.findIndex(e => (e as HTMLInputElement).value === 'Yeni görev')))).fill('E2E her gün')
+  await kaydedildi(page)
+  const { data } = await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single()
+  const kopyalar = (data!.icerik as { gorevler: { ad: string; gun: number; grup?: string }[] }).gorevler.filter(g => g.ad === 'E2E her gün')
+  expect(kopyalar.map(g => g.gun)).toEqual([0, 1, 2, 3, 4]); expect(new Set(kopyalar.map(g => g.grup)).size).toBe(1)
+  await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
+  await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'E2E her gün' })).toHaveCount(5)
+  await expect(page.getByRole('table', { name: 'Program' }).getByRole('columnheader', { name: 'Konu' })).toHaveCount(0)
+})
+
+const kitapEkle = async (page: Page, ad: string, ders = '') => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=dosya`)
+  const bolum = page.getByRole('region', { name: 'Kitaplar' })
+  await bolum.getByLabel('Kitap adı').fill(ad)
+  if (ders) await bolum.getByLabel('Ders').fill(ders)
+  await bolum.getByRole('button', { name: 'Kitap ekle' }).click()
+  await expect(bolum.getByRole('button', { name: `${ad} kitabını sil` })).toBeVisible()
+}
+
+test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
+  await kitapEkle(page, 'E2E Soru Bankası')
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   await page.getByRole('button', { name: '+ Mentör ödevi ekle' }).click()
   await kaydedildi(page)
   page.on('dialog', d => d.accept())
-  await page.getByRole('button', { name: 'E2E Soru Bankası kitabını sil' }).click()
-  await page.reload()
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=dosya`)
+  await page.getByRole('region', { name: 'Kitaplar' }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' }).click()
+  await expect(page.getByRole('region', { name: 'Kitaplar' }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' })).toHaveCount(0)
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   // Görev satırlarında da "Kitap" seçimi var (2026-10-17) → mentör ödevi bölümüne kapsamla
   const mo = page.getByRole('region', { name: 'Mentör ödevleri' }).getByLabel('Kitap', { exact: true })
   await expect(mo).toHaveValue(/.+/)
@@ -121,11 +158,9 @@ test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
 })
 
 test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında görünür', async ({ page }) => {
+  await kitapEkle(page, 'E2E Acil Mat', 'Matematik')
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
-  await page.getByLabel('Kitap adı').fill('E2E Acil Mat')
-  await page.getByLabel('Ders', { exact: true }).fill('Matematik')
-  await page.getByRole('button', { name: 'Kitap ekle' }).click()
-  await expect(page.getByRole('button', { name: 'E2E Acil Mat kitabını sil' })).toBeVisible()
+  await expect(page.getByLabel('Kitap adı')).toHaveCount(0) // kitap formu plan sayfasında değil
   const kitap = page.getByRole('region', { name: 'Program' }).getByLabel('Kitap', { exact: true }).first()
   await kitap.selectOption({ label: 'E2E Acil Mat · Matematik' })
   await page.getByLabel('Başlangıç sayfası').first().fill('45')
@@ -134,7 +169,8 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   await page.reload()
   await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('60')
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').nth(1)).toContainText('E2E Acil Mat s. 45–60')
+  // Her gün görevi (Matematik soru bankası) → kâğıtta Pzt–Cum beş satırın hepsinde
+  await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'Matematik soru bankası' }).filter({ hasText: 'E2E Acil Mat s. 45–60' })).toHaveCount(5)
 })
 test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç girilemez; yenilemede kalır', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
@@ -169,12 +205,12 @@ test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
   const url = `/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`
   const ikinci = await context.newPage()
   await Promise.all([page.goto(url), ikinci.goto(url)])
-  await page.getByLabel('İyi giden').fill('Birinci sekme')
+  await page.getByLabel('Öğretmen notu').fill('Birinci sekme')
   await kaydedildi(page)
-  await ikinci.getByLabel('İyi giden').fill('İkinci sekme')
+  await ikinci.getByLabel('Öğretmen notu').fill('İkinci sekme')
   await expect(ikinci.getByRole('alert').filter({ hasText: 'Başka bir ekranda değişti' })).toBeVisible({ timeout: 15_000 })
   const { data } = await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).single()
-  expect((data!.gorusme as { iyi: string }).iyi).toBe('Birinci sekme')
+  expect((data!.gorusme as { not: string }).not).toBe('Birinci sekme')
 })
 test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
@@ -185,6 +221,23 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
   await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toBeVisible()
 })
+test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlanır', async ({ page }) => {
+  await page.goto('/mentorluk')
+  await page.getByText('Kitap ekle (tüm mentör öğrencilerime)').click()
+  const form = page.getByRole('form', { name: 'Tüm mentör öğrencilerime kitap ekle' })
+  await form.getByLabel('Kitap adı').fill('E2E Herkese Kitap')
+  await form.getByLabel('Ders').fill('Fizik')
+  await form.getByRole('button', { name: 'Hepsine ekle' }).click()
+  await expect(form.getByRole('status')).toContainText(/\d+ öğrenciye eklendi/, { timeout: 20_000 })
+  await form.getByLabel('Kitap adı').fill('E2E Herkese Kitap')
+  await form.getByLabel('Ders').fill('Fizik')
+  await form.getByRole('button', { name: 'Hepsine ekle' }).click()
+  await expect(form.getByRole('status')).toContainText(/^0 öğrenciye eklendi; \d+ öğrencide zaten vardı/, { timeout: 20_000 })
+  const { data } = await db.from('mentor_kitaplari').select('id').eq('student_id', ogrId).eq('ad', 'E2E Herkese Kitap').is('deleted_at', null)
+  expect(data).toHaveLength(1)
+  await db.from('mentor_kitaplari').delete().eq('ad', 'E2E Herkese Kitap')
+})
+
 test('Mentörlüğüm: Geçen hafta sütunu program % ve doğruluk % (%50 altı kırmızı)', async ({ page }) => {
   const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
   const gecen = new Date(Date.parse(bu + 'T00:00:00Z') - 7 * 864e5).toISOString().slice(0, 10)
@@ -205,13 +258,36 @@ test('Mentörlüğüm: Geçen hafta sütunu program % ve doğruluk % (%50 altı 
     await db.from('mentor_haftalari').delete().eq('student_id', ogrId).eq('hafta_basi', gecen)
   }
 })
-test('veli mesajı ve veli raporu', async ({ page }) => {
+test('veli mesajı: haftanın verisinden dolar; düzenleme kaydedilir, rapora geçer; Yeniden oluştur', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
+  await page.getByLabel('Veliden ricam').fill('E2E akşam telefonu alın')
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.gorusme as { rica?: string }).rica, { timeout: 15_000 }).toBe('E2E akşam telefonu alın')
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
-  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/Sayın Veli, .+ için 19–23 Ekim haftasının özeti/)
+  const mesaj = page.getByLabel(/Veliye gidecek mesaj/)
+  await expect(mesaj).toHaveValue(/Sayın Veli, .+ için 19–25 Ekim haftasının özeti/)
+  await expect(mesaj).toHaveValue(/• Soru: 40 soru, doğruluk %75/)
+  await expect(mesaj).toHaveValue(/• Ders bazında: Matematik %75/)
+  await expect(mesaj).toHaveValue(/• Sizden ricam: E2E akşam telefonu alın/)
   await expect(page.getByRole('link', { name: "WhatsApp'ta gönder" })).toHaveAttribute('href', /wa\.me/)
+  await page.waitForLoadState('networkidle') // hydration bitmeden yazılan metin otomatik mesajın başına eklenir
+  await mesaj.fill('E2E elle yazılmış veli mesajı')
+  await expect(mesaj).toHaveValue('E2E elle yazılmış veli mesajı')
+  // Sekme değişince "Kaydedildi" yazısı öncekinden kalır → kaydı DB'den bekle
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.gorusme as { veliMesaji: string | null }).veliMesaji, { timeout: 15_000 }).toBe('E2E elle yazılmış veli mesajı')
+  await page.reload()
+  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue('E2E elle yazılmış veli mesajı')
   await page.goto(`/mentorluk/${ogrId}/takip/veli-raporu?hafta=2026-10-19`)
   await expect(page.getByRole('heading', { name: 'Haftalık Mentörlük Raporu' })).toBeVisible()
+  await expect(page.getByText('E2E elle yazılmış veli mesajı')).toBeVisible()
   await expect(page.locator('.filigran img')).toHaveCount(1)
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
+  page.on('dialog', d => d.accept())
+  await page.getByRole('button', { name: 'Yeniden oluştur' }).click()
+  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/Sayın Veli/)
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.gorusme as { veliMesaji: string | null }).veliMesaji, { timeout: 15_000 }).toBeNull()
 })
 test('konu haritası: tıkla → durum değişir, yenilemede kalır; konu ekle', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=dosya`)
@@ -223,7 +299,8 @@ test('konu haritası: tıkla → durum değişir, yenilemede kalır; konu ekle',
   await expect.poll(async () => (await db.from('ogrenci_konu_durumu').select('durum').eq('student_id', ogrId)).data?.length, { timeout: 20_000 }).toBe(1)
   await page.reload()
   await expect(page.getByRole('button', { name: `${ad}: Çalışılıyor` })).toBeVisible()
-  await page.getByLabel('Ders').fill('Fizik'); await page.getByLabel('Konu', { exact: true }).fill('E2Ekonu Vektörler')
+  const harita = page.getByRole('region', { name: 'Konu haritası' }) // Kitaplar bölümünde de "Ders" var
+  await harita.getByLabel('Ders').fill('Fizik'); await harita.getByLabel('Konu', { exact: true }).fill('E2Ekonu Vektörler')
   await page.getByRole('button', { name: 'Konu ekle' }).click()
   await expect(page.getByRole('button', { name: 'E2Ekonu Vektörler: Başlanmadı' })).toBeVisible({ timeout: 15_000 })
 })
@@ -241,11 +318,11 @@ test('toplu kâğıt: bu haftaya dokunulmamış ama planı geçen haftadan devam
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', '2026-10-26')).data).toHaveLength(0)
 })
 
-test('yazdır: son yazılan konu hemen basılan kâğıda girer (kayıt/okuma yarışı yok)', async ({ page, context }) => {
+test('yazdır: son yazılan görev adı hemen basılan kâğıda girer (kayıt/okuma yarışı yok)', async ({ page, context }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
-  await page.getByLabel('Konu').first().fill('E2E yarış konusu')
+  await page.getByRole('region', { name: 'Program' }).getByLabel('Görev', { exact: true }).last().fill('E2E yarış görevi')
   const [kagit] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Kâğıdı yazdır' }).click()])
-  await expect(kagit.getByRole('table', { name: 'Program' })).toContainText('E2E yarış konusu', { timeout: 20_000 })
+  await expect(kagit.getByRole('table', { name: 'Program' })).toContainText('E2E yarış görevi', { timeout: 20_000 })
   await kagit.close()
 })
 
@@ -253,7 +330,7 @@ test('kayıt hatasının nedeni ekranda görünür (boş görev adı)', async ({
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   await page.getByLabel('Görev').first().fill('')
   await expect(page.getByRole('alert').filter({ hasText: 'Görev adı boş olamaz' })).toBeVisible({ timeout: 15_000 })
-  await page.getByLabel('Sayfa').first().click() // alandan çık → ad "Görev" olarak geri dolar, kayıt düzelir
+  await page.getByLabel('Miktar').first().click() // alandan çık → ad "Görev" olarak geri dolar, kayıt düzelir
   await expect(page.getByRole('status').filter({ hasText: 'Kaydedildi' })).toBeVisible({ timeout: 15_000 })
 })
 
@@ -273,7 +350,7 @@ test('geçen haftayı kopyala: plan gelir, kitap sayfası kaldığı yerden (45�
   expect((eski!.icerik as { gorevler: { kitapAdi?: string; sayfaBas?: number }[] }).gorevler.find(g => g.kitapAdi === 'E2E Acil Mat')?.sayfaBas).toBe(45)
 })
 
-test('bu planı tüm mentilerime uygula: planı olmayan mentiye kitabıyla kopyalanır', async ({ page }) => {
+test('bu planı tüm mentör öğrencilerime uygula: planı olmayan öğrenciye kitabıyla kopyalanır', async ({ page }) => {
   const HAFTA = '2026-10-19'
   const { data: alinan } = await db.from('mentorships').select('student_id').eq('school_id', mentor.school_id)
   const dolu = new Set((alinan ?? []).map(r => r.student_id))
@@ -286,7 +363,7 @@ test('bu planı tüm mentilerime uygula: planı olmayan mentiye kitabıyla kopya
   try {
     await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}`)
     page.on('dialog', d => d.accept())
-    await page.getByRole('button', { name: 'Bu planı tüm mentilerime uygula' }).click()
+    await page.getByRole('button', { name: 'Bu planı tüm mentör öğrencilerime uygula' }).click()
     await expect(page.getByRole('status').filter({ hasText: /\d+ öğrenciye uygulandı/ })).toBeVisible({ timeout: 20_000 })
     const { data: h } = await db.from('mentor_haftalari').select('icerik, islendi').eq('student_id', ikinci).eq('hafta_basi', HAFTA).single()
     expect(h!.islendi).toBe(false)
@@ -320,7 +397,7 @@ test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddede
     await page.getByRole('button', { name: 'Haftayı kapat' }).click()
     await expect(page.getByText(/Bu hafta .* tarihinde kapatıldı/)).toBeVisible({ timeout: 20_000 })
     await expect(page.getByRole('button', { name: 'Tümü yapıldı' })).toBeDisabled()
-    await expect(page.getByLabel('İyi giden')).toBeDisabled()
+    await expect(page.getByLabel('Öğretmen notu')).toBeDisabled()
     const { data: r } = await db.from('mentor_haftalari').select('kapali_at, okul_odevleri').eq('student_id', ogrId).eq('hafta_basi', HAFTA).single()
     expect(r!.kapali_at).not.toBeNull()
 

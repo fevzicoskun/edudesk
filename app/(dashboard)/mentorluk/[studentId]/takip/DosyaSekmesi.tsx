@@ -2,13 +2,52 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { konuEkle, konuDurumu } from '@/app/actions/mentor-takip'
+import { konuEkle, konuDurumu, kitapEkle, kitapSil } from '@/app/actions/mentor-takip'
+import { DERS_ONERILERI } from '@/src/domains/mentor/takip/sablonlar'
 import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
 const DURUM_AD = ['Başlanmadı', 'Çalışılıyor', 'Oturdu'] as const
 const DURUM_RENK = ['border-gray-300 dark:border-slate-600', 'border-amber-500 bg-amber-50 dark:bg-amber-950', 'border-green-600 bg-green-50 dark:bg-green-950']
+
+/** Öğrencinin kalıcı kitapları (haftalık değil); plan sayfasındaki kitap seçimi buradan beslenir. */
+function KitaplarBolumu({ v }: Pick<SekmeProps, 'v'>) {
+  const [kitaplar, setKitaplar] = useState(v.kitaplar)
+  const [ad, setAd] = useState(''); const [ders, setDers] = useState('')
+  const [hata, setHata] = useState<string | null>(null)
+  const [, basla] = useTransition()
+  const kutu = 'block rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
+  return (
+    <section aria-label="Kitaplar">
+      <h2 className="text-base font-semibold mb-2">Kitaplar</h2>
+      {kitaplar.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Henüz kitap yok.</p> : (
+        <ul className="text-sm flex flex-wrap gap-2 mb-2">
+          {kitaplar.map(k => (
+            <li key={k.id} className="px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-800">{k.ad}{k.ders && ` · ${k.ders}`}
+              <button type="button" aria-label={`${k.ad} kitabını sil`} className="ml-1 text-red-700 dark:text-red-400"
+                onClick={() => { if (confirm(`"${k.ad}" silinsin mi? Eski haftalarda adı görünmeye devam eder.`)) basla(async () => { const r = await kitapSil(v.ogrenci.id, k.id); if (!r.error) setKitaplar(x => x.filter(y => y.id !== k.id)); else setHata(r.error) }) }}>×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <form className="flex flex-wrap gap-2 items-end" onSubmit={e => {
+        e.preventDefault()
+        basla(async () => {
+          const r = await kitapEkle(v.ogrenci.id, ad, ders)
+          if (r.error || !r.kitap) { setHata(r.error ?? 'Kitap eklenemedi.'); return }
+          setKitaplar(k => [...k, r.kitap!]); setAd(''); setDers(''); setHata(null)
+        })
+      }}>
+        <label className="text-sm">Kitap adı<input maxLength={120} className={`${kutu} w-56`} value={ad} onChange={e => setAd(e.target.value)} required /></label>
+        <label className="text-sm">Ders<input maxLength={60} list="kitap-dersleri" className={`${kutu} w-40`} value={ders} onChange={e => setDers(e.target.value)} /></label>
+        <datalist id="kitap-dersleri">{DERS_ONERILERI.map(x => <option key={x} value={x} />)}</datalist>
+        <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-600 text-sm">Kitap ekle</button>
+        {hata && <span role="alert" className="text-sm text-red-700 dark:text-red-400">{hata}</span>}
+      </form>
+    </section>
+  )
+}
 
 export default function DosyaSekmesi({ v }: SekmeProps) {
   const router = useRouter()
@@ -24,6 +63,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
   }
   return (
     <div className="space-y-8">
+      <KitaplarBolumu v={v} />
       <section aria-label="Konu haritası">
         <h2 className="text-base font-semibold mb-2">Konu haritası <span className="text-xs font-normal text-gray-500 dark:text-slate-400">(tıkla: başlanmadı → çalışılıyor → oturdu)</span></h2>
         {dersler.map(d => {

@@ -6,7 +6,7 @@ import { todayLocalISO } from '@/src/shared/date'
 import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 import { pazartesiMi, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
 import { ozetHesapla, programYuzde, dogrulukYuzde } from '@/src/domains/mentor/takip/takipMath'
-import { takipVeliMesaji, konuAdlari } from '@/src/domains/mentor/takip/veliMesaji'
+import { takipVeliMesaji } from '@/src/domains/mentor/takip/veliMesaji'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
 
@@ -22,7 +22,8 @@ export default async function VeliRaporuPage({ params, searchParams }: { params:
   if (!v) notFound()
   const o = ozetHesapla(v.taslak.icerik), p = programYuzde(o), d = dogrulukYuzde(o)
   const mo = v.taslak.icerik.mentorOdevleri
-  const metin = takipVeliMesaji({ ogrenciAdi: v.ogrenci.ad, pazartesi: v.hafta, veri: v.taslak, onceki: v.onceki?.ozet ?? null, konular: konuAdlari(v.konular, v.konuDurumu), mentorAdi: v.mentorAdi })
+  // Mentörün düzenleyip kaydettiği mesaj; yoksa haftanın verisinden otomatik
+  const metin = v.taslak.gorusme.veliMesaji ?? takipVeliMesaji({ ogrenciAdi: v.ogrenci.ad, pazartesi: v.hafta, veri: v.taslak, onceki: v.onceki?.ozet ?? null, okul: v.okulOdevleri, kitaplar: v.kitaplar, mentorAdi: v.mentorAdi })
   const kutular: [string, string][] = [
     ['Program', p === null ? '—' : `%${p}`], ['Soru / doğruluk', `${o.soru} · ${d === null ? '—' : `%${d}`}`],
     ['Mentör ödevi', `${mo.filter(m => m.yapti).length}/${mo.length}`], ['Okuma', `${o.okuma_sayfa} sayfa`],

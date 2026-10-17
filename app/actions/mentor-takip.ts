@@ -75,3 +75,12 @@ export async function herkeseUygula(studentId: string, hafta: string): Promise<A
   if (!r.error) revalidatePath('/mentorluk', 'layout')
   return r
 }
+
+/** Mentörlük ana sayfası: aynı kitabı tüm mentör öğrencilerime tanımla (olanları atla). */
+export async function kitapHerkeseEkle(ad: string, ders: string): Promise<ActionResult<{ eklenen?: number; atlanan?: number }>> {
+  const p = kitapSchema.omit({ studentId: true }).safeParse({ ad, ders })
+  if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const r = await TakipService.kitapHerkese(p.data.ad, p.data.ders)
+  if (!r.error) revalidatePath('/mentorluk', 'layout')
+  return r
+}

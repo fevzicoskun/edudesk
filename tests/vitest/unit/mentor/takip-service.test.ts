@@ -204,3 +204,18 @@ describe('TakipService — kopyala / herkese uygula (2026-10-17)', () => {
     expect(R.haftaEkle).not.toHaveBeenCalled()
   })
 })
+
+describe('TakipService.kitapHerkese — tüm mentör öğrencilerime kitap (2026-10-17)', () => {
+  it('olan (ad+ders, büyük/küçük harf ve boşluk duyarsız) atlanır, olmayana eklenir', async () => {
+    vi.mocked(R.mentiler).mockResolvedValue(['a', 'b', 'c'])
+    vi.mocked(R.kitaplar).mockImplementation(async (_s, ogr) => (ogr === 'b' ? [{ id: 'k', ad: ' acil mat ', ders: 'Matematik' }] : []) as never)
+    vi.mocked(R.kitapEkle).mockResolvedValue({ data: { id: 'n', ad: 'Acil Mat', ders: 'Matematik' }, error: null } as never)
+    expect(await TakipService.kitapHerkese('Acil Mat', 'Matematik')).toEqual({ eklenen: 2, atlanan: 1 })
+    expect(vi.mocked(R.kitapEkle).mock.calls.map(c => c[1])).toEqual(['a', 'c'])
+  })
+  it('bayrak kapalı → yazmaz', async () => {
+    vi.mocked(R.acikMi).mockResolvedValue(false)
+    expect((await TakipService.kitapHerkese('A', '')).error).toBeTruthy()
+    expect(R.kitapEkle).not.toHaveBeenCalled()
+  })
+})

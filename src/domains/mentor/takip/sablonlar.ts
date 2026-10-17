@@ -2,6 +2,9 @@
 // Sınıf şablonları (Normal seviye) + matematik konu listeleri. Okul yıllık planıyla karşılaştırılıp düzeltilebilir.
 import type { Gorev, Birim } from './takipMath'
 
+/** Kitap ekleme formlarında ders önerileri (serbest yazılabilir). */
+export const DERS_ONERILERI = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Türkçe', 'Türk Dili ve Edebiyatı', 'Tarih', 'Coğrafya', 'İngilizce', 'Felsefe']
+
 export const VARSAYILAN_DUZEN = '16.30–18.00 dinlenme · 18.00 ana çalışma · yemek · günün dersi · 21.00\'den sonra serbest'
 
 type Tanim = [ad: string, miktar: number | null, birim: Birim, ders: string | null, soruSatiri: boolean]
@@ -37,6 +40,8 @@ export function sinifSablonu(sinif: number): Gorev[] {
   return Array.from({ length: 7 }, (_, gun) => [...(gun < 5 ? s.gunluk : []), ...s.ek[gun]])
     .flatMap((tanimlar, gun) => tanimlar.map(([ad, miktar, birim, ders, soruSatiri], i) => ({
       id: `s${gun}-${i}`, gun, ad, ders, miktar, birim, soruSatiri, konu: '', sayfa: '', yapti: false, soru: null, dogru: null,
+      // Hafta içi günlük görevler (Pzt–Cum, listenin başı) tek "her gün" satırı olarak girilir
+      ...(gun < 5 && i < s.gunluk.length && { grup: `h-s${i}` }),
     })))
 }
 

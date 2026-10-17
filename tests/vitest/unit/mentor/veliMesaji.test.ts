@@ -1,59 +1,61 @@
 import { describe, it, expect } from 'vitest'
 import { takipVeliMesaji } from '@/src/domains/mentor/takip/veliMesaji'
-import { yeniHafta, BOS_GORUSME } from '@/src/domains/mentor/takip/takipMath'
+import { yeniHafta, BOS_GORUSME, type OkulOdevBolumleri, type OkulOdevi } from '@/src/domains/mentor/takip/takipMath'
+
+const odev = (id: string, subject: string, status: string | null): OkulOdevi => ({ id, subject, title: `${subject} ödevi ${id}`, due_date: '2026-10-20', status, bekliyor: false })
+const BOS: OkulOdevBolumleri = { tamamlanmamis: [], buHafta: [], gelecek: [] }
 
 const temel = () => {
   const veri = yeniHafta(null, 9)
-  veri.icerik.gorevler = veri.icerik.gorevler.slice(0, 4).map((g, i) => ({ ...g, yapti: i < 3, soruSatiri: i === 1, soru: i === 1 ? 100 : null, dogru: i === 1 ? 80 : null }))
-  return { ogrenciAdi: 'Ali Yılmaz', pazartesi: '2026-10-19', veri, onceki: null, konular: { oturan: [] as string[], calisilan: [] as string[] }, mentorAdi: 'Fevzi Coşkun' }
+  veri.icerik.gorevler = veri.icerik.gorevler.slice(0, 4).map((g, i) => ({ ...g, yapti: i < 3 }))
+  return { ogrenciAdi: 'Ali Yılmaz', pazartesi: '2026-10-19', veri, onceki: null, okul: BOS, kitaplar: [], mentorAdi: 'Fevzi Coşkun' }
 }
 
-describe('takipVeliMesaji', () => {
-  it('temel satırlar ve imza', () => {
+describe('takipVeliMesaji — haftanın verisinden otomatik (2026-10-17)', () => {
+  it('başlık, program ve imza; WhatsApp\'a uygun madde işaretli', () => {
     const m = takipVeliMesaji(temel())
-    expect(m).toContain('Sayın Veli, Ali Yılmaz için 19–23 Ekim haftasının özeti:')
-    expect(m).toContain('• Program: 4 görevin 3 tanesini tamamladı (%75).')
-    expect(m).toContain('• Soru: 100 soru çözdü (hedef 120), doğruluk %80.')
+    expect(m.split('\n')[0]).toBe('Sayın Veli, Ali Yılmaz için 19–25 Ekim haftasının özeti:')
+    expect(m).toContain('• Program: %75 (3/4 görev)')
     expect(m.trim().endsWith('Fevzi Coşkun')).toBe(true)
   })
-  it('boş alanlar atlanır', () => {
-    const m = takipVeliMesaji(temel())
-    for (const s of ['Ekstra', 'Oturan', 'İyi giden', 'Zorlandığı', 'Evde sizden ricam', 'Okuma']) expect(m).not.toContain(s)
-  })
-  it('fark, okuma, görüşme, konular', () => {
+  it('okul ödevleri X/Y yapıldı + yapılmayanların adı; işaretsizler ayrıca belirtilir; eski tamamlanmamışlar', () => {
     const g = temel()
-    g.veri.icerik.okuma = { kitap: 'Kürk Mantolu Madonna', sayfa: 120, bitti: true }
-    g.veri.gorusme = { ...BOS_GORUSME, iyi: 'Düzenli', evde: 'Telefonu akşam alın' }
-    g.konular = { oturan: ['Türev'], calisilan: ['İntegral'] }
-    const m = takipVeliMesaji({ ...g, onceki: { gorev_toplam: 1, gorev_yapilan: 1, soru: 100, dogru: 70, okuma_sayfa: 0, islendi: true } })
-    expect(m).toContain('doğruluk %80, geçen haftaya göre 10 puan arttı.')
-    expect(m).toContain('• Okuma: Kürk Mantolu Madonna kitabını bitirdi (bu hafta 120 sayfa).')
-    expect(m).toContain('• Oturan konular: Türev')
-    expect(m).toContain('• İyi giden: Düzenli')
-    expect(m).toContain('Evde sizden ricam: Telefonu akşam alın')
+    g.okul = {
+      tamamlanmamis: [odev('e1', 'Kimya', 'yapilmadi')],
+      buHafta: [odev('1', 'Fizik', 'yapildi'), odev('2', 'Matematik', 'gec'), odev('3', 'Türkçe', 'yapilmadi'), odev('4', 'Tarih', null)],
+      gelecek: [],
+    }
+    const m = takipVeliMesaji(g)
+    expect(m).toContain('• Okul ödevleri: 2/4 yapıldı, 1 tanesi henüz kontrol edilmedi. Yapılmayan: Türkçe ödevi 3')
+    expect(m).toContain('• Önceki haftalardan tamamlanmamış: Kimya ödevi e1')
   })
-  it('görev listesi boş → program satırı yok', () => {
-    const g = temel(); g.veri.icerik.gorevler = []
-    expect(takipVeliMesaji(g)).not.toContain('• Program')
-  })
-  it('işlenmemiş hafta (hiç ✓/soru yok) → "0 tanesini (%0)" yazmaz', () => {
-    const g = temel(); g.veri.icerik.gorevler = g.veri.icerik.gorevler.map(x => ({ ...x, yapti: false, soru: null, dogru: null }))
-    expect(takipVeliMesaji(g)).not.toContain('• Program')
-  })
-  it('program yüzdesi mentör ödevlerini de sayar (veli raporu kutusuyla aynı)', () => {
+  it('soru, doğruluk (geçen haftaya göre) ve ders bazında kısa özet', () => {
     const g = temel()
-    g.veri.icerik.mentorOdevleri = [
-      { id: 'm1', kitapId: null, kitapAdi: 'K', konu: '', sayfalar: '', yapti: true },
-      { id: 'm2', kitapId: null, kitapAdi: 'K', konu: '', sayfalar: '', yapti: true },
+    g.veri.icerik.sonuclar = [
+      { anahtar: 'd:Matematik', ad: 'Matematik', ders: 'Matematik', sayfa: '', cozulen: 100, dogru: 70, yanlis: 20, bos: 10 },
+      { anahtar: 'd:Türkçe', ad: 'Türkçe', ders: 'Türkçe', sayfa: '', cozulen: 50, dogru: 45, yanlis: 5, bos: 0 },
     ]
-    expect(takipVeliMesaji(g)).toContain('• Program: 6 görevin 5 tanesini tamamladı (%83).')
+    const m = takipVeliMesaji({ ...g, onceki: { gorev_toplam: 1, gorev_yapilan: 1, soru: 100, dogru: 70, okuma_sayfa: 0, islendi: true } })
+    expect(m).toContain('• Soru: 150 soru, doğruluk %77 (geçen hafta %70)')
+    expect(m).toContain('• Ders bazında: Matematik %70 · Türkçe %90')
   })
-})
-
-describe('konuAdlari', () => {
-  it('oturdu=2 → oturan, çalışılıyor=1 → çalışılan, durumsuz/0 → hiçbiri', async () => {
-    const { konuAdlari } = await import('@/src/domains/mentor/takip/veliMesaji')
-    const konular = [{ id: 'a', ad: 'Türev' }, { id: 'b', ad: 'İntegral' }, { id: 'c', ad: 'Limit' }, { id: 'd', ad: 'Dizi' }]
-    expect(konuAdlari(konular, { a: 2, b: 1, c: 0 })).toEqual({ oturan: ['Türev'], calisilan: ['İntegral'] })
+  it('öğretmen notu ve veliden ricam; boş alanlar ve işlenmemiş hafta satırı yazılmaz', () => {
+    const g = temel()
+    g.veri.icerik.gorevler = g.veri.icerik.gorevler.map(x => ({ ...x, yapti: false }))
+    g.veri.gorusme = { ...BOS_GORUSME, not: 'Düzenli çalıştı', rica: 'Telefonu akşam alın' }
+    const m = takipVeliMesaji(g)
+    expect(m).toContain('• Öğretmen notu: Düzenli çalıştı')
+    expect(m).toContain('• Sizden ricam: Telefonu akşam alın')
+    for (const s of ['• Program', '• Soru', '• Okul ödevleri', '• Önceki haftalardan', '• Ders bazında']) expect(m).not.toContain(s)
+  })
+  it('uzun listeler kısalır, mesaj ~10 satırı geçmez', () => {
+    const g = temel()
+    g.okul = { tamamlanmamis: Array.from({ length: 6 }, (_, i) => odev(`e${i}`, 'Kimya', 'yapilmadi')),
+      buHafta: Array.from({ length: 8 }, (_, i) => odev(`${i}`, 'Fizik', 'yapilmadi')), gelecek: [] }
+    g.veri.icerik.sonuclar = [{ anahtar: 'd:M', ad: 'M', ders: 'Matematik', sayfa: '', cozulen: 10, dogru: 5, yanlis: 5, bos: 0 }]
+    g.veri.gorusme = { ...BOS_GORUSME, not: 'N', rica: 'R' }
+    const m = takipVeliMesaji(g)
+    expect(m).toContain('ve 5 ödev daha')
+    expect(m.split('\n').filter(s => s.trim()).length).toBeLessThanOrEqual(11)
   })
 })
