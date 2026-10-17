@@ -1,7 +1,6 @@
 import { MentorRepository } from '../repositories/MentorRepository'
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { logger } from '@/src/infrastructure/observability/logger'
 import { todayLocalISO } from '@/src/shared/date'
 
 // Öğrencilere mentör atayabilen roller (yalnızca idare)
@@ -12,7 +11,6 @@ export type MentorshipRow = {
   student_id:       string
   full_name:        string
   class_name:       string | null
-  last_report_date: string | null
   /** atamayı idare yaptı → mentör listeden kendisi çıkaramaz */
   idare_atadi:      boolean
 }
@@ -22,27 +20,15 @@ export const MentorService = {
 
   async getMyMentorships(): Promise<MentorshipRow[]> {
     const ability = await requireAbility()
-    const [listRes, dateRes] = await Promise.all([
-      MentorRepository.listMentorships(ability.userId, ability.schoolId),
-      MentorRepository.lastReportDates(ability.userId, ability.schoolId),
-    ])
+    const listRes = await MentorRepository.listMentorships(ability.userId, ability.schoolId)
     // Sessiz [] = "öğrencin yok" yalanı; hata sayfanın error boundary'sine gider
     if (listRes.error) throw new Error(listRes.error.message)
-    if (dateRes.error) {
-      logger.error({ event: 'mentorship_last_report_dates_failed', userId: ability.userId, err: dateRes.error.message }, 'Son görüşme tarihleri okunamadı')
-    }
-    // report_date'e göre azalan sıralı geldiği için ilk görülen en yenisidir
-    const sonGorusme = new Map<string, string>()
-    for (const r of dateRes.data ?? []) {
-      if (!sonGorusme.has(r.student_id)) sonGorusme.set(r.student_id, r.report_date)
-    }
     return (listRes.data ?? []).map(row => {
       const s = row.students
       return {
         student_id:       row.student_id,
         full_name:        s?.full_name ?? '—',
         class_name:       s?.classes?.name ?? null,
-        last_report_date: sonGorusme.get(row.student_id) ?? null,
         idare_atadi:      row.assigned_by !== ability.userId,
       }
     })

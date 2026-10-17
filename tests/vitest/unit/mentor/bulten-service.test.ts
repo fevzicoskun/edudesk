@@ -19,9 +19,9 @@ const k = (o: Partial<HomeworkRecord>): HomeworkRecord => ({ id: 'h', title: 'T'
 beforeEach(() => {
   vi.mocked(getCurrentProfile).mockResolvedValue({ id: 'm1', full_name: 'Fevzi Coşkun', subject: 'Matematik', school_id: 's1', role: 'ogretmen' } as never)
   vi.mocked(MentorService.getMyMentorships).mockResolvedValue([
-    { student_id: 'a', full_name: 'Ali', class_name: '9-A', last_report_date: null, idare_atadi: false },
-    { student_id: 'b', full_name: 'Ayşe', class_name: '9-A', last_report_date: null, idare_atadi: false },
-    { student_id: 'c', full_name: 'Can', class_name: '10-A', last_report_date: null, idare_atadi: false },
+    { student_id: 'a', full_name: 'Ali', class_name: '9-A', idare_atadi: false },
+    { student_id: 'b', full_name: 'Ayşe', class_name: '9-A', idare_atadi: false },
+    { student_id: 'c', full_name: 'Can', class_name: '10-A', idare_atadi: false },
   ])
   vi.mocked(HomeworkService.getMentorHomeworkProfiles).mockResolvedValue({ ogrenciler: [
     // eski verilmiş (28 Eyl), geçen hafta kontrol (7 Ekim) — bas filtresi olsaydı düşerdi

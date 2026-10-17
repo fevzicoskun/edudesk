@@ -9,7 +9,6 @@ const GORUNUR_SAYI = 30
 const KIND_DOT: Record<TimelineKind, string> = {
   devamsizlik:   'bg-red-500',
   odev:          'bg-orange-500',
-  rehberlik:     'bg-purple-500',
   ogretmen_notu: 'bg-gray-400 dark:bg-slate-500',
 }
 

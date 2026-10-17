@@ -1,9 +1,10 @@
 // Öğrenci 360 zaman çizelgesi: kaynakları tek kronolojik akışta birleştiren saf mantık.
-// Veli randevuları, veli iletişim kayıtları ve not geçmişi kaldırıldı (2026-10-17, hiç kullanılmadı).
+// Veli randevuları, veli iletişim kayıtları, not geçmişi ve rehberlik görüşmeleri kaldırıldı
+// (2026-10-17, hiç kullanılmadı; görüşmeler Metodbox'ta).
 // Spec: docs/superpowers/specs/2026-07-04-ogrenci-360-design.md
 
 export type TimelineKind =
-  | 'devamsizlik' | 'odev' | 'rehberlik' | 'ogretmen_notu'
+  | 'devamsizlik' | 'odev' | 'ogretmen_notu'
 
 export interface TimelineEvent {
   date: string
@@ -14,7 +15,6 @@ export interface TimelineEvent {
 export interface TimelineSources {
   attendance: { date: string; status: string }[]
   submissions: { status: string; dueDate: string | null; title: string | null }[]
-  mentorReports: { date: string }[]
   studentNotes: { date: string; body: string }[]
 }
 
@@ -44,9 +44,6 @@ export function buildStudentTimeline(s: TimelineSources, windowStart: string): T
     if (label && inWindow(sub.dueDate, windowStart)) {
       events.push({ date: sub.dueDate, kind: 'odev', label: `"${sub.title ?? '?'}" ödevi ${label}` })
     }
-  }
-  for (const r of s.mentorReports) {
-    if (inWindow(r.date, windowStart)) events.push({ date: r.date, kind: 'rehberlik', label: 'Rehberlik görüşmesi' })
   }
   for (const n of s.studentNotes) {
     if (inWindow(n.date, windowStart)) {

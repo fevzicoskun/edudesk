@@ -131,7 +131,6 @@ export default async function OgrenciDetayPage({
   const timelineEvents = buildStudentTimeline({
     attendance: attendanceRecords,
     submissions: odevler.flatMap(h => h.status ? [{ status: h.status, dueDate: h.due_date, title: h.title }] : []),
-    mentorReports: [], // görüşme notları Metodbox'ta (2026-10-11)
     studentNotes: notes.map(n => ({ date: n.created_at, body: n.body })),
   }, donemBasi())
 

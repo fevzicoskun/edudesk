@@ -44,17 +44,6 @@ export const MentorRepository = {
       .maybeSingle()
   },
 
-  // Her öğrencinin en son görüşme tarihi (mentöre ait notlar üzerinden)
-  async lastReportDates(mentorId: string, schoolId: string) {
-    const supabase = await createClient()
-    return supabase
-      .from('mentor_reports')
-      .select('student_id, report_date')
-      .eq('mentor_id', mentorId)
-      .eq('school_id', schoolId)
-      .order('report_date', { ascending: false })
-  },
-
   async findMentorship(studentId: string, mentorId: string, schoolId: string) {
     const supabase = await createClient()
     return supabase

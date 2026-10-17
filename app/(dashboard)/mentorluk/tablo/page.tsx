@@ -23,7 +23,6 @@ export default async function MentorTabloPage({ searchParams }: { searchParams: 
   const tablo = mentorTablosu(sonuc.ogrenciler.map(o => ({
     id: o.id, full_name: o.full_name, class_name: o.class_name, homeworks: o.homeworks,
   })))
-  const sonGorusme = Object.fromEntries(rows.map(r => [r.student_id, r.last_report_date]))
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto print:p-0 print:max-w-none">
@@ -52,7 +51,7 @@ export default async function MentorTabloPage({ searchParams }: { searchParams: 
         {tablo.satirlar.length === 0 ? (
           <p className="text-sm text-gray-600 py-6 text-center">Mentörlük listende öğrenci yok.</p>
         ) : (
-          <MentorTablosu tablo={tablo} sonGorusme={sonGorusme} bas={bas} baglanti={false} />
+          <MentorTablosu tablo={tablo} bas={bas} baglanti={false} />
         )}
 
         {tablo.dikkat.length > 0 && (

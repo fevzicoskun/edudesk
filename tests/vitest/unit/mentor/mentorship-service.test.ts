@@ -13,7 +13,6 @@ vi.mock('@/src/domains/mentor/repositories/MentorRepository', () => ({
     insertMentorship: vi.fn(),
     deleteMentorship: vi.fn(),
     findStudentInSchool: vi.fn(),
-    lastReportDates: vi.fn(),
     findMentorship: vi.fn(),
     insertMentorReport: vi.fn(),
     findMentorshipAtama: vi.fn(),
@@ -122,7 +121,7 @@ describe('MentorService.removeMentorship()', () => {
 })
 
 describe('MentorService.getMyMentorships()', () => {
-  it('son görüşme tarihini öğrenciyle eşleştirir, hiç görüşülmeyende null verir', async () => {
+  it('öğrenci adını, sınıfını ve atamayı kimin yaptığını eşler', async () => {
     vi.mocked(MentorRepository.listMentorships).mockResolvedValue({
       data: [
         { id: 'm1', student_id: 's1', assigned_by: TEACHER_ID, students: { id: 's1', full_name: 'Ahmet', class_id: 'c1', classes: { name: '11-B' } } },
@@ -130,22 +129,17 @@ describe('MentorService.getMyMentorships()', () => {
       ],
       error: null,
     } as never)
-    vi.mocked(MentorRepository.lastReportDates).mockResolvedValue({
-      data: [{ student_id: 's1', report_date: '2026-09-12' }],
-      error: null,
-    } as never)
 
     const rows = await MentorService.getMyMentorships()
 
     expect(rows).toEqual([
-      { student_id: 's1', full_name: 'Ahmet', class_name: '11-B', last_report_date: '2026-09-12', idare_atadi: false },
-      { student_id: 's2', full_name: 'Elif', class_name: '11-B', last_report_date: null, idare_atadi: true },
+      { student_id: 's1', full_name: 'Ahmet', class_name: '11-B', idare_atadi: false },
+      { student_id: 's2', full_name: 'Elif', class_name: '11-B', idare_atadi: true },
     ])
   })
 
   it('okuma hatası sessizce [] dönmez, fırlatır', async () => {
     vi.mocked(MentorRepository.listMentorships).mockResolvedValue({ data: null, error: { message: 'boom' } } as never)
-    vi.mocked(MentorRepository.lastReportDates).mockResolvedValue({ data: [], error: null } as never)
     await expect(MentorService.getMyMentorships()).rejects.toThrow('boom')
   })
 })

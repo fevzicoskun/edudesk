@@ -3,7 +3,7 @@ import { buildStudentTimeline, type TimelineSources } from '@/src/domains/classe
 
 const bos: TimelineSources = {
   attendance: [], submissions: [],
-  mentorReports: [], studentNotes: [],
+  studentNotes: [],
 }
 const W = '2026-02-01' // pencere başı
 
@@ -52,13 +52,12 @@ describe('buildStudentTimeline', () => {
   it('etiket biçimleri doğru', () => {
     const r = buildStudentTimeline({
       ...bos,
-      mentorReports: [{ date: '2026-03-04' }],
       studentNotes: [{ date: '2026-03-06', body: 'a'.repeat(100) }],
     }, W)
     const byKind = Object.fromEntries(r.map(e => [e.kind, e.label]))
     expect(byKind).not.toHaveProperty('not') // not geçmişi kaldırıldı (2026-10-17)
     expect(byKind).not.toHaveProperty('gorusme') // veli randevuları kaldırıldı (2026-10-17)
-    expect(byKind['rehberlik']).toBe('Rehberlik görüşmesi')
+    expect(byKind).not.toHaveProperty('rehberlik') // görüşmeler Metodbox'ta (2026-10-17)
     expect(byKind).not.toHaveProperty('veli_iletisim') // veli iletişim kayıtları kaldırıldı (2026-10-17)
     expect(byKind['ogretmen_notu']).toBe('a'.repeat(80) + '…')
   })
