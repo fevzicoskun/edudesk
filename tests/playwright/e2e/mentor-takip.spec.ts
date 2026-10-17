@@ -74,13 +74,14 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   expect(kenar).toEqual(['0px'])
 })
 
-test('kâğıt: 24 görev + 12 bu hafta + 3 tamamlanmamış + 4 gelecek hafta ödeviyle tek A4 sayfa', async ({ page }) => {
+test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle plan VE sonuç kâğıdı tek A4; imzalar üstte', async ({ page }) => {
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
-  const odev = (title: string, due_date: string) => ({ teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik', title, due_date, assigned_date: '2026-10-06' })
+  const odev = (title: string, due_date: string) => ({ teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik', title, due_date, assigned_date: '2026-10-01' })
   const { data: eklenen, error } = await db.from('homeworks').insert([
-    ...Array.from({ length: 12 }, (_, i) => odev(`E2E kâğıt ödevi ${i + 1} biraz uzunca bir başlık`, `2026-10-${19 + (i % 5)}`)),
-    ...Array.from({ length: 3 }, (_, i) => odev(`E2E eski ödev ${i + 1}`, `2026-10-${13 + i}`)),
-    ...Array.from({ length: 4 }, (_, i) => odev(`E2E gelecek ödev ${i + 1}`, `2026-10-${27 + i}`)),
+    // Gerçek okuldaki en ağır öğrenci (2026-10-17 ölçüm): 27 tamamlanmamış + 11 bu hafta + 8 gelecek hafta
+    ...Array.from({ length: 11 }, (_, i) => odev(`E2E kâğıt ödevi ${i + 1} biraz uzunca bir başlık`, `2026-10-${19 + (i % 5)}`)),
+    ...Array.from({ length: 27 }, (_, i) => odev(`E2E eski ödev ${i + 1} Kondisyon Sy 13-22`, `2026-10-${String(7 + (i % 9)).padStart(2, '0')}`)),
+    ...Array.from({ length: 8 }, (_, i) => odev(`E2E gelecek ödev ${i + 1} test kitabı`, `2026-10-${26 + (i % 5)}`)),
   ]).select('id, title')
   if (error) throw new Error(error.message)
   try {
@@ -89,14 +90,14 @@ test('kâğıt: 24 görev + 12 bu hafta + 3 tamamlanmamış + 4 gelecek hafta ö
       .eq('student_id', ogrId).in('homework_id', eklenen!.filter(h => h.title.startsWith('E2E eski')).map(h => h.id))
     if (e2) throw new Error(e2.message)
     await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-    await expect(page.getByRole('table', { name: 'Bu hafta teslim' }).first()).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByRole('table', { name: 'Tamamlanmamış ödevler (teslimi geçti)' }).first()).toContainText('E2E eski ödev')
-    await expect(page.getByRole('table', { name: 'Gelecek hafta teslim' }).first()).toContainText('E2E gelecek ödev')
+    await expect(page.getByRole('list', { name: 'Bu hafta teslim' })).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByRole('list', { name: 'Tamamlanmamış ödevler (teslimi geçti)' }).getByRole('listitem')).toHaveCount(27)
+    await expect(page.getByRole('list', { name: 'Gelecek hafta teslim' }).getByRole('listitem')).toHaveCount(8)
     await page.emulateMedia({ media: 'print' })
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
     if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
-    if (process.env.KAGIT_PNG) await page.screenshot({ path: process.env.KAGIT_PNG, fullPage: true })
+    if (process.env.KAGIT_PNG) { await page.setViewportSize({ width: 680, height: 1000 }); await page.screenshot({ path: process.env.KAGIT_PNG, fullPage: true }) } // A4 içerik genişliği
     // Sonuç kâğıdı da aynı yükle (19 ödev durumlu + yapılmayan 24 görev) tek A4
     await page.emulateMedia({ media: 'screen' })
     await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
@@ -132,29 +133,30 @@ test('plan: her gün görevi tek satır girilir, kâğıtta Pzt–Cum beş güne
   await expect(page.getByRole('table', { name: 'Program' }).getByRole('columnheader', { name: 'Konu' })).toHaveCount(0)
 })
 
-const kitapEkle = async (page: Page, ad: string, ders = '') => {
+const KAYNAK = 'Kaynaklar (soru bankası, test)'
+const kitapEkle = async (page: Page, ad: string, ders = 'Matematik') => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=dosya`)
-  const bolum = page.getByRole('region', { name: 'Kitaplar' })
+  const bolum = page.getByRole('region', { name: KAYNAK })
   await bolum.getByLabel('Kitap adı').fill(ad)
-  if (ders) await bolum.getByLabel('Ders').fill(ders)
+  await bolum.getByLabel('Ders').selectOption(ders) // serbest metin değil, okulun ders listesi
   await bolum.getByRole('button', { name: 'Kitap ekle' }).click()
   await expect(bolum.getByRole('button', { name: `${ad} kitabını sil` })).toBeVisible()
 }
 
-test('silinen kitap eski haftada adıyla görünür', async ({ page }) => {
+test('silinen kaynak, bağlı olduğu görevde adıyla görünmeye devam eder', async ({ page }) => {
   await kitapEkle(page, 'E2E Soru Bankası')
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
-  await page.getByRole('button', { name: '+ Mentör ödevi ekle' }).click()
+  await expect(page.getByRole('region', { name: 'Mentör ödevleri' })).toHaveCount(0) // boş bölüm kalktı
+  const son = () => page.getByRole('region', { name: 'Program' }).getByLabel('Kitap', { exact: true }).last()
+  await son().selectOption({ label: 'E2E Soru Bankası · Matematik' })
   await kaydedildi(page)
   page.on('dialog', d => d.accept())
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=dosya`)
-  await page.getByRole('region', { name: 'Kitaplar' }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' }).click()
-  await expect(page.getByRole('region', { name: 'Kitaplar' }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' })).toHaveCount(0)
+  await page.getByRole('region', { name: KAYNAK }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' }).click()
+  await expect(page.getByRole('region', { name: KAYNAK }).getByRole('button', { name: 'E2E Soru Bankası kitabını sil' })).toHaveCount(0)
+  await expect(page.getByRole('region', { name: 'Okuma kitapları' })).toBeVisible()
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
-  // Görev satırlarında da "Kitap" seçimi var (2026-10-17) → mentör ödevi bölümüne kapsamla
-  const mo = page.getByRole('region', { name: 'Mentör ödevleri' }).getByLabel('Kitap', { exact: true })
-  await expect(mo).toHaveValue(/.+/)
-  await expect(mo.locator('option:checked')).toHaveText('E2E Soru Bankası')
+  await expect(son().locator('option:checked')).toHaveText('E2E Soru Bankası')
 })
 
 test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında görünür', async ({ page }) => {
@@ -198,7 +200,7 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   await expect(page.getByLabel('Ders bazında doğruluk')).toContainText('Matematik %75')
   const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi, gorev_yapilan, gorev_toplam').eq('student_id', ogrId).single()
   expect(data).toMatchObject({ soru: 40, dogru: 30, islendi: true })
-  expect(data!.gorev_yapilan).toBe(data!.gorev_toplam - 1) // mentör ödevi (önceki test) hariç tüm görevler
+  expect(data!.gorev_yapilan).toBe(data!.gorev_toplam) // Tümü yapıldı (mentör ödevi yok: plan ekranından kalktı)
 })
 
 test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
@@ -226,11 +228,11 @@ test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlan�
   await page.getByText('Kitap ekle (tüm mentör öğrencilerime)').click()
   const form = page.getByRole('form', { name: 'Tüm mentör öğrencilerime kitap ekle' })
   await form.getByLabel('Kitap adı').fill('E2E Herkese Kitap')
-  await form.getByLabel('Ders').fill('Fizik')
+  await form.getByLabel('Ders').selectOption('Fizik')
   await form.getByRole('button', { name: 'Hepsine ekle' }).click()
   await expect(form.getByRole('status')).toContainText(/\d+ öğrenciye eklendi/, { timeout: 20_000 })
   await form.getByLabel('Kitap adı').fill('E2E Herkese Kitap')
-  await form.getByLabel('Ders').fill('Fizik')
+  await form.getByLabel('Ders').selectOption('Fizik')
   await form.getByRole('button', { name: 'Hepsine ekle' }).click()
   await expect(form.getByRole('status')).toContainText(/^0 öğrenciye eklendi; \d+ öğrencide zaten vardı/, { timeout: 20_000 })
   const { data } = await db.from('mentor_kitaplari').select('id').eq('student_id', ogrId).eq('ad', 'E2E Herkese Kitap').is('deleted_at', null)

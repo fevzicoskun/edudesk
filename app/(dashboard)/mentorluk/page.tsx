@@ -98,7 +98,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
           </div>
         </div>
       )}
-      {takipAcik && rows.length > 0 && <KitapHerkeseFormu />}
+      {takipAcik && rows.length > 0 && <KitapHerkeseFormu dersler={await TakipService.dersSecenekleri()} />}
 
       {rows.length === 0 ? (
         <div className="mb-6 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8">

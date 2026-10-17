@@ -30,6 +30,31 @@ export function OkulOdevTablosu({ baslik, liste, durumlu = false }: { baslik: st
   )
 }
 
+/** Uzun liste (tamamlanmamış ödevler, gerçek okulda 27'ye çıkıyor): üç sütun, satır başına "Ders – ödev (tarih)". */
+export function OkulOdevListesi({ baslik, liste }: { baslik: string; liste: OkulOdevi[] }) {
+  if (liste.length === 0) return null
+  return (
+    <div className="mb-2 break-inside-avoid">
+      <p className="font-semibold">{baslik} ({liste.length})</p>
+      <ul aria-label={baslik} className="grid grid-cols-3 gap-x-3 text-[10px] leading-tight border-t border-gray-400">
+        {liste.map(o => (
+          <li key={o.id} className="border-b border-gray-300 py-px">□ {dersKisa(o.subject)} – {o.title} <span className="whitespace-nowrap">({o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)})</span></li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+/** Öğretmen notu + veli imzası başlığın hemen altında: altta dururken uzun ödev listesiyle 2. sayfaya sarkıyordu (2026-10-17). */
+export function ImzaAlanlari() {
+  return (
+    <div className="grid grid-cols-2 gap-2 mb-2 break-inside-avoid">
+      <div className="border border-gray-400 h-11 p-1"><b>Öğretmen notu</b></div>
+      <div className="border border-gray-400 h-11 p-1"><b>Veli imzası</b></div>
+    </div>
+  )
+}
+
 /** A4 dikey öğrenci kâğıdı. Matematik satırı kalın + gri zemin (siyah-beyaz baskıda okunur). */
 export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVerisi }) {
   return (
@@ -46,9 +71,11 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
           <p>Seviye: {SEVIYE_ADI[veri.seviye]} · Soru hedefi: {veri.soruHedefi}</p>
         </div>
       </div>
+      <ImzaAlanlari />
       {veri.icerik.duzen && <p className="mb-2"><b>Hafta içi düzen:</b> {veri.icerik.duzen}</p>}
 
-      <table aria-label="Program" className="w-full border-collapse mb-2">
+      {/* Program tablosu sıkı (10px, dikey boşluksuz): 24 görev + 46 ödevli gerçek yükte tek A4 için (2026-10-17) */}
+      <table aria-label="Program" className="w-full border-collapse mb-2 text-[10px] leading-tight [&_td]:py-0 [&_th]:py-0">
         <thead><tr>{['Gün', 'Görev', 'Süre', 'Kitap / sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
         <tbody>
           {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
@@ -65,9 +92,10 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         </tbody>
       </table>
 
-      <OkulOdevTablosu baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
-      <OkulOdevTablosu baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
-      <OkulOdevTablosu baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
+      <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
+      {/* Üç bölüm de sıkı liste: gerçek okulda 46 ödevle tablolar kâğıdı 2. sayfaya taşıyordu (2026-10-17) */}
+      <OkulOdevListesi baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
+      <OkulOdevListesi baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
 
       {veri.icerik.mentorOdevleri.length > 0 && (
         <table aria-label="Mentör ödevleri" className="w-full border-collapse mb-2">
@@ -85,10 +113,6 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         </table>
       )}
 
-      <div className="grid grid-cols-2 gap-4 mt-3 break-inside-avoid">
-        <div className="border border-gray-400 h-14 p-1"><b>Öğretmen notu</b></div>
-        <div className="border border-gray-400 h-14 p-1"><b>Veli imzası</b></div>
-      </div>
     </article>
   )
 }

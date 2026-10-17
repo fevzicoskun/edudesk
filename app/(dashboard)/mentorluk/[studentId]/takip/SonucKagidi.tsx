@@ -3,7 +3,7 @@ import {
 } from '@/src/domains/mentor/takip/takipMath'
 
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
-import { OkulOdevTablosu, th, td } from './OgrenciKagidi'
+import { OkulOdevTablosu, OkulOdevListesi, ImzaAlanlari, th, td } from './OgrenciKagidi'
 
 const netYaz = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 
@@ -36,6 +36,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
         </div>
       </div>
 
+      <ImzaAlanlari />
       <div className="grid grid-cols-4 gap-2 mb-2" aria-label="Özet">
         {kutu('Program', p === null ? '—' : `%${p} (${o.gorev_yapilan}/${o.gorev_toplam})`)}
         {kutu('Toplam soru', `${o.soru} / hedef ${veri.soruHedefi}`)}
@@ -71,12 +72,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       </div>
 
       <OkulOdevTablosu baslik="Bu haftanın okul ödevleri" liste={v.okulOdevleri.buHafta} durumlu />
-      <OkulOdevTablosu baslik="Tamamlanmamış okul ödevleri (önceki haftalar)" liste={v.okulOdevleri.tamamlanmamis} durumlu />
-
-      <div className="grid grid-cols-2 gap-4 mt-3 break-inside-avoid">
-        <div className="border border-gray-400 h-20 p-1"><b>Öğretmen notu</b></div>
-        <div className="border border-gray-400 h-20 p-1"><b>Veli imzası</b></div>
-      </div>
+      <OkulOdevListesi baslik="Tamamlanmamış okul ödevleri (önceki haftalar)" liste={v.okulOdevleri.tamamlanmamis} />
     </article>
   )
 }

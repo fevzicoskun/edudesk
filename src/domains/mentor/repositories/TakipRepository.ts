@@ -1,6 +1,7 @@
 // src/domains/mentor/repositories/TakipRepository.ts
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
+import { fetchAll } from '@/src/shared/utils/fetchAll'
 import type { Ozet } from '../takip/takipMath'
 
 type HaftaSatiri = { school_id: string; student_id: string; hafta_basi: string; seviye: number; soru_hedefi: number; icerik: Json; gorusme: Json; updated_by: string } & Ozet
@@ -81,6 +82,14 @@ export const TakipRepository = {
     const { error } = await db.from('mentor_haftalari').update({ kapali_at: null, okul_odevleri: null })
       .eq('school_id', schoolId).eq('student_id', studentId).eq('hafta_basi', hafta)
     if (error) throw new Error(error.message)
+  },
+
+  /** Okulun ödevlerindeki ders adları (ham; kaynak dersi listesi bunlardan kurulur). Sayfalı: max_rows=1000. */
+  async odevDersleri(schoolId: string): Promise<string[]> {
+    const db = await createClient()
+    const rows = await fetchAll<{ subject: string }>((f, t) => db.from('homeworks').select('subject')
+      .eq('school_id', schoolId).eq('is_template', false).is('deleted_at', null).order('id').range(f, t))
+    return rows.map(r => r.subject)
   },
 
   /** Mentörün güncel mentileri (öğrenci id). */

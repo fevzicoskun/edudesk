@@ -4,9 +4,9 @@ import {
 } from './takipMath'
 
 const YAPILDI = new Set(['yapildi', 'gec'])
-/** En fazla 3 ad; kalan "ve N ödev daha" — WhatsApp'ta mesaj kısa kalsın. */
+/** Ödev her yerde dersiyle ("Fizik – Kondisyon Sy 13-22"). En fazla 3 ad; kalan "ve N ödev daha" — WhatsApp'ta mesaj kısa kalsın. */
 const adlar = (liste: OkulOdevi[]) =>
-  liste.slice(0, 3).map(o => o.title).join(', ') + (liste.length > 3 ? ` ve ${liste.length - 3} ödev daha` : '')
+  liste.slice(0, 3).map(o => `${o.subject} – ${o.title}`).join(', ') + (liste.length > 3 ? ` ve ${liste.length - 3} ödev daha` : '')
 
 /** Haftanın verisinden otomatik veli mesajı (madde işaretli, ~10 satır). Mentör düzenlerse gorusme.veliMesaji'de saklanır. */
 export function takipVeliMesaji(g: {

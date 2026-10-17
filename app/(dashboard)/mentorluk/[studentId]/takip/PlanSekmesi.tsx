@@ -152,32 +152,6 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
         ))}
       </section>
 
-      <section aria-label="Mentör ödevleri">
-        <h2 className="text-base font-semibold mb-1">Mentör ödevleri</h2>
-        <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">Kitaplar <a className="underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${v.hafta}&sekme=dosya`}>Öğrenci dosyası</a> sekmesinden eklenir.</p>
-        {veri.icerik.mentorOdevleri.map(m => (
-          <div key={m.id} className="grid grid-cols-12 gap-2 items-center py-1">
-            <select aria-label="Kitap" className={`${kutu} col-span-12 md:col-span-4`} value={m.kitapId ?? ''}
-              onChange={e => { const k = kitaplar.find(x => x.id === e.target.value); if (k) degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.map(x => x.id === m.id ? { ...x, kitapId: k.id, kitapAdi: k.ad } : x) } }), true) }}>
-              {!kitaplar.some(k => k.id === m.kitapId) && <option value={m.kitapId ?? ''}>{m.kitapAdi}</option>}
-              {kitaplar.map(k => <option key={k.id} value={k.id}>{k.ad}</option>)}
-            </select>
-            <input aria-label="Konu" maxLength={120} className={`${kutu} col-span-6 md:col-span-4`} value={m.konu} placeholder="Konu"
-              onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.map(x => x.id === m.id ? { ...x, konu: e.target.value } : x) } }))} />
-            <input aria-label="Sayfalar" maxLength={60} className={`${kutu} col-span-4 md:col-span-3`} value={m.sayfalar} placeholder="s. 45–52"
-              onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.map(x => x.id === m.id ? { ...x, sayfalar: e.target.value } : x) } }))} />
-            <button type="button" aria-label="Mentör ödevini sil" className="col-span-2 md:col-span-1 text-red-700 dark:text-red-400 text-sm"
-              onClick={() => { if (confirm('Bu ödev silinsin mi?')) degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: h.icerik.mentorOdevleri.filter(x => x.id !== m.id) } }), true) }}>Sil</button>
-          </div>
-        ))}
-        {kitaplar.length > 0 && (
-          <button type="button" className="text-sm text-blue-600 hover:underline"
-            onClick={() => degistir(h => ({ ...h, icerik: { ...h.icerik, mentorOdevleri: [...h.icerik.mentorOdevleri, { id: yeniId(), kitapId: kitaplar[0].id, kitapAdi: kitaplar[0].ad, konu: '', sayfalar: '', yapti: false }] } }), true)}>
-            + Mentör ödevi ekle
-          </button>
-        )}
-      </section>
-
       <section aria-label="Okuma">
         <h2 className="text-base font-semibold mb-2">Okuma</h2>
         <label className="text-sm">Okuduğu kitap

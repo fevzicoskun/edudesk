@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -314,5 +314,15 @@ describe('görüşme notları 5 → 2 (2026-10-17)', () => {
     expect(gorusmeNormalize({ not: 'N', rica: 'R', veliMesaji: 'M' })).toEqual({ not: 'N', rica: 'R', veliMesaji: 'M' })
     expect(gorusmeNormalize({})).toEqual({ not: '', rica: '', veliMesaji: null })
     expect(gorusmeNormalize(null)).toEqual({ not: '', rica: '', veliMesaji: null })
+  })
+})
+
+describe('dersListesi: kitap dersi ödev modülündeki ders adlarından (2026-10-17)', () => {
+  it('büyük/küçük harf birleşir (en sık yazım kalır), tek seferlik yazımlar düşer, alfabetik', () => {
+    const odevler = [...Array(41).fill('Matematik'), 'MATEMATİK', 'Matematik 1.Aşama', ...Array(35).fill('Kimya'), 'Fizik', 'Fizik', ' Coğrafya ', 'Coğrafya']
+    expect(dersListesi(odevler)).toEqual(['Coğrafya', 'Fizik', 'Kimya', 'Matematik'])
+  })
+  it('okulda henüz ödev yoksa standart ders listesi (kaynak eklenebilsin)', () => {
+    expect(dersListesi([])).toContain('Matematik'); expect(dersListesi(['Tek'])).toContain('Türk Dili ve Edebiyatı')
   })
 })

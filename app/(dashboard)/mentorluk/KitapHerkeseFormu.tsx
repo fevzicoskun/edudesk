@@ -1,12 +1,11 @@
 'use client'
 import { useState, useTransition } from 'react'
 import { kitapHerkeseEkle } from '@/app/actions/mentor-takip'
-import { DERS_ONERILERI } from '@/src/domains/mentor/takip/sablonlar'
 
 const kutu = 'block rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
 
 /** Aynı kitabı tüm mentör öğrencilerine tanımlar; zaten olanlar atlanır. */
-export default function KitapHerkeseFormu() {
+export default function KitapHerkeseFormu({ dersler }: { dersler: string[] }) {
   const [ad, setAd] = useState(''); const [ders, setDers] = useState('')
   const [mesaj, setMesaj] = useState<{ hata: boolean; metin: string } | null>(null)
   const [bekliyor, basla] = useTransition()
@@ -23,8 +22,12 @@ export default function KitapHerkeseFormu() {
         })
       }}>
         <label className="text-sm">Kitap adı<input maxLength={120} className={`${kutu} w-56`} value={ad} onChange={e => setAd(e.target.value)} required /></label>
-        <label className="text-sm">Ders<input maxLength={60} list="herkese-dersler" className={`${kutu} w-40`} value={ders} onChange={e => setDers(e.target.value)} /></label>
-        <datalist id="herkese-dersler">{DERS_ONERILERI.map(x => <option key={x} value={x} />)}</datalist>
+        <label className="text-sm">Ders
+          <select required className={`${kutu} w-48`} value={ders} onChange={e => setDers(e.target.value)}>
+            <option value="">Ders seçin</option>
+            {dersler.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </label>
         <button disabled={bekliyor} className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-600 text-sm">{bekliyor ? 'Ekleniyor…' : 'Hepsine ekle'}</button>
         {mesaj && <span role={mesaj.hata ? 'alert' : 'status'} className={`text-sm ${mesaj.hata ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{mesaj.metin}</span>}
       </form>

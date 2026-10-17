@@ -292,3 +292,24 @@ export function okumaGecmisi(haftalar: { hafta: string; okuma: Okuma | null }[])
   }
   return out
 }
+
+/** Kaynak (kitap) dersi seçenekleri: okulun ödevlerinde kullanılan ders adları. Büyük/küçük harf farkı birleşir
+ *  (en sık yazım kalır); yalnız bir kez geçen yazım ("Matematik 1.Aşama") listeye girmez. */
+export function dersListesi(odevDersleri: string[]): string[] {
+  const gruplar = new Map<string, Map<string, number>>()
+  for (const ham of odevDersleri) {
+    const d = ham.trim()
+    if (!d) continue
+    const k = d.toLocaleLowerCase('tr')
+    const g = gruplar.get(k) ?? new Map<string, number>()
+    g.set(d, (g.get(d) ?? 0) + 1)
+    gruplar.set(k, g)
+  }
+  const liste = [...gruplar.values()]
+    .filter(g => [...g.values()].reduce((a, b) => a + b, 0) >= 2)
+    .map(g => [...g].sort((a, b) => b[1] - a[1])[0][0])
+    .sort((a, b) => a.localeCompare(b, 'tr'))
+  return liste.length ? liste : STANDART_DERSLER // henüz ödev girilmemiş okulda da kaynak eklenebilsin
+}
+
+const STANDART_DERSLER = ['Biyoloji', 'Coğrafya', 'Felsefe', 'Fizik', 'Geometri', 'İngilizce', 'Kimya', 'Matematik', 'Tarih', 'Türk Dili ve Edebiyatı']

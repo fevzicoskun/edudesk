@@ -3,7 +3,6 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { konuEkle, konuDurumu, kitapEkle, kitapSil } from '@/app/actions/mentor-takip'
-import { DERS_ONERILERI } from '@/src/domains/mentor/takip/sablonlar'
 import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
@@ -19,9 +18,9 @@ function KitaplarBolumu({ v }: Pick<SekmeProps, 'v'>) {
   const [, basla] = useTransition()
   const kutu = 'block rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
   return (
-    <section aria-label="Kitaplar">
-      <h2 className="text-base font-semibold mb-2">Kitaplar</h2>
-      {kitaplar.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Henüz kitap yok.</p> : (
+    <section aria-label="Kaynaklar (soru bankası, test)">
+      <h2 className="text-base font-semibold mb-2">Kaynaklar (soru bankası, test)</h2>
+      {kitaplar.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Henüz kaynak yok.</p> : (
         <ul className="text-sm flex flex-wrap gap-2 mb-2">
           {kitaplar.map(k => (
             <li key={k.id} className="px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-800">{k.ad}{k.ders && ` · ${k.ders}`}
@@ -40,8 +39,12 @@ function KitaplarBolumu({ v }: Pick<SekmeProps, 'v'>) {
         })
       }}>
         <label className="text-sm">Kitap adı<input maxLength={120} className={`${kutu} w-56`} value={ad} onChange={e => setAd(e.target.value)} required /></label>
-        <label className="text-sm">Ders<input maxLength={60} list="kitap-dersleri" className={`${kutu} w-40`} value={ders} onChange={e => setDers(e.target.value)} /></label>
-        <datalist id="kitap-dersleri">{DERS_ONERILERI.map(x => <option key={x} value={x} />)}</datalist>
+        <label className="text-sm">Ders
+          <select required className={`${kutu} w-48`} value={ders} onChange={e => setDers(e.target.value)}>
+            <option value="">Ders seçin</option>
+            {v.dersler.map(x => <option key={x} value={x}>{x}</option>)}
+          </select>
+        </label>
         <button className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-600 text-sm">Kitap ekle</button>
         {hata && <span role="alert" className="text-sm text-red-700 dark:text-red-400">{hata}</span>}
       </form>
@@ -96,8 +99,8 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
         <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">Eklenen konu bu sınıf ve dersin okul listesine kalıcı olarak geçer.</p>
       </section>
 
-      <section aria-label="Okuduğu kitaplar">
-        <h2 className="text-base font-semibold mb-2">Okuduğu kitaplar</h2>
+      <section aria-label="Okuma kitapları">
+        <h2 className="text-base font-semibold mb-2">Okuma kitapları</h2>
         {(() => { const ok = okumaGecmisi(v.gecmis.map(h => ({ hafta: h.hafta, okuma: h.okuma })))
           return ok.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Henüz kayıt yok.</p> : (
             <ul className="text-sm space-y-1">{ok.map(k => <li key={k.kitap + k.bas}>{k.kitap} — {takipHaftaEtiketi(k.bas)}{k.son !== k.bas && ` → ${takipHaftaEtiketi(k.son)}`} · {k.sayfa} sayfa {k.bitti && '· bitti ✓'}</li>)}</ul>) })()}

@@ -8,7 +8,7 @@ import { kaydetSchema } from '../validators/takip'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, planKopyala, normalizeIcerik, gorusmeNormalize, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
+  yeniHafta, planKopyala, normalizeIcerik, gorusmeNormalize, dersListesi, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
   type HaftaVerisi, type Icerik, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
 } from '../takip/takipMath'
 
@@ -19,6 +19,8 @@ export type SayfaVerisi = {
   taslak: HaftaVerisi
   onceki: { ozet: Ozet } | null
   kitaplar: { id: string; ad: string; ders: string }[]
+  /** Kaynak eklerken ders seçenekleri (okulun ödev dersleri) — yalnız Öğrenci dosyası sekmesinde dolu */
+  dersler: string[]
   /** Ödev modülünden salt okunur: tamamlanmamış (yapılmadı, teslimi geçmiş) · bu hafta · gelecek hafta */
   okulOdevleri: OkulOdevBolumleri
   konular: { id: string; ders: string; ad: string; grup: string | null }[]
@@ -57,7 +59,7 @@ export const TakipService = {
     if (!o) return null
     const sinifBilgi = o.classes as { name: string; grade: number } | null
     const sinif = sinifBilgi?.grade ?? 9
-    const [kayit, onceki, kitaplar, profil, profile, durumlar, gecmisSat] = await Promise.all([
+    const [kayit, onceki, kitaplar, profil, profile, durumlar, gecmisSat, odevDersleri] = await Promise.all([
       R.hafta(ab.schoolId, studentId, hafta),
       R.oncekiHafta(ab.schoolId, studentId, hafta),
       R.kitaplar(ab.schoolId, studentId),
@@ -65,6 +67,7 @@ export const TakipService = {
       getCurrentProfile(),
       R.konuDurumlari(ab.schoolId, studentId),
       gecmis ? R.gecmis(ab.schoolId, studentId) : Promise.resolve([]),
+      gecmis ? R.odevDersleri(ab.schoolId) : Promise.resolve([]),
     ])
     if ('error' in profil) throw new Error(profil.error)
     let konular = await R.konular(ab.schoolId, sinif)
@@ -86,6 +89,7 @@ export const TakipService = {
       taslak: kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif),
       onceki: onceki ? { ozet: ozetOf(onceki) } : null,
       kitaplar,
+      dersler: dersListesi(odevDersleri),
       // Kapalı hafta: kapatma anındaki görüntü (öğretmen işareti sonradan değişse de kayıt sabit)
       okulOdevleri: kayit?.kapali_at && kayit.okul_odevleri
         ? kayit.okul_odevleri as unknown as OkulOdevBolumleri : okulOdevBolumleri(profil.homeworks, hafta),
@@ -208,6 +212,12 @@ export const TakipService = {
       eklenen++
     }
     return { eklenen, atlanan }
+  },
+
+  /** Mentörlük sayfasındaki toplu kaynak formu için ders seçenekleri. */
+  async dersSecenekleri(): Promise<string[]> {
+    const ab = await requireAbility()
+    return dersListesi(await R.odevDersleri(ab.schoolId))
   },
 
   async kitapSil(studentId: string, kitapId: string) {

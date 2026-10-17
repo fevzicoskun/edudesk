@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { takipVeliMesaji } from '@/src/domains/mentor/takip/veliMesaji'
 import { yeniHafta, BOS_GORUSME, type OkulOdevBolumleri, type OkulOdevi } from '@/src/domains/mentor/takip/takipMath'
 
-const odev = (id: string, subject: string, status: string | null): OkulOdevi => ({ id, subject, title: `${subject} ödevi ${id}`, due_date: '2026-10-20', status, bekliyor: false })
+const odev = (id: string, subject: string, status: string | null): OkulOdevi => ({ id, subject, title: `Ödev ${id}`, due_date: '2026-10-20', status, bekliyor: false })
 const BOS: OkulOdevBolumleri = { tamamlanmamis: [], buHafta: [], gelecek: [] }
 
 const temel = () => {
@@ -26,8 +26,8 @@ describe('takipVeliMesaji — haftanın verisinden otomatik (2026-10-17)', () =>
       gelecek: [],
     }
     const m = takipVeliMesaji(g)
-    expect(m).toContain('• Okul ödevleri: 2/4 yapıldı, 1 tanesi henüz kontrol edilmedi. Yapılmayan: Türkçe ödevi 3')
-    expect(m).toContain('• Önceki haftalardan tamamlanmamış: Kimya ödevi e1')
+    expect(m).toContain('• Okul ödevleri: 2/4 yapıldı, 1 tanesi henüz kontrol edilmedi. Yapılmayan: Türkçe – Ödev 3')
+    expect(m).toContain('• Önceki haftalardan tamamlanmamış: Kimya – Ödev e1')
   })
   it('soru, doğruluk (geçen haftaya göre) ve ders bazında kısa özet', () => {
     const g = temel()

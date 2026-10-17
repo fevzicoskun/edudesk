@@ -2,9 +2,6 @@
 // Sınıf şablonları (Normal seviye) + matematik konu listeleri. Okul yıllık planıyla karşılaştırılıp düzeltilebilir.
 import type { Gorev, Birim } from './takipMath'
 
-/** Kitap ekleme formlarında ders önerileri (serbest yazılabilir). */
-export const DERS_ONERILERI = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Türkçe', 'Türk Dili ve Edebiyatı', 'Tarih', 'Coğrafya', 'İngilizce', 'Felsefe']
-
 export const VARSAYILAN_DUZEN = '16.30–18.00 dinlenme · 18.00 ana çalışma · yemek · günün dersi · 21.00\'den sonra serbest'
 
 type Tanim = [ad: string, miktar: number | null, birim: Birim, ders: string | null, soruSatiri: boolean]
