@@ -3,8 +3,8 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
-import { pazartesiMi, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
+import { haftaBasi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
@@ -31,7 +31,7 @@ export default async function TakipKagitlariPage({ searchParams }: { searchParam
       <div className="flex justify-between items-start mb-4 print:hidden">
         <div>
           <Link href="/mentorluk" className="text-sm text-gray-600 dark:text-slate-400 hover:text-blue-600">← Mentörlüğüm</Link>
-          <h1 className="text-lg font-bold mt-1">Haftalık planlar · {haftaEtiketi(hafta)}</h1>
+          <h1 className="text-lg font-bold mt-1">Haftalık planlar · {takipHaftaEtiketi(hafta)}</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{veriler.length} öğrenci · hiç planı olmayanlar listede yok</p>
         </div>
         {veriler.length > 0 && <PrintButton />}

@@ -3,8 +3,8 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { konuEkle, konuDurumu } from '@/app/actions/mentor-takip'
-import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi } from '@/src/domains/mentor/takip/takipMath'
-import { haftaEtiketi, dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
 const DURUM_AD = ['Başlanmadı', 'Çalışılıyor', 'Oturdu'] as const
@@ -60,7 +60,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
         <h2 className="text-base font-semibold mb-2">Okuduğu kitaplar</h2>
         {(() => { const ok = okumaGecmisi(v.gecmis.map(h => ({ hafta: h.hafta, okuma: h.okuma })))
           return ok.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Henüz kayıt yok.</p> : (
-            <ul className="text-sm space-y-1">{ok.map(k => <li key={k.kitap + k.bas}>{k.kitap} — {haftaEtiketi(k.bas)}{k.son !== k.bas && ` → ${haftaEtiketi(k.son)}`} · {k.sayfa} sayfa {k.bitti && '· bitti ✓'}</li>)}</ul>) })()}
+            <ul className="text-sm space-y-1">{ok.map(k => <li key={k.kitap + k.bas}>{k.kitap} — {takipHaftaEtiketi(k.bas)}{k.son !== k.bas && ` → ${takipHaftaEtiketi(k.son)}`} · {k.sayfa} sayfa {k.bitti && '· bitti ✓'}</li>)}</ul>) })()}
       </section>
 
       <section aria-label="Geçmiş haftalar">
@@ -72,7 +72,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
             const p = programYuzde(h.ozet), d = dogrulukYuzde(h.ozet)
             return (
               <tr key={h.hafta} className="border-b border-gray-100 dark:border-slate-700">
-                <td className="py-1">{haftaEtiketi(h.hafta)}{h.kapali && <span title="Hafta kapatıldı" aria-label="kapalı"> 🔒</span>}</td><td>{SEVIYE_ADI[h.seviye]}</td>
+                <td className="py-1">{takipHaftaEtiketi(h.hafta)}{h.kapali && <span title="Hafta kapatıldı" aria-label="kapalı"> 🔒</span>}</td><td>{SEVIYE_ADI[h.seviye]}</td>
                 <td>{h.ozet.islendi && p !== null ? `%${p}` : '—'}</td><td>{h.ozet.soru || '—'}</td>
                 <td>{d === null ? '—' : `%${d}`}</td>
                 <td className="text-xs">{h.dersler.length === 0 ? '—' : h.dersler.map((x, i) => (

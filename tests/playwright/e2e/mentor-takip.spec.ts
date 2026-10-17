@@ -49,6 +49,7 @@ test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible({ timeout: 20_000 })
   await page.waitForTimeout(1500)
+  await expect(page.getByText('19–25 Ekim', { exact: true })).toBeVisible() // Pzt–Paz (plan hafta sonunu kapsar)
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId)).data).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Normal' }).click()
@@ -62,6 +63,7 @@ test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır
 test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText('19–25 Ekim', { exact: true })).toBeVisible()
   // Başlık KÂĞITTA da görünmeli: globals.css baskıda <header>'ları gizliyor (2026-10-16 görsel kontrolde yakalandı)
   await page.emulateMedia({ media: 'print' })
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible()
@@ -182,6 +184,26 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
   await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toBeVisible()
+})
+test('Mentörlüğüm: Geçen hafta sütunu program % ve doğruluk % (%50 altı kırmızı)', async ({ page }) => {
+  const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
+  const gecen = new Date(Date.parse(bu + 'T00:00:00Z') - 7 * 864e5).toISOString().slice(0, 10)
+  const { data: var_ } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', gecen)
+  expect(var_).toHaveLength(0) // test kendi satırını yaratır
+  await db.from('mentor_haftalari').insert({
+    school_id: mentor.school_id, student_id: ogrId, hafta_basi: gecen, seviye: 1, soru_hedefi: 200,
+    icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null }, gorev_toplam: 24, gorev_yapilan: 18, soru: 40, dogru: 18, islendi: true,
+  })
+  try {
+    await page.goto('/mentorluk')
+    const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+    const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
+    await expect(satir).toContainText('Program %75 · Doğruluk %45', { timeout: 20_000 })
+    await expect(satir.getByText('Doğruluk %45')).toHaveClass(/text-red-700/)
+    await expect(satir.getByText('Program %75')).not.toHaveClass(/text-red-700/)
+  } finally {
+    await db.from('mentor_haftalari').delete().eq('student_id', ogrId).eq('hafta_basi', gecen)
+  }
 })
 test('veli mesajı ve veli raporu', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)

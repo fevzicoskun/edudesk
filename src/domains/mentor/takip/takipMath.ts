@@ -3,6 +3,7 @@
 import { addDaysISO } from '@/src/shared/date'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { sinifSablonu, VARSAYILAN_DUZEN } from './sablonlar'
+import { gunAy } from '../lib/bultenMath'
 
 export type Seviye = 0 | 1 | 2
 export type Birim = 'dk' | 'soru' | 'serbest'
@@ -33,6 +34,12 @@ export function haftaBasi(iso: string): string {
   return addDaysISO(iso, -((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7))
 }
 export const haftaKaydir = (pazartesi: string, delta: number) => addDaysISO(pazartesi, delta * 7)
+
+/** Takip haftası Pzt–Paz (plan hafta sonunu da kapsar). Veli bülteni/mesajı okul haftasını (Pzt–Cum, haftaEtiketi) kullanır. */
+export function takipHaftaEtiketi(pazartesi: string): string {
+  const pazar = addDaysISO(pazartesi, 6)
+  return pazartesi.slice(5, 7) === pazar.slice(5, 7) ? `${Number(pazartesi.slice(8))}–${gunAy(pazar)}` : `${gunAy(pazartesi)} – ${gunAy(pazar)}`
+}
 
 export const BOS_GORUSME: Gorusme = { iyi: '', zor: '', hedef: '', odak: '', evde: '' }
 export const GUNLER = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz'] as const
@@ -214,6 +221,11 @@ export function okulOdevBolumleri(kayitlar: HomeworkRecord[], pazartesi: string)
 const OKUL_DURUM: Record<string, string> = { yapildi: 'Yapıldı', gec: 'Yapıldı (geç)', yapilmadi: 'Yapılmadı', eksik: 'Eksik', mazeretli: 'Mazeretli' }
 /** Teslim durumu yalnız dersin öğretmeninin işaretinden (elle giriş yok). */
 export const okulDurumYaz = (o: Pick<OkulOdevi, 'status'>) => (o.status ? OKUL_DURUM[o.status] ?? o.status : 'Henüz işaretlenmedi')
+
+/** Mentörlük tablosu "Geçen hafta": yalnız işlenmiş haftada program % ve doğruluk %. */
+export function gecenHaftaOzeti(s: (Pick<Ozet, 'islendi' | 'gorev_toplam' | 'gorev_yapilan' | 'soru' | 'dogru'>) | null) {
+  return s?.islendi ? { program: programYuzde(s), dogruluk: dogrulukYuzde(s) } : null
+}
 
 export type HaftaDurumu = 'yok' | 'kagitta' | 'islendi'
 export const haftaDurumu = (s: { islendi: boolean } | null): HaftaDurumu => (!s ? 'yok' : s.islendi ? 'islendi' : 'kagitta')

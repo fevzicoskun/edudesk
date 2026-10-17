@@ -1,5 +1,5 @@
-import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi } from '@/src/domains/mentor/takip/takipMath'
-import { haftaEtiketi, dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
@@ -42,7 +42,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
           <p>{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
         </div>
         <div className="text-right">
-          <p className="font-semibold">{haftaEtiketi(v.hafta)}</p>
+          <p className="font-semibold">{takipHaftaEtiketi(v.hafta)}</p>
           <p>Seviye: {SEVIYE_ADI[veri.seviye]} · Soru hedefi: {veri.soruHedefi}</p>
         </div>
       </div>

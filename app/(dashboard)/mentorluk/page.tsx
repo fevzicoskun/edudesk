@@ -9,8 +9,7 @@ import { todayLocalISO } from '@/src/shared/date'
 import { donemBasi } from '@/src/shared/utils'
 import { basTarihi, mentorTablosu } from '@/src/domains/mentor/lib/mentorTablosu'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
-import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
-import { haftaDurumu, programYuzde } from '@/src/domains/mentor/takip/takipMath'
+import { haftaBasi, haftaKaydir, haftaDurumu, programYuzde, gecenHaftaOzeti } from '@/src/domains/mentor/takip/takipMath'
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 import MentorTablosu from './MentorTablosu'
 
@@ -57,7 +56,11 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
   })))
   // Haftalık takip açık mentörde: bu haftanın durumu (Plan yok / Kâğıtta / İşlendi · %)
   const takipAcik = await TakipService.acikMi()
-  const durum = takipAcik ? await TakipService.durumlar(rows.map(r => r.student_id), haftaBasi(bugun)) : null
+  const ids = rows.map(r => r.student_id)
+  const [durum, gecenDurum] = takipAcik
+    ? await Promise.all([TakipService.durumlar(ids, haftaBasi(bugun)), TakipService.durumlar(ids, haftaKaydir(haftaBasi(bugun), -1))])
+    : [null, null]
+  const gecen = gecenDurum ? Object.fromEntries(ids.map(id => [id, gecenHaftaOzeti(gecenDurum.get(id) ?? null)])) : undefined
   const takip = durum ? Object.fromEntries(rows.map(r => {
     const s = durum.get(r.student_id) ?? null
     const d = haftaDurumu(s)
@@ -104,7 +107,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
         </div>
       ) : (
         <div className="mb-6">
-          <MentorTablosu tablo={tablo} bas={bas} takip={takip} />
+          <MentorTablosu tablo={tablo} bas={bas} takip={takip} gecen={gecen} />
         </div>
       )}
 

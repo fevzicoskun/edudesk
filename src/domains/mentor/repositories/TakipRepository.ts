@@ -163,7 +163,7 @@ export const TakipRepository = {
 
   async durumlar(schoolId: string, studentIds: string[], hafta: string) {
     const db = await createClient()
-    const { data, error } = await db.from('mentor_haftalari').select('student_id, islendi, gorev_toplam, gorev_yapilan')
+    const { data, error } = await db.from('mentor_haftalari').select('student_id, islendi, gorev_toplam, gorev_yapilan, soru, dogru')
       .eq('school_id', schoolId).eq('hafta_basi', hafta).in('student_id', studentIds)
     if (error) throw new Error(error.message)
     return data ?? []

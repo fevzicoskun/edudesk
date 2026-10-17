@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -246,5 +246,21 @@ describe('planKopyala: kitap sayfası kaldığı yerden devam (2026-10-17)', () 
   })
   it('yeni haftanın otomatik taslağı da sayfayı devam ettirir', () => {
     expect(yeniHafta(onceki([g({ kitapId: 'k1', sayfaBas: 45, sayfaSon: 60 })]), 9).icerik.gorevler[0]).toMatchObject({ sayfaBas: 61, sayfaSon: 76 })
+  })
+})
+
+describe('takipHaftaEtiketi: plan Cmt/Paz da kapsar → Pzt–Paz (2026-10-17)', () => {
+  it('aynı ay', () => expect(takipHaftaEtiketi('2026-10-12')).toBe('12–18 Ekim'))
+  it('ay geçişi', () => expect(takipHaftaEtiketi('2026-10-26')).toBe('26 Ekim – 1 Kasım'))
+})
+
+describe('gecenHaftaOzeti (mentörlük tablosu "Geçen hafta")', () => {
+  it('işlenmemiş ya da kayıt yok → null', () => {
+    expect(gecenHaftaOzeti(null)).toBeNull()
+    expect(gecenHaftaOzeti({ islendi: false, gorev_toplam: 10, gorev_yapilan: 0, soru: 0, dogru: 0 })).toBeNull()
+  })
+  it('program ve doğruluk yüzdesi; soru yoksa doğruluk null', () => {
+    expect(gecenHaftaOzeti({ islendi: true, gorev_toplam: 24, gorev_yapilan: 18, soru: 40, dogru: 18 })).toEqual({ program: 75, dogruluk: 45 })
+    expect(gecenHaftaOzeti({ islendi: true, gorev_toplam: 4, gorev_yapilan: 1, soru: 0, dogru: 0 })).toEqual({ program: 25, dogruluk: null })
   })
 })

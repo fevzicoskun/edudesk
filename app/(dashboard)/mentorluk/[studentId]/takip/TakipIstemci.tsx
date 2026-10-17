@@ -2,8 +2,8 @@
 import Link from 'next/link'
 import { useCallback, useState, useTransition } from 'react'
 import { haftaKaydet, haftaKilidiAc } from '@/app/actions/mentor-takip'
-import { haftaKaydir, haftaBasi } from '@/src/domains/mentor/takip/takipMath'
-import { haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
+import { haftaKaydir, haftaBasi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+
 import { todayLocalISO } from '@/src/shared/date'
 import type { HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
@@ -68,7 +68,7 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
         </div>
         <div className="flex items-center gap-2">
           <Link aria-label="Önceki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, -1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">‹</Link>
-          <span className="text-sm font-medium tabular-nums">{haftaEtiketi(v.hafta)}</span>
+          <span className="text-sm font-medium tabular-nums">{takipHaftaEtiketi(v.hafta)}</span>
           <Link aria-label="Sonraki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, 1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">›</Link>
           <Link onClick={bosalt} href={url(haftaBasi(todayLocalISO()))} className="text-sm text-blue-600 hover:underline">Bu hafta</Link>
         </div>

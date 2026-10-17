@@ -1,7 +1,7 @@
 import {
-  GUNLER, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, type HaftaVerisi,
+  GUNLER, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, type HaftaVerisi, takipHaftaEtiketi,
 } from '@/src/domains/mentor/takip/takipMath'
-import { haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
+
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 import { OkulOdevTablosu, th, td } from './OgrenciKagidi'
 
@@ -31,7 +31,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
           <p>{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
         </div>
         <div className="text-right">
-          <p className="font-semibold">{haftaEtiketi(v.hafta)}</p>
+          <p className="font-semibold">{takipHaftaEtiketi(v.hafta)}</p>
           {v.kayit?.kapaliAt && <p>Hafta kapatıldı: {new Date(v.kayit.kapaliAt).toLocaleDateString('tr-TR', { timeZone: 'Europe/Istanbul' })}</p>}
         </div>
       </div>

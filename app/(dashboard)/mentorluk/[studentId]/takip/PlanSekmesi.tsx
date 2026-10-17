@@ -2,9 +2,9 @@
 import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import { kitapEkle, kitapSil, oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
-import { GUNLER, SEVIYE_ADI, miktarYaz, varsayilanHedef, type Gorev, type Seviye } from '@/src/domains/mentor/takip/takipMath'
+import { GUNLER, SEVIYE_ADI, miktarYaz, varsayilanHedef, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu } from '@/src/domains/mentor/takip/sablonlar'
-import { dersKisa, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
+import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
 const kutu = 'w-full rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-2 py-1 text-base md:text-sm'
@@ -22,10 +22,10 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
     setBilgi(null); setUstHata(null)
     const r = await oncekiPlan(v.ogrenci.id, v.hafta)
     if (r.error || !r.veri) { setUstHata(r.error ?? 'Kopyalanamadı.'); return }
-    if (v.kayit && !confirm(`Bu haftanın planı ve girilmiş sonuçları, ${haftaEtiketi(r.kaynak!)} haftasının planıyla değiştirilsin mi?`)) return
+    if (v.kayit && !confirm(`Bu haftanın planı ve girilmiş sonuçları, ${takipHaftaEtiketi(r.kaynak!)} haftasının planıyla değiştirilsin mi?`)) return
     const yeni = r.veri
     degistir(() => yeni, true)
-    setBilgi(`${haftaEtiketi(r.kaynak!)} haftasının planı kopyalandı; kitap sayfaları kaldığı yerden devam ediyor.`)
+    setBilgi(`${takipHaftaEtiketi(r.kaynak!)} haftasının planı kopyalandı; kitap sayfaları kaldığı yerden devam ediyor.`)
   })
   const herkese = () => {
     if (!confirm('Bu plan (bağlı kitaplar ve sayfalar dahil), bu hafta planı olmayan diğer mentilerinize kopyalansın mı?')) return
