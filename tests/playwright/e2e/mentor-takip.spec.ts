@@ -222,6 +222,15 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   expect(data!.gorev_yapilan).toBe(data!.gorev_toplam) // Tümü yapıldı (mentör ödevi yok: plan ekranından kalktı)
 })
 
+test('ekran süresi: başlıktaki kutuya yazılır, kaydedilir, her sekmede görünür', async ({ page }) => {
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
+  await page.waitForLoadState('networkidle')
+  await page.getByLabel('Ekran süresi').fill('günde 3 sa')
+  await expect.poll(async () => ((await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
+    .data!.icerik as { ekranSuresi?: string }).ekranSuresi, { timeout: 15_000 }).toBe('günde 3 sa')
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=plan`)
+  await expect(page.getByLabel('Ekran süresi')).toHaveValue('günde 3 sa')
+})
 test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
   const url = `/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`
   const ikinci = await context.newPage()

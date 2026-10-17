@@ -28,7 +28,8 @@ export type Sonuc = {
 }
 /** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
 /** surum 2 (2026-10-17): miktar GERÇEK süre/miktar (seviye uygulanmış) + her gün grupları. Yoksa eski biçim → normalizeIcerik. */
-export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2 }
+/** ekranSuresi (2026-10-18): mentörün serbest notu ("günde 3 sa"); yalnız takip ekranında, çıktılara girmez, sonraki haftaya kopyalanmaz. */
+export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: string }
 /** veliMesaji: mentörün düzenlediği veli mesajı; null = haftanın verisinden otomatik. */
 export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }

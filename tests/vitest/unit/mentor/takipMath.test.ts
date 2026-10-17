@@ -228,6 +228,10 @@ describe('soru sonuçları: kitap/ders başına tek satır (2026-10-17)', () => 
 describe('planKopyala: kitap sayfası kaldığı yerden devam (2026-10-17)', () => {
   const onceki = (gorevler: Gorev[]) => ({ seviye: 2 as const, soruHedefi: 350, icerik: icerik({ duzen: 'D', gorevler,
     sonuclar: [{ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: '', cozulen: 1, dogru: 1, yanlis: 0, bos: 0 }] }), gorusme: { ...BOS_GORUSME, iyi: 'x' } })
+  it('ekran süresi sonraki haftaya taşınmaz', () => {
+    const o = onceki([])
+    expect(planKopyala({ ...o, icerik: { ...o.icerik, ekranSuresi: 'günde 3 sa' } }).icerik.ekranSuresi).toBeUndefined()
+  })
   it('tek görev 45–60 → 61–76', () => {
     const h = planKopyala(onceki([g({ kitapId: 'k1', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60, yapti: true })]))
     expect(h.icerik.gorevler[0]).toMatchObject({ kitapId: 'k1', sayfaBas: 61, sayfaSon: 76, yapti: false })
