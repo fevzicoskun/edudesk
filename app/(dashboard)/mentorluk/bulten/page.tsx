@@ -53,7 +53,7 @@ export default async function BultenPage({ searchParams }: { searchParams: Promi
           }))}
           ogrenciler={b.ogrenciler.map(o => ({
             student_id: o.student_id, full_name: o.full_name, class_name: o.class_name, eksikSayisi: o.eksikler.length,
-            mesaj: o.mesaj, whatsapp: whatsappLink(o.mesaj, o.telefon), gorselUrl: gorsel(`tur=ogrenci&ogrenci=${o.student_id}`),
+            mesaj: o.mesaj, whatsapp: whatsappLink(o.mesaj, o.telefon), telefonVar: !!o.telefon, gorselUrl: gorsel(`tur=ogrenci&ogrenci=${o.student_id}`),
           }))}
         />
       )}

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { bultenGonderildi } from '@/app/actions/mentor'
 
 type Grup = { class_name: string; odevlerUrl: string; ozetUrl: string }
-type Ogr = { student_id: string; full_name: string; class_name: string; eksikSayisi: number; mesaj: string; whatsapp: string; gorselUrl: string }
+type Ogr = { student_id: string; full_name: string; class_name: string; eksikSayisi: number; mesaj: string; whatsapp: string; telefonVar: boolean; gorselUrl: string }
 
 const dugme = 'inline-flex items-center justify-center min-h-[44px] px-3 rounded-xl border border-gray-200 dark:border-slate-700 text-sm text-gray-700 dark:text-slate-300 hover:border-gray-300 dark:hover:border-slate-500'
 const ana = 'inline-flex items-center justify-center min-h-[44px] px-3 rounded-xl bg-green-600 text-white text-sm font-semibold hover:bg-green-700'
@@ -84,6 +84,31 @@ function MasaustuGonder({ url, whatsapp, onGonder }: { url: string; whatsapp: st
   )
 }
 
+/** Sırayla gönder: gönderilmemiş ilk öğrencinin velisine WhatsApp sohbeti mesaj yazılı açılır; işaret konunca
+ *  sıradaki gelir. Telefon kayıtlıysa kişi seçmek gerekmez. Görsel bu yolda gitmez (wa.me yalnız metin taşır). */
+function SiraylaGonder({ ogrenciler, gonderildi, onGonder }: { ogrenciler: Ogr[]; gonderildi: Record<string, boolean>; onGonder: (id: string) => void }) {
+  const kalan = ogrenciler.filter(o => !gonderildi[o.student_id])
+  const sira = kalan[0]
+  return (
+    <section aria-labelledby="sira-baslik" className="border-2 border-green-600 rounded-2xl p-4 space-y-2">
+      <h2 id="sira-baslik" className="text-base font-bold text-gray-900 dark:text-slate-100">Sırayla gönder</h2>
+      {sira ? (
+        <>
+          <p className="text-sm text-gray-600 dark:text-slate-400">{kalan.length} veli kaldı. Gönderdikten sonra bu sayfaya dönün; sıradaki hazır olur.</p>
+          <p className="text-lg font-semibold text-gray-900 dark:text-slate-100">
+            Sıradaki: {sira.full_name} <span className="text-sm font-normal text-gray-500 dark:text-slate-400">· {sira.class_name}</span>
+          </p>
+          {!sira.telefonVar && <p className="text-sm text-amber-700 dark:text-amber-400">Veli telefonu kayıtlı değil: WhatsApp kişiyi soracak.</p>}
+          <a className={`${ana} w-full sm:w-auto`} href={sira.whatsapp} target="_blank" rel="noopener noreferrer"
+            onClick={() => onGonder(sira.student_id)}>WhatsApp&apos;ta aç ve gönderildi say</a>
+        </>
+      ) : (
+        <p className="text-sm text-green-700 dark:text-green-400">Bu haftanın bütün mesajları gönderildi ✓</p>
+      )}
+    </section>
+  )
+}
+
 export default function BultenIstemci({ hafta, gruplar, ogrenciler, gonderilenler }: { hafta: string; gruplar: Grup[]; ogrenciler: Ogr[]; gonderilenler: string[] }) {
   // işaret sunucuda (bulten_gonderimleri): idare ana sayfası mentör başına ilerlemeyi buradan görür
   const [gonderildi, setGonderildi] = useState<Record<string, boolean>>(() => Object.fromEntries(gonderilenler.map(id => [id, true])))
@@ -122,6 +147,8 @@ export default function BultenIstemci({ hafta, gruplar, ogrenciler, gonderilenle
           </div>
         ))}
       </section>
+
+      <SiraylaGonder ogrenciler={ogrenciler} gonderildi={gonderildi} onGonder={gonderdi} />
 
       <section aria-labelledby="veli-baslik">
         <h2 id="veli-baslik" className="text-base font-bold text-gray-900 dark:text-slate-100 mb-1">Velilere kişisel mesaj</h2>

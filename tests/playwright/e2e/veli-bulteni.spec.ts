@@ -57,6 +57,39 @@ test.describe('Haftalık veli bülteni', () => {
     await expect(page).toHaveURL(/\/mentorluk$/, { timeout: 10_000 })
   })
 
+  test('Sırayla gönder: sıradaki veliye wa.me açılır, gönderildi sayılır ve sıra ilerler', async ({ page, context }) => {
+    await page.goto('/mentorluk')
+    await page.getByRole('button', { name: '+ Öğrenci ekle' }).click()
+    const ilk = page.locator('ul button').first()
+    await expect(ilk).toBeVisible()
+    const ad = (await ilk.locator('span').first().textContent())?.trim() ?? ''
+    await ilk.click()
+    await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toBeVisible({ timeout: 10_000 })
+
+    await page.goto('/mentorluk/bulten')
+    await page.waitForLoadState('networkidle')
+    const kart = page.locator('section', { has: page.getByRole('heading', { name: 'Sırayla gönder' }) })
+    const sirada = (await kart.getByText(/^Sıradaki:/).textContent())!.replace('Sıradaki:', '').split('·')[0].trim()
+    const dugme = kart.getByRole('link', { name: /WhatsApp.ta aç ve gönderildi say/ })
+    expect(await dugme.getAttribute('href')).toMatch(/^https:\/\/wa\.me\/\d*\?text=/)
+    const [sekme] = await Promise.all([context.waitForEvent('page'), dugme.click()])
+    await sekme.close()
+    const satir = page.locator('details', { hasText: sirada })
+    await expect(satir.getByText('✓ Gönderildi')).toBeVisible()
+    await expect(kart.getByText(`Sıradaki: ${sirada}`)).toHaveCount(0)
+
+    // Temizlik: işareti kaldır, öğrenciyi mentörlükten çıkar
+    await page.waitForLoadState('networkidle')
+    await satir.locator('summary').click()
+    await satir.getByLabel('Gönderildi').uncheck()
+    await page.waitForLoadState('networkidle')
+    await page.goto('/mentorluk')
+    await page.locator('table').getByRole('link', { name: new RegExp(ad) }).click()
+    await page.getByRole('button', { name: 'Listeden çıkar' }).click()
+    await page.getByRole('button', { name: 'Çıkar' }).click()
+    await expect(page).toHaveURL(/\/mentorluk$/, { timeout: 10_000 })
+  })
+
   test('başka öğretmenin öğrencisinin görseli 403', async ({ page }) => {
     const r = await page.request.get('/api/bulten/gorsel?tur=ogrenci&hafta=2026-10-12&ogrenci=00000000-0000-4000-8000-000000000000')
     expect(r.status()).toBe(403)
