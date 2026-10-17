@@ -71,7 +71,6 @@ export const aylikBultenFn = inngest.createFunction(
           db.rpc('get_class_attendance_rates', { p_school_id: sid, p_start: monthStart, p_end: monthEnd }),
           // Sayım DB'de: satır çekip JS'te saymak max_rows=1000'de sessizce keserdi
           db.from('homework_submissions').select('id', { count: 'exact', head: true }).eq('school_id', sid).not('marked_at', 'is', null).eq('status', 'yapildi').gte('updated_at', monthStart).lte('updated_at', monthEnd + 'T23:59:59'),
-          db.from('school_meetings').select('id').eq('school_id', sid).gte('meeting_date', monthStart).lte('meeting_date', monthEnd),
         ] as const)
         // Bir sorgu bile hata verirse müdüre "0 öğrenci, 0 ödev" bülteni gitmesin
         const hata = sonuclar.find(r => r.error)?.error
@@ -82,7 +81,6 @@ export const aylikBultenFn = inngest.createFunction(
           { data: classes },
           { data: attendanceRates },
           { count: completedCount },
-          { data: meetings },
         ] = sonuclar
 
         // Tamamlanan ödev sayısı
@@ -106,12 +104,11 @@ export const aylikBultenFn = inngest.createFunction(
           completedHomeworks,
           bestClass,
           bestRate:           bestRate >= 0 ? Math.round(bestRate * 100) : null,
-          meetingCount:       meetings?.length ?? 0,
         }
       })
 
       await step.run(`send-${mudur.school_id}`, async () => {
-        const { studentCount, teacherCount, completedHomeworks, bestClass, bestRate, meetingCount } = stats
+        const { studentCount, teacherCount, completedHomeworks, bestClass, bestRate } = stats
 
         await mailer.sendMail({
           to:      mudurEmail,
@@ -131,10 +128,6 @@ export const aylikBultenFn = inngest.createFunction(
       <div style="background:#f0f9ff;border-radius:10px;padding:16px">
         <p style="font-size:28px;font-weight:700;color:#0369a1;margin:0">${completedHomeworks}</p>
         <p style="font-size:12px;color:#0284c7;margin:4px 0 0">tamamlanan ödev</p>
-      </div>
-      <div style="background:#f0fdf4;border-radius:10px;padding:16px">
-        <p style="font-size:28px;font-weight:700;color:#15803d;margin:0">${meetingCount}</p>
-        <p style="font-size:12px;color:#16a34a;margin:4px 0 0">okul toplantısı</p>
       </div>
       <div style="background:#faf5ff;border-radius:10px;padding:16px">
         <p style="font-size:28px;font-weight:700;color:#7e22ce;margin:0">${studentCount}</p>
