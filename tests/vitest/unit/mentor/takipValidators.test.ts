@@ -19,6 +19,12 @@ describe('kaydetSchema', () => {
       expect(kaydetSchema.safeParse(v).success).toBe(false)
     }
   })
+  it('görevde kitap + sayfa aralığı geçerli; ters aralık reddedilir', () => {
+    const v = gecerli(); v.icerik.gorevler[1] = { ...v.icerik.gorevler[1], kitapId: '22222222-2222-4222-8222-222222222222', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 60 }
+    expect(kaydetSchema.safeParse(v).success).toBe(true)
+    v.icerik.gorevler[1] = { ...v.icerik.gorevler[1], sayfaBas: 60, sayfaSon: 45 }
+    expect(kaydetSchema.safeParse(v).success).toBe(false)
+  })
   it('pazartesi olmayan hafta reddedilir', () => expect(kaydetSchema.safeParse({ ...gecerli(), hafta: '2026-10-20' }).success).toBe(false))
   it('fazladan özet alanı atılır (istemci özet gönderemez)', () => {
     const r = kaydetSchema.safeParse({ ...gecerli(), ozet: { soru: 9999 } })

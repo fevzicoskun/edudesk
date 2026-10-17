@@ -1,4 +1,4 @@
-import { GUNLER, SEVIYE_ADI, miktarYaz, type HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
+import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, type HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
 import { haftaEtiketi, dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
@@ -26,7 +26,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
       {veri.icerik.duzen && <p className="mb-2"><b>Hafta içi düzen:</b> {veri.icerik.duzen}</p>}
 
       <table aria-label="Program" className="w-full border-collapse mb-2">
-        <thead><tr>{['Gün', 'Görev', 'Süre', 'Konu', 'Sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
+        <thead><tr>{['Gün', 'Görev', 'Süre', 'Konu', 'Kitap / sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
         <tbody>
           {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
             <tr key={g.id} className={`break-inside-avoid ${g.ders === 'Matematik' ? 'font-bold bg-gray-100' : ''}`}>
@@ -34,7 +34,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
               <td className={td}>{g.ad}</td>
               <td className={`${td} whitespace-nowrap`}>{miktarYaz(g, veri.seviye)}</td>
               <td className={td}>{g.konu}</td>
-              <td className={td}>{g.sayfa}</td>
+              <td className={td}>{kitapSayfaYaz(g)}</td>
               <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />
               <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />
               <td className={`${td} w-6`} />

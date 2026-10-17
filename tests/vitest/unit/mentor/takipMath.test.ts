@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
-  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, BOS_GORUSME, type Icerik, type Gorev,
+  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, kitapSayfaYaz, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -137,4 +137,12 @@ describe('haftaBasi / haftaKaydir', async () => {
   it('yıl geçişi: 2027-01-01 (Cuma) → 2026-12-28', () => expect(haftaBasi('2027-01-01')).toBe('2026-12-28'))
   it('+1 hafta', () => expect(haftaKaydir('2026-09-07', 1)).toBe('2026-09-14'))
   it('-1 hafta yıl geçişi', () => expect(haftaKaydir('2027-01-04', -1)).toBe('2026-12-28'))
+})
+
+describe('kitapSayfaYaz (görev satırı, 2026-10-17)', () => {
+  it('kitap + sayfa aralığı', () => expect(kitapSayfaYaz(g({ kitapId: 'k', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 60 }))).toBe('Acil Mat s. 45–60'))
+  it('tek sayfa', () => expect(kitapSayfaYaz(g({ kitapId: 'k', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 45 }))).toBe('Acil Mat s. 45'))
+  it('sayfasız kitap', () => expect(kitapSayfaYaz(g({ kitapId: 'k', kitapAdi: 'Acil Mat' }))).toBe('Acil Mat'))
+  it('kitapsız görevde eski serbest sayfa metni', () => expect(kitapSayfaYaz(g({ sayfa: 's. 12' }))).toBe('s. 12'))
+  it('eski kayıt (alan yok) boş', () => expect(kitapSayfaYaz(g())).toBe(''))
 })

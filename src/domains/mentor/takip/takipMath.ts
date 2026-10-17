@@ -9,6 +9,8 @@ export type Birim = 'dk' | 'soru' | 'serbest'
 export type Gorev = {
   id: string; gun: number; ad: string; ders: string | null; miktar: number | null; birim: Birim; soruSatiri: boolean
   konu: string; sayfa: string; yapti: boolean; soru: number | null; dogru: number | null
+  /** Bağlı kitap (2026-10-17). Ad saklanır: kitap silinse de eski haftada görünür. Eski kayıtlarda alan yok. */
+  kitapId?: string | null; kitapAdi?: string; sayfaBas?: number | null; sayfaSon?: number | null
 }
 /** kitapAdi saklanır: kitap silinse de eski haftada adı görünür. */
 export type MentorOdevi = { id: string; kitapId: string | null; kitapAdi: string; konu: string; sayfalar: string; yapti: boolean }
@@ -47,6 +49,14 @@ export function miktarYaz(g: Pick<Gorev, 'miktar' | 'birim'>, seviye: Seviye): s
   if (g.miktar === null || g.birim === 'serbest') return ''
   const m = seviyeMiktar(g.miktar, seviye)
   return g.birim === 'dk' ? sureYaz(m) : `${m} soru`
+}
+
+/** Görev satırının kitap/sayfa metni (plan + kâğıt). Kitapsız görevde eski serbest `sayfa` metni. */
+export function kitapSayfaYaz(g: Gorev): string {
+  if (!g.kitapId) return g.sayfa
+  const bas = g.sayfaBas ?? null, son = g.sayfaSon ?? null
+  const s = bas === null ? '' : son === null || son === bas ? ` s. ${bas}` : ` s. ${bas}–${son}`
+  return `${g.kitapAdi ?? ''}${s}`
 }
 
 export function varsayilanHedef(sinif: number, seviye: Seviye): number {
