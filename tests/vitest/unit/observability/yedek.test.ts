@@ -16,8 +16,8 @@ describe('YEDEKLENEN_TABLOLAR', () => {
     }
   })
 
-  it('yeni tablolar kapsamda: bülten gönderimi, toplantılar, işaret geçmişi', () => {
-    for (const t of ['bulten_gonderimleri', 'school_meetings', 'homework_submission_logs', 'veli_tokens']) {
+  it('yeni tablolar kapsamda: bülten gönderimi, işaret geçmişi', () => {
+    for (const t of ['bulten_gonderimleri', 'homework_submission_logs', 'veli_tokens']) {
       expect(YEDEKLENEN_TABLOLAR).toContain(t)
     }
   })
@@ -28,7 +28,8 @@ describe('YEDEKLENEN_TABLOLAR', () => {
     }
     for (const t of ['study_plan_items', 'student_sources']) expect(YEDEKLENEN_TABLOLAR).not.toContain(t)
     // 2026-10-17 kaldırılanlar (tablolar DROP edildi → yedek listede kalırsa haftalık yedek hata verir)
-    for (const t of ['parent_meetings', 'parent_contact_logs', 'grade_entries', 'grade_columns', 'mentor_profiles']) {
+    for (const t of ['parent_meetings', 'parent_contact_logs', 'grade_entries', 'grade_columns', 'mentor_profiles',
+                     'announcements', 'announcement_reads', 'school_meetings', 'school_events']) {
       expect(YEDEKLENEN_TABLOLAR).not.toContain(t)
     }
   })
@@ -92,5 +93,8 @@ describe('yedekSiralama() — sayfalı okumada satır atlanmasın/tekrarlanması
     expect(yedekSiralama('role_permissions')).toEqual(['role_id', 'permission_id'])
     expect(yedekSiralama('user_permissions')).toEqual(['user_id', 'permission_id'])
     expect(yedekSiralama('ogretmen_dosyasi')).toEqual(['teacher_id', 'academic_year'])
+    // mentör takip (2026-10-16): eksik kalınca iki tablo yedeğe hiç girmiyordu
+    expect(yedekSiralama('ogrenci_konu_durumu')).toEqual(['student_id', 'konu_id'])
+    expect(yedekSiralama('mentor_takip_kullanicilari')).toEqual(['user_id'])
   })
 })

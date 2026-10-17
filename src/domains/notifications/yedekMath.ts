@@ -13,7 +13,7 @@ export const YEDEKLENEN_TABLOLAR = [
   'roles', 'user_roles', 'permissions', 'role_permissions', 'user_permissions',
   // Günlük iş
   'homeworks', 'homework_submissions', 'attendance', 'lesson_schedules',
-  'teacher_duties', 'school_events', 'announcements', 'school_meetings', 'user_notes',
+  'teacher_duties', 'user_notes',
   // işaret geçmişi: yanlış toplu işaretlemede kimin neyi değiştirdiğini geri kurmak için
   'homework_submission_logs',
   'veli_tokens', 'notification_preferences', 'platform_admins',
@@ -40,13 +40,15 @@ const BILESIK_ANAHTAR: Partial<Record<(typeof YEDEKLENEN_TABLOLAR)[number], stri
   ogretmen_dosyasi: ['teacher_id', 'academic_year'],
   bulten_gonderimleri:      ['student_id', 'hafta'],
   notification_preferences: ['user_id'],
+  ogrenci_konu_durumu:        ['student_id', 'konu_id'],
+  mentor_takip_kullanicilari: ['user_id'],
 }
 
 /** Bilinçli olarak yedeğe girmeyen tablolar (yeniden üretilebilir / iz kaydı / geçici).
  *  Yeni tablo ikisinden birine eklenmezse yedek-kapsam entegrasyon testi kırılır. */
 export const YEDEK_DISI_TABLOLAR = [
   'notifications', 'usage_daily', 'student_risk_history', 'audit_logs', 'teacher_activity_log',
-  'app_errors', 'revoked_tokens', 'user_sessions', 'push_subscriptions', 'announcement_reads',
+  'app_errors', 'revoked_tokens', 'user_sessions', 'push_subscriptions',
   'veli_portal_events', 'homework_veli_notifications', 'feedback',
 ] as const
 

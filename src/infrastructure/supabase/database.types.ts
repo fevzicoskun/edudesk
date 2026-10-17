@@ -14,77 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      announcement_reads: {
-        Row: {
-          announcement_id: string
-          id: string
-          read_at: string | null
-          user_id: string
-        }
-        Insert: {
-          announcement_id: string
-          id?: string
-          read_at?: string | null
-          user_id: string
-        }
-        Update: {
-          announcement_id?: string
-          id?: string
-          read_at?: string | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "announcement_reads_announcement_id_fkey"
-            columns: ["announcement_id"]
-            isOneToOne: false
-            referencedRelation: "announcements"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      announcements: {
-        Row: {
-          created_at: string | null
-          created_by: string
-          id: string
-          message: string
-          school_id: string
-          target_roles: string[]
-        }
-        Insert: {
-          created_at?: string | null
-          created_by: string
-          id?: string
-          message: string
-          school_id: string
-          target_roles: string[]
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string
-          id?: string
-          message?: string
-          school_id?: string
-          target_roles?: string[]
-        }
-        Relationships: [
-          {
-            foreignKeyName: "announcements_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "schools"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "announcements_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "tenant_metrics"
-            referencedColumns: ["school_id"]
-          },
-        ]
-      }
       annual_plans: {
         Row: {
           academic_year: string
@@ -2209,129 +2138,6 @@ export type Database = {
           },
         ]
       }
-      school_events: {
-        Row: {
-          created_at: string
-          created_by: string
-          deleted_at: string | null
-          deleted_by: string | null
-          event_date: string
-          id: string
-          note: string | null
-          school_id: string
-          title: string
-        }
-        Insert: {
-          created_at?: string
-          created_by: string
-          deleted_at?: string | null
-          deleted_by?: string | null
-          event_date: string
-          id?: string
-          note?: string | null
-          school_id: string
-          title: string
-        }
-        Update: {
-          created_at?: string
-          created_by?: string
-          deleted_at?: string | null
-          deleted_by?: string | null
-          event_date?: string
-          id?: string
-          note?: string | null
-          school_id?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "school_events_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_events_deleted_by_fkey"
-            columns: ["deleted_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_events_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "schools"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_events_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "tenant_metrics"
-            referencedColumns: ["school_id"]
-          },
-        ]
-      }
-      school_meetings: {
-        Row: {
-          attendees: string | null
-          created_at: string
-          created_by: string
-          id: string
-          meeting_date: string
-          meeting_type: string
-          notes: string | null
-          school_id: string
-          title: string
-        }
-        Insert: {
-          attendees?: string | null
-          created_at?: string
-          created_by: string
-          id?: string
-          meeting_date: string
-          meeting_type?: string
-          notes?: string | null
-          school_id: string
-          title: string
-        }
-        Update: {
-          attendees?: string | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          meeting_date?: string
-          meeting_type?: string
-          notes?: string | null
-          school_id?: string
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "school_meetings_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_meetings_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "schools"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "school_meetings_school_id_fkey"
-            columns: ["school_id"]
-            isOneToOne: false
-            referencedRelation: "tenant_metrics"
-            referencedColumns: ["school_id"]
-          },
-        ]
-      }
       school_payments: {
         Row: {
           amount_kurus: number
@@ -3695,16 +3501,6 @@ export type Database = {
           total_homeworks: number
         }[]
       }
-      get_first_unread_announcement: {
-        Args: { p_school_id: string; p_user_id: string; p_user_role: string }
-        Returns: Database["public"]["CompositeTypes"]["unread_announcement_row"][]
-        SetofOptions: {
-          from: "*"
-          to: "unread_announcement_row"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
       get_school_absence_scores: {
         Args: { p_school_id: string; p_year_start: string }
         Returns: {
@@ -3835,15 +3631,6 @@ export type Database = {
       [_ in never]: never
     }
     CompositeTypes: {
-      unread_announcement_row: {
-        id: string | null
-        school_id: string | null
-        message: string | null
-        created_by: string | null
-        sender_name: string | null
-        target_roles: string[] | null
-        created_at: string | null
-      }
     }
   }
 }
