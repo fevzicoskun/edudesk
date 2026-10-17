@@ -21,6 +21,12 @@ export const icerikSchema = z.object({
     id: z.string().min(1).max(64), kitapId: UUID.nullable(), kitapAdi: metin(120).min(1), konu: metin(120), sayfalar: metin(60), yapti: z.boolean(),
   })).max(40),
   okuma: z.object({ kitap: metin(150).min(1), sayfa: sayi.nullable(), bitti: z.boolean() }).nullable(),
+  sonuclar: z.array(z.object({
+    anahtar: z.string().min(3).max(200), ad: metin(150), ders: metin(60), sayfa: metin(60),
+    cozulen: sayi.nullable(), dogru: sayi.nullable(), yanlis: sayi.nullable(), bos: sayi.nullable(),
+  }).refine(s => s.dogru === null || (s.cozulen !== null && s.dogru <= s.cozulen), {
+    message: 'Doğru sayısı çözülen soru sayısından büyük olamaz', path: ['dogru'],
+  })).max(60).optional(),
 })
 
 export const gorusmeSchema = z.object({ iyi: metin(1000), zor: metin(1000), hedef: metin(300), odak: metin(1000), evde: metin(1000) })

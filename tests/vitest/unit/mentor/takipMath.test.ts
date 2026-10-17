@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
-  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, kitapSayfaYaz, BOS_GORUSME, type Icerik, type Gorev,
+  yeniHafta, okulOdevleri, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
+  BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -145,4 +146,64 @@ describe('kitapSayfaYaz (görev satırı, 2026-10-17)', () => {
   it('sayfasız kitap', () => expect(kitapSayfaYaz(g({ kitapId: 'k', kitapAdi: 'Acil Mat' }))).toBe('Acil Mat'))
   it('kitapsız görevde eski serbest sayfa metni', () => expect(kitapSayfaYaz(g({ sayfa: 's. 12' }))).toBe('s. 12'))
   it('eski kayıt (alan yok) boş', () => expect(kitapSayfaYaz(g())).toBe(''))
+})
+
+describe('soru sonuçları: kitap/ders başına tek satır (2026-10-17)', () => {
+  const kitaplar = [{ id: 'k1', ders: 'Matematik' }, { id: 'k2', ders: '' }]
+  const plan = icerik({ gorevler: [
+    g({ id: 'a', soruSatiri: true, ders: 'Matematik', kitapId: 'k1', kitapAdi: 'Acil Mat', sayfaBas: 45, sayfaSon: 50 }),
+    g({ id: 'b', soruSatiri: true, ders: 'Matematik', kitapId: 'k1', kitapAdi: 'Acil Mat', sayfaBas: 51, sayfaSon: 60 }),
+    g({ id: 'c', soruSatiri: true, ders: 'Türkçe', ad: 'Paragraf' }),
+    g({ id: 'd', soruSatiri: true, ders: 'Türkçe', ad: 'Paragraf' }),
+    g({ id: 'e', soruSatiri: true, ders: null, ad: 'TYT denemesi' }),
+    g({ id: 'f', soruSatiri: true, ders: 'Fizik', kitapId: 'k2', kitapAdi: 'Fizik SB' }),
+    g({ id: 'x', soruSatiri: false, ders: 'Matematik', kitapId: 'k1', kitapAdi: 'Acil Mat', sayfaBas: 1, sayfaSon: 99 }),
+  ] })
+
+  it('kitap başına bir satır (sayfa aralığı birleşir), kitapsız soru görevleri derse göre; soru satırı olmayan görev girmez', () => {
+    expect(sonucSatirlari(plan, kitaplar).map(s => [s.anahtar, s.ad, s.ders, s.sayfa])).toEqual([
+      ['k:k1', 'Acil Mat', 'Matematik', 's. 45–60'],
+      ['d:Türkçe', 'Türkçe', 'Türkçe', ''],
+      ['d:TYT denemesi', 'TYT denemesi', 'Diğer', ''],
+      ['k:k2', 'Fizik SB', 'Fizik', ''],
+    ])
+  })
+  it('girilmiş sayılar anahtarla eşleşir; plandan çıkan satırın girilmiş sonucu kaybolmaz', () => {
+    const s = sonucSatirlari({ ...plan, sonuclar: [
+      { anahtar: 'k:k1', ad: 'Acil Mat', ders: 'Matematik', sayfa: 's. 45–60', cozulen: 40, dogru: 30, yanlis: 8, bos: 2 },
+      { anahtar: 'k:eski', ad: 'Eski kitap', ders: 'Kimya', sayfa: '', cozulen: 10, dogru: 5, yanlis: 5, bos: 0 },
+    ] }, kitaplar)
+    expect(s[0]).toMatchObject({ cozulen: 40, dogru: 30, yanlis: 8, bos: 2 })
+    expect(s[1]).toMatchObject({ cozulen: null, dogru: null })
+    expect(s.at(-1)).toMatchObject({ anahtar: 'k:eski', cozulen: 10 })
+  })
+  it('net = D − Y/4, doğruluk = D/Ç; boş satırda null', () => {
+    expect(sonucNet({ dogru: 30, yanlis: 8 })).toBe(28)
+    expect(sonucNet({ dogru: null, yanlis: null })).toBeNull()
+    expect(sonucDogruluk({ cozulen: 40, dogru: 30 })).toBe(75)
+    expect(sonucDogruluk({ cozulen: 0, dogru: 0 })).toBeNull()
+  })
+  it('D+Y+B Çözülen\'i geçerse uyarı', () => {
+    expect(sonucUyarisi({ cozulen: 40, dogru: 30, yanlis: 8, bos: 2 })).toBeNull()
+    expect(sonucUyarisi({ cozulen: 40, dogru: 30, yanlis: 9, bos: 2 })).toMatch(/41/)
+  })
+  it('özet soru/doğru sonuç satırlarından (eski görev bazlı girişlerle toplanır); sonuç girilince işlendi', () => {
+    const o = ozetHesapla({ ...plan, sonuclar: [
+      { anahtar: 'k:k1', ad: 'Acil Mat', ders: 'Matematik', sayfa: '', cozulen: 40, dogru: 30, yanlis: 8, bos: 2 },
+      { anahtar: 'd:Türkçe', ad: 'Türkçe', ders: 'Türkçe', sayfa: '', cozulen: 20, dogru: 18, yanlis: null, bos: null },
+    ] })
+    expect(o).toMatchObject({ soru: 60, dogru: 48, islendi: true })
+  })
+  it('ders bazında doğruluk', () => {
+    expect(dersDogruluk([
+      { anahtar: 'k:k1', ad: 'A', ders: 'Matematik', sayfa: '', cozulen: 40, dogru: 30, yanlis: null, bos: null },
+      { anahtar: 'k:k3', ad: 'B', ders: 'Matematik', sayfa: '', cozulen: 60, dogru: 40, yanlis: null, bos: null },
+      { anahtar: 'd:Türkçe', ad: 'Türkçe', ders: 'Türkçe', sayfa: '', cozulen: 20, dogru: 18, yanlis: null, bos: null },
+      { anahtar: 'd:Fizik', ad: 'Fizik', ders: 'Fizik', sayfa: '', cozulen: null, dogru: null, yanlis: null, bos: null },
+    ])).toEqual([{ ders: 'Matematik', cozulen: 100, dogru: 70, yuzde: 70 }, { ders: 'Türkçe', cozulen: 20, dogru: 18, yuzde: 90 }])
+  })
+  it('yeni hafta sonuçları taşımaz', () => {
+    const h = yeniHafta({ seviye: 1, soruHedefi: 200, icerik: { ...plan, sonuclar: [{ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: '', cozulen: 1, dogru: 1, yanlis: 0, bos: 0 }] }, gorusme: BOS_GORUSME }, 9)
+    expect(h.icerik.sonuclar ?? []).toEqual([])
+  })
 })

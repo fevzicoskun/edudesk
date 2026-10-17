@@ -15,7 +15,14 @@ export type Gorev = {
 /** kitapAdi saklanır: kitap silinse de eski haftada adı görünür. */
 export type MentorOdevi = { id: string; kitapId: string | null; kitapAdi: string; konu: string; sayfalar: string; yapti: boolean }
 export type Okuma = { kitap: string; sayfa: number | null; bitti: boolean }
-export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null }
+/** Soru sonucu: haftanın planındaki kitap (k:<id>) ya da kitapsız soru görevinin dersi (d:<ders>) başına tek satır.
+ *  Ad/ders/sayfa girildiği an saklanır: plan ya da kitap sonradan değişse de sonuç anlamını korur. */
+export type Sonuc = {
+  anahtar: string; ad: string; ders: string; sayfa: string
+  cozulen: number | null; dogru: number | null; yanlis: number | null; bos: number | null
+}
+/** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
+export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[] }
 export type Gorusme = { iyi: string; zor: string; hedef: string; odak: string; evde: string }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
 export type HaftaVerisi = { seviye: Seviye; soruHedefi: number; icerik: Icerik; gorusme: Gorusme }
@@ -64,16 +71,67 @@ export function varsayilanHedef(sinif: number, seviye: Seviye): number {
 }
 
 export function ozetHesapla(icerik: Icerik): Ozet {
+  // Görev bazlı soru/doğru eski giriş biçimi (2026-10-17 öncesi); yeni giriş sonuclar'da. İkisi toplanır.
   const soruSat = icerik.gorevler.filter(g => g.soruSatiri)
-  const soru = soruSat.reduce((t, g) => t + (g.soru ?? 0), 0)
-  const dogru = soruSat.reduce((t, g) => t + (g.dogru ?? 0), 0)
+  const sonuclar = icerik.sonuclar ?? []
+  const soru = soruSat.reduce((t, g) => t + (g.soru ?? 0), 0) + sonuclar.reduce((t, s) => t + (s.cozulen ?? 0), 0)
+  const dogru = soruSat.reduce((t, g) => t + (g.dogru ?? 0), 0) + sonuclar.reduce((t, s) => t + (s.dogru ?? 0), 0)
   const okuma_sayfa = icerik.okuma?.sayfa ?? 0
   const yapilan = icerik.gorevler.filter(g => g.yapti).length + icerik.mentorOdevleri.filter(m => m.yapti).length
-  const islendi = yapilan > 0 || soruSat.some(g => g.soru !== null) || okuma_sayfa > 0 || !!icerik.okuma?.bitti
+  const islendi = yapilan > 0 || soruSat.some(g => g.soru !== null) || sonuclar.some(s => s.cozulen !== null)
+    || okuma_sayfa > 0 || !!icerik.okuma?.bitti
   return {
     gorev_toplam: icerik.gorevler.length + icerik.mentorOdevleri.length, gorev_yapilan: yapilan,
     soru, dogru, okuma_sayfa, islendi,
   }
+}
+
+/** Haftanın sonuç satırları: plandaki soru görevlerinden (ilk görünüş sırası), girilmiş sayılar anahtarla eşleşir.
+ *  Planda artık olmayan ama sonucu girilmiş satır sonda kalır (veri kaybolmasın). */
+export function sonucSatirlari(icerik: Icerik, kitaplar: { id: string; ders: string }[]): Sonuc[] {
+  const kitapDersi = new Map(kitaplar.map(k => [k.id, k.ders]))
+  const satirlar = new Map<string, Sonuc & { bas: number | null; son: number | null }>()
+  for (const g of icerik.gorevler.filter(x => x.soruSatiri).sort((a, b) => a.gun - b.gun)) {
+    const anahtar = g.kitapId ? `k:${g.kitapId}` : `d:${g.ders ?? g.ad}`
+    const s = satirlar.get(anahtar) ?? {
+      anahtar, ad: g.kitapId ? g.kitapAdi ?? '' : g.ders ?? g.ad,
+      ders: (g.kitapId && kitapDersi.get(g.kitapId)) || g.ders || 'Diğer',
+      sayfa: '', cozulen: null, dogru: null, yanlis: null, bos: null, bas: null, son: null,
+    }
+    if (g.kitapId && g.sayfaBas != null) s.bas = s.bas === null ? g.sayfaBas : Math.min(s.bas, g.sayfaBas)
+    const son = g.sayfaSon ?? g.sayfaBas
+    if (g.kitapId && son != null) s.son = s.son === null ? son : Math.max(s.son, son)
+    satirlar.set(anahtar, s)
+  }
+  const kayitli = new Map((icerik.sonuclar ?? []).map(s => [s.anahtar, s]))
+  const planli = [...satirlar.values()].map(({ bas, son, ...s }) => {
+    const sayfa = bas === null ? '' : son === null || son === bas ? `s. ${bas}` : `s. ${bas}–${son}`
+    const k = kayitli.get(s.anahtar)
+    return { ...s, sayfa, ...(k && { cozulen: k.cozulen, dogru: k.dogru, yanlis: k.yanlis, bos: k.bos }) }
+  })
+  const yetim = (icerik.sonuclar ?? []).filter(s => !satirlar.has(s.anahtar) && [s.cozulen, s.dogru, s.yanlis, s.bos].some(x => x !== null))
+  return [...planli, ...yetim]
+}
+
+export const sonucNet = (s: Pick<Sonuc, 'dogru' | 'yanlis'>) =>
+  s.dogru === null && s.yanlis === null ? null : (s.dogru ?? 0) - (s.yanlis ?? 0) / 4
+export const sonucDogruluk = (s: Pick<Sonuc, 'cozulen' | 'dogru'>) =>
+  s.cozulen ? Math.round(((s.dogru ?? 0) / s.cozulen) * 100) : null
+export function sonucUyarisi(s: Pick<Sonuc, 'cozulen' | 'dogru' | 'yanlis' | 'bos'>): string | null {
+  const t = (s.dogru ?? 0) + (s.yanlis ?? 0) + (s.bos ?? 0)
+  return s.cozulen !== null && t > s.cozulen ? `Doğru+Yanlış+Boş = ${t}, çözülen ${s.cozulen}` : null
+}
+
+/** Ders bazında doğruluk (çözülen girilmiş satırlar; ilk görünüş sırası). */
+export function dersDogruluk(sonuclar: Sonuc[]) {
+  const m = new Map<string, { ders: string; cozulen: number; dogru: number }>()
+  for (const s of sonuclar) {
+    if (!s.cozulen) continue
+    const x = m.get(s.ders) ?? { ders: s.ders, cozulen: 0, dogru: 0 }
+    x.cozulen += s.cozulen; x.dogru += s.dogru ?? 0
+    m.set(s.ders, x)
+  }
+  return [...m.values()].map(x => ({ ...x, yuzde: Math.round((x.dogru / x.cozulen) * 100) }))
 }
 
 export const programYuzde = (o: Pick<Ozet, 'gorev_toplam' | 'gorev_yapilan'>) =>

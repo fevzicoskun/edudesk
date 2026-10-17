@@ -7,7 +7,7 @@ import { TakipRepository as R } from '../repositories/TakipRepository'
 import { kaydetSchema } from '../validators/takip'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, ozetHesapla, okulOdevleri, BOS_GORUSME,
+  yeniHafta, ozetHesapla, okulOdevleri, dersDogruluk, BOS_GORUSME,
   type HaftaVerisi, type Icerik, type Gorusme, type Ozet, type Seviye, type OkulOdevi, type Okuma,
 } from '../takip/takipMath'
 
@@ -23,7 +23,7 @@ export type SayfaVerisi = {
   /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
   konuDurumu: Record<string, number>
   /** yalnız Öğrenci dosyası sekmesinde dolu (gecmis: true) */
-  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null }[]
+  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk> }[]
   mentorAdi: string
   okulAdi: string
 }
@@ -88,6 +88,7 @@ export const TakipService = {
       konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
       gecmis: gecmisSat.map(r => ({
         hafta: r.hafta_basi, seviye: r.seviye as Seviye, okuma: (r.icerik as unknown as Icerik).okuma,
+        dersler: dersDogruluk((r.icerik as unknown as Icerik).sonuclar ?? []),
         ozet: { gorev_toplam: r.gorev_toplam, gorev_yapilan: r.gorev_yapilan, soru: r.soru, dogru: r.dogru, okuma_sayfa: r.okuma_sayfa, islendi: r.islendi },
       })),
       mentorAdi: profile?.full_name ?? '',

@@ -124,20 +124,33 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
   await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').nth(1)).toContainText('E2E Acil Mat s. 45–60')
 })
-test('sonuç: kâğıttan işleme → yenile → yerinde; doğru>soru girilemez', async ({ page }) => {
+test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç girilemez; yenilemede kalır', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
-  const satir = page.getByRole('row', { name: /Matematik soru bankası/ }).first()
-  await satir.getByRole('checkbox', { name: 'Yaptı' }).check()
-  await satir.getByLabel('Soru').fill('40')
+  await page.getByRole('button', { name: 'Tümü yapıldı' }).click()
+  await expect(page.getByRole('region', { name: 'Görevler' }).getByRole('checkbox', { name: 'Yaptı', checked: false })).toHaveCount(0)
+  // Görev satırlarında soru/doğru kutusu artık yok (2026-10-17)
+  await expect(page.getByRole('region', { name: 'Görevler' }).getByLabel('Doğru')).toHaveCount(0)
+  const satir = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'Matematik', exact: true })
+  await satir.getByLabel('Çözülen').fill('40')
   await satir.getByLabel('Doğru').fill('50')
-  await expect(satir.getByLabel('Doğru')).toHaveValue('40') // sorudan büyük girilemez
+  await expect(satir.getByLabel('Doğru')).toHaveValue('40') // çözülenden büyük girilemez
   await satir.getByLabel('Doğru').fill('30')
+  await satir.getByLabel('Yanlış').fill('9')
+  await satir.getByLabel('Boş').fill('2')
+  await expect(satir.getByRole('alert')).toContainText('41') // D+Y+B > Ç uyarısı
+  await satir.getByLabel('Yanlış').fill('8')
+  await expect(satir.getByRole('alert')).toHaveCount(0)
+  await expect(satir).toContainText('28') // net = 30 − 8/4
+  await expect(satir).toContainText('%75')
   await kaydedildi(page)
   await page.reload()
-  await expect(page.getByRole('row', { name: /Matematik soru bankası/ }).first().getByLabel('Soru')).toHaveValue('40')
-  await expect(page.getByText('Doğruluk').locator('..')).toContainText('%75')
-  const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi').eq('student_id', ogrId).single()
-  expect(data).toEqual({ soru: 40, dogru: 30, islendi: true })
+  const yeni = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'Matematik', exact: true })
+  await expect(yeni.getByLabel('Yanlış')).toHaveValue('8')
+  await expect(page.getByRole('region', { name: 'Özet' }).getByText('Doğruluk', { exact: true }).locator('..')).toContainText('%75')
+  await expect(page.getByLabel('Ders bazında doğruluk')).toContainText('Matematik %75')
+  const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi, gorev_yapilan, gorev_toplam').eq('student_id', ogrId).single()
+  expect(data).toMatchObject({ soru: 40, dogru: 30, islendi: true })
+  expect(data!.gorev_yapilan).toBe(data!.gorev_toplam - 1) // mentör ödevi (önceki test) hariç tüm görevler
 })
 
 test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {

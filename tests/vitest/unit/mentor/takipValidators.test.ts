@@ -25,6 +25,14 @@ describe('kaydetSchema', () => {
     v.icerik.gorevler[1] = { ...v.icerik.gorevler[1], sayfaBas: 60, sayfaSon: 45 }
     expect(kaydetSchema.safeParse(v).success).toBe(false)
   })
+  it("sonuç satırı: D ≤ Ç zorunlu, Ç'siz doğru reddedilir; D+Y+B > Ç yalnız uyarı (kabul)", () => {
+    const satir = (o: object) => ({ anahtar: 'k:x', ad: 'A', ders: 'Matematik', sayfa: '', cozulen: 40, dogru: 30, yanlis: 8, bos: 2, ...o })
+    const v = gecerli()
+    expect(kaydetSchema.safeParse({ ...v, icerik: { ...v.icerik, sonuclar: [satir({})] } }).success).toBe(true)
+    expect(kaydetSchema.safeParse({ ...v, icerik: { ...v.icerik, sonuclar: [satir({ yanlis: 20 })] } }).success).toBe(true)
+    expect(kaydetSchema.safeParse({ ...v, icerik: { ...v.icerik, sonuclar: [satir({ dogru: 41 })] } }).success).toBe(false)
+    expect(kaydetSchema.safeParse({ ...v, icerik: { ...v.icerik, sonuclar: [satir({ cozulen: null })] } }).success).toBe(false)
+  })
   it('pazartesi olmayan hafta reddedilir', () => expect(kaydetSchema.safeParse({ ...gecerli(), hafta: '2026-10-20' }).success).toBe(false))
   it('fazladan özet alanı atılır (istemci özet gönderemez)', () => {
     const r = kaydetSchema.safeParse({ ...gecerli(), ozet: { soru: 9999 } })
