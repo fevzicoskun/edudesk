@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import { createSchoolEvent, deleteSchoolEvent } from '@/app/actions/calendar'
 import type { CalendarEvent, MonthCell } from '@/src/domains/calendar/calendarMath'
 
 const AY_ADLARI = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']
@@ -11,7 +10,6 @@ const GUN_BASLIKLARI = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 // Kategori işaret renkleri (dataviz uyumlu, açık/koyu temada okunur).
 const TYPE_STYLE: Record<CalendarEvent['type'], { dot: string; label: string }> = {
   tatil:    { dot: 'bg-rose-500',    label: 'Tatil' },
-  etkinlik: { dot: 'bg-violet-500',  label: 'Etkinlik' },
   nobet:    { dot: 'bg-amber-500',   label: 'Nöbet' },
   odev:     { dot: 'bg-emerald-500', label: 'Ödev teslimi' },
 }
@@ -21,7 +19,6 @@ interface Props {
   month: number
   cells: MonthCell[]
   days: Record<string, CalendarEvent[]>
-  canManage: boolean
   todayStr: string
   prevHref: string
   nextHref: string
@@ -32,46 +29,15 @@ function formatTR(dateStr: string): string {
   return `${d} ${AY_ADLARI[m - 1]} ${y}`
 }
 
-export default function TakvimClient({ year, month, cells, days, canManage, todayStr, prevHref, nextHref }: Props) {
+export default function TakvimClient({ year, month, cells, days, todayStr, prevHref, nextHref }: Props) {
   const [selected, setSelected] = useState<string | null>(null)
-  const [modalOpen, setModalOpen] = useState(false)
-  const [formError, setFormError] = useState<string | null>(null)
-  const [pending, startTransition] = useTransition()
-
   const selectedEvents = selected ? (days[selected] ?? []) : []
   const eventDates = Object.keys(days).sort()
-
-  function submitEvent(formData: FormData) {
-    setFormError(null)
-    startTransition(async () => {
-      const result = await createSchoolEvent({
-        title: String(formData.get('title') ?? ''),
-        eventDate: String(formData.get('eventDate') ?? ''),
-        note: String(formData.get('note') ?? '') || null,
-      })
-      if (result.error) { setFormError(result.error); return }
-      setModalOpen(false)
-    })
-  }
-
-  function removeEvent(id: string) {
-    startTransition(async () => { await deleteSchoolEvent(id) })
-  }
 
   return (
     <div>
       {/* Başlık + ay gezinme */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Takvim</h1>
-        {canManage && (
-          <button
-            onClick={() => setModalOpen(true)}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
-          >
-            + Etkinlik
-          </button>
-        )}
-      </div>
+      <h1 className="text-2xl font-bold mb-4">Takvim</h1>
 
       <div className="flex items-center gap-3 mb-4">
         <Link href={prevHref} aria-label="Önceki ay" className="p-2 rounded-lg border border-gray-200 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-800">‹</Link>
@@ -141,15 +107,6 @@ export default function TakvimClient({ year, month, cells, days, canManage, toda
                       <span className="font-medium">{e.title}</span>
                       {e.detail && <span className="text-gray-500 dark:text-slate-400"> · {e.detail}</span>}
                     </span>
-                    {canManage && e.type === 'etkinlik' && e.id && (
-                      <button
-                        onClick={() => removeEvent(e.id!)}
-                        disabled={pending}
-                        className="text-xs text-rose-600 dark:text-rose-400 hover:underline"
-                      >
-                        Sil
-                      </button>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -179,9 +136,6 @@ export default function TakvimClient({ year, month, cells, days, canManage, toda
                         <span className="font-medium">{e.title}</span>
                         {e.detail && <span className="text-gray-500 dark:text-slate-400"> · {e.detail}</span>}
                       </span>
-                      {canManage && e.type === 'etkinlik' && e.id && (
-                        <button onClick={() => removeEvent(e.id!)} disabled={pending} className="text-xs text-rose-600 dark:text-rose-400">Sil</button>
-                      )}
                     </li>
                   ))}
                 </ul>
@@ -194,44 +148,10 @@ export default function TakvimClient({ year, month, cells, days, canManage, toda
       {/* Masaüstü boş durum (ızgara altında, olaysız ay) */}
       {eventDates.length === 0 && (
         <p className="hidden md:block text-sm text-gray-500 dark:text-slate-400 mt-4 text-center">
-          Bu ayda takvimde olay yok.{canManage ? ' "+ Etkinlik" ile ekleyebilirsin.' : ''}
+          Bu ayda takvimde olay yok.
         </p>
       )}
 
-      {/* Yeni etkinlik modalı */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-          <div className="w-full max-w-md rounded-xl bg-white dark:bg-slate-900 p-5">
-            <h2 className="text-lg font-semibold mb-4">Yeni Etkinlik</h2>
-            <form action={submitEvent} className="space-y-3">
-              <div>
-                <label htmlFor="ev-title" className="block text-sm font-medium mb-1">Başlık</label>
-                <input id="ev-title" name="title" required maxLength={200}
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-transparent px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label htmlFor="ev-date" className="block text-sm font-medium mb-1">Tarih</label>
-                <input id="ev-date" name="eventDate" type="date" required
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-transparent px-3 py-2 text-sm" />
-              </div>
-              <div>
-                <label htmlFor="ev-note" className="block text-sm font-medium mb-1">Not (isteğe bağlı)</label>
-                <textarea id="ev-note" name="note" rows={2} maxLength={1000}
-                  className="w-full rounded-lg border border-gray-300 dark:border-slate-600 bg-transparent px-3 py-2 text-sm" />
-              </div>
-              {formError && <p className="text-sm text-rose-600 dark:text-rose-400">{formError}</p>}
-              <div className="flex justify-end gap-2 pt-1">
-                <button type="button" onClick={() => setModalOpen(false)}
-                  className="px-3 py-2 rounded-lg text-sm border border-gray-300 dark:border-slate-600">Vazgeç</button>
-                <button type="submit" disabled={pending}
-                  className="px-3 py-2 rounded-lg text-sm bg-blue-600 text-white font-medium hover:bg-blue-700 disabled:opacity-50">
-                  {pending ? 'Kaydediliyor…' : 'Kaydet'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

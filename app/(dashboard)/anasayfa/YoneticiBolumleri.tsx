@@ -47,15 +47,13 @@ export async function BugunBolumu() {
   const [supabase, sid] = await Promise.all([createClient(), requireSchoolId()])
   const bugun = todayLocalISO()
   const gun = todayWeekdayTR()
-  const [odev, nobetler, teslim, etkinlik] = await Promise.all([
+  const [odev, nobetler, teslim] = await Promise.all([
     odevVerisi(sid),
     DutyService.listSchoolDuties(),
     supabase.from('homeworks').select('id', { count: 'exact', head: true })
       .eq('school_id', sid).is('deleted_at', null).eq('is_template', false).eq('due_date', bugun),
-    supabase.from('school_events').select('id, title').eq('school_id', sid).is('deleted_at', null).eq('event_date', bugun),
   ])
   const nobetci = nobetler.filter(n => n.day_of_week === gun).sort((a, b) => a.teacherName.localeCompare(b.teacherName, 'tr'))
-  const etkinlikler = etkinlik.data ?? []
 
   return (
     <Bolum baslik="Bugün">
@@ -81,14 +79,6 @@ export async function BugunBolumu() {
             )}
           <Link href="/nobet" className={`${bag} inline-block mt-1.5`}>Tüm çizelge →</Link>
         </div>
-        {etkinlikler.length > 0 && (
-          <div>
-            <p className={`text-xs font-semibold uppercase tracking-wide mb-1.5 ${soluk}`}>Takvim</p>
-            <ul className="text-sm text-gray-800 dark:text-slate-200 space-y-0.5">
-              {etkinlikler.map(e => <li key={e.id}>• {e.title}</li>)}
-            </ul>
-          </div>
-        )}
       </div>
     </Bolum>
   )

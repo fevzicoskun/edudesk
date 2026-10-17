@@ -18,7 +18,7 @@ export default async function TakvimPage({ searchParams }: { searchParams: Promi
   const today = parseISO(todayLocalISO())
   const { year, month } = parseAyParam(ay, today)
 
-  const { days, canManage } = await CalendarService.getMonth(year, month)
+  const { days } = await CalendarService.getMonth(year, month)
   const cells = buildMonthCells(year, month)
 
   const prev = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 }
@@ -31,7 +31,6 @@ export default async function TakvimPage({ searchParams }: { searchParams: Promi
         month={month}
         cells={cells}
         days={days}
-        canManage={canManage}
         todayStr={toDateStr(today.getFullYear(), today.getMonth() + 1, today.getDate())}
         prevHref={`/takvim?ay=${prev.year}-${String(prev.month).padStart(2, '0')}`}
         nextHref={`/takvim?ay=${next.year}-${String(next.month).padStart(2, '0')}`}

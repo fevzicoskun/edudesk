@@ -26,28 +26,11 @@ test.describe('Takvim — öğretmen', () => {
 test.describe('Takvim — müdür', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'mudur.json') })
 
-  test('etkinlik ekler, takvimde görünür, sonra siler', async ({ page }) => {
+  // Etkinlik ekleme kaldırıldı (2026-10-17, hiç kullanılmadı) — müdür de takvimi yalnız görür
+  test('takvim açılır, etkinlik düğmesi yok', async ({ page }) => {
     await page.goto('/takvim?ay=2026-09')
     await expect(page.getByRole('heading', { name: 'Takvim' })).toBeVisible({ timeout: 10_000 })
-
-    // Hydration yarışı: erken tıklama ölü butona gider — tıkla+doğrula yeniden denenir
-    await expect(async () => {
-      await page.getByRole('button', { name: '+ Etkinlik' }).click()
-      await expect(page.getByRole('heading', { name: 'Yeni Etkinlik' })).toBeVisible({ timeout: 1_000 })
-    }).toPass({ timeout: 15_000 })
-    const title = `E2E Gezi ${Date.now()}`
-    await page.getByLabel('Başlık').fill(title)
-    await page.getByLabel('Tarih').fill('2026-09-15')
-    await page.getByRole('button', { name: 'Kaydet' }).click()
-
-    // Modal kapanır, 15 Eylül hücresine tıkla → panelde etkinlik görünür
-    await expect(page.getByRole('heading', { name: 'Yeni Etkinlik' })).toHaveCount(0, { timeout: 10_000 })
-    await page.getByRole('button', { name: /15 Eylül 2026/ }).click()
-    // Başlık DOM'da iki kez var (masaüstü paneli + gizli mobil ajanda) → görünür olanı doğrula
-    await expect(page.getByText(title).first()).toBeVisible({ timeout: 10_000 })
-
-    // Temizlik: sil (seed kirliliği bırakma) — Sil butonu bu etkinliğin satırına kapsamlı
-    await page.locator('li').filter({ hasText: title }).getByRole('button', { name: 'Sil' }).first().click()
-    await expect(page.getByText(title)).toHaveCount(0, { timeout: 10_000 })
+    await expect(page.getByText('Eylül 2026', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '+ Etkinlik' })).toHaveCount(0)
   })
 })

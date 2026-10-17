@@ -10,7 +10,7 @@ import { expandDutiesRange, groupByDay, toDateStr, type CalendarEvent, type Duty
 import type { FeedScope } from '../feedAccess'
 
 export const CalendarService = {
-  async getMonth(year: number, month: number): Promise<{ days: Record<string, CalendarEvent[]>; canManage: boolean }> {
+  async getMonth(year: number, month: number): Promise<{ days: Record<string, CalendarEvent[]> }> {
     const ability = await requireAbility()
     const profile = await getCurrentProfile()
     const canManage = isMudurOrAbove(profile?.role)
@@ -22,28 +22,27 @@ export const CalendarService = {
     const events = await CalendarService.collectEvents(
       db, { userId: ability.userId, schoolId: ability.schoolId, canManage }, from, to,
     )
-    return { days: groupByDay(events), canManage }
+    return { days: groupByDay(events) }
   },
 
   /**
    * Takvimin TEK birleştirme noktası: /takvim (çerezli RLS client) ve ICS beslemesi (service-role) bunu kullanır.
    * Kapsam `scope`tan gelir ve her sorguya açıkça uygulanır (service-role RLS'i atlar):
-   *   yönetici (müdür/MY) → okul geneli; diğer roller → yalnız kendi nöbet/ödevi. Tatil + etkinlik herkese.
+   *   yönetici (müdür/MY) → okul geneli; diğer roller → yalnız kendi nöbet/ödevi. Tatil herkese.
    * [from, to] dahil, 'YYYY-MM-DD'.
    */
   async collectEvents(db: CalendarDb, scope: FeedScope, from: string, to: string): Promise<CalendarEvent[]> {
     const { userId, schoolId, canManage } = scope
     const ownerId = canManage ? null : userId
 
-    const [dutiesRes, homeworksRes, eventsRes] = await Promise.all([
+    const [dutiesRes, homeworksRes] = await Promise.all([
       canManage
         ? DutyRepository.listSchoolDuties(schoolId, db)
         : DutyRepository.listByTeacher(userId, schoolId, db),
       CalendarRepository.listHomeworks(db, schoolId, from, to, ownerId),
-      CalendarRepository.listEvents(db, schoolId, from, to),
     ])
 
-    for (const [name, res] of [['nobet', dutiesRes], ['odev', homeworksRes], ['etkinlik', eventsRes]] as const) {
+    for (const [name, res] of [['nobet', dutiesRes], ['odev', homeworksRes]] as const) {
       if (res.error) {
         logger.error({ event: 'takvim_source_failed', source: name, userId, err: res.error.message }, 'Takvim kaynağı okunamadı')
       }
@@ -60,9 +59,6 @@ export const CalendarService = {
 
     return [
       ...holidays.map(h => ({ date: h.date, type: 'tatil' as const, title: h.label })),
-      ...(eventsRes.data ?? []).map(e => ({
-        date: e.event_date, type: 'etkinlik' as const, title: e.title, detail: e.note ?? undefined, id: e.id,
-      })),
       ...expandDutiesRange(duties, from, to, holidayDates),
       ...(homeworksRes.data ?? []).flatMap(h =>
         h.due_date
@@ -70,37 +66,5 @@ export const CalendarService = {
           : []
       ),
     ]
-  },
-
-  async createEvent(input: { title: string; eventDate: string; note: string | null }): Promise<{ error?: string; id?: string }> {
-    const ability = await requireAbility()
-    const profile = await getCurrentProfile()
-    if (!isMudurOrAbove(profile?.role)) return { error: 'Bu işlem için yetkiniz yok' }
-
-    const { data, error } = await CalendarRepository.insertEvent({
-      school_id: ability.schoolId,
-      title: input.title,
-      event_date: input.eventDate,
-      note: input.note,
-      created_by: ability.userId,
-    })
-    if (error || !data) {
-      logger.error({ event: 'takvim_event_create_failed', userId: ability.userId, err: error?.message }, 'Etkinlik ekleme hatası')
-      return { error: 'Etkinlik kaydedilemedi' }
-    }
-    return { id: (data as { id: string }).id }
-  },
-
-  async removeEvent(id: string): Promise<{ error?: string }> {
-    const ability = await requireAbility()
-    const profile = await getCurrentProfile()
-    if (!isMudurOrAbove(profile?.role)) return { error: 'Bu işlem için yetkiniz yok' }
-
-    const { error } = await CalendarRepository.softDeleteEvent(id, ability.schoolId, ability.userId)
-    if (error) {
-      logger.error({ event: 'takvim_event_delete_failed', userId: ability.userId, err: error.message }, 'Etkinlik silme hatası')
-      return { error: 'Etkinlik silinemedi' }
-    }
-    return {}
   },
 }

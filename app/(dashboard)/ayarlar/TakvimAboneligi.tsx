@@ -61,7 +61,7 @@ export default function TakvimAboneligi({ initialUrl }: { initialUrl: string | n
           Takvim aboneliği
         </h2>
         <p className="text-xs text-gray-500 dark:text-slate-400 mt-1">
-          Nöbet, veli görüşmesi, ödev teslimi, okul etkinlikleri ve tatilleri telefonunuzun takvimine ekleyin.
+          Nöbet, ödev teslimi ve tatilleri telefonunuzun takvimine ekleyin.
           Son 30 gün ile önümüzdeki 90 gün gösterilir; takvim uygulamanız birkaç saatte bir günceller.
         </p>
       </div>

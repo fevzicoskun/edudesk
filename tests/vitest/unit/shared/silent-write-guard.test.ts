@@ -36,7 +36,6 @@ vi.mock('@/src/shared/authorization/server', () => ({
 const { requireAbility } = await import('@/src/shared/authorization/server')
 const { TaskRepository } = await import('@/src/domains/tasks/repositories/TaskRepository')
 const { DutyRepository } = await import('@/src/domains/schedule/repositories/DutyRepository')
-const { CalendarRepository } = await import('@/src/domains/calendar/repositories/CalendarRepository')
 const { ClassRepository } = await import('@/src/domains/classes/repositories/ClassRepository')
 const { HomeworkSourceRepository } = await import('@/src/domains/homework/repositories/HomeworkSourceRepository')
 const { MentorRepository } = await import('@/src/domains/mentor/repositories/MentorRepository')
@@ -57,7 +56,6 @@ const repoYazmalari: [string, () => Promise<{ error: unknown }>][] = [
   ['TaskRepository.setSnooze',               () => TaskRepository.setSnooze(ID, U, '2026-09-20')],
   ['TaskRepository.deleteById',              () => TaskRepository.deleteById(ID, U)],
   ['DutyRepository.deleteById',              () => DutyRepository.deleteById(ID, U)],
-  ['CalendarRepository.softDeleteEvent',     () => CalendarRepository.softDeleteEvent(ID, S, U)],
   ['ClassRepository.softDeleteStudent',      () => ClassRepository.softDeleteStudent(ID, S, U)],
   ['ClassRepository.restoreStudent',         () => ClassRepository.restoreStudent(ID, S)],
   ['ClassRepository.deleteStudentNote',      () => ClassRepository.deleteStudentNote(ID, U, S)],

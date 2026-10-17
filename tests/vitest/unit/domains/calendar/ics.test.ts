@@ -47,7 +47,7 @@ describe('foldIcsLine', () => {
 describe('buildIcsCalendar', () => {
   const events: CalendarEvent[] = [
     { date: '2026-09-14', type: 'nobet', title: 'Nöbet — Bahçe', detail: '08:00–08:40', id: 'd1', start: '08:00', end: '08:40' },
-    { date: '2026-09-30', type: 'etkinlik', title: 'Gezi, Müze; Ankara', detail: 'Satır1\nSatır2', id: 'e1' },
+    { date: '2026-09-30', type: 'odev', title: 'Gezi, Müze; Ankara', detail: 'Satır1\nSatır2', id: 'e1' },
     { date: '2026-10-29', type: 'tatil', title: 'Cumhuriyet Bayramı' },
   ]
 

@@ -77,11 +77,11 @@ describe('expandDuties', () => {
 })
 
 describe('groupByDay', () => {
-  it('güne gruplar ve gün içinde tatil→etkinlik→nobet→odev sıralar', () => {
+  it('güne gruplar ve gün içinde tatil→nobet→odev sıralar', () => {
     const events: CalendarEvent[] = [
       { date: '2026-07-10', type: 'odev', title: 'Ödev teslimi — Kesirler' },
       { date: '2026-07-10', type: 'tatil', title: 'Tatil' },
-      { date: '2026-07-11', type: 'etkinlik', title: 'Gezi' },
+      { date: '2026-07-11', type: 'odev', title: 'Gezi' },
       { date: '2026-07-10', type: 'nobet', title: 'Nöbet — A Blok' },
     ]
     const grouped = groupByDay(events)

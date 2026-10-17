@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { createClient } from '@/src/infrastructure/supabase/server'
 import { fetchAllResult } from '@/src/shared/utils/fetchAll'
 import type { Database } from '@/src/infrastructure/supabase/database.types'
 
@@ -7,7 +6,6 @@ export type CalendarDb = SupabaseClient<Database>
 
 // Okuma metodları client'ı parametre alır:
 //   /takvim → createClient (kullanıcı oturumu, RLS uygular):
-//     school_events: SELECT okul üyeleri, yazma müdür/MY (20260705120000).
 //   ICS beslemesi → service-role (RLS YOK). Bu yüzden kapsam RLS'e bırakılmaz: her sorgu school_id ile,
 //   yönetici değilse teacherId ile AÇIKÇA filtrelenir (RLS ile aynı sonuç; çerezli yolda savunma katmanı).
 export const CalendarRepository = {
@@ -24,38 +22,5 @@ export const CalendarRepository = {
     if (teacherId) q = q.eq('teacher_id', teacherId)
     q = q.order('id')
     return fetchAllResult((f, t) => q.range(f, t)) // .limit(1000) = max_rows: sessiz kesilirdi
-  },
-
-  // Aralıktaki okul etkinlikleri (okulun tüm üyelerine açık).
-  async listEvents(db: CalendarDb, schoolId: string, from: string, to: string) {
-    return db
-      .from('school_events')
-      .select('id, title, event_date, note')
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .gte('event_date', from)
-      .lte('event_date', to)
-      .order('event_date')
-      .limit(500)
-  },
-
-  async insertEvent(row: { school_id: string; title: string; event_date: string; note: string | null; created_by: string }) {
-    const db = await createClient()
-    return db.from('school_events').insert(row).select('id').single()
-  },
-
-  // Soft-delete (RLS UPDATE policy'si müdür/MY zorlar).
-  async softDeleteEvent(id: string, schoolId: string, deletedBy: string) {
-    const db = await createClient()
-    const { data: rows, error } = await db
-      .from('school_events')
-      .update({ deleted_at: new Date().toISOString(), deleted_by: deletedBy })
-      .eq('id', id)
-      .eq('school_id', schoolId)
-      .is('deleted_at', null)
-      .select('id')
-    if (error) return { error }
-    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
-    return { error: null }
   },
 }
