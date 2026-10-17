@@ -14,6 +14,7 @@ import OgrenciListesi from './OgrenciListesi'
 import { Suspense } from 'react'
 import PerformansWidget from './PerformansWidget'
 import MentorDagilimiKarti from './MentorDagilimiKarti'
+import SunucuFormu from '../../SunucuFormu'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
@@ -134,17 +135,19 @@ export default async function SinifDetayPage({
               <BulkStudentModal classId={id} maxNumber={maxNumber} />
             </div>
           </div>
-          <form action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
+          <SunucuFormu action={addStudent.bind(null, id)} className="flex gap-2 flex-wrap">
             <input
               name="full_name"
               type="text"
               required
+              maxLength={120}
               placeholder="Ad Soyad"
               className="flex-1 min-w-0 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               name="student_number"
               type="text"
+              maxLength={20}
               placeholder="Numara"
               className="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base w-full sm:w-24 bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
@@ -154,7 +157,7 @@ export default async function SinifDetayPage({
             >
               Ekle
             </button>
-          </form>
+          </SunucuFormu>
         </div>
       )}
 

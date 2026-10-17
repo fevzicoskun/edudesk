@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { format, parseISO } from '@/src/shared/date'
 import { addStudentNote, deleteStudentNote } from '@/src/domains/classes/actions'
 import VeliIletisimForm from './VeliIletisimForm'
+import SunucuFormu from '../../../../SunucuFormu'
 import CopyVeliLink from './CopyVeliLink'
 import VeliAnalyticsCard from './VeliAnalyticsCard'
 import SetupBanner from '@/components/SetupBanner'
@@ -242,7 +243,7 @@ export default async function OgrenciDetayPage({
             />
           ) : (
             <>
-              <form action={addStudentNote.bind(null, studentId, classId)} className="mb-4">
+              <SunucuFormu action={addStudentNote.bind(null, studentId, classId)} className="mb-4">
                 <textarea
                   name="body"
                   required
@@ -253,7 +254,7 @@ export default async function OgrenciDetayPage({
                 <button type="submit" className="mt-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
                   Not Ekle
                 </button>
-              </form>
+              </SunucuFormu>
               {notes.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-slate-400 text-sm py-8">Henüz not yok.</p>
               ) : (

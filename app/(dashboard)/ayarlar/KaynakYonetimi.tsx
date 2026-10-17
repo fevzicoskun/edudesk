@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useTransition, useOptimistic, useState } from 'react'
+import { useActionState, useEffect, useRef, useTransition, useOptimistic, useState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { createHomeworkSource, deleteHomeworkSource } from '@/app/actions/homework-source'
 
 type Source = { id: string; name: string; subject: string | null }
@@ -20,6 +21,8 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
   )
   const [, startTransition] = useTransition()
   const [state, formAction, isPending] = useActionState(createHomeworkSource, null)
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => { if (state && !state.error) formRef.current?.reset() }, [state])
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function handleDelete(source: Source) {
@@ -78,14 +81,16 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
       )}
 
       {/* Yeni kaynak formu */}
+      {/* formGonder: hata dönünce yazılan silinmez; iyimser ekleme aynı transition içinde */}
       <form
-        action={(formData) => {
+        ref={formRef}
+        onSubmit={formGonder(formData => {
           const name    = String(formData.get('name') ?? '').trim()
           const subject = String(formData.get('subject') ?? '').trim() || null
           if (!name) return
           updateOptimistic({ type: 'add', source: { id: crypto.randomUUID(), name, subject } })
           formAction(formData)
-        }}
+        })}
         className="space-y-2"
       >
         {state?.error && (
@@ -95,11 +100,13 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
           <input
             name="name"
             required
+            maxLength={100}
             placeholder="Kaynak adı (örn. Kondisyon Soru Bankası)"
             className={`flex-1 min-w-0 ${inputCls}`}
           />
           <input
             name="subject"
+            maxLength={100}
             placeholder="Ders (opsiyonel)"
             className={`w-32 ${inputCls}`}
           />
