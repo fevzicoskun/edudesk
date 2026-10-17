@@ -67,13 +67,6 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
         <div>
           <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Haftalık Takip</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400">{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
-          <label className="mt-1 inline-flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400">
-            Ekran süresi
-            <input type="text" maxLength={40} placeholder="ör. günde 3 sa" disabled={!!v.kayit?.kapaliAt}
-              value={veri.icerik.ekranSuresi ?? ''}
-              onChange={e => { const ekranSuresi = e.target.value; degistir(h => ({ ...h, icerik: { ...h.icerik, ekranSuresi } })) }}
-              className="w-36 px-2 py-1 rounded border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-base sm:text-sm" />
-          </label>
         </div>
         <div className="flex items-center gap-2">
           <Link aria-label="Önceki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, -1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">‹</Link>

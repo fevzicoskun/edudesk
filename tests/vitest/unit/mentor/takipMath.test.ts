@@ -230,7 +230,7 @@ describe('planKopyala: kitap sayfası kaldığı yerden devam (2026-10-17)', () 
     sonuclar: [{ anahtar: 'k:k1', ad: 'A', ders: 'M', sayfa: '', cozulen: 1, dogru: 1, yanlis: 0, bos: 0 }] }), gorusme: { ...BOS_GORUSME, iyi: 'x' } })
   it('ekran süresi sonraki haftaya taşınmaz', () => {
     const o = onceki([])
-    expect(planKopyala({ ...o, icerik: { ...o.icerik, ekranSuresi: 'günde 3 sa' } }).icerik.ekranSuresi).toBeUndefined()
+    expect(planKopyala({ ...o, icerik: { ...o.icerik, ekranSuresi: 2.5 } }).icerik.ekranSuresi).toBeUndefined()
   })
   it('tek görev 45–60 → 61–76', () => {
     const h = planKopyala(onceki([g({ kitapId: 'k1', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60, yapti: true })]))

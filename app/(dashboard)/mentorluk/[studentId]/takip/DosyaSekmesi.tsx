@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { konuEkle, konuDurumu, kitapEkle, kitapSil } from '@/app/actions/mentor-takip'
-import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi, ekranYaz } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
 
@@ -110,7 +110,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
         <h2 className="text-base font-semibold mb-2">Geçmiş haftalar</h2>
         <table className="w-full text-sm border-collapse">
           <thead><tr className="text-left text-xs text-gray-500 dark:text-slate-400 border-b border-gray-300 dark:border-slate-600">
-            <th className="py-1">Hafta</th><th>Seviye</th><th>Program</th><th>Soru</th><th>Doğruluk</th><th>Ders bazında</th><th>Okuma</th><th /></tr></thead>
+            <th className="py-1">Hafta</th><th>Seviye</th><th>Program</th><th>Soru</th><th>Doğruluk</th><th>Ders bazında</th><th>Okuma</th><th>Ekran</th><th /></tr></thead>
           <tbody>{v.gecmis.slice().reverse().map(h => {
             const p = programYuzde(h.ozet), d = dogrulukYuzde(h.ozet)
             return (
@@ -121,6 +121,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
                 <td className="text-xs">{h.dersler.length === 0 ? '—' : h.dersler.map((x, i) => (
                   <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{dersKisa(x.ders)} %{x.yuzde}</span>))}</td>
                 <td>{h.ozet.okuma_sayfa || '—'}</td>
+                <td className="whitespace-nowrap">{h.ekran == null ? '—' : `${ekranYaz(h.ekran)} sa`}</td>
                 <td className="whitespace-nowrap"><Link className="text-blue-600 hover:underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${h.hafta}&sekme=sonuc`}>Aç</Link>
                   {' · '}<a className="text-blue-600 hover:underline" target="_blank" rel="noopener" href={`/mentorluk/${v.ogrenci.id}/takip/sonuc-kagidi?hafta=${h.hafta}`}>Yazdır</a></td>
               </tr>)

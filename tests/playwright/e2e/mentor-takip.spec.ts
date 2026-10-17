@@ -222,14 +222,25 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   expect(data!.gorev_yapilan).toBe(data!.gorev_toplam) // Tümü yapıldı (mentör ödevi yok: plan ekranından kalktı)
 })
 
-test('ekran süresi: başlıktaki kutuya yazılır, kaydedilir, her sekmede görünür', async ({ page }) => {
+test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesajı, geçmiş tablosu ve plan kâğıdında', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
   await page.waitForLoadState('networkidle')
-  await page.getByLabel('Ekran süresi').fill('günde 3 sa')
+  const kutu = page.getByLabel('Ekran süresi (günlük ort., saat)')
+  // Yeni satır açmaz: ders bazında doğruluk satırıyla aynı hizada
+  const satirY = (await page.getByLabel('Ders bazında doğruluk').boundingBox())!
+  const kutuY = (await kutu.boundingBox())!
+  expect(Math.abs((kutuY.y + kutuY.height / 2) - (satirY.y + satirY.height / 2))).toBeLessThan(12)
+  await kutu.fill('2,5')
   await expect.poll(async () => ((await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
-    .data!.icerik as { ekranSuresi?: string }).ekranSuresi, { timeout: 15_000 }).toBe('günde 3 sa')
-  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=plan`)
-  await expect(page.getByLabel('Ekran süresi')).toHaveValue('günde 3 sa')
+    .data!.icerik as { ekranSuresi?: number }).ekranSuresi, { timeout: 15_000 }).toBe(2.5)
+  await page.reload()
+  await expect(page.getByLabel('Ekran süresi (günlük ort., saat)')).toHaveValue('2,5')
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
+  await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/• Ekran süresi: günlük ort\. 2,5 saat/)
+  await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
+  await expect(page.getByText('Günlük ortalama ekran süresi: ________ saat')).toBeVisible()
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-26&sekme=dosya`)
+  await expect(page.getByRole('region', { name: 'Geçmiş haftalar' }).getByRole('row', { name: /19–25 Ekim/ })).toContainText('2,5 sa')
 })
 test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
   const url = `/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`
@@ -455,6 +466,7 @@ test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddede
     await expect(page.getByText(/Bu hafta .* tarihinde kapatıldı/)).toBeVisible({ timeout: 20_000 })
     await expect(page.getByRole('button', { name: 'Tümü yapıldı' })).toBeDisabled()
     await expect(page.getByLabel('Öğretmen notu')).toBeDisabled()
+    await expect(page.getByLabel('Ekran süresi (günlük ort., saat)')).toBeDisabled()
     const { data: r } = await db.from('mentor_haftalari').select('kapali_at, okul_odevleri').eq('student_id', ogrId).eq('hafta_basi', HAFTA).single()
     expect(r!.kapali_at).not.toBeNull()
 

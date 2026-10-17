@@ -46,11 +46,13 @@ export function OkulOdevListesi({ baslik, liste }: { baslik: string; liste: Okul
 }
 
 /** Öğretmen notu + veli imzası başlığın hemen altında: altta dururken uzun ödev listesiyle 2. sayfaya sarkıyordu (2026-10-17). */
-export function ImzaAlanlari() {
+export function ImzaAlanlari({ ekran = false }: { ekran?: boolean }) {
   return (
     <div className="grid grid-cols-2 gap-2 mb-2 break-inside-avoid">
       <div className="border border-gray-400 h-11 p-1"><b>Öğretmen notu</b></div>
-      <div className="border border-gray-400 h-11 p-1"><b>Veli imzası</b></div>
+      {/* Plan kâğıdında veli doldurur; kutunun içinde altta → kâğıt uzamaz */}
+      <div className="border border-gray-400 h-11 p-1 flex flex-col justify-between"><b>Veli imzası</b>
+        {ekran && <span>Günlük ortalama ekran süresi: ________ saat</span>}</div>
     </div>
   )
 }
@@ -71,7 +73,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
           <p>Seviye: {SEVIYE_ADI[veri.seviye]} · Soru hedefi: {veri.soruHedefi}</p>
         </div>
       </div>
-      <ImzaAlanlari />
+      <ImzaAlanlari ekran />
       {veri.icerik.duzen && <p className="mb-2"><b>Hafta içi düzen:</b> {veri.icerik.duzen}</p>}
 
       {/* Program tablosu sıkı (10px, dikey boşluksuz): 24 görev + 46 ödevli gerçek yükte tek A4 için (2026-10-17) */}

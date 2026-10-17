@@ -27,7 +27,7 @@ export type SayfaVerisi = {
   /** konu_id → 0 başlanmadı / 1 çalışılıyor / 2 oturdu (satırı olmayan = 0) */
   konuDurumu: Record<string, number>
   /** yalnız Öğrenci dosyası sekmesinde dolu (gecmis: true) */
-  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk>; kapali: boolean }[]
+  gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk>; kapali: boolean; ekran: number | null }[]
   mentorAdi: string
   okulAdi: string
 }
@@ -96,7 +96,7 @@ export const TakipService = {
       konular,
       konuDurumu: Object.fromEntries(durumlar.map(r => [r.konu_id, r.durum])),
       gecmis: gecmisSat.map(r => ({
-        hafta: r.hafta_basi, seviye: r.seviye as Seviye, okuma: (r.icerik as unknown as Icerik).okuma,
+        hafta: r.hafta_basi, seviye: r.seviye as Seviye, okuma: (r.icerik as unknown as Icerik).okuma, ekran: (r.icerik as unknown as Icerik).ekranSuresi ?? null,
         dersler: dersDogruluk((r.icerik as unknown as Icerik).sonuclar ?? []), kapali: r.kapali_at !== null,
         ozet: { gorev_toplam: r.gorev_toplam, gorev_yapilan: r.gorev_yapilan, soru: r.soru, dogru: r.dogru, okuma_sayfa: r.okuma_sayfa, islendi: r.islendi },
       })),

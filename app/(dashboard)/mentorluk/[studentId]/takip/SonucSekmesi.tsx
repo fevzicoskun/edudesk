@@ -4,7 +4,7 @@ import { haftaKapat } from '@/app/actions/mentor-takip'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import {
   GUNLER, miktarYaz, ozetHesapla, okulDurumYaz, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
-  sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk, type Gorev, type Gorusme, type Sonuc,
+  sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk, ekranYaz, type Gorev, type Gorusme, type Sonuc,
 } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
@@ -13,6 +13,25 @@ const kutu = 'rounded border border-gray-300 dark:border-slate-600 bg-white dark
 const netYaz = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 const sayi = (s: string) => (s === '' ? null : Math.max(0, Math.trunc(Number(s)) || 0))
 const GORUSME: [keyof Pick<Gorusme, 'not' | 'rica'>, string, number][] = [['not', 'Öğretmen notu', 2000], ['rica', 'Veliden ricam', 1000]]
+
+/** Ondalık virgülle yazılır ("2,5"); yazılan metin yerelde tutulur ki "2," gibi ara hâl silinmesin. 0–24 dışı kaydedilmez. */
+function EkranKutusu({ deger, yaz }: { deger: number | null | undefined; yaz: (n: number | null) => void }) {
+  const [metin, setMetin] = useState(deger == null ? '' : ekranYaz(deger))
+  const n = metin.trim() === '' ? null : Number(metin.replace(',', '.'))
+  const gecersiz = n !== null && !(n >= 0 && n <= 24)
+  return (
+    <label className="inline-flex items-center gap-2 text-sm text-gray-600 dark:text-slate-400 whitespace-nowrap">
+      Ekran süresi (günlük ort., saat)
+      <input type="text" inputMode="decimal" placeholder="2,5" aria-invalid={gecersiz} value={metin}
+        className={`${kutu} w-16 ${gecersiz ? 'border-red-500' : ''}`}
+        onChange={e => {
+          const t = e.target.value; setMetin(t)
+          const x = t.trim() === '' ? null : Number(t.replace(',', '.'))
+          if (x === null || (x >= 0 && x <= 24)) yaz(x === null ? null : Math.round(x * 100) / 100)
+        }} />
+    </label>
+  )
+}
 
 function Kart({ baslik, deger, alt }: { baslik: string; deger: string; alt?: string }) {
   return (
@@ -72,10 +91,14 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
       </section>
 
       {/* Veri yokken de yer tutar ("—"): ilk değer girilince tablo aşağı kaymasın */}
-      <p aria-label="Ders bazında doğruluk" className="text-sm -mt-3">
-        <span className="text-gray-500 dark:text-slate-400">Ders bazında doğruluk: </span>
-        {dersler.length === 0 ? '—' : dersler.map((x, i) => <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{x.ders} %{x.yuzde}</span>)}
-      </p>
+      {/* Ekran süresi aynı satırın sağında: yeni satır açmaz */}
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 -mt-3">
+        <p aria-label="Ders bazında doğruluk" className="text-sm">
+          <span className="text-gray-500 dark:text-slate-400">Ders bazında doğruluk: </span>
+          {dersler.length === 0 ? '—' : dersler.map((x, i) => <span key={x.ders} className={x.yuzde < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{i > 0 && ' · '}{x.ders} %{x.yuzde}</span>)}
+        </p>
+        <EkranKutusu deger={veri.icerik.ekranSuresi} yaz={ekranSuresi => degistir(h => ({ ...h, icerik: { ...h.icerik, ekranSuresi } }))} />
+      </div>
 
       <section aria-label="Soru sonuçları">
         <h2 className="text-base font-semibold mb-2">Soru sonuçları</h2>

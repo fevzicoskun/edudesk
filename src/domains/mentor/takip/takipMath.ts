@@ -28,8 +28,8 @@ export type Sonuc = {
 }
 /** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
 /** surum 2 (2026-10-17): miktar GERÇEK süre/miktar (seviye uygulanmış) + her gün grupları. Yoksa eski biçim → normalizeIcerik. */
-/** ekranSuresi (2026-10-18): mentörün serbest notu ("günde 3 sa"); yalnız takip ekranında, çıktılara girmez, sonraki haftaya kopyalanmaz. */
-export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: string }
+/** ekranSuresi (2026-10-18): günlük ortalama ekran süresi, saat (ondalıklı). Sonraki haftaya kopyalanmaz. */
+export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: number | null }
 /** veliMesaji: mentörün düzenlediği veli mesajı; null = haftanın verisinden otomatik. */
 export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
@@ -47,6 +47,9 @@ export function takipHaftaEtiketi(pazartesi: string): string {
   const pazar = addDaysISO(pazartesi, 6)
   return pazartesi.slice(5, 7) === pazar.slice(5, 7) ? `${Number(pazartesi.slice(8))}–${gunAy(pazar)}` : `${gunAy(pazartesi)} – ${gunAy(pazar)}`
 }
+
+/** 2.5 → "2,5" */
+export const ekranYaz = (n: number) => n.toLocaleString('tr-TR', { maximumFractionDigits: 2 })
 
 export const BOS_GORUSME: Gorusme = { not: '', rica: '', veliMesaji: null }
 

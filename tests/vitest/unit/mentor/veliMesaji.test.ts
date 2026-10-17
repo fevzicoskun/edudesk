@@ -56,6 +56,13 @@ describe('takipVeliMesaji — haftanın verisinden otomatik (2026-10-17)', () =>
     g.veri.icerik.sonuclar[0].kaldigi = 60
     expect(takipVeliMesaji(g)).not.toContain('• Kaynaklar')
   })
+  it('ekran süresi girildiyse satır yazılır (ondalık virgülle), girilmediyse hiç yok', () => {
+    expect(takipVeliMesaji(temel())).not.toContain('Ekran')
+    const g = temel(); g.veri.icerik.ekranSuresi = 2.5
+    expect(takipVeliMesaji(g)).toContain('• Ekran süresi: günlük ort. 2,5 saat')
+    g.veri.icerik.ekranSuresi = 0
+    expect(takipVeliMesaji(g)).toContain('• Ekran süresi: günlük ort. 0 saat')
+  })
   it('uzun listeler kısalır, mesaj ~10 satırı geçmez', () => {
     const g = temel()
     g.okul = { tamamlanmamis: Array.from({ length: 6 }, (_, i) => odev(`e${i}`, 'Kimya', 'yapilmadi')),

@@ -1,5 +1,5 @@
 import {
-  ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, dersDogruluk, kaldigiMetni, takipHaftaEtiketi,
+  ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, dersDogruluk, kaldigiMetni, takipHaftaEtiketi, ekranYaz,
   type HaftaVerisi, type Ozet, type OkulOdevBolumleri, type OkulOdevi,
 } from './takipMath'
 
@@ -23,6 +23,7 @@ export function takipVeliMesaji(g: {
   const yapilmayan = bu.filter(x => x.status === 'yapilmadi')
   const isaretsiz = bu.filter(x => !x.status).length
   const { not, rica } = g.veri.gorusme
+  const ekran = g.veri.icerik.ekranSuresi
   const satir = (kosul: unknown, metin: string) => (kosul ? [metin] : [])
   return [
     `Sayın Veli, ${g.ogrenciAdi} için ${takipHaftaEtiketi(g.pazartesi)} haftasının özeti:`,
@@ -35,6 +36,7 @@ export function takipVeliMesaji(g: {
     ...satir(o.soru, `• Soru: ${o.soru} soru, doğruluk %${d}${oncekiD !== null ? ` (geçen hafta %${oncekiD})` : ''}`),
     ...satir(dersler.length, `• Ders bazında: ${dersler.map(x => `${x.ders} %${x.yuzde}`).join(' · ')}`),
     ...satir(geride.length, `• Kaynaklar: ${geride.join('; ')}`),
+    ...satir(ekran != null, `• Ekran süresi: günlük ort. ${ekranYaz(ekran ?? 0)} saat`),
     ...satir(not.trim(), `• Öğretmen notu: ${not.trim()}`),
     ...satir(rica.trim(), `• Sizden ricam: ${rica.trim()}`),
     '',

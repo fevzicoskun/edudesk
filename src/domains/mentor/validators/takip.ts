@@ -17,7 +17,7 @@ const gorevSchema = z.object({
 
 export const icerikSchema = z.object({
   surum: z.literal(2).optional(),
-  ekranSuresi: metin(40).optional(),
+  ekranSuresi: z.number().min(0).max(24).nullable().optional(),
   duzen: metin(300),
   gorevler: z.array(gorevSchema).max(120),
   mentorOdevleri: z.array(z.object({
