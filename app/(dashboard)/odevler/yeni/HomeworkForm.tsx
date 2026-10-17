@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState, useEffect } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 import ClassWeekLoadSection from './ClassWeekLoadSection'
@@ -90,7 +91,7 @@ export default function HomeworkForm({
         </p>
       )}
 
-      <form action={formAction}>
+      <form onSubmit={formGonder(formAction)}>
         <div className="p-6 space-y-5">
 
           {state?.error && (
@@ -166,7 +167,7 @@ export default function HomeworkForm({
           {/* Ders */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Ders</label>
-            <input name="subject" type="text" required placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
+            <input name="subject" type="text" required maxLength={100} placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
           </div>
 
           {/* Kaynak + Sayfa */}
@@ -221,6 +222,7 @@ export default function HomeworkForm({
             <input
               name="title"
               type="text"
+              maxLength={200}
               required
               placeholder="Ödev başlığını girin"
               className={field}
@@ -237,6 +239,7 @@ export default function HomeworkForm({
             <textarea
               name="description"
               rows={3}
+              maxLength={2000}
               placeholder="Ödev hakkında notlar veya açıklamalar..."
               className={`${field} resize-none`}
               defaultValue={defaults?.description ?? ''}

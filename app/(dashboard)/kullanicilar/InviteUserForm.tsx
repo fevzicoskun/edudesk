@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { inviteUser } from '@/src/domains/users/actions'
 import type { Role } from '@/src/shared/types'
 import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
@@ -112,7 +113,7 @@ function InviteFormContent({
         </DialogDescription>
       </DialogHeader>
 
-      <form action={action} className="space-y-3">
+      <form onSubmit={formGonder(action)} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs text-gray-500 dark:text-slate-400 mb-1">E-posta *</label>

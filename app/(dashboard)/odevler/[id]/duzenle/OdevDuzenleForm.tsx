@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { updateHomework, getClassWeekLoad } from '@/app/actions/homework'
 import Link from 'next/link'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
@@ -76,7 +77,7 @@ export default function OdevDuzenleForm({
         </p>
       </div>
 
-      <form action={formAction}>
+      <form onSubmit={formGonder(formAction)}>
         <input type="hidden" name="id" value={hw.id} />
         <input type="hidden" name="class_id" value={selectedClass} />
         <input type="hidden" name="is_template" value={hw.is_template ? 'true' : 'false'} />
@@ -125,7 +126,7 @@ export default function OdevDuzenleForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-              <input name="subject" type="text" required className={field} defaultValue={hw.subject} />
+              <input name="subject" type="text" required maxLength={100} className={field} defaultValue={hw.subject} />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -179,7 +180,7 @@ export default function OdevDuzenleForm({
 
           <div className="space-y-2">
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Başlık</label>
-            <input name="title" type="text" required className={field} defaultValue={hw.title} />
+            <input name="title" type="text" required maxLength={200} className={field} defaultValue={hw.title} />
           </div>
 
           <div className="space-y-2">
@@ -189,6 +190,7 @@ export default function OdevDuzenleForm({
             <textarea
               name="description"
               rows={3}
+              maxLength={2000}
               className={`${field} resize-none`}
               defaultValue={hw.description ?? ''}
             />

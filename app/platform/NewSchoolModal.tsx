@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { createSchool } from './actions'
 
 export default function NewSchoolModal() {
@@ -32,7 +33,7 @@ export default function NewSchoolModal() {
               <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-white transition-colors text-xl leading-none">×</button>
             </div>
 
-            <form action={action} className="px-6 py-5 space-y-4">
+            <form onSubmit={formGonder(action)} className="px-6 py-5 space-y-4">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Okul Adı</label>
                 <input name="name" required placeholder="Bahçeşehir Koleji İstanbul"

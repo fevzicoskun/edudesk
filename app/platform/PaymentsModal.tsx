@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { recordPayment, listSchoolPayments, type PaymentRow } from './actions'
 
 const tl = (kurus: number) =>
@@ -11,6 +12,8 @@ export default function PaymentsModal({ schoolId, schoolName }: { schoolId: stri
   const [payments, setPayments] = useState<PaymentRow[] | null>(null)
   const [listErr, setListErr] = useState<string | null>(null)
   const [state, formAction, pending] = useActionState(recordPayment, null)
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => { if (state?.ok) formRef.current?.reset() }, [state])
 
   // Dependency `state` NESNESİ: useActionState her dönüşte yeni referans üretir,
   // ardışık başarılı kayıtlarda da liste tazelenir (state?.ok true→true tetiklemezdi).
@@ -68,7 +71,7 @@ export default function PaymentsModal({ schoolId, schoolName }: { schoolId: stri
           </table>
         )}
 
-        <form action={formAction} className="space-y-3 border-t border-slate-800 pt-4">
+        <form ref={formRef} onSubmit={formGonder(formAction)} className="space-y-3 border-t border-slate-800 pt-4">
           <input type="hidden" name="school_id" value={schoolId} />
           <div className="grid grid-cols-2 gap-3">
             <label className="block text-xs font-medium text-slate-400">Tutar (TL)

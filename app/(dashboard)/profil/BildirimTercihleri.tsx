@@ -2,6 +2,7 @@
 
 import { saveNotificationPreferences } from '@/src/domains/notifications/actions'
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import WebPushButton from '@/app/(dashboard)/ayarlar/WebPushButton'
 
 interface Props {
@@ -21,7 +22,7 @@ export default function BildirimTercihleri({ defaultDays, defaultEmailOn }: Prop
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-5">
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-4">Bildirim Tercihleri</h2>
-      <form action={action} className="space-y-4">
+      <form onSubmit={formGonder(action)} className="space-y-4">
         <div>
           <label className="block text-sm text-gray-600 dark:text-slate-400 mb-1">
             Ödev son tarihinden kaç gün önce bildirim gelsin?

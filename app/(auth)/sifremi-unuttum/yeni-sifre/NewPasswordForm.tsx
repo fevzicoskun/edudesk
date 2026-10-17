@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { useRouter } from 'next/navigation'
 import { resetPassword } from '@/app/actions/auth'
 
@@ -20,7 +21,7 @@ export default function NewPasswordForm() {
     'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={formGonder(formAction)} className="space-y-4">
       {state?.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3 dark:bg-red-950/30 dark:border-red-800 dark:text-red-400">
           {state.error}

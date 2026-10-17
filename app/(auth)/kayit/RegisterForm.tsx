@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import Link from 'next/link'
 import { applySchool } from './actions'
 
@@ -29,7 +30,7 @@ export default function RegisterForm() {
   }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={formGonder(formAction)} className="space-y-4">
       {state?.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
           {state.error}
@@ -94,6 +95,7 @@ export default function RegisterForm() {
         <textarea
           name="note"
           rows={3}
+          maxLength={2000}
           placeholder="Kaç öğretmen var, ne tür ihtiyaçlarınız var..."
           className={inputCls + ' resize-none'}
         />

@@ -97,12 +97,12 @@ export const UserService = {
       return { error: 'Bu kullanıcıyı silemezsiniz' }
     }
 
-    // Silme geri alınamaz ve mentörlük/ders programı/nöbeti CASCADE ile götürür, ödevleri sahipsiz bırakır.
+    // Silme geri alınamaz ve mentörlük/ders programı/nöbet/öğrenci notlarını CASCADE ile götürür, ödevleri sahipsiz bırakır.
     // Verisi olan hesap silinmez; e-postası/rolü değiştirilir ya da veri önce devredilir.
     const v = await UserRepository.sahipOlunanVeri(targetId)
     const parcalar = [
       v.odev && `${v.odev} ödev`, v.mentorluk && `${v.mentorluk} mentörlük öğrencisi`,
-      v.dersProgrami && 'ders programı', v.nobet && `${v.nobet} nöbet`,
+      v.dersProgrami && 'ders programı', v.nobet && `${v.nobet} nöbet`, v.ogrenciNotu && `${v.ogrenciNotu} öğrenci notu`,
     ].filter(Boolean)
     if (parcalar.length) {
       return { error: `Bu kullanıcının ${parcalar.join(', ')} kaydı var; silinirse kalıcı olarak kaybolur. Silme yapılmadı.` }

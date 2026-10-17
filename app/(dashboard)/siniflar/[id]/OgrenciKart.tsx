@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import Link from 'next/link'
 import { ConfirmDeleteButton } from '@/components/ConfirmDeleteButton'
 import { deleteStudent, updateVeliContact, addStudentNote } from '@/src/domains/classes/actions'
@@ -151,7 +152,7 @@ export default function OgrenciKart({
 
       {open && (
         <div className="border-t border-gray-100 dark:border-slate-700 px-4 py-3 bg-gray-50 dark:bg-slate-900/50">
-          <form action={action} className="flex flex-wrap gap-2 items-end">
+          <form onSubmit={formGonder(action)} className="flex flex-wrap gap-2 items-end">
             <div className="flex flex-col gap-1 flex-1 min-w-36">
               <label className="text-xs text-gray-500 dark:text-slate-400">E-posta</label>
               <input name="veli_email" type="email" defaultValue={s.veli_email ?? ''} placeholder="veli@ornek.com"
@@ -180,8 +181,8 @@ export default function OgrenciKart({
 
       {noteOpen && (
         <div className="border-t border-gray-100 dark:border-slate-700 px-4 py-3 bg-purple-50/50 dark:bg-slate-900/50">
-          <form action={noteAction} className="flex gap-2 items-end">
-            <textarea name="body" required placeholder="Hızlı not..." rows={2}
+          <form onSubmit={formGonder(noteAction)} className="flex gap-2 items-end">
+            <textarea name="body" required maxLength={1000} placeholder="Hızlı not..." rows={2}
               className="flex-1 min-w-0 px-2.5 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400 resize-none" />
             <div className="flex flex-col gap-1 shrink-0">
               <button type="submit" disabled={notePending}

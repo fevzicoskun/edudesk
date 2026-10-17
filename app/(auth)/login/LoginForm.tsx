@@ -1,13 +1,14 @@
 'use client'
 
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { login } from '@/src/domains/auth/actions'
 
 export default function LoginForm() {
   const [state, formAction, isPending] = useActionState(login, null)
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form onSubmit={formGonder(formAction)} className="space-y-4">
       {state?.error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
           {state.error}

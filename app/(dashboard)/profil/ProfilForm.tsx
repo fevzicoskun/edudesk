@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { updateProfile } from '@/src/domains/users/actions'
 import { logout } from '@/src/domains/auth/actions'
 import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
@@ -48,7 +49,7 @@ export default function ProfilForm({
       </div>
 
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6">
-        <form action={action} className="space-y-4">
+        <form onSubmit={formGonder(action)} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
               E-posta

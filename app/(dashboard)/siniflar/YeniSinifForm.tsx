@@ -1,15 +1,18 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { createClass } from '@/src/domains/classes/actions'
 
 const inputCls = 'px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
 
 export default function YeniSinifForm() {
   const [state, formAction, isPending] = useActionState(createClass, null)
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => { if (state && !state.error) formRef.current?.reset() }, [state])
 
   return (
-    <form action={formAction} className="flex gap-2 flex-wrap">
+    <form ref={formRef} onSubmit={formGonder(formAction)} className="flex gap-2 flex-wrap">
       <input name="name" type="text" required placeholder="9-A" className={inputCls} />
       <input name="grade" type="number" required placeholder="Sınıf (9)" min="1" max="12" className={`${inputCls} w-28`} />
       <button

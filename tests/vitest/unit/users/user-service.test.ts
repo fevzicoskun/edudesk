@@ -44,7 +44,7 @@ function makeProfile(role: string) {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 0, mentorluk: 0, dersProgrami: 0, nobet: 0 })
+  vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 0, mentorluk: 0, dersProgrami: 0, nobet: 0, ogrenciNotu: 0 })
 })
 
 // ─────────────────────────────────────────────────────────────
@@ -178,9 +178,18 @@ describe('UserService.deleteUser() — veri koruması', () => {
   it('ödevi/mentörlüğü/ders programı/nöbeti olan öğretmen silinmez, ne kaybolacağı söylenir', async () => {
     vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
     vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
-    vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 19, mentorluk: 15, dersProgrami: 1, nobet: 2 })
+    vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 19, mentorluk: 15, dersProgrami: 1, nobet: 2, ogrenciNotu: 0 })
     const r = await UserService.deleteUser(TARGET_ID)
     expect(r.error).toBe('Bu kullanıcının 19 ödev, 15 mentörlük öğrencisi, ders programı, 2 nöbet kaydı var; silinirse kalıcı olarak kaybolur. Silme yapılmadı.')
+    expect(UserRepository.deleteAuthUser).not.toHaveBeenCalled()
+  })
+
+  it('yalnız öğrenci notu olan öğretmen de silinmez (notlar CASCADE ile giderdi)', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(MUDUR_PERMS) as never)
+    vi.mocked(UserRepository.getProfileById).mockResolvedValue(makeProfile('ogretmen') as never)
+    vi.mocked(UserRepository.sahipOlunanVeri).mockResolvedValue({ odev: 0, mentorluk: 0, dersProgrami: 0, nobet: 0, ogrenciNotu: 7 })
+    const r = await UserService.deleteUser(TARGET_ID)
+    expect(r.error).toBe('Bu kullanıcının 7 öğrenci notu kaydı var; silinirse kalıcı olarak kaybolur. Silme yapılmadı.')
     expect(UserRepository.deleteAuthUser).not.toHaveBeenCalled()
   })
 

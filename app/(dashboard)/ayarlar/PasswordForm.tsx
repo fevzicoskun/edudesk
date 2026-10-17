@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { changePassword } from '@/src/domains/auth/actions'
 
 const initial = { error: undefined as string | undefined, success: false }
@@ -13,6 +14,8 @@ export default function PasswordForm() {
     },
     initial
   )
+  const formRef = useRef<HTMLFormElement>(null)
+  useEffect(() => { if (state.success) formRef.current?.reset() }, [state])
 
   const inputCls =
     'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400'
@@ -20,7 +23,7 @@ export default function PasswordForm() {
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-4">Şifre Değiştir</h2>
-      <form action={action} className="space-y-4">
+      <form ref={formRef} onSubmit={formGonder(action)} className="space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5">
             Yeni Şifre

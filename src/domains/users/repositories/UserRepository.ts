@@ -20,13 +20,14 @@ export const UserRepository = {
       if (error) throw new Error(error.message) // sayılamazsa silme de yapılmasın
       return count ?? 0
     }
-    const [odev, mentorluk, dersProgrami, nobet] = await Promise.all([
+    const [odev, mentorluk, dersProgrami, nobet, ogrenciNotu] = await Promise.all([
       say(admin.from('homeworks').select('id', { count: 'exact', head: true }).eq('teacher_id', userId).is('deleted_at', null)),
       say(admin.from('mentorships').select('id', { count: 'exact', head: true }).eq('mentor_id', userId)),
       say(admin.from('lesson_schedules').select('id', { count: 'exact', head: true }).eq('teacher_id', userId)),
       say(admin.from('teacher_duties').select('id', { count: 'exact', head: true }).eq('teacher_id', userId)),
+      say(admin.from('student_notes').select('id', { count: 'exact', head: true }).eq('teacher_id', userId)),
     ])
-    return { odev, mentorluk, dersProgrami, nobet }
+    return { odev, mentorluk, dersProgrami, nobet, ogrenciNotu }
   },
 
   /** Giriş e-postasını değiştirir; hesap id'si (ve tüm veri) aynı kalır. email_confirm → onay maili GİTMEZ. */

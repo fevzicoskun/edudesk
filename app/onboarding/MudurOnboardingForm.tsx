@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { setupSchool } from '@/src/domains/school/actions'
 
 export default function MudurOnboardingForm({
@@ -31,7 +32,7 @@ export default function MudurOnboardingForm({
           </div>
         )}
 
-        <form action={formAction} className="space-y-4">
+        <form onSubmit={formGonder(formAction)} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
               Okul Adı

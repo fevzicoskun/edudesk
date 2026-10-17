@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState } from 'react'
+import { formGonder } from '@/src/shared/utils/formGonder'
 import { updateVeliContact } from '@/src/domains/classes/actions'
 
 interface Props {
@@ -30,7 +31,7 @@ export default function VeliIletisimForm({ studentId, classId, defaultEmail, def
   return (
     <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-4 mb-4">
       <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300 mb-3">Veli İletişim</h2>
-      <form action={action} className="flex flex-col gap-2">
+      <form onSubmit={formGonder(action)} className="flex flex-col gap-2">
         <div className="flex items-center gap-2 flex-wrap">
           <label className="text-sm text-gray-600 dark:text-slate-400 w-24 shrink-0">Veli Adı</label>
           <input
