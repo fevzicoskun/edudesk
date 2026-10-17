@@ -96,32 +96,7 @@ export const homeworkReminderFn = inngest.createFunction(
       )
     })
 
-    // 4. Öğretmene e-posta gönder (email_on = true olanlar)
-    const teacherEmailTargets = toSend.filter((c) => c.emailOn && c.teacherEmail)
-
-    if (teacherEmailTargets.length) {
-      await step.run('send-teacher-emails', async () => {
-        const results = await Promise.allSettled(
-          teacherEmailTargets.map((c) =>
-            mailer.sendMail({
-              to:      c.teacherEmail,
-              subject: `Ödev Hatırlatması: ${c.title}`,
-              html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>
-                <p>Merhaba,</p>
-                <p><strong>${esc(c.title)}</strong> adlı ödevinizin teslim tarihi <strong>${esc(formatDateTR(c.dueDate))}</strong>.</p>
-                <p>${c.daysBefore === 1 ? 'Yarın teslim alınacak.' : `${c.daysBefore} gün kaldı.`}</p>
-                <p>EduDesk'e giriş yaparak öğrenci teslim durumlarını görüntüleyebilirsiniz.</p>
-                <p style="color:#bbb;font-size:11px;margin-top:24px">Bu bildirimleri durdurmak veya sıklığını değiştirmek için <a href="${esc(baseUrl)}/ayarlar" style="color:#bbb">bildirim ayarlarınızı</a> güncelleyebilirsiniz.</p>
-              </body></html>`,
-            })
-          )
-        )
-        const failed = results.filter((r) => r.status === 'rejected')
-        if (failed.length) {
-          logger.error({ event: 'teacher_reminder_mail_failed', failed: failed.length, total: teacherEmailTargets.length }, 'Öğretmen hatırlatma e-postaları gönderilemedi')
-        }
-      })
-    }
+    // 4. Öğretmen e-postası artık ayrı gitmiyor: hafta içi sabah özeti maili (gunlukOzet) topluyor — 2026-10-17
 
     // 5. Velilere e-posta gönder (teslim etmemiş öğrencilerin velileri) — 2 toplu sorgu
     const veliEmails = await step.run('fetch-veli-emails', async () => {
@@ -218,6 +193,6 @@ export const homeworkReminderFn = inngest.createFunction(
       )
     })
 
-    return { sent: toSend.length, teacherEmailed: teacherEmailTargets.length, veliEmailed: veliEmails.length }
+    return { sent: toSend.length, veliEmailed: veliEmails.length }
   }
 )
