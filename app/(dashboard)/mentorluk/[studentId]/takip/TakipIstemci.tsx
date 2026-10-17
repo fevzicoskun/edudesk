@@ -18,6 +18,8 @@ export type SekmeProps = {
   v: SayfaVerisi; veri: HaftaVerisi; degistir: (f: (h: HaftaVerisi) => HaftaVerisi, hemen?: boolean) => void
   /** Bekleyen kaydı yaz; true = kaydedildi (yazdırmadan önce) */
   bosalt: () => Promise<boolean>
+  /** Taslak haftayı da kayda dönüştürür (Kâğıdı yazdır, Herkese uygula) */
+  kaydiZorla: () => Promise<boolean>
 }
 // Task 6: sonuc: 'Sonuç' · Task 8: veli: 'Veli mesajı' · Task 9: dosya: 'Öğrenci dosyası'
 const SEKME_ADI: Partial<Record<Sekme, string>> = { plan: 'Plan', sonuc: 'Sonuç', veli: 'Veli mesajı', dosya: 'Öğrenci dosyası' }
@@ -53,10 +55,10 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
   const [veri, setVeri] = useState<HaftaVerisi>(v.taslak)
   const kaydet = useCallback((h: HaftaVerisi, sonBilinen: string | null) =>
     haftaKaydet({ studentId: v.ogrenci.id, hafta: v.hafta, ...h, sonBilinen }), [v.ogrenci.id, v.hafta])
-  const { durum, anlik, bosalt } = useOtoKayit(veri, kaydet, v.kayit?.updatedAt ?? null)
+  const { durum, anlik, bosalt, kayitli, kaydiZorla } = useOtoKayit(veri, kaydet, v.kayit?.updatedAt ?? null)
   const degistir: SekmeProps['degistir'] = (f, hemen) => { if (hemen) anlik(); setVeri(f) }
   const url = (hafta: string, s: Sekme = sekme) => `/mentorluk/${v.ogrenci.id}/takip?hafta=${hafta}&sekme=${s}`
-  const props: SekmeProps = { v, veri, degistir, bosalt }
+  const props: SekmeProps = { v, veri, degistir, bosalt, kaydiZorla }
 
   return (
     <div className="p-4 md:p-6 max-w-5xl mx-auto">
@@ -69,6 +71,7 @@ export default function TakipIstemci({ v, sekme: istenen }: { v: SayfaVerisi; se
         <div className="flex items-center gap-2">
           <Link aria-label="Önceki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, -1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">‹</Link>
           <span className="text-sm font-medium tabular-nums">{takipHaftaEtiketi(v.hafta)}</span>
+          {!kayitli && <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">Taslak, henüz kaydedilmedi</span>}
           <Link aria-label="Sonraki hafta" onClick={bosalt} href={url(haftaKaydir(v.hafta, 1))} className="px-2 py-1 rounded border border-gray-300 dark:border-slate-600">›</Link>
           <Link onClick={bosalt} href={url(haftaBasi(todayLocalISO()))} className="text-sm text-blue-600 hover:underline">Bu hafta</Link>
         </div>

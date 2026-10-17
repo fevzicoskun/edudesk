@@ -16,7 +16,7 @@ const bosGorev = (gun: number, grup?: string): Gorev => ({
 })
 const sayfaNo = (s: string) => (s === '' ? null : Math.min(5000, Math.max(1, Math.trunc(Number(s)) || 1)))
 
-export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
+export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProps) {
   const kitaplar = v.kitaplar // öğrencinin kalıcı kitapları (Öğrenci dosyası → Kitaplar)
   const [bilgi, setBilgi] = useState<string | null>(null)
   const [ustHata, setUstHata] = useState<string | null>(null)
@@ -34,7 +34,7 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
     if (!confirm('Bu plan (bağlı kitaplar ve sayfalar dahil), bu hafta planı olmayan diğer mentör öğrencilerinize kopyalansın mı?')) return
     basla(async () => {
       setBilgi(null); setUstHata(null)
-      if (!(await bosalt())) { setUstHata('Önce kayıt hatasını giderin.'); return }
+      if (!(await kaydiZorla())) { setUstHata('Önce kayıt hatasını giderin.'); return }
       const r = await herkeseUygula(v.ogrenci.id, v.hafta)
       if (r.error) { setUstHata(r.error); return }
       setBilgi(`${r.uygulanan} öğrenciye uygulandı${r.atlanan ? `; bu hafta planı olan ${r.atlanan} öğrenci atlandı` : ''}.`)
@@ -79,12 +79,13 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
             </>}
           </span>
         )}
+        <button type="button" aria-label={`${g.ad} görevini sil`} className="text-red-700 dark:text-red-400 text-sm ml-auto" onClick={() => sil(g)}>Sil</button>
+        {/* Önizleme Sil'den sonra: basis-full satırı Sil'i alt satıra itmesin (2026-10-17) */}
         {g.grup && g.soruSatiri && g.kitapId && g.sayfaBas != null && (g.sayfaSon ?? g.sayfaBas) >= g.sayfaBas && (
           <p aria-label="Günlük sayfa dağılımı" className="basis-full text-xs font-normal text-gray-500 dark:text-slate-400 pl-1">
             {GUNLER.slice(0, 5).map((gun, i) => { const a = gunlukAralik(g.sayfaBas!, g.sayfaSon ?? g.sayfaBas!, i); return `${gun} ${a ? (a[0] === a[1] ? a[0] : `${a[0]}–${a[1]}`) : '—'}` }).join(' · ')}
           </p>
         )}
-        <button type="button" aria-label={`${g.ad} görevini sil`} className="text-red-700 dark:text-red-400 text-sm ml-auto" onClick={() => sil(g)}>Sil</button>
       </div>
   )
 
@@ -111,7 +112,7 @@ export default function PlanSekmesi({ v, veri, degistir, bosalt }: SekmeProps) {
         </button>
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={kopyala}>Geçen haftayı kopyala</button>
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={herkese}>Bu planı tüm mentör öğrencilerime uygula</button>
-        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={bosalt} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
+        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={kaydiZorla} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
 
       {(bilgi || ustHata) && <p role={ustHata ? 'alert' : 'status'} className={`text-sm -mt-3 ${ustHata ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{ustHata ?? bilgi}</p>}

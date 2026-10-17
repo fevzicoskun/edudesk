@@ -14,7 +14,13 @@ export function useOtoKayit(
   const [durum, setDurum] = useState<KayitDurumu>({ tur: 'bos' })
   const [kuyruk] = useState(() => kayitKuyrugu(kaydet, ilkUpdatedAt, setDurum))
   const ilkVeri = useRef(veri)
+  const sonVeri = useRef(veri)
   const anlikRef = useRef(false)
+  // Haftanın DB'de satırı var mı: açılışta kayıt varsa ya da ilk başarılı yazımdan sonra (taslak etiketi için)
+  const [kayitli, setKayitli] = useState(ilkUpdatedAt !== null)
+  useEffect(() => { if (durum.tur === 'kaydedildi') setKayitli(true) }, [durum])
+
+  useEffect(() => { sonVeri.current = veri }, [veri])
 
   useEffect(() => {
     // açılış = değişiklik değil (satır yaratma). Ref karşılaştırması: StrictMode'un çift effect'inde de doğru
@@ -34,5 +40,8 @@ export function useOtoKayit(
   /** Bekleyeni hemen yaz; true = her şey kaydedildi. */
   const bosalt = useCallback(() => kuyruk.bosalt(), [kuyruk])
 
-  return { durum, anlik, bosalt }
+  /** Taslak hafta da kayda dönsün (Kâğıdı yazdır, Herkese uygula): değişiklik olmasa bile şimdiki hâli yazar. */
+  const kaydiZorla = useCallback(() => { if (!kayitli) kuyruk.degisti(sonVeri.current, true); return kuyruk.bosalt() }, [kuyruk, kayitli])
+
+  return { durum, anlik, bosalt, kayitli, kaydiZorla }
 }

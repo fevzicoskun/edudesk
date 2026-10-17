@@ -51,9 +51,11 @@ test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır
   await page.waitForTimeout(1500)
   await expect(page.getByText('19–25 Ekim', { exact: true })).toBeVisible() // Pzt–Paz (plan hafta sonunu kapsar)
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId)).data).toHaveLength(0)
+  await expect(page.getByText('Taslak, henüz kaydedilmedi')).toBeVisible()
 
   await page.getByRole('button', { name: 'Normal' }).click()
   await kaydedildi(page)
+  await expect(page.getByText('Taslak, henüz kaydedilmedi')).toHaveCount(0) // ilk değişiklikle kayda döndü
   await page.reload()
   await expect(page.getByRole('button', { name: 'Normal' })).toHaveAttribute('aria-pressed', 'true')
   const { data } = await db.from('mentor_haftalari').select('seviye, soru_hedefi').eq('student_id', ogrId).single()
@@ -172,6 +174,11 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   await expect(page.getByLabel('Bitiş sayfası').first()).toHaveValue('60')
   // Her gün görevinde haftalık aralık Pzt–Cum'a bölünür (16 sf → 4,3,3,3,3); planda önizleme
   await expect(page.getByLabel('Günlük sayfa dağılımı').first()).toHaveText('Pzt 45–48 · Sal 49–51 · Çar 52–54 · Per 55–57 · Cum 58–60')
+  // Önizleme varken Sil düğmesi görev satırında kalır (alt satıra kaymaz)
+  const program = page.getByRole('region', { name: 'Program' })
+  const gorevKutusu = (await program.getByLabel('Görev', { exact: true }).nth(1).boundingBox())!
+  const silDugmesi = (await program.getByRole('button', { name: 'Matematik soru bankası görevini sil' }).boundingBox())!
+  expect(Math.abs((silDugmesi.y + silDugmesi.height / 2) - (gorevKutusu.y + gorevKutusu.height / 2))).toBeLessThan(6)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
   const banka = page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'Matematik soru bankası' })
   await expect(banka).toHaveCount(5)
@@ -405,6 +412,19 @@ test('bu planı tüm mentör öğrencilerime uygula: planı olmayan öğrenciye 
     await db.from('mentor_kitaplari').delete().eq('ad', 'E2E Acil Mat').in('student_id', yazilan)
     await db.from('mentorships').delete().eq('student_id', ikinci).eq('mentor_id', mentor.id)
   }
+})
+
+test('taslak hafta: etiket görünür; Kâğıdı yazdır taslağı kayda dönüştürür ve etiket kalkar', async ({ page, context }) => {
+  const HAFTA = '2026-11-09'
+  await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}`)
+  await expect(page.getByText('Taslak, henüz kaydedilmedi')).toBeVisible({ timeout: 20_000 })
+  await page.waitForLoadState('networkidle')
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', HAFTA)).data).toHaveLength(0)
+  const [kagit] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Kâğıdı yazdır' }).click()])
+  await expect(kagit.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
+  await kagit.close()
+  await expect(page.getByText('Taslak, henüz kaydedilmedi')).toHaveCount(0)
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', HAFTA)).data).toHaveLength(1)
 })
 
 test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddeder; sonuç kâğıdı tek A4; kilidi aç', async ({ page }) => {
