@@ -219,3 +219,48 @@ describe('akisSatirlari — aktivite akışı ayıklanmış', () => {
     expect(r.map(x => [x.key, x.adet])).toEqual([['a', 1], ['b', 1], ['c', 1], ['d', 1]])
   })
 })
+
+// ─── ogretmen_aktivite_gunluk grup satırları — ham satırlarla birebir aynı sonuç ─────────────
+describe('grup satırları (adet) — ham kayıtlarla eşdeğer', () => {
+  // SQL fonksiyonunun JS ikizi: (öğretmen, işlem, Türkiye günü) grubu, temsilci = en yeni (eşitte küçük id)
+  const grupla = (logs: LogRow[]): LogRow[] => {
+    const gun = (iso: string) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Istanbul' }).format(new Date(iso))
+    const m = new Map<string, LogRow>()
+    for (const l of [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))) {
+      const k = `${l.teacher_id}|${l.action}|${gun(l.created_at)}`
+      const v = m.get(k)
+      if (v) v.adet!++
+      else m.set(k, { ...l, adet: 1 })
+    }
+    // sayfa RPC'yi son_at desc, son_id ile ister
+    return [...m.values()].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))
+  }
+  const ham: LogRow[] = [
+    { id: 'a1', teacher_id: 't1', action: 'dashboard_view', meta: null, created_at: '2026-06-01T05:00:00Z' },
+    { id: 'a2', teacher_id: 't1', action: 'dashboard_view', meta: null, created_at: '2026-06-01T12:00:00Z' },
+    // 21:30Z = Türkiye'de ertesi gün 00:30 → ayrı gün
+    { id: 'a3', teacher_id: 't1', action: 'dashboard_view', meta: null, created_at: '2026-06-01T21:30:00Z' },
+    { id: 'b1', teacher_id: 't1', action: 'odev_eklendi', meta: { title: 'Eski' }, created_at: '2026-06-02T07:00:00Z' },
+    { id: 'b2', teacher_id: 't1', action: 'odev_eklendi', meta: { title: 'Yeni' }, created_at: '2026-06-02T09:00:00Z' },
+    { id: 'b3', teacher_id: 't1', action: 'odev_guncellendi', meta: { title: 'G' }, created_at: '2026-06-02T09:00:00Z' },
+    { id: 'c2', teacher_id: 't2', action: 'odev_eklendi', meta: { title: 'Eş-2' }, created_at: '2026-06-03T08:00:00Z' },
+    { id: 'c1', teacher_id: 't2', action: 'odev_eklendi', meta: { title: 'Eş-1' }, created_at: '2026-06-03T08:00:00Z' },
+    { id: 'd1', teacher_id: 't2', action: 'yoklama_kaydedildi', meta: null, created_at: '2026-06-04T06:00:00Z' },
+  ]
+  // sayfanın eski sorgusu: created_at desc, id
+  const hamSirali = [...ham].sort((a, b) => b.created_at.localeCompare(a.created_at) || a.id.localeCompare(b.id))
+  const grup = grupla(ham)
+
+  it('gruplama satır sayısını düşürür', () => {
+    expect(grup.length).toBeLessThan(ham.length)
+  })
+  it('buildTeacherStats aynı', () => {
+    expect(buildTeacherStats([T1, T2, T3], grup)).toEqual(buildTeacherStats([T1, T2, T3], hamSirali))
+  })
+  it('computeSummary aynı', () => {
+    expect(computeSummary([T1, T2, T3], grup)).toEqual(computeSummary([T1, T2, T3], hamSirali))
+  })
+  it('akisSatirlari aynı (adet, en yeni zaman/başlık, eşit zamanda küçük id temsilci)', () => {
+    expect(akisSatirlari(grup)).toEqual(akisSatirlari(hamSirali))
+  })
+})

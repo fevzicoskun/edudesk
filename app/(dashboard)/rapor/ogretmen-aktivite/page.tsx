@@ -31,14 +31,17 @@ export default async function OgretmenAktivitePage() {
 
   const [{ data: teacherData }, { data: logData }] = await Promise.all([
     ActivityReportRepository.getTeachers(profile.school_id),
-    ActivityReportRepository.getLogs(profile.school_id, since),
+    ActivityReportRepository.getGunluk(since),
   ])
 
   // Rapor "Öğretmen Aktivitesi" — yalnız öğretmen rolleri (müdür/MY yönetici,
   // bu listede gereksiz). Anasayfa "Öğretmen Aktivitesi" kartıyla tutarlı.
   const teachers = ((teacherData ?? []) as TeacherRow[]).filter(t => isTeachingRole(t.role))
   const allowedIds = new Set(teachers.map(t => t.id))
-  const logs = ((logData ?? []) as LogRow[]).filter(l => allowedIds.has(l.teacher_id))
+  // Grup satırı → LogRow (temsilci = grubun en yeni kaydı, adet = grup büyüklüğü); hesaplar ham satırla birebir aynı
+  const logs: LogRow[] = (logData ?? [])
+    .filter(g => allowedIds.has(g.teacher_id))
+    .map(g => ({ id: g.son_id, teacher_id: g.teacher_id, action: g.action, meta: g.son_meta, created_at: g.son_at, adet: g.adet }))
 
   const stats   = buildTeacherStats(teachers, logs)
   const summary = computeSummary(teachers, logs)

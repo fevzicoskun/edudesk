@@ -2790,6 +2790,18 @@ export type Database = {
           student_id: string
         }[]
       }
+      ogretmen_aktivite_gunluk: {
+        Args: { p_since: string }
+        Returns: {
+          action: string
+          adet: number
+          gun: string
+          son_at: string
+          son_id: string
+          son_meta: Json
+          teacher_id: string
+        }[]
+      }
       okul_son_kullanim: {
         Args: { p_since: string }
         Returns: {

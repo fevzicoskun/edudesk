@@ -11,16 +11,14 @@ export const ActivityReportRepository = {
       .order('full_name')
   },
 
-  async getLogs(schoolId: string, since: string) {
+  /** Son kayıtlar (öğretmen, işlem, Türkiye günü) grubuna indirgenmiş; okul RPC içinde current_school_id() */
+  async getGunluk(since: string) {
     const supabase = await createClient()
-    // .limit(2000) max_rows=1000'i aşamaz (sessiz kesilir) → sayfalı
+    // grup sayısı da 1000'i aşabilir (öğretmen × işlem × gün) → sayfalı; sıra eski ham sorguyla aynı
     return fetchAllResult((f, t) => supabase
-      .from('teacher_activity_log')
-      .select('id, teacher_id, action, meta, created_at')
-      .eq('school_id', schoolId)
-      .gte('created_at', since)
-      .order('created_at', { ascending: false })
-      .order('id')
+      .rpc('ogretmen_aktivite_gunluk', { p_since: since })
+      .order('son_at', { ascending: false })
+      .order('son_id')
       .range(f, t))
   },
 }

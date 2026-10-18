@@ -16,6 +16,8 @@ export type LogRow = {
   action: string
   meta: unknown
   created_at: string
+  /** ogretmen_aktivite_gunluk grup satırı: aynı (öğretmen, işlem, gün) kaç kayıt; ham satırda yok = 1 */
+  adet?: number
 }
 
 export type TeacherRow = {
@@ -66,9 +68,10 @@ export function buildTeacherStats(teachers: TeacherRow[], logs: LogRow[]): Teach
   for (const log of logs) {
     const stat = statMap.get(log.teacher_id)
     if (!stat) continue
-    stat.totalCount++
-    if (log.action === 'yoklama_kaydedildi') stat.yoklamaCount++
-    if (log.action === 'odev_eklendi' || log.action === 'odev_guncellendi') stat.odevCount++
+    const n = log.adet ?? 1
+    stat.totalCount += n
+    if (log.action === 'yoklama_kaydedildi') stat.yoklamaCount += n
+    if (log.action === 'odev_eklendi' || log.action === 'odev_guncellendi') stat.odevCount += n
     if (!stat.lastActivity || log.created_at > stat.lastActivity) {
       stat.lastActivity = log.created_at
     }
@@ -103,8 +106,8 @@ export function akisSatirlari(logs: LogRow[]): AkisSatiri[] {
     if (log.action === 'dashboard_view') continue
     const k = `${log.teacher_id}|${log.action}|${istanbulGunu(log.created_at)}`
     const v = satirlar.get(k)
-    if (v) v.adet++
-    else satirlar.set(k, { key: log.id, teacher_id: log.teacher_id, action: log.action, adet: 1, created_at: log.created_at, title: extractTitle(log.meta) })
+    if (v) v.adet += log.adet ?? 1
+    else satirlar.set(k, { key: log.id, teacher_id: log.teacher_id, action: log.action, adet: log.adet ?? 1, created_at: log.created_at, title: extractTitle(log.meta) })
   }
   return [...satirlar.values()]
 }
