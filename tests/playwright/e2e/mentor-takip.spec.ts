@@ -239,6 +239,8 @@ test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesaj�
   await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/• Ekran süresi: günlük ort\. 2,5 saat/)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
   await expect(page.getByText('Günlük ortalama ekran süresi: ________ saat')).toBeVisible()
+  await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
+  await expect(page.getByLabel('Özet')).toContainText('2,5 saat')
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-26&sekme=dosya`)
   await expect(page.getByRole('region', { name: 'Geçmiş haftalar' }).getByRole('row', { name: /19–25 Ekim/ })).toContainText('2,5 sa')
 })

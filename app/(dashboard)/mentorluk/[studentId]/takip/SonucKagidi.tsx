@@ -1,5 +1,5 @@
 import {
-  GUNLER, kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, type HaftaVerisi, takipHaftaEtiketi,
+  GUNLER, kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, ekranYaz, type HaftaVerisi, takipHaftaEtiketi,
 } from '@/src/domains/mentor/takip/takipMath'
 
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
@@ -37,11 +37,12 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       </div>
 
       <ImzaAlanlari />
-      <div className="grid grid-cols-4 gap-2 mb-2" aria-label="Özet">
+      <div className="grid grid-cols-5 gap-2 mb-2" aria-label="Özet">
         {kutu('Program', p === null ? '—' : `%${p} (${o.gorev_yapilan}/${o.gorev_toplam})`)}
         {kutu('Toplam soru', `${o.soru} / hedef ${veri.soruHedefi}`)}
         {kutu('Doğruluk', d === null ? '—' : `%${d}`)}
         {kutu('Net', o.soru ? netYaz(net) : '—')}
+        {kutu('Ekran süresi (günlük ort.)', veri.icerik.ekranSuresi == null ? '—' : `${ekranYaz(veri.icerik.ekranSuresi)} saat`)}
       </div>
 
       {satirlar.length > 0 && (
