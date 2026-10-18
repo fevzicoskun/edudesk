@@ -18,7 +18,7 @@ test.describe('Haftalık veli bülteni', () => {
     await ilk.click()
     await expect(page.locator('table').getByRole('link', { name: new RegExp(ad) })).toBeVisible({ timeout: 10_000 })
 
-    await page.getByRole('link', { name: 'Haftalık veli bülteni' }).click()
+    await page.getByRole('main').getByRole('link', { name: 'Haftalık veli bülteni' }).click()
     await expect(page.getByRole('heading', { name: 'Haftalık veli bülteni' })).toBeVisible({ timeout: 15_000 })
     await expect(page.getByRole('heading', { name: 'Veli grubu için' })).toBeVisible()
 

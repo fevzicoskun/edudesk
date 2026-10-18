@@ -184,7 +184,65 @@ function NavLink({
   )
 }
 
-export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif = true }: { profile: SidebarProfile | null; email: string; mentorMu?: boolean; yoklamaAktif?: boolean }) {
+const altOk = (acik: boolean) => (
+  <svg className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${acik ? 'rotate-180' : ''}`}
+    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} aria-hidden="true">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+  </svg>
+)
+const altLink = (aktif: boolean, girinti = 'pl-10') => `block ${girinti} pr-3 py-1.5 rounded-lg text-sm truncate transition-colors ${
+  aktif ? 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-medium'
+        : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100'}`
+
+/** Mentörlük + açılır alt menü: Haftalık veli bülteni, Haftalık planlar (öğrenci öğrenci). Açık/kapalı localStorage'da;
+ *  /mentorluk altındaki bir sayfadaysa açık gelir. */
+function MentorlukGrubu({ item, pathname, ogrenciler }: { item: (typeof navItems)[number]; pathname: string; ogrenciler: { id: string; ad: string }[] }) {
+  const [acik, setAcik] = useState(false)
+  const [planAcik, setPlanAcik] = useState(false)
+  const altinda = pathname.startsWith('/mentorluk')
+  const plandaki = ogrenciler.find(o => pathname.startsWith(`/mentorluk/${o.id}/takip`))?.id
+  useEffect(() => {
+    if (altinda || localStorage.getItem('sidebar-mentor-acik') === 'true') setAcik(true)
+    if (plandaki || localStorage.getItem('sidebar-mentor-plan-acik') === 'true') setPlanAcik(true)
+  }, [altinda, plandaki])
+  const degistir = (k: string, set: (f: (v: boolean) => boolean) => void) => set(v => { localStorage.setItem(k, String(!v)); return !v })
+  return (
+    <div>
+      <div className="flex items-center">
+        <div className="flex-1 min-w-0">
+          <NavLink href={item.href} label={item.label} icon={item.icon} collapsed={false} active={pathname === '/mentorluk'} />
+        </div>
+        <button type="button" onClick={() => degistir('sidebar-mentor-acik', setAcik)} aria-expanded={acik}
+          aria-label={acik ? 'Mentörlük alt menüsünü kapat' : 'Mentörlük alt menüsünü aç'}
+          className="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800">{altOk(acik)}</button>
+      </div>
+      {acik && (
+        <div className="space-y-0.5 mt-0.5">
+          <Link href="/mentorluk/bulten" aria-current={pathname === '/mentorluk/bulten' ? 'page' : undefined}
+            className={altLink(pathname === '/mentorluk/bulten')}>Haftalık veli bülteni</Link>
+          {ogrenciler.length > 0 && (
+            <>
+              <button type="button" onClick={() => degistir('sidebar-mentor-plan-acik', setPlanAcik)} aria-expanded={planAcik}
+                className={`${altLink(false)} w-full text-left flex items-center gap-2`}>
+                <span className="flex-1 truncate">Haftalık planlar</span>{altOk(planAcik)}
+              </button>
+              {planAcik && ogrenciler.map(o => (
+                <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`} aria-current={plandaki === o.id ? 'page' : undefined}
+                  className={`${altLink(plandaki === o.id, 'pl-14')} text-[13px]`}>{o.ad}</Link>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif = true, planOgrencileri = [] }: {
+  profile: SidebarProfile | null; email: string; mentorMu?: boolean; yoklamaAktif?: boolean
+  /** Haftalık takip açık mentörün öğrencileri (menüde Haftalık planlar altında) */
+  planOgrencileri?: { id: string; ad: string }[]
+}) {
   const pathname = usePathname()
   const rawName = profile?.full_name || email.split('@')[0]
   const displayName = formatName(rawName)
@@ -281,9 +339,9 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
         {/* Nav — günlük ekranlar üstte, kalanlar katlanır "Diğer" grubunda.
             Daraltılmış menüde gruplama anlamsız: tüm ikonlar düz listelenir. */}
         <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto overflow-x-hidden">
-          {(collapsed ? filteredNav : gunluk).map(({ href, label, icon }) => (
-            <NavLink key={href} href={href} label={label} icon={icon} collapsed={collapsed} active={href === aktif} />
-          ))}
+          {(collapsed ? filteredNav : gunluk).map(item => (!collapsed && item.href === '/mentorluk')
+            ? <MentorlukGrubu key={item.href} item={item} pathname={pathname} ogrenciler={planOgrencileri} />
+            : <NavLink key={item.href} href={item.href} label={item.label} icon={item.icon} collapsed={collapsed} active={item.href === aktif} />)}
 
           {!collapsed && diger.length > 0 && (
             <>

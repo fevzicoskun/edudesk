@@ -15,6 +15,7 @@ import { subscriptionState, kalanGun } from '@/src/domains/billing/subscriptionM
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { MentorRepository } from '@/src/domains/mentor/repositories/MentorRepository'
+import { TakipRepository } from '@/src/domains/mentor/repositories/TakipRepository'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 // Sekme/PDF dosya adı ve tarayıcının kâğıda bastığı başlık: "Sayfa · Okul adı" (kökteki "· EduDesk" yerine)
@@ -31,12 +32,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   // Mentörlük menüde yalnız en az bir öğrencisi olan öğretmende görünür (okuma hatası = gizli, sayfa yine açılır)
   // Yoklama menüleri okul ayarına bağlı (okul yoksa / okunamazsa açık sayılır). İki okuma paralel.
-  const [mentorMu, yoklamaAktif] = await Promise.all([
-    isTeachingRole(profile?.role)
-      ? MentorRepository.countActiveMentorships(user.id).then(({ count }) => (count ?? 0) > 0)
-      : false,
+  // Menüde Mentörlük altında öğrenci öğrenci "Haftalık planlar" (yalnız haftalık takip açık mentörde; hata = liste yok)
+  const [mentiler, yoklamaAktif, takipAcik] = await Promise.all([
+    isTeachingRole(profile?.role) && profile?.school_id
+      ? MentorRepository.listMentorships(user.id, profile.school_id).then(({ data }) => (data ?? [])
+          .map(r => ({ id: r.student_id, ad: (r.students as { full_name: string }).full_name }))
+          .sort((a, b) => a.ad.localeCompare(b.ad, 'tr')))
+      : [],
     profile?.school_id ? okulYoklamaAktif(profile.school_id) : true,
+    isTeachingRole(profile?.role) ? TakipRepository.acikMi().catch(() => false) : false,
   ])
+  const mentorMu = mentiler.length > 0
 
   // Abonelik enforcement (fail-open: schools okunamazsa geçir — tahsilat güvenlik sınırı değil).
   let abonelikUyari: number | null = null
@@ -68,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex h-full bg-gray-50 dark:bg-slate-950 print:bg-white">
         {/* flex: içindeki <aside> satırın tam yüksekliğine uzasın (yoksa beyaz menü içerik bitince kesilir) */}
         <div className="flex print:hidden">
-          <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} yoklamaAktif={yoklamaAktif} />
+          <Sidebar profile={profile} email={user.email ?? ''} mentorMu={mentorMu} yoklamaAktif={yoklamaAktif} planOgrencileri={takipAcik ? mentiler : []} />
         </div>
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div className="print:hidden">

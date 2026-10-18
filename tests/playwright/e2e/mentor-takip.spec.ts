@@ -264,6 +264,23 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
   await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toBeVisible()
 })
+test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğrenci Haftalık planlar', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/anasayfa')
+  await page.waitForLoadState('networkidle')
+  const menu = page.locator('aside')
+  await menu.getByRole('button', { name: 'Mentörlük alt menüsünü aç' }).click()
+  await menu.getByRole('link', { name: 'Haftalık veli bülteni' }).click()
+  await expect(page.getByRole('heading', { name: 'Haftalık veli bülteni' })).toBeVisible({ timeout: 15_000 })
+  // /mentorluk altındayken menü açık kalır
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  const plan = menu.getByRole('button', { name: 'Haftalık planlar' })
+  if ((await plan.getAttribute('aria-expanded')) !== 'true') await plan.click()
+  await menu.getByRole('link', { name: o!.full_name, exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/mentorluk/${ogrId}/takip[?]sekme=plan$`))
+  await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible()
+  await expect(menu.getByRole('link', { name: o!.full_name, exact: true })).toHaveAttribute('aria-current', 'page')
+})
 test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlanır', async ({ page }) => {
   await page.goto('/mentorluk')
   await page.getByText('Kitap ekle (tüm mentör öğrencilerime)').click()
