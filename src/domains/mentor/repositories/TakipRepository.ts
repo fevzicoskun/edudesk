@@ -1,4 +1,5 @@
 // src/domains/mentor/repositories/TakipRepository.ts
+import { cache } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { fetchAll } from '@/src/shared/utils/fetchAll'
@@ -7,12 +8,13 @@ import type { Ozet } from '../takip/takipMath'
 type HaftaSatiri = { school_id: string; student_id: string; hafta_basi: string; seviye: number; soru_hedefi: number; icerik: Json; gorusme: Json; updated_by: string } & Ozet
 
 export const TakipRepository = {
-  async acikMi(): Promise<boolean> {
+  // cache: layout + sayfa + servis aynı istekte 2–4 kez soruyordu; sonuç auth.uid()'e bağlı, istek başına sabit
+  acikMi: cache(async (): Promise<boolean> => {
     const db = await createClient()
     const { data, error } = await db.rpc('mentor_takip_acik')
     if (error) throw new Error(error.message)
     return data === true
-  },
+  }),
 
   async mentoruMu(userId: string, schoolId: string, studentId: string): Promise<boolean> {
     const db = await createClient()

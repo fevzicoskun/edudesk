@@ -1,6 +1,6 @@
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { kapsamdaMi } from '@/src/domains/homework/lib/kapsam'
-import { Suspense } from 'react'
+import { Suspense, cache } from 'react'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { getCurrentProfile, getCurrentUser } from '@/src/shared/auth'
 import { notFound, redirect } from 'next/navigation'
@@ -35,18 +35,23 @@ function StatusBoardSkeleton() {
   )
 }
 
+// Sekme başlığı (generateMetadata) ve sayfa aynı ödevi okur → istek başına tek sorgu
+const odevGetir = cache(async (id: string, schoolId: string) => {
+  const supabase = await createClient()
+  return supabase
+    .from('homeworks')
+    .select('id, title, subject, description, due_date, assigned_date, class_id, teacher_id, is_template, classes(name)')
+    .eq('id', id)
+    .eq('school_id', schoolId)
+    .is('deleted_at', null)
+    .single()
+})
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const profile = await getCurrentProfile()
   if (!profile?.school_id) return { title: 'Ödev' }
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('homeworks')
-    .select('title, teacher_id')
-    .eq('id', id)
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .single()
+  const { data } = await odevGetir(id, profile.school_id)
   // Kapsam dışı ödevin adı sekme başlığından da sızmasın
   const kapsam = await HomeworkService.getOdevKapsami()
   if (!data || !kapsam || !kapsamdaMi(kapsam, data.teacher_id)) return { title: 'Ödev' }
@@ -66,13 +71,7 @@ export default async function OdevDetayPage({
 
   const supabase = await createClient()
 
-  const { data: hw } = await supabase
-    .from('homeworks')
-    .select('id, title, subject, description, due_date, assigned_date, class_id, teacher_id, is_template, classes(name)')
-    .eq('id', id)
-    .eq('school_id', profile.school_id)
-    .is('deleted_at', null)
-    .single()
+  const { data: hw } = await odevGetir(id, profile.school_id)
 
   if (!hw || hw.is_template) notFound()
 
