@@ -3,7 +3,9 @@
 import { useState, useEffect, useTransition } from 'react'
 import { usePathname } from 'next/navigation'
 import { useToast } from '@/components/Toast'
-import { quickCreateHomework, getHomeworkTemplates } from '@/app/actions/homework'
+import { quickCreateHomework, getHomeworkTemplates, getDersSecenekleri } from '@/app/actions/homework'
+import DersSecici from '@/app/(dashboard)/odevler/DersSecici'
+import type { DersSecenekleri } from '@/src/domains/homework/dersSecimi'
 import { getMyClasses } from '@/app/actions/classes'
 import type { HomeworkTemplate } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
@@ -31,6 +33,9 @@ export default function QuickAddDrawer() {
   const [templates, setTemplates]             = useState<HomeworkTemplate[]>([])
   const [title, setTitle]                     = useState('')
   const [subject, setSubject]                 = useState('')
+  const [dersSec, setDersSec]                 = useState<DersSecenekleri | null>(null)
+  // şablon/sıfırlama ders seçiciyi yeni başlangıç dersiyle yeniden kurar
+  const [dersKey, setDersKey]                 = useState(0)
   const [description, setDescription]         = useState('')
   const [dueDate, setDueDate]                 = useState('')
   const [notifyParents, setNotifyParents]     = useState(true)
@@ -49,6 +54,11 @@ export default function QuickAddDrawer() {
   }, [open, classes.length])
 
   useEffect(() => {
+    if (!open || dersSec) return
+    getDersSecenekleri().then(setDersSec)
+  }, [open, dersSec])
+
+  useEffect(() => {
     if (selectedIds.length !== 1) { setTemplates([]); return }
     getHomeworkTemplates(selectedIds[0]).then(setTemplates)
   }, [selectedIds])
@@ -62,6 +72,7 @@ export default function QuickAddDrawer() {
   function applyTemplate(t: HomeworkTemplate) {
     setTitle(t.title)
     setSubject(t.subject)
+    setDersKey(k => k + 1)
     setDescription(t.description ?? '')
   }
 
@@ -69,6 +80,7 @@ export default function QuickAddDrawer() {
     setSelectedIds([])
     setTitle('')
     setSubject('')
+    setDersKey(k => k + 1)
     setDescription('')
     setDueDate('')
     setError(null)
@@ -80,7 +92,7 @@ export default function QuickAddDrawer() {
   function submit() {
     if (selectedIds.length === 0) { setError('En az bir sınıf seçin'); return }
     if (!title.trim())            { setError('Başlık gerekli'); return }
-    if (!subject.trim())          { setError('Ders adı gerekli'); return }
+    if (!subject.trim())          { setError('Ders seçin'); return }
     if (!dueDate)                 { setError('Son teslim tarihi gerekli'); return }
     setError(null)
 
@@ -224,14 +236,12 @@ export default function QuickAddDrawer() {
 
           {/* Ders */}
           <div>
-            <label className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Ders</label>
-            <input
-              type="text"
-              value={subject}
-              onChange={e => setSubject(e.target.value)}
-              placeholder="Örn: Matematik"
-              className={`mt-1.5 ${INPUT}`}
-            />
+            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">Ders</p>
+            <div className="mt-1.5">
+              {dersSec
+                ? <DersSecici key={dersKey} secenek={dersSec} sinifId={selectedIds.at(-1) ?? null} baslangic={subject} selectClassName={INPUT} onDegis={setSubject} />
+                : <p className="text-sm text-gray-500 dark:text-slate-400">Dersler yükleniyor…</p>}
+            </div>
           </div>
 
           {/* Açıklama */}

@@ -46,7 +46,7 @@ test('"1 hafta" düğmesi verildiği günden 7 gün sonrasını yazar; telefonda
   await expect(birHafta).toHaveAttribute('aria-pressed', 'true')
 
   await page.locator('input[name="title"]').fill(BASLIK)
-  await page.locator('input[name="subject"]').fill('Fizik')
+  await page.locator('select[name="subject"]').selectOption('Fizik')
   await gonder.click()
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
 

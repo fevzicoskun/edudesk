@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation'
 import HomeworkForm, { type Defaults } from './HomeworkForm'
 import DeleteTemplateButton from './DeleteTemplateButton'
 import Link from 'next/link'
-import { TakipService } from '@/src/domains/mentor/services/TakipService'
+import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
+import { OKUL_DERSLERI } from '@/src/domains/homework/dersSecimi'
 
 export default async function YeniOdevPage({
   searchParams,
@@ -19,7 +20,7 @@ export default async function YeniOdevPage({
   const { copy, template, templateSaved, guncellendi, tarih } = await searchParams
 
   const supabase = await createClient()
-  const [classesRes, sourcesRes, templatesRes, dersler] = await Promise.all([
+  const [classesRes, sourcesRes, templatesRes, dersSecenekleri] = await Promise.all([
     supabase
       .from('classes')
       .select('id, name, grade')
@@ -42,7 +43,7 @@ export default async function YeniOdevPage({
       .eq('is_template', true)
       .is('deleted_at', null)
       .order('title'),
-    TakipService.dersSecenekleri(),
+    HomeworkService.dersSecenekleri(),
   ])
 
   const tarihDefault = tarih && /^\d{4}-\d{2}-\d{2}$/.test(tarih) ? tarih : undefined
@@ -189,8 +190,7 @@ export default async function YeniOdevPage({
           classes={classesRes.data ?? []}
           sources={sourcesRes.data ?? []}
           defaults={defaults ?? (tarihDefault ? { due_date: tarihDefault } : undefined)}
-          varsayilanDers={profile.subject ?? ''}
-          dersler={dersler}
+          dersSecenekleri={dersSecenekleri ?? { dersler: OKUL_DERSLERI, sinifDersleri: {}, kaynak: 'okul' }}
         />
       </div>
     </div>

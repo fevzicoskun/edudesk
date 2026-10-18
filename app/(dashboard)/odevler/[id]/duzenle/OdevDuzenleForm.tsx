@@ -6,7 +6,8 @@ import { updateHomework, getClassWeekLoad } from '@/app/actions/homework'
 import Link from 'next/link'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import WeekLoadBanner from '@/app/(dashboard)/odevler/WeekLoadBanner'
-import DersInput from '@/app/(dashboard)/odevler/DersInput'
+import DersSecici from '@/app/(dashboard)/odevler/DersSecici'
+import type { DersSecenekleri } from '@/src/domains/homework/dersSecimi'
 
 type HwData = {
   id: string
@@ -37,13 +38,13 @@ export default function OdevDuzenleForm({
   classes,
   sources,
   submissionCount,
-  dersler,
+  dersSecenekleri,
 }: {
   hw: HwData
   classes: ClassItem[]
   sources: SourceItem[]
   submissionCount: number
-  dersler: string[]
+  dersSecenekleri: DersSecenekleri
 }) {
   const [state, formAction, isPending] = useActionState(updateHomework, null)
 
@@ -128,8 +129,8 @@ export default function OdevDuzenleForm({
           {/* Son Teslim Tarihi + Haftalık Yük */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</label>
-              <DersInput dersler={dersler} className={field} defaultValue={hw.subject} />
+              <p className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Ders</p>
+              <DersSecici secenek={dersSecenekleri} sinifId={selectedClass} baslangic={hw.subject} mevcutDers={hw.subject} selectClassName={field} />
             </div>
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">

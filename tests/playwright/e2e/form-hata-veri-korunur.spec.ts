@@ -24,7 +24,7 @@ test('yeni ödev: sunucu hatasından sonra açıklama ve ders silinmez', async (
 
   const ACIKLAMA = 'Uzun açıklama — kaybolmamalı. '.repeat(80) // > 2000 karakter
   await page.locator('input[name="title"]').fill(`E2Ehata${Date.now()}`)
-  await page.locator('input[name="subject"]').fill('Kimya')
+  await page.locator('select[name="subject"]').selectOption('Kimya')
   const aciklama = page.locator('textarea[name="description"]')
   await expect(aciklama).toHaveAttribute('maxlength', '2000') // önleme katmanı: tarayıcı sınırı
   // Kök neden katmanı: sınır aşılıp sunucu reddetse de (ör. eski sekme) yazılan kalmalı
@@ -36,7 +36,7 @@ test('yeni ödev: sunucu hatasından sonra açıklama ve ders silinmez', async (
   await expect(page.locator('[data-hw-error]')).toBeVisible({ timeout: 30_000 })
   await expect(page).toHaveURL(/\/odevler\/yeni/)
   await expect(page.locator('textarea[name="description"]')).toHaveValue(ACIKLAMA)
-  await expect(page.locator('input[name="subject"]')).toHaveValue('Kimya')
+  await expect(page.locator('select[name="subject"]')).toHaveValue('Kimya')
 })
 
 // ── Kalan formlar (2026-10-17): kaynak ekleme, öğrenci notu, öğrenci ekleme ─────────────────────

@@ -6,7 +6,8 @@ import { createHomework } from '@/src/domains/homework/actions'
 import Link from 'next/link'
 import ClassWeekLoadSection from './ClassWeekLoadSection'
 import { onerilenBaslik } from '@/src/domains/homework/homeworkMath'
-import DersInput from '../DersInput'
+import DersSecici from '../DersSecici'
+import type { DersSecenekleri } from '@/src/domains/homework/dersSecimi'
 
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
@@ -38,16 +39,13 @@ export default function HomeworkForm({
   classes,
   sources,
   defaults,
-  varsayilanDers = '',
-  dersler = [],
+  dersSecenekleri,
 }: {
   classes: ClassItem[]
   sources: SourceItem[]
   defaults?: Defaults
-  /** Öğretmenin branşı (profiles.subject) — her ödevde elle yazmasın diye. */
-  varsayilanDers?: string
-  /** Okulun ödev dersleri (dersListesi) — öneri listesi */
-  dersler?: string[]
+  /** Öğretmenin verebileceği dersler (ders programı → branş → okul) */
+  dersSecenekleri: DersSecenekleri
 }) {
   const [state, formAction, isPending] = useActionState(createHomework, null)
   const [isTemplate, setIsTemplate] = useState(false)
@@ -69,10 +67,13 @@ export default function HomeworkForm({
     defaults?.class_id ? [defaults.class_id] : []
   )
 
+  // Ders ön seçimi en son seçilen sınıfa göre (o sınıfta tek ders veriyorsa)
+  const [sonSinif, setSonSinif] = useState<string | null>(defaults?.class_id ?? null)
+
   function toggleClass(id: string) {
-    setSelectedClasses(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    )
+    const kalan = selectedClasses.includes(id) ? selectedClasses.filter(x => x !== id) : [...selectedClasses, id]
+    setSelectedClasses(kalan)
+    setSonSinif(kalan.at(-1) ?? null)
   }
 
   const submitLabel = isTemplate
@@ -122,7 +123,7 @@ export default function HomeworkForm({
 
             {isTemplate ? (
               /* Template: tek sınıf seçimi */
-              <select name="class_id" required className={field} defaultValue={defaults?.class_id ?? ''}>
+              <select name="class_id" required className={field} defaultValue={defaults?.class_id ?? ''} onChange={e => setSonSinif(e.target.value || null)}>
                 <option value="">Sınıf seçin</option>
                 {classes.map((c) => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -170,8 +171,8 @@ export default function HomeworkForm({
 
           {/* Ders */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-slate-300">Ders</label>
-            <DersInput dersler={dersler} placeholder="Matematik" className={field} defaultValue={defaults?.subject ?? varsayilanDers} />
+            <p className="block text-sm font-medium text-gray-700 dark:text-slate-300">Ders</p>
+            <DersSecici secenek={dersSecenekleri} sinifId={sonSinif} baslangic={defaults?.subject} selectClassName={field} />
           </div>
 
           {/* Kaynak + Sayfa */}

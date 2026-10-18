@@ -109,17 +109,19 @@ test.describe('Yeni ödev formu', () => {
   })
 })
 
-test.describe('Ödev formu ders önerisi', () => {
+test.describe('Ödev formu ders seçimi', () => {
   test.use({ storageState: path.join(AUTH_DIR, 'ogretmen.json') })
 
-  test('okul dersleri önerilir; farklı harfle yazılan ders okulun yazımına oturur', async ({ page }) => {
+  // 2026-10-18: ders serbest metin değil. Test öğretmeninin programı/branşı yok → okulun dersleri açılır listede
+  test('ders serbest metin değil; programı/branşı olmayan öğretmene okulun dersleri listelenir', async ({ page }) => {
     await page.goto('/odevler/yeni')
     await page.waitForLoadState('networkidle')
-    const ders = page.locator('input[name="subject"]')
-    await expect(ders).toHaveAttribute('list', 'okul-dersleri')
-    expect(await page.locator('#okul-dersleri option[value="Matematik"]').count()).toBe(1)
-    await ders.fill('MATEMATİK')
-    await ders.blur()
-    await expect(ders).toHaveValue('Matematik')
+    await expect(page.locator('input[name="subject"][type="text"]')).toHaveCount(0)
+    const ders = page.locator('select[name="subject"]')
+    await expect(ders).toBeVisible()
+    for (const ad of ['Matematik', 'Geometri', 'Türk Dili ve Edebiyatı', 'T.C. İnkılap Tarihi ve Atatürkçülük']) {
+      expect(await ders.locator(`option[value="${ad}"]`).count()).toBe(1)
+    }
+    expect(await ders.locator('option[value="Mentörlük"]').count()).toBe(0)
   })
 })

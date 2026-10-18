@@ -59,13 +59,13 @@ test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', a
   }).toPass({ timeout: 30_000 })
   await formHazir(page)
 
-  await page.locator('input[name="subject"]').fill('Geometri')
+  await page.locator('select[name="subject"]').selectOption('Geometri')
   // harf ve boşluk farkıyla yazılır — yine aynı kitap olmalı
   await page.locator('#hw-source').fill(`${ETIKET}  mikro ORJİNAL `)
   await page.locator('input[name="title"]').fill(baslik)
   const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.getByLabel('Son Teslim Tarihi').fill(bugun)
-  await expect(page.locator('input[name="subject"]')).toHaveValue('Geometri')
+  await expect(page.locator('select[name="subject"]')).toHaveValue('Geometri')
   await expect(page.locator('input[name="title"]')).toHaveValue(baslik)
 
   await gonder.click()
@@ -108,7 +108,7 @@ test('Romen rakamı ve rakam tekrarı içeren başlık kaydedilir ("Ünite III �
   }).toPass({ timeout: 30_000 })
   await formHazir(page)
   await page.locator('input[name="title"]').fill(baslik)
-  await page.locator('input[name="subject"]').fill('Matematik')
+  await page.locator('select[name="subject"]').selectOption('Matematik')
   const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.getByLabel('Son Teslim Tarihi').fill(bugun)
   await expect(page.locator('input[name="title"]')).toHaveValue(baslik)

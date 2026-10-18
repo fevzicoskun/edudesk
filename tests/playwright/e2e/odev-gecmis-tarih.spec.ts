@@ -43,7 +43,7 @@ test('geçmişte verilmiş, teslimi geçmiş ödev sonradan girilir', async ({ p
   await formHazir(page)
 
   await page.locator('input[name="title"]').fill(BASLIK)
-  await page.locator('input[name="subject"]').fill('Fizik')
+  await page.locator('select[name="subject"]').selectOption('Fizik')
   await page.getByLabel('Verildiği Tarih').fill(verildigi)
   await page.getByLabel('Son Teslim Tarihi').fill(sonTeslim)
   await expect(page.getByText('Geçmiş tarihli ödev — sonradan giriliyor.')).toBeVisible()
