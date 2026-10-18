@@ -13,9 +13,13 @@ import { haftaBasi, haftaKaydir, haftaDurumu, programYuzde, gecenHaftaOzeti } fr
 import OgrenciEkleKarti from './OgrenciEkleKarti'
 import MentorTablosu from './MentorTablosu'
 import KitapHerkeseFormu from './KitapHerkeseFormu'
+import { BultenService } from '@/src/domains/mentor/services/BultenService'
+import { haftaSec } from '@/src/domains/mentor/lib/bultenMath'
 
 export const metadata = { title: 'Mentörlük' }
 
+// Kitap ekle kutusuyla aynı açılır kutu (kullanıcı isteği 2026-10-18: bülten ve planlara kolay ulaşım)
+const acilir = 'mb-4 rounded-lg border border-gray-200 dark:border-slate-700 px-3 py-2'
 const ikincilButon = 'px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700'
 
 export default async function MentorlukPage({ searchParams }: { searchParams: Promise<{ bas?: string | string[] }> }) {
@@ -99,6 +103,32 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
         </div>
       )}
       {takipAcik && rows.length > 0 && <KitapHerkeseFormu dersler={await TakipService.dersSecenekleri()} />}
+      {takipAcik && rows.length > 0 && (
+        <details className={acilir}>
+          <summary className="text-sm font-medium cursor-pointer">Haftalık planlar (öğrenci öğrenci)</summary>
+          <ul className="mt-2 divide-y divide-gray-100 dark:divide-slate-700">
+            {tablo.satirlar.map(s => (
+              <li key={s.id}>
+                <Link href={`/mentorluk/${s.id}/takip?hafta=${haftaBasi(bugun)}&sekme=plan`}
+                  className="flex items-center justify-between gap-3 min-h-[44px] text-sm hover:text-blue-600">
+                  <span>{s.full_name} <span className="text-gray-500 dark:text-slate-400">· {s.class_name ?? '—'}</span></span>
+                  <span className="text-gray-600 dark:text-slate-400 whitespace-nowrap">{takip?.[s.id]} ›</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link href="/mentorluk/takip-kagitlari" className={`${ikincilButon} inline-block mt-2`}>Hepsinin kâğıdını birlikte yazdır</Link>
+        </details>
+      )}
+      {rows.length > 0 && (
+        <details className={acilir}>
+          <summary className="text-sm font-medium cursor-pointer">Haftalık veli bülteni</summary>
+          <p className="mt-2 text-sm text-gray-600 dark:text-slate-400">
+            Bu hafta {(await BultenService.gonderilenler(haftaSec(bugun))).filter(id => listedekiler.has(id)).length}/{rows.length} veliye gönderildi.
+          </p>
+          <Link href="/mentorluk/bulten" className={`${ikincilButon} inline-block mt-2`}>Bülteni aç</Link>
+        </details>
+      )}
 
       {rows.length === 0 ? (
         <div className="mb-6 text-center border border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-8">
