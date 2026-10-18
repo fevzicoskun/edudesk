@@ -18,15 +18,11 @@ export const YEDEKLENEN_TABLOLAR = [
   'homework_submission_logs',
   'veli_tokens', 'notification_preferences', 'platform_admins',
   // Öğrenci takibi
-  'mentorships', 'mentor_reports', 'bulten_gonderimleri',
+  'mentorships', 'bulten_gonderimleri',
   'mentor_haftalari', 'mentor_kitaplari', 'konu_listesi', 'ogrenci_konu_durumu', 'mentor_takip_kullanicilari',
-  'student_notes', 'kanaat_notlari',
+  'student_notes',
   'homework_sources',
-  // Değerlendirme
-  'common_exams', 'exam_entries',
-  'notebook_checks', 'sok_reports', 'curriculum_progress',
-  'annual_plans', 'daily_plans', 'zumre_meetings', 'zumre_meeting_templates',
-  'ogretmen_dosyasi', 'tasks',
+  'tasks',
   // Para ve satış
   'school_payments', 'okul_basvurulari',
 ] as const
@@ -37,7 +33,6 @@ const BILESIK_ANAHTAR: Partial<Record<(typeof YEDEKLENEN_TABLOLAR)[number], stri
   user_roles:       ['user_id', 'role_id'],
   role_permissions: ['role_id', 'permission_id'],
   user_permissions: ['user_id', 'permission_id'],
-  ogretmen_dosyasi: ['teacher_id', 'academic_year'],
   bulten_gonderimleri:      ['student_id', 'hafta'],
   notification_preferences: ['user_id'],
   ogrenci_konu_durumu:        ['student_id', 'konu_id'],

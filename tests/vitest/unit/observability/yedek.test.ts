@@ -92,7 +92,6 @@ describe('yedekSiralama() — sayfalı okumada satır atlanmasın/tekrarlanması
     expect(yedekSiralama('user_roles')).toEqual(['user_id', 'role_id'])
     expect(yedekSiralama('role_permissions')).toEqual(['role_id', 'permission_id'])
     expect(yedekSiralama('user_permissions')).toEqual(['user_id', 'permission_id'])
-    expect(yedekSiralama('ogretmen_dosyasi')).toEqual(['teacher_id', 'academic_year'])
     // mentör takip (2026-10-16): eksik kalınca iki tablo yedeğe hiç girmiyordu
     expect(yedekSiralama('ogrenci_konu_durumu')).toEqual(['student_id', 'konu_id'])
     expect(yedekSiralama('mentor_takip_kullanicilari')).toEqual(['user_id'])
