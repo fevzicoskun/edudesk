@@ -281,6 +281,19 @@ test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğr
   await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible()
   await expect(menu.getByRole('link', { name: o!.full_name, exact: true })).toHaveAttribute('aria-current', 'page')
 })
+test('telefon: Daha Fazla çekmecesinde Mentörlük → Haftalık veli bülteni ve Haftalık planlar', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/anasayfa')
+  await page.waitForLoadState('networkidle')
+  await page.getByRole('button', { name: 'Daha fazla' }).click()
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  await page.getByText('Haftalık planlar', { exact: true }).click()
+  await page.getByRole('link', { name: o!.full_name, exact: true }).click()
+  await expect(page).toHaveURL(new RegExp(`/mentorluk/${ogrId}/takip[?]sekme=plan$`))
+  await page.getByRole('button', { name: 'Daha fazla' }).click()
+  await page.getByRole('link', { name: 'Haftalık veli bülteni' }).click()
+  await expect(page.getByRole('heading', { name: 'Haftalık veli bülteni' })).toBeVisible({ timeout: 15_000 })
+})
 test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlanır', async ({ page }) => {
   await page.goto('/mentorluk')
   await page.getByText('Kitap ekle (tüm mentör öğrencilerime)').click()
@@ -552,6 +565,11 @@ test.describe('erişim', () => {
       await expect(page.getByRole('link', { name: 'Haftalık takip' })).toHaveCount(0)
       await page.goto('/mentorluk')
       await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toHaveCount(0)
+      // Sol menüde bülten var, Haftalık planlar yok
+      await page.setViewportSize({ width: 1280, height: 900 })
+      await page.reload()
+      await expect(page.locator('aside').getByRole('link', { name: 'Haftalık veli bülteni' })).toBeVisible()
+      await expect(page.locator('aside').getByRole('button', { name: 'Haftalık planlar' })).toHaveCount(0)
     } finally {
       await db.from('mentor_takip_kullanicilari').upsert({ user_id: mentor.id, school_id: mentor.school_id })
     }

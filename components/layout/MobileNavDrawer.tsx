@@ -12,7 +12,14 @@ type NavItem = {
   roles: Role[] | null
 }
 
-export default function MobileNavDrawer({ items, role, aktif }: { items: NavItem[]; role: Role | undefined; aktif: string | null }) {
+const altLink = (aktif: boolean, girinti = 'pl-3') => `flex items-center min-h-[44px] ${girinti} pr-3 rounded-xl text-sm ${aktif
+  ? 'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-800'}`
+
+/** mentor: masaüstü menüdeki Mentörlük alt menüsünün telefon karşılığı (Mentörlük alt barda, alt menü buraya) */
+export default function MobileNavDrawer({ items, role, aktif, mentor }: {
+  items: NavItem[]; role: Role | undefined; aktif: string | null
+  mentor?: { planOgrencileri: { id: string; ad: string }[] } | null
+}) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
@@ -67,6 +74,21 @@ export default function MobileNavDrawer({ items, role, aktif }: { items: NavItem
             )
           })}
         </nav>
+        {mentor && (
+          <div className="px-4 pb-safe-or-4 pt-1 max-h-[45vh] overflow-y-auto border-t border-gray-100 dark:border-slate-800">
+            <p className="px-3 pt-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">Mentörlük</p>
+            <Link href="/mentorluk/bulten" className={altLink(pathname === '/mentorluk/bulten')}>Haftalık veli bülteni</Link>
+            {mentor.planOgrencileri.length > 0 && (
+              <details open={mentor.planOgrencileri.some(o => pathname.startsWith(`/mentorluk/${o.id}/takip`))}>
+                <summary className={`${altLink(false)} cursor-pointer`}>Haftalık planlar</summary>
+                {mentor.planOgrencileri.map(o => (
+                  <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`}
+                    className={altLink(pathname.startsWith(`/mentorluk/${o.id}/takip`), 'pl-8')}>{o.ad}</Link>
+                ))}
+              </details>
+            )}
+          </div>
+        )}
       </div>
     </>
   )

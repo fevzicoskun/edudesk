@@ -456,7 +456,7 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
                 )
               })}
               {showDrawer && (
-                <MobileNavDrawer items={drawer} role={role} aktif={aktif} />
+                <MobileNavDrawer items={drawer} role={role} aktif={aktif} mentor={mentorMu ? { planOgrencileri } : null} />
               )}
             </>
           )
