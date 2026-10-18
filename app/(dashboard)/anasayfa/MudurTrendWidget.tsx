@@ -4,7 +4,7 @@ import { requireSchoolId } from '@/src/shared/auth'
 import { getSchoolTrends } from '@/src/domains/dashboard/queries/schoolTrends'
 import { filledWeekCount } from '@/src/domains/dashboard/lib/trendMath'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import TrendChart from './charts/TrendChart'
+import TrendChart from './charts/TrendChartLazy'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 
 const MIN_WEEKS = 2
