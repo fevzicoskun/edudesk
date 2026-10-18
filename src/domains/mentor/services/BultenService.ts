@@ -1,6 +1,7 @@
 // src/domains/mentor/services/BultenService.ts
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { addDaysISO } from '@/src/shared/date'
 import { MentorService } from './MentorService'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { BultenRepository } from '../repositories/BultenRepository'
@@ -30,9 +31,10 @@ export const BultenService = {
     if (mentorluk.length === 0) return bos
 
     const ids = mentorluk.map(m => m.student_id)
-    // bas YOK: o parametre assigned_date'e göre süzer; geçen hafta kontrol edilen eski ödevler kaçardı
+    // bas YOK: o parametre assigned_date'e göre süzer; geçen hafta kontrol edilen eski ödevler kaçardı.
+    // vade = bultenMath'in baktığı due_date aralığı (geçen Pzt … bu Paz); dışı zaten kullanılmıyor.
     const [profiller, ek] = await Promise.all([
-      HomeworkService.getMentorHomeworkProfiles(ids),
+      HomeworkService.getMentorHomeworkProfiles(ids, undefined, [addDaysISO(hafta, -7), addDaysISO(hafta, 6)]),
       BultenRepository.ekBilgi(ability.schoolId, ids),
     ])
     if ('error' in profiller) throw new Error(profiller.error)

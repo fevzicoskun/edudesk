@@ -262,7 +262,8 @@ export const HomeworkRepository = {
 
   /** Farklı sınıflardan öğrenciler (mentör grubu) — sabit 3 sorgu. Ödevler öğrencilerin sınıflarından,
    *  teslimler öğrenci id'siyle; başka sınıfın ödevi servis tarafında öğrenciye eşlenmez. */
-  async findStudentsHomeworkProfiles(studentIds: string[], schoolId: string, bas?: string) {
+  /** bas: assigned_date alt sınırı; vade: [bas, son] due_date aralığı (ödevler ve işaretleri birlikte süzülür) */
+  async findStudentsHomeworkProfiles(studentIds: string[], schoolId: string, bas?: string, vade?: [string, string]) {
     const supabase = await createClient()
     if (studentIds.length === 0) return { students: [], homeworks: [], submissions: [] }
     const studentsRes = await supabase
@@ -289,16 +290,19 @@ export const HomeworkRepository = {
           .eq('is_template', false)
           .is('deleted_at', null)
         if (bas) q = q.gte('assigned_date', bas)
+        if (vade) q = q.gte('due_date', vade[0]).lte('due_date', vade[1])
         return q.order('due_date', { ascending: false }).order('id').range(from, to)
       }),
-      fetchAll((from, to) => supabase
-        .from('homework_submissions')
-        .select('homework_id, student_id, status, note')
-        .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi
-        .in('student_id', students.map(s => s.id))
-        .eq('school_id', schoolId)
-        .order('id')
-        .range(from, to)),
+      fetchAll((from, to) => {
+        let q = supabase
+          .from('homework_submissions')
+          .select('homework_id, student_id, status, note, homeworks!inner(due_date)') // FK zorunlu: inner satır düşürmez, vade süzgeci için
+          .not('marked_at', 'is', null) // işaretlenmemiş boş satır = kontrol edilmedi
+          .in('student_id', students.map(s => s.id))
+          .eq('school_id', schoolId)
+        if (vade) q = q.gte('homeworks.due_date', vade[0]).lte('homeworks.due_date', vade[1])
+        return q.order('id').range(from, to)
+      }),
     ])
     return { students, homeworks, submissions }
   },

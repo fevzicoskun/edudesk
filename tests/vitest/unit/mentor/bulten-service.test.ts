@@ -44,9 +44,9 @@ describe('BultenService.getBulten', () => {
     await expect(BultenService.getBulten('2026-10-13')).rejects.toThrow('Geçersiz hafta')
   })
 
-  it('ödev profilleri bas filtresi OLMADAN istenir (eski verilmiş ödev kaçmasın)', async () => {
+  it('ödev profilleri bas filtresi OLMADAN, yalnız geçen Pzt … bu Paz vadesiyle istenir', async () => {
     await BultenService.getBulten('2026-10-12')
-    expect(HomeworkService.getMentorHomeworkProfiles).toHaveBeenCalledWith(['a', 'b', 'c'])
+    expect(HomeworkService.getMentorHomeworkProfiles).toHaveBeenCalledWith(['a', 'b', 'c'], undefined, ['2026-10-05', '2026-10-18'])
   })
 
   it('sınıf başına grup verisi, öğrenci başına mesaj', async () => {

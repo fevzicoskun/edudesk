@@ -330,7 +330,7 @@ export const HomeworkService = {
   },
 
   /** Mentör grubu (farklı sınıflar) için ödev özetleri — öğrenci bazlı ekranlar gibi TÜM ödevler (2026-09-28 kararı). */
-  async getMentorHomeworkProfiles(studentIds: string[], bas?: string): Promise<
+  async getMentorHomeworkProfiles(studentIds: string[], bas?: string, vade?: [string, string]): Promise<
     | { error: string }
     | { ogrenciler: { id: string; full_name: string; student_number: string | null; class_id: string; class_name: string | null; homeworks: HomeworkRecord[]; stats: ReturnType<typeof computeStudentHomeworkStats> }[] }
   > {
@@ -339,7 +339,7 @@ export const HomeworkService = {
     if (ability.cannot(P.HOMEWORK.READ)) return { error: 'Bu işlem için yetkiniz yok.' }
     if (studentIds.length === 0) return { ogrenciler: [] }
 
-    const { students, homeworks, submissions } = await HomeworkRepository.findStudentsHomeworkProfiles(studentIds, ability.schoolId, bas)
+    const { students, homeworks, submissions } = await HomeworkRepository.findStudentsHomeworkProfiles(studentIds, ability.schoolId, bas, vade)
     const bugun = todayLocalISO()
     const kayit = new Map<string, HomeworkRecord[]>()
     // Sınıf sınıf kurulur: öğrenci yalnız kendi sınıfının ödevlerini alır
