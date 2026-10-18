@@ -1,5 +1,6 @@
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { createServiceClient } from '@/src/infrastructure/supabase/service'
+import { logger } from '@/src/infrastructure/observability/logger'
 
 export const UserRepository = {
   async createAuthUser(email: string, password: string, fullName: string) {
@@ -39,9 +40,20 @@ export const UserRepository = {
   /** E-postalar auth.users'ta — RLS'li client göremez. */
   async getAuthEmails(userIds: string[]): Promise<Record<string, string>> {
     const admin = createServiceClient()
-    // ponytail: kullanıcı başına bir istek; okul ~50 kişi. Yüzlerce olursa listUsers sayfalı okumaya geçilir.
-    const sonuc = await Promise.all(userIds.map(id => admin.auth.admin.getUserById(id)))
-    return Object.fromEntries(sonuc.flatMap(r => (r.data.user?.email ? [[r.data.user.id, r.data.user.email]] : [])))
+    // Kullanıcı başına istek yerine sayfalı toplu liste (1000/sayfa); tüm okulların hesapları gelir, istenenler süzülür.
+    // Okunamazsa eskisi gibi sayfa açılır, e-postalar eksik kalır.
+    const istenen = new Set(userIds)
+    const eposta: Record<string, string> = {}
+    for (let page = 1; ; page++) {
+      const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 1000 })
+      if (error) {
+        logger.error({ event: 'auth_eposta_okunamadi', err: error.message }, 'Kullanıcı e-postaları okunamadı')
+        break
+      }
+      for (const u of data.users) if (u.email && istenen.has(u.id)) eposta[u.id] = u.email
+      if (data.users.length < 1000) break
+    }
+    return eposta
   },
 
   async deleteAuthUser(userId: string) {
