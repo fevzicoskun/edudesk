@@ -29,6 +29,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect('/login')
 
   const profile = await getCurrentProfile()
+  // Profili olmayan veya okula bağlı olmayan kullanıcı (proxy'deki ek profiles okumasının yerine)
+  if (!profile?.school_id) redirect('/onboarding')
 
   // Mentörlük menüde yalnız en az bir öğrencisi olan öğretmende görünür (okuma hatası = gizli, sayfa yine açılır)
   // Yoklama menüleri okul ayarına bağlı (okul yoksa / okunamazsa açık sayılır). İki okuma paralel.

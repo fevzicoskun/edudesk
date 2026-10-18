@@ -186,7 +186,10 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // getClaims: süresi dolan oturumu yeniler (getSession), ES256 token'ı JWKS ile yerelde doğrular — Auth'a ağ isteği yok.
+  // Bedeli: çıkış/yasak en geç token süresi (3600 sn) dolunca etkili olur; rol ve okul durumu her istekte DB'den okunur.
+  const { data: claimsData } = await supabase.auth.getClaims()
+  const user = claimsData?.claims ?? null
 
   if (!user && !isPublicPath(pathname)) {
     return NextResponse.redirect(new URL('/login', request.url))
@@ -194,23 +197,7 @@ export async function proxy(request: NextRequest) {
   if (user && (pathname === '/login' || pathname === '/')) {
     return NextResponse.redirect(new URL('/anasayfa', request.url))
   }
-
-  // Onboarding: profili olmayan veya okula bağlı olmayan kullanıcılar
-  // Hızlı yol: school_id JWT metadata'da varsa DB sorgusu yok (joinSchool/setupSchool sırasında set edilir)
-  // Fallback: mevcut kullanıcılar için metadata henüz yoksa profiles tablosuna bak
-  if (user && !isPublicPath(pathname) && pathname !== '/onboarding') {
-    const schoolIdFromMeta = user.user_metadata?.school_id as string | undefined
-    if (!schoolIdFromMeta) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('school_id')
-        .eq('id', user.id)
-        .single()
-      if (!profile?.school_id) {
-        return NextResponse.redirect(new URL('/onboarding', request.url))
-      }
-    }
-  }
+  // Okulsuz kullanıcı → /onboarding yönlendirmesi dashboard layout'unda (profil orada zaten okunuyor)
 
   // Set nonce + CSP + security headers on every response
   supabaseResponse.headers.set('x-nonce', nonce)
