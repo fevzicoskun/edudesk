@@ -15,8 +15,13 @@ vi.mock('@/src/shared/auth', () => ({
   getCurrentProfile: vi.fn(),
 }))
 
+vi.mock('@/src/domains/school/okulYoklama', () => ({
+  okulYoklamaAktif: vi.fn(),
+}))
+
 const { DashboardRepository } = await import('@/src/domains/dashboard/repositories/DashboardRepository')
 const { getCurrentProfile }   = await import('@/src/shared/auth')
+const { okulYoklamaAktif }    = await import('@/src/domains/school/okulYoklama')
 const { TeacherDashboardService } = await import('@/src/domains/dashboard/services/TeacherDashboardService')
 
 const TEACHER_ID = 'teacher-1'
@@ -28,6 +33,7 @@ const STUDENT_ID = 'student-1'
 beforeEach(() => {
   vi.clearAllMocks()
   ;(getCurrentProfile as ReturnType<typeof vi.fn>).mockResolvedValue({ school_id: SCHOOL_ID })
+  ;(okulYoklamaAktif as ReturnType<typeof vi.fn>).mockResolvedValue(true)
 })
 
 describe('getDashboardMetrics', () => {
@@ -130,5 +136,24 @@ describe('getClassSummary', () => {
 
     const result = await TeacherDashboardService.getClassSummary(CLASS_ID, TEACHER_ID)
     expect(result!.avgCompletionPct).toBeNull()
+  })
+})
+
+describe('yoklama kapalı okul', () => {
+  it('attendance hiç sorgulanmaz, ödev riski yine hesaplanır', async () => {
+    ;(okulYoklamaAktif as ReturnType<typeof vi.fn>).mockResolvedValue(false)
+    ;(DashboardRepository.getTeacherHomeworks as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: Array.from({ length: 5 }, (_, i) => ({ id: `hw-${i}`, title: 'T', subject: 'Mat', due_date: '2020-01-01', class_id: CLASS_ID, classes: null })),
+    })
+    ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: Array.from({ length: 3 }, (_, i) => ({ homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'eksik' })),
+    })
+    ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: [{ id: STUDENT_ID, full_name: 'Ahmet', class_id: CLASS_ID, classes: { name: '10-A' } }],
+    })
+
+    const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
+    expect(DashboardRepository.getAttendanceRows).not.toHaveBeenCalled()
+    expect(alerts).toHaveLength(1)
   })
 })

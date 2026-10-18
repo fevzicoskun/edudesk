@@ -125,7 +125,8 @@ export function computeClassRisk(
   )
 }
 
-export async function fetchRiskInputs(teacherId: string, schoolId: string, sb?: Parameters<typeof DashboardRepository.getSubmissions>[2]) {
+/** yoklama=false: okulda yoklama modülü kapalı → attendance hiç sorgulanmaz (devamsızlık riski boş). */
+export async function fetchRiskInputs(teacherId: string, schoolId: string, sb?: Parameters<typeof DashboardRepository.getSubmissions>[2], yoklama = true) {
   const twoWeeksAgo   = turkeyDate(subDays(new Date(), 14))
   const ninetyDaysAgo = turkeyDate(subDays(new Date(), 90))
 
@@ -137,7 +138,9 @@ export async function fetchRiskInputs(teacherId: string, schoolId: string, sb?: 
 
   const [subsResult, attResult, studentsResult] = await Promise.all([
     DashboardRepository.getSubmissions(hwIds, schoolId, sb),
-    DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId, sb),
+    yoklama
+      ? DashboardRepository.getAttendanceRows(classIds, teacherId, twoWeeksAgo, schoolId, sb)
+      : Promise.resolve({ data: [] as { student_id: string; status: string }[], error: null }),
     DashboardRepository.getStudentsByClasses(classIds, schoolId, sb),
   ])
 

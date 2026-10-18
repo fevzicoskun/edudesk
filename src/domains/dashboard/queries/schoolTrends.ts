@@ -4,6 +4,7 @@ import { createClient } from '@/src/infrastructure/supabase/server'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { donemBasi } from '@/src/shared/utils'
 import { getSchoolTeachers } from '@/src/domains/dashboard/queries/schoolStats'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 import {
   computeAbsenceTrend, computeActivityTrend, computeCoverageTrend, computeClassAbsence,
   type AbsenceTrendPoint, type ActivityTrendPoint, type CoverageTrendPoint, type ClassAbsence,
@@ -56,9 +57,11 @@ export type SchoolTrends = {
 export const getSchoolTrends = cache(async (schoolId: string): Promise<SchoolTrends> => {
   const donemStart = donemBasi()
   const now = new Date()
+  // Yoklama kapalı okulda devamsızlık/kapsama RPC'leri çalışmaz (tüketiciler zaten gizliyordu); okulYoklamaAktif cache'li
+  const yoklama = await okulYoklamaAktif(schoolId)
   const [attTrend, classAbsRows, activityRows, classes, teachers] = await Promise.all([
-    getAttendanceTrend(schoolId, donemStart),
-    getClassAbsence(schoolId, donemStart),
+    yoklama ? getAttendanceTrend(schoolId, donemStart) : [],
+    yoklama ? getClassAbsence(schoolId, donemStart) : [],
     getActivityWeekly(schoolId, donemStart),
     getTrendClasses(schoolId),
     getSchoolTeachers(schoolId),

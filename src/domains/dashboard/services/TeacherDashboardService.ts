@@ -2,6 +2,7 @@ import { tamamlanmaSatirlari } from '@/src/domains/dashboard/lib/tamamlanma'
 import { oran } from '@/src/domains/homework/lib/analitik'
 import { DashboardRepository } from '../repositories/DashboardRepository'
 import { getCurrentProfile } from '@/src/shared/auth'
+import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 import { todayLocalISO } from '@/src/shared/date'
 import { logger } from '@/src/infrastructure/observability/logger'
 import type { DashboardMetrics, RiskAlert, ClassSummary, HomeworkLite, OdevTamamlanmaItem } from '../types'
@@ -29,7 +30,7 @@ export const TeacherDashboardService = {
     const schoolId = profile.school_id
 
     const { homeworks, submissions, attendanceRows, students } =
-      await fetchRiskInputs(teacherId, schoolId)
+      await fetchRiskInputs(teacherId, schoolId, undefined, await okulYoklamaAktif(schoolId))
 
     return {
       homeworks: homeworks as HomeworkLite[],
@@ -48,7 +49,7 @@ export const TeacherDashboardService = {
     }
     const schoolId = profile.school_id
     const { homeworks, submissions, attendanceRows, students } =
-      await fetchRiskInputs(teacherId, schoolId)
+      await fetchRiskInputs(teacherId, schoolId, undefined, await okulYoklamaAktif(schoolId))
     return computeAlerts(homeworks, submissions, attendanceRows, students)
   },
 
