@@ -8,6 +8,9 @@ import { odevKapsami, type OdevKapsami } from '@/src/domains/homework/lib/kapsam
 import { getCurrentProfile } from '@/src/shared/auth'
 import { todayLocalISO } from '@/src/shared/date'
 import { basHarfleriBuyut } from '../homeworkMath'
+import { ogretmenDersleri, type DersSecenekleri } from '../dersSecimi'
+import { ScheduleRepository } from '@/src/domains/schedule/repositories/ScheduleRepository'
+import type { Slot } from '@/src/domains/schedule/scheduleMath'
 
 export const HomeworkService = {
   /** Oturumdaki kullanıcının görebileceği ödev sahipleri. Profil yoksa null. */
@@ -19,6 +22,32 @@ export const HomeworkService = {
     // Hata → yalnız kendi ödevleri (fail-closed; tüm okula açılmaz)
     if (error) logger.error({ schoolId: profile.school_id, code: error.code }, 'zümre öğretmenleri okunamadı')
     return odevKapsami(profile, data ?? [])
+  },
+
+  /** Oturumdaki öğretmenin ödev formunda seçebileceği dersler (ders programı → branş → okulun tüm dersleri). */
+  async dersSecenekleri(): Promise<DersSecenekleri | null> {
+    const profile = await getCurrentProfile()
+    if (!profile?.school_id) return null
+    const { data, error } = await ScheduleRepository.getByTeacher(profile.id, profile.school_id)
+    // Okuma hatası = program yok sayılır (branşa düşer); form kilitlenmesin
+    if (error) logger.error({ userId: profile.id, code: error.code }, 'dersSecenekleri: ders programı okunamadı')
+    return ogretmenDersleri((data?.slots as Slot[] | null) ?? [], profile.subject)
+  },
+
+  /** Action sınırı: ders öğretmenin listesinde mi. Düzenlemede ödevin mevcut dersi de geçer (eski ödevler bozulmasın).
+   *  Hata mesajı ya da null döner. */
+  async dersHatasi(ders: string, odevId?: string): Promise<string | null> {
+    const sec = await this.dersSecenekleri()
+    if (!sec) return 'Giriş gerekli'
+    if (sec.dersler.includes(ders)) return null
+    if (odevId) {
+      const ability = await getAbility()
+      if (ability) {
+        const { data } = await HomeworkRepository.findOwnSubject(odevId, ability.userId, ability.schoolId)
+        if (data && data.subject === ders) return null
+      }
+    }
+    return 'Bu ders ders listenizde yok. Listeden bir ders seçin.'
   },
 
   async createHomework(data: {

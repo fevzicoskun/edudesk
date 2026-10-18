@@ -103,6 +103,14 @@ export const HomeworkRepository = {
     return !error && count === tekil.length
   },
 
+  /** Düzenlemede mevcut ders (yalnız ödevin sahibi için). */
+  async findOwnSubject(id: string, teacherId: string, schoolId: string) {
+    const supabase = await createClient()
+    return supabase.from('homeworks').select('subject')
+      .eq('id', id).eq('teacher_id', teacherId).eq('school_id', schoolId).is('deleted_at', null)
+      .maybeSingle()
+  },
+
   async classExistsInSchool(classId: string, schoolId: string): Promise<boolean> {
     const supabase = await createClient()
     const { data } = await supabase

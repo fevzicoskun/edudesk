@@ -9,7 +9,7 @@ vi.mock('next/navigation', () => ({ redirect: vi.fn() }))
 vi.mock('@/src/infrastructure/inngest', () => ({ inngest: { send: vi.fn() } }))
 vi.mock('@/src/shared/auth', () => ({ getCurrentUser: vi.fn(), getCurrentProfile: vi.fn().mockResolvedValue(null) }))
 vi.mock('@/src/domains/homework/services/HomeworkService', () => ({
-  HomeworkService: { createHomework: vi.fn().mockResolvedValue({ id: 'yeni-odev' }) },
+  HomeworkService: { createHomework: vi.fn().mockResolvedValue({ id: 'yeni-odev' }), dersHatasi: vi.fn().mockResolvedValue(null) },
 }))
 
 const { HomeworkService } = await import('@/src/domains/homework/services/HomeworkService')

@@ -18,6 +18,12 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { TeacherDashboardService } from '@/src/domains/dashboard/services/TeacherDashboardService'
 
 
+/** Ders alanı serbest metin değil: öğretmenin ders listesinden olmalı (boşsa şema 'Ders gerekli' der). */
+async function dersKontrol(raw: FormDataEntryValue | null, odevId?: string): Promise<string | null> {
+  const ders = typeof raw === 'string' ? raw.trim() : ''
+  return ders ? HomeworkService.dersHatasi(ders, odevId) : null
+}
+
 /**
  * Form kaynağı ad olarak gönderir (yazarak ekleme). Boşsa kaynak seçilmemiştir.
  * Ad, kaynak şemasıyla doğrulanır — serbest metin doğrudan DB'ye gitmez.
@@ -38,6 +44,10 @@ async function kaynakIdCoz(raw: FormDataEntryValue | null, dersRaw: FormDataEntr
 
 export async function createHomework(_: unknown, formData: FormData) {
   const isTemplate = formData.get('is_template') === 'true'
+
+  // Kaynak kaydı ders adıyla açılır → önce ders doğrulanır
+  const dersHata = await dersKontrol(formData.get('subject'))
+  if (dersHata) return { error: dersHata }
 
   const kaynak = await kaynakIdCoz(formData.get('source_name'), formData.get('subject'))
   if (kaynak.error) return { error: kaynak.error }
@@ -132,11 +142,18 @@ export async function createHomework(_: unknown, formData: FormData) {
   redirect(`/odevler?olusturuldu=${succeeded.length}`)
 }
 
+/** Hızlı ekleme çekmecesi: öğretmenin ders seçenekleri (sınıflar gibi açılınca yüklenir). */
+export async function getDersSecenekleri() {
+  return HomeworkService.dersSecenekleri()
+}
+
 export async function quickCreateHomework(
   formData: FormData
 ): Promise<ActionResult<{ ids?: string[] }>> {
   const classIds = (formData.getAll('class_id') as string[]).filter(Boolean)
   if (classIds.length === 0) return { error: 'En az bir sınıf seçin' }
+  const dersHata = await dersKontrol(formData.get('subject'))
+  if (dersHata) return { error: dersHata }
   for (const id of classIds) {
     if (!UUID.safeParse(id).success) return { error: 'Geçersiz sınıf seçimi' }
   }
@@ -213,6 +230,8 @@ export async function updateHomework(_: unknown, formData: FormData) {
   const is_template = formData.get('is_template') === 'true'
   if (!UUID.safeParse(id).success)       return { error: 'Geçersiz istek' }
   if (!UUID.safeParse(class_id).success) return { error: 'Geçersiz sınıf' }
+  const dersHata = await dersKontrol(formData.get('subject'), id)
+  if (dersHata) return { error: dersHata }
 
   const parsed = createHomeworkSchema.omit({ class_id: true, is_template: true }).safeParse({
     title:       formData.get('title'),
