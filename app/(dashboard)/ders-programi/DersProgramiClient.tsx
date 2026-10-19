@@ -6,7 +6,6 @@ import { parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextI
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 import { classColor } from '@/src/domains/schedule/classColor'
 import { todayLocalISO } from '@/src/shared/date'
-import PrintButton from '@/components/PrintButton'
 import FotografaKaydet from './FotografaKaydet'
 
 const DAYS = [
@@ -158,7 +157,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
         </div>
         <div className="flex items-center gap-2 flex-wrap print:hidden">
           {!editing && slots.length > 0 && <FotografaKaydet hedef={kokRef} />}
-          {!editing && slots.length > 0 && <PrintButton label="PDF olarak kaydet" />}
           <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf} className="hidden" aria-hidden="true" tabIndex={-1} />
           <button
             type="button"
