@@ -12,8 +12,23 @@ export const CLASS_PALETTE = [
   'bg-teal-50 text-teal-700 ring-teal-200/70 dark:bg-teal-500/15 dark:text-teal-200 dark:ring-teal-400/20',
 ]
 
-export function classColor(key: string): string {
+// Aynı paletin düz renkleri (zemin, yazı) — Tailwind sınıfı okumayan ders programı görseli için (Satori)
+const CLASS_HEX: [string, string][] = [
+  ['#eff6ff', '#1d4ed8'], ['#ecfdf5', '#047857'], ['#fffbeb', '#b45309'], ['#f5f3ff', '#6d28d9'],
+  ['#fff1f2', '#be123c'], ['#ecfeff', '#0e7490'], ['#fdf4ff', '#a21caf'], ['#f0fdfa', '#0f766e'],
+]
+
+function paletIndeksi(key: string): number {
   let h = 0
   for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0
-  return CLASS_PALETTE[h % CLASS_PALETTE.length]
+  return h % CLASS_PALETTE.length
+}
+
+export function classColor(key: string): string {
+  return CLASS_PALETTE[paletIndeksi(key)]
+}
+
+export function classHex(key: string): { zemin: string; yazi: string } {
+  const [zemin, yazi] = CLASS_HEX[paletIndeksi(key)]
+  return { zemin, yazi }
 }

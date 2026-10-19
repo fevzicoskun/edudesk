@@ -34,7 +34,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
   // İsim otomatik eşleşmezse: kullanıcıya sayfa seçtirmek için tüm sayfaların verisi + başlıkları
   const [pageChoices, setPageChoices] = useState<{ pages: PdfTextItem[][]; titles: string[] } | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const kokRef = useRef<HTMLDivElement>(null)
 
   const classNameById = useMemo(() => new Map(classes.map(c => [c.id, c.name])), [classes])
   // İstanbul günü — SSR (UTC) ile tarayıcı aynı günü görsün; 0=Paz … 6=Cmt; DAYS.n 1..5 ile eşleşir
@@ -156,7 +155,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap print:hidden">
-          {!editing && slots.length > 0 && <FotografaKaydet hedef={kokRef} />}
+          {!editing && slots.length > 0 && <FotografaKaydet />}
           <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf} className="hidden" aria-hidden="true" tabIndex={-1} />
           <button
             type="button"
@@ -213,7 +212,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
       )}
 
       {/* Çizelge */}
-      <div ref={kokRef} className="overflow-x-auto print:overflow-visible print:shadow-none rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="overflow-x-auto print:overflow-visible print:shadow-none rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-50/80 dark:bg-slate-800/40">
@@ -225,8 +224,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                 return (
                   <th
                     key={d.n}
-                    data-gun
-                    data-bugun={isToday || undefined}
                     className={`px-1 sm:px-3 py-3 text-center font-semibold border-b border-l border-gray-200 dark:border-slate-800 sm:min-w-[120px] ${
                       isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-slate-200'
                     }`}
@@ -279,8 +276,6 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                   return (
                     <td
                       key={d.n}
-                      data-gun
-                      data-bugun={isToday || undefined}
                       className={`px-0.5 sm:px-1.5 py-1.5 align-middle border-l border-gray-100 dark:border-slate-800/70 ${
                         isToday && !editing ? 'print:bg-transparent bg-blue-50/40 dark:bg-blue-500/[0.04]' : ''
                       }`}
