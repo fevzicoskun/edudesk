@@ -6,6 +6,7 @@ import { parseSchedulePdf, extractPageTitle, findTeacherPageIndex, type PdfTextI
 import type { Period, Slot } from '@/src/domains/schedule/scheduleMath'
 import { classColor } from '@/src/domains/schedule/classColor'
 import { todayLocalISO } from '@/src/shared/date'
+import PrintButton from '@/components/PrintButton'
 
 const DAYS = [
   { n: 1, label: 'Pazartesi', short: 'Pzt' },
@@ -153,7 +154,8 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
             {slots.length > 0 ? `haftada ${slots.length} ders saati` : 'henüz ders eklenmedi'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap print:hidden">
+          {!editing && slots.length > 0 && <PrintButton label="PDF olarak kaydet" />}
           <input ref={fileRef} type="file" accept="application/pdf,.pdf" onChange={onPickPdf} className="hidden" aria-hidden="true" tabIndex={-1} />
           <button
             type="button"
@@ -210,11 +212,11 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
       )}
 
       {/* Çizelge */}
-      <div className="overflow-x-auto rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+      <div className="overflow-x-auto print:overflow-visible print:shadow-none rounded-2xl border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr className="bg-gray-50/80 dark:bg-slate-800/40">
-              <th className="px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400 w-24 border-b border-gray-200 dark:border-slate-800">
+              <th className="px-1 sm:px-3 py-3 text-left text-[11px] font-medium uppercase tracking-wide text-gray-500 dark:text-slate-400 w-12 sm:w-24 border-b border-gray-200 dark:border-slate-800">
                 Saat
               </th>
               {DAYS.map(d => {
@@ -222,14 +224,14 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                 return (
                   <th
                     key={d.n}
-                    className={`px-3 py-3 text-center font-semibold border-b border-l border-gray-200 dark:border-slate-800 min-w-[120px] ${
+                    className={`px-1 sm:px-3 py-3 text-center font-semibold border-b border-l border-gray-200 dark:border-slate-800 sm:min-w-[120px] ${
                       isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-slate-200'
                     }`}
                   >
                     <span className="hidden sm:inline">{d.label}</span>
                     <span className="sm:hidden">{d.short}</span>
                     {isToday && (
-                      <span className="ml-1.5 align-middle inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-600 text-white">
+                      <span className="ml-1.5 align-middle hidden sm:inline-block print:hidden text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-600 text-white">
                         bugün
                       </span>
                     )}
@@ -242,7 +244,7 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
             {periods.map(p => (
               <tr key={p.no} className="border-t border-gray-100 dark:border-slate-800/70">
                 {/* Saat rayı */}
-                <td className="px-3 py-2 align-middle text-center bg-gray-50/50 dark:bg-slate-800/20 border-r border-gray-100 dark:border-slate-800">
+                <td className="px-1 sm:px-3 py-2 align-middle text-center bg-gray-50/50 dark:bg-slate-800/20 border-r border-gray-100 dark:border-slate-800">
                   <div className="text-base font-bold text-gray-700 dark:text-slate-300 leading-none">{p.no}</div>
                   {editing ? (
                     <div className="flex items-center justify-center gap-1 mt-1.5">
@@ -274,8 +276,8 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                   return (
                     <td
                       key={d.n}
-                      className={`px-1.5 py-1.5 align-middle border-l border-gray-100 dark:border-slate-800/70 ${
-                        isToday && !editing ? 'bg-blue-50/40 dark:bg-blue-500/[0.04]' : ''
+                      className={`px-0.5 sm:px-1.5 py-1.5 align-middle border-l border-gray-100 dark:border-slate-800/70 ${
+                        isToday && !editing ? 'print:bg-transparent bg-blue-50/40 dark:bg-blue-500/[0.04]' : ''
                       }`}
                     >
                       {editing ? (
@@ -294,11 +296,11 @@ export default function DersProgramiClient({ initialPeriods, initialSlots, class
                         </select>
                       ) : id ? (
                         <div
-                          className={`flex flex-col items-center justify-center min-h-[44px] rounded-lg px-2 py-1.5 text-center font-semibold ring-1 ${classColor(
+                          className={`flex flex-col items-center justify-center min-h-[44px] rounded-lg px-1 sm:px-2 py-1.5 text-center font-semibold ring-1 ${classColor(
                             classNameById.get(id) ?? id,
                           )}`}
                         >
-                          <span className="leading-tight">{classNameById.get(id) ?? '—'}</span>
+                          <span className="leading-tight break-all sm:break-normal">{classNameById.get(id) ?? '—'}</span>
                           {slot?.subject && (
                             <span className="text-[10px] font-normal leading-tight opacity-75 truncate max-w-full">
                               {slot.subject}
