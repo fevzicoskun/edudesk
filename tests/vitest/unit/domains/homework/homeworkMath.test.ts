@@ -169,6 +169,10 @@ describe('gunEkle', () => {
   it('yaz saati / saat dilimi kayması yapmaz', () => {
     expect(gunEkle('2026-03-28', 1)).toBe('2026-03-29')
   })
+  it('boş/yarım tarihte fırlatmaz, boş döner (Verildiği Tarih silinince sayfa çöküyordu)', () => {
+    expect(gunEkle('', 1)).toBe('')
+    expect(gunEkle('2026-13-40', 1)).toBe('')
+  })
 })
 
 describe('dersEslestir', () => {

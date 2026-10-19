@@ -98,6 +98,8 @@ export function onerilenBaslik(kaynak: string, sayfa: string): string {
 /** 'YYYY-MM-DD' + n gün. UTC'de hesaplar — yerel saat dilimi/yaz saati günü kaydırmasın. */
 export function gunEkle(iso: string, gun: number): string {
   const d = new Date(`${iso}T00:00:00Z`)
+  // Tarih kutusu silinince/yarım yazılınca iso '' gelir; toISOString fırlatıp sayfayı çökertmesin
+  if (Number.isNaN(d.getTime())) return ''
   d.setUTCDate(d.getUTCDate() + gun)
   return d.toISOString().slice(0, 10)
 }

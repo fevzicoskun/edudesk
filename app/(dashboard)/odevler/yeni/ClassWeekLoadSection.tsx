@@ -71,7 +71,7 @@ export default function ClassWeekLoadSection({
       <div className="-mt-2">
         <HizliTeslim baslangic={verildigi} deger={dueDate} onSec={setDueDate} />
       </div>
-      {verildigi < todayISO() && (
+      {verildigi && verildigi < todayISO() && (
         <p className="text-xs text-amber-700 dark:text-amber-400 -mt-2">
           Geçmiş tarihli ödev — sonradan giriliyor. Verildiği gün olarak {verildigi.split('-').reverse().join('.')} kaydedilir.
         </p>

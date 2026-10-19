@@ -17,6 +17,8 @@ export default function HizliTeslim({ baslangic, deger, onSec }: {
   deger: string
   onSec: (tarih: string) => void
 }) {
+  // Verildiği gün boşken kısayolların hesaplayacağı tarih yok
+  if (!gunEkle(baslangic, 0)) return null
   return (
     <div role="group" aria-label="Hızlı teslim tarihi" className="grid grid-cols-5 gap-1.5">
       {SECENEKLER.map(s => {
