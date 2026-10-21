@@ -270,6 +270,29 @@ describe('TakipService — çalışma saatleri ve otomatik ödevler (2026-10-21)
     const yaz = vi.mocked(R.haftaEkle).mock.calls[0][0].icerik as { duzen: string; gorevler: { odevId?: string }[] }
     expect(yaz.duzen).toBe(''); expect(yaz.gorevler.some(g => g.odevId)).toBe(false)
   })
+  it('herkese uygula: hedef kaydı yeni biçimde (surum 2) — okunurken süreler yeniden ölçeklenmez', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(satir({ seviye: 2 }) as never)
+    vi.mocked(R.mentiler).mockResolvedValue([SID, B])
+    vi.mocked(R.durumlar).mockResolvedValue([] as never)
+    await TakipService.herkeseUygula(SID, '2026-10-19')
+    expect((vi.mocked(R.haftaEkle).mock.calls[0][0].icerik as { surum?: number }).surum).toBe(2)
+  })
+  it('kayıtlı açık haftayı kapat: sonradan plana giren ödevler de yazılır, sonra kapatılır', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(satir() as never)
+    vi.mocked(R.haftaKapat).mockResolvedValue(undefined as never)
+    expect(await TakipService.kapat(SID, '2026-10-19')).toEqual({})
+    const [yazilan, sonBilinen] = vi.mocked(R.haftaGuncelle).mock.calls[0]
+    expect(sonBilinen).toBe('t0')
+    expect((yazilan.icerik as { gorevler: { odevId?: string }[] }).gorevler.some(g => g.odevId === OID)).toBe(true)
+    expect(yazilan.gorev_toplam).toBeGreaterThan(0)
+    expect(R.haftaKapat).toHaveBeenCalledTimes(1)
+  })
+  it('kapatırken başka sekme yazmışsa kapatmaz, anlaşılır hata', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(satir() as never)
+    vi.mocked(R.haftaGuncelle).mockResolvedValue({ cakisma: true })
+    expect((await TakipService.kapat(SID, '2026-10-19')).error).toMatch(/başka bir ekranda/)
+    expect(R.haftaKapat).not.toHaveBeenCalled()
+  })
   it('saat kaydı: geçersiz reddedilir, geçerli yazılır', async () => {
     const gun = { bas: '18:00', bit: '20:30', molaBas: '19:30', molaBit: '20:00' }
     expect((await TakipService.saatleriKaydet(SID, { gunler: [{ bas: '20:00', bit: '18:00' }, null, null, null, null, null, null], not: '' })).error).toMatch(/Bitiş/)

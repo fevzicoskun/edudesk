@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { odevleriBirlestir, odevEtiketi, odevGorevAdi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { odevleriBirlestir, odevEtiketi, odevGorevAdi, odevGorevi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import type { CalismaSaatleri, GunSaati } from '@/src/domains/mentor/takip/calismaSaatleri'
 import type { Gorev } from '@/src/domains/mentor/takip/takipMath'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -79,6 +79,10 @@ describe('odevleriBirlestir — yerleşim', () => {
     const r = birlestir([gec, sali], { hafta: '2026-10-26' })
     expect(gunu(r, sali)).toBe(0); expect(gunu(r, gec)).toBeUndefined(); expect(r.disarida).toEqual([])
   })
+  it('ileri hafta: o haftanın Pazartesisi teslimli ödev önceki haftanın Pazarında — iki haftada birden görünmez', () => {
+    const pzt = odev('2026-10-26')
+    expect(gunu(birlestir([pzt], { hafta: '2026-10-26' }), pzt)).toBeUndefined()
+  })
 })
 
 describe('odevleriBirlestir — plandaki ödev görevleri', () => {
@@ -111,6 +115,11 @@ describe('odevleriBirlestir — plandaki ödev görevleri', () => {
 })
 
 describe('odevGorevAdi / odevEtiketi', () => {
+  it('60 karakterden uzun ders adı görev şemasını aşmaz (kayıt kilitlenmesin)', () => {
+    const g = birlestir([odev('2026-10-22', { subject: 'D'.repeat(100) })]).gorevler[0]
+    expect(g.ders!.length).toBe(60)
+    expect(odevGorevi({ ...odev('2026-10-22'), subject: 'D'.repeat(100) }, 0).ders!.length).toBe(60)
+  })
   it('kısa ders adı + başlık, en çok 120 karakter', () => {
     expect(odevGorevAdi('Kimya', 'Orbital ödevi')).toBe('Kimya — Orbital ödevi')
     expect(odevGorevAdi('Fizik', 'x'.repeat(200)).length).toBe(120)

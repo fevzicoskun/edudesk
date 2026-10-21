@@ -32,7 +32,8 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
     if (r.error || !r.veri) { setUstHata(r.error ?? 'Kopyalanamadı.'); return }
     if (v.kayit && !confirm(`Bu haftanın planı ve girilmiş sonuçları, ${takipHaftaEtiketi(r.kaynak!)} haftasının planıyla değiştirilsin mi?`)) return
     const yeni = r.veri
-    degistir(() => yeni, true)
+    // Bu haftanın okul ödevi görevleri ve gizlenenleri kalır (önceki hafta planı yalnız elle görevleri getirir)
+    degistir(h => ({ ...yeni, icerik: { ...yeni.icerik, gorevler: [...yeni.icerik.gorevler, ...h.icerik.gorevler.filter(g => g.odevId)], gizliOdevler: h.icerik.gizliOdevler } }), true)
     setBilgi(`${takipHaftaEtiketi(r.kaynak!)} haftasının planı kopyalandı; kitap sayfaları kaldığı yerden devam ediyor.`)
   })
   const herkese = () => {

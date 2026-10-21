@@ -26,7 +26,8 @@ export function odevEtiketi(teslim: string, bugun: string): { tur: 'gecikmis' | 
 
 /** Ödevden görev: 30 dk, soru satırı yok; kimlik ödevden türer (aynı ödev iki kez eklenmez). */
 export const odevGorevi = (o: HomeworkRecord, gun: number): Gorev => ({
-  id: `o-${o.id}`, gun, ad: odevGorevAdi(o.subject, o.title), ders: o.subject, miktar: ODEV_DK, birim: 'dk', soruSatiri: false,
+  // ders görev şemasında ≤ 60 (ödev formunda 100): aşarsa otomatik kayıt kalıcı reddedilirdi
+  id: `o-${o.id}`, gun, ad: odevGorevAdi(o.subject, o.title), ders: o.subject.slice(0, 60), miktar: ODEV_DK, birim: 'dk', soruSatiri: false,
   konu: '', sayfa: '', yapti: false, soru: null, dogru: null, odevId: o.id, teslim: o.due_date ?? undefined,
 })
 
@@ -61,7 +62,8 @@ export function odevleriBirlestir(a: {
 
   const adaylar = a.odevler
     .filter(o => o.due_date && !planda.has(o.id) && !YAPILMIS.has(o.status ?? '') && o.status !== 'mazeretli')
-    .filter(o => !ileriHafta || o.due_date! >= a.hafta)
+    // Pazartesi teslimli önceki haftanın Pazarına yerleşir; ileri haftada tekrar görünmesin
+    .filter(o => !ileriHafta || o.due_date! > a.hafta)
     .sort(sira)
   const disarida = adaylar.filter(o => gizli.has(o.id) || o.due_date! < alt || o.due_date! > ust || ilk > 6)
   const yerlesecek = adaylar.filter(o => !disarida.includes(o))

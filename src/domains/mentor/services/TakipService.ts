@@ -153,14 +153,14 @@ export const TakipService = {
     const v = await TakipService.sayfaVerisi(studentId, hafta)
     if (!v) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
     if (v.kayit?.kapaliAt) return {}
-    if (!v.kayit) {
-      const t = v.taslak
-      const r = await R.haftaEkle({
-        school_id: ab.schoolId, student_id: studentId, hafta_basi: hafta, seviye: t.seviye, soru_hedefi: t.soruHedefi,
-        icerik: t.icerik as unknown as Json, gorusme: t.gorusme as unknown as Json, updated_by: ab.userId, ...ozetHesapla(t.icerik),
-      })
-      if (r.cakisma) return { error: 'Bu hafta başka bir ekranda değişti; sayfayı yenileyip tekrar deneyin.' }
+    // Ekranda görülen (okul ödevleri birleşmiş) plan yazılır: kayıt varsa da — sonradan giren ödev kaydedilmemiş olabilir
+    const t = v.taslak
+    const satir = {
+      school_id: ab.schoolId, student_id: studentId, hafta_basi: hafta, seviye: t.seviye, soru_hedefi: t.soruHedefi,
+      icerik: t.icerik as unknown as Json, gorusme: t.gorusme as unknown as Json, updated_by: ab.userId, ...ozetHesapla(t.icerik),
     }
+    const r = v.kayit ? await R.haftaGuncelle(satir, v.kayit.updatedAt) : await R.haftaEkle(satir)
+    if (r.cakisma) return { error: 'Bu hafta başka bir ekranda değişti; sayfayı yenileyip tekrar deneyin.' }
     await R.haftaKapat(ab.schoolId, studentId, hafta, v.okulOdevleri as unknown as Json)
     return {}
   },
@@ -199,8 +199,9 @@ export const TakipService = {
         mevcut.push(data); esle.set(g.kitapId, data.id)
       }
       // Ödev görevleri ve düzen öğrenciye özel: hedefin kendi ödevleri/saatleri kendi planında (2026-10-21)
+      // surum 2: kaynağın süreleri gerçek değer; yoksa okunurken eski biçim sanılıp seviyeyle yeniden ölçeklenirdi
       const icerik = {
-        duzen: '', mentorOdevleri: [], okuma: null,
+        surum: 2 as const, duzen: '', mentorOdevleri: [], okuma: null,
         gorevler: elleGorevler(k.icerik.gorevler).map(g => ({ ...g, yapti: false, soru: null, dogru: null, ...(g.kitapId && { kitapId: esle.get(g.kitapId)! }) })),
       }
       const r = await R.haftaEkle({
