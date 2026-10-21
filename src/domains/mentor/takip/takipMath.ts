@@ -14,6 +14,8 @@ export type Gorev = {
   kitapId?: string | null; kitapAdi?: string; sayfaBas?: number | null; sayfaSon?: number | null
   /** "Hafta içi her gün" görevi: Pzt–Cum beş kopya aynı grup kimliğini taşır; giriş ekranı tek satır gösterir. */
   grup?: string
+  /** Okul ödevinden otomatik görev (2026-10-21): homeworks.id + teslim tarihi. Durumu öğretmen işaretinden gelir. */
+  odevId?: string; teslim?: string
 }
 /** kitapAdi saklanır: kitap silinse de eski haftada adı görünür. */
 export type MentorOdevi = { id: string; kitapId: string | null; kitapAdi: string; konu: string; sayfalar: string; yapti: boolean }
@@ -29,7 +31,9 @@ export type Sonuc = {
 /** sonuclar 2026-10-17'de geldi; eski kayıtlarda yok. */
 /** surum 2 (2026-10-17): miktar GERÇEK süre/miktar (seviye uygulanmış) + her gün grupları. Yoksa eski biçim → normalizeIcerik. */
 /** ekranSuresi (2026-10-18): günlük ortalama ekran süresi, saat (ondalıklı). Sonraki haftaya kopyalanmaz. */
-export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: number | null }
+export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: number | null
+  /** Mentörün bu hafta plandan çıkardığı otomatik ödevler (homeworks.id); tekrar eklenmez. */
+  gizliOdevler?: string[] }
 /** veliMesaji: mentörün düzenlediği veli mesajı; null = haftanın verisinden otomatik. */
 export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
