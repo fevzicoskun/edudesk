@@ -12,6 +12,7 @@ const gorevSchema = z.object({
   kitapId: UUID.nullable().optional(), kitapAdi: metin(120).optional(),
   sayfaBas: z.number().int().min(1).max(5000).nullable().optional(), sayfaSon: z.number().int().min(1).max(5000).nullable().optional(),
   grup: z.string().min(1).max(80).optional(),
+  odevId: UUID.optional(), teslim: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 }).refine(g => g.dogru === null || (g.soru !== null && g.dogru <= g.soru), { message: 'Doğru sayısı soru sayısından büyük olamaz', path: ['dogru'] })
   .refine(g => g.sayfaBas == null || g.sayfaSon == null || g.sayfaBas <= g.sayfaSon, { message: 'Sayfa aralığı ters (bitiş başlangıçtan küçük)', path: ['sayfaSon'] })
 
@@ -19,6 +20,7 @@ export const icerikSchema = z.object({
   surum: z.literal(2).optional(),
   ekranSuresi: z.number().min(0).max(24).nullable().optional(),
   duzen: metin(300),
+  gizliOdevler: z.array(UUID).max(200).optional(),
   gorevler: z.array(gorevSchema).max(120),
   mentorOdevleri: z.array(z.object({
     id: z.string().min(1).max(64), kitapId: UUID.nullable(), kitapAdi: metin(120).min(1), konu: metin(120), sayfalar: metin(60), yapti: z.boolean(),

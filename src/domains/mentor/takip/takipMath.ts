@@ -2,7 +2,7 @@
 // Mentör haftalık takip: saf hesaplar. Spec: docs/superpowers/specs/2026-10-16-mentor-haftalik-takip-design.md
 import { addDaysISO } from '@/src/shared/date'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
-import { sinifSablonu, VARSAYILAN_DUZEN } from './sablonlar'
+import { sinifSablonu } from './sablonlar'
 import { gunAy } from '../lib/bultenMath'
 
 export type Seviye = 0 | 1 | 2
@@ -97,7 +97,7 @@ function gruplandir(gorevler: Gorev[]): Gorev[] {
   const anahtar = (g: Gorev) => JSON.stringify([g.ad, g.ders, g.miktar, g.birim, g.soruSatiri, g.kitapId ?? null])
   const gunleri = new Map<string, Gorev[]>()
   for (const g of gorevler) {
-    if (g.grup || g.gun > 4) continue
+    if (g.grup || g.odevId || g.gun > 4) continue
     gunleri.set(anahtar(g), [...(gunleri.get(anahtar(g)) ?? []), g])
   }
   const grupOf = new Map<string, string>()
@@ -105,7 +105,7 @@ function gruplandir(gorevler: Gorev[]): Gorev[] {
     const gunler = liste.map(g => g.gun).sort()
     if (liste.length === 5 && gunler.join() === '0,1,2,3,4') grupOf.set(k, `h-${liste[0].id}`)
   }
-  return gorevler.map(g => (!g.grup && g.gun <= 4 && grupOf.has(anahtar(g)) ? { ...g, grup: grupOf.get(anahtar(g)) } : g))
+  return gorevler.map(g => (!g.grup && !g.odevId && g.gun <= 4 && grupOf.has(anahtar(g)) ? { ...g, grup: grupOf.get(anahtar(g)) } : g))
 }
 
 /** Eski kaydı yeni biçime çevirir (okunurken; ilk düzenlemede kalıcılaşır): miktar seçili seviyeyle gerçek değere,
@@ -122,7 +122,7 @@ export function seviyeDegistir(h: HaftaVerisi, yeni: Seviye, sinif: number): Haf
   const oran = CARPAN[yeni] / CARPAN[h.seviye]
   return {
     ...h, seviye: yeni, soruHedefi: varsayilanHedef(sinif, yeni),
-    icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => (g.miktar === null || g.birim === 'serbest' ? g : { ...g, miktar: Math.min(600, besle(g.miktar * oran)) })) },
+    icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => (g.miktar === null || g.birim === 'serbest' || g.odevId ? g : { ...g, miktar: Math.min(600, besle(g.miktar * oran)) })) },
   }
 }
 
@@ -261,6 +261,15 @@ function sayfaKaydir(gorevler: Gorev[], kaldigi: Map<string, number> = new Map()
   })
 }
 
+/** Mentörün/şablonun görevleri (otomatik ödev görevleri hariç): kopyala, uygula, şablon yalnız bunlara dokunur. */
+export const elleGorevler = (gorevler: Gorev[]) => gorevler.filter(g => !g.odevId)
+
+/** "Sınıf şablonuna dön": elle görevler şablonla değişir, otomatik ödev görevleri yerinde kalır. */
+export function sablonaDon(icerik: Icerik, sinif: number, seviye: Seviye): Gorev[] {
+  const sablon = normalizeIcerik({ ...icerik, surum: undefined, gorevler: sinifSablonu(sinif) }, seviye).gorevler
+  return [...sablon, ...icerik.gorevler.filter(g => g.odevId)]
+}
+
 /** Önceki haftanın planı bu haftaya: görevler (bağlı kitap, sayfa kaldığı yerden), seviye, hedef, düzen, bitmemiş okuma.
  *  Sonuç, görüşme ve mentör ödevi taşınmaz. "Geçen haftayı kopyala" ve yeni haftanın taslağı bunu kullanır. */
 export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
@@ -269,8 +278,9 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
   return {
     seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
     icerik: {
-      surum: 2, duzen: ic.duzen, mentorOdevleri: [],
-      gorevler: sayfaKaydir(ic.gorevler, new Map((ic.sonuclar ?? []).flatMap(s => (s.anahtar.startsWith('k:') && s.kaldigi != null ? [[s.anahtar.slice(2), s.kaldigi] as const] : [])))).map(sonucsuz),
+      // Düzen öğrencinin çalışma saatlerinden üretilir (''); ödev görevleri yeni haftada taze birleşir (2026-10-21)
+      surum: 2, duzen: '', mentorOdevleri: [],
+      gorevler: sayfaKaydir(elleGorevler(ic.gorevler), new Map((ic.sonuclar ?? []).flatMap(s => (s.anahtar.startsWith('k:') && s.kaldigi != null ? [[s.anahtar.slice(2), s.kaldigi] as const] : [])))).map(sonucsuz),
       okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
     },
   }
@@ -280,7 +290,7 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
 export function yeniHafta(onceki: HaftaVerisi | null, sinif: number): HaftaVerisi {
   if (!onceki) return {
     seviye: 0, soruHedefi: varsayilanHedef(sinif, 0), gorusme: BOS_GORUSME,
-    icerik: normalizeIcerik({ duzen: VARSAYILAN_DUZEN, gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null }, 0),
+    icerik: normalizeIcerik({ duzen: '', gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null }, 0),
   }
   return planKopyala(onceki)
 }

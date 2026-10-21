@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, sablonaDon, elleGorevler, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -65,7 +65,7 @@ describe('yeniHafta', () => {
   it('önceki yoksa sınıf şablonu + Hafif + varsayılan hedef', () => {
     const h = yeniHafta(null, 10)
     expect(h.seviye).toBe(0); expect(h.soruHedefi).toBe(120)
-    expect(h.icerik.gorevler.map(x => x.id)).toEqual(sinifSablonu(10).map(x => x.id)); expect(h.icerik.duzen).toBe(VARSAYILAN_DUZEN)
+    expect(h.icerik.gorevler.map(x => x.id)).toEqual(sinifSablonu(10).map(x => x.id)); expect(h.icerik.duzen).toBe('') // 2026-10-21: düzen öğrencinin saatlerinden
     expect(h.gorusme).toEqual(BOS_GORUSME)
   })
   it('öncekinden görevler sonuçsuz kopyalanır; mentör ödevi, görüşme, bitmiş kitap taşınmaz', () => {
@@ -77,7 +77,7 @@ describe('yeniHafta', () => {
       gorusme: { ...BOS_GORUSME, hedef: 'H' },
     }
     const h = yeniHafta(onceki, 11)
-    expect(h.seviye).toBe(2); expect(h.soruHedefi).toBe(350); expect(h.icerik.duzen).toBe('D')
+    expect(h.seviye).toBe(2); expect(h.soruHedefi).toBe(350); expect(h.icerik.duzen).toBe('')
     expect(h.icerik.gorevler[0]).toEqual(g({ miktar: 75 })) // eski biçim: Yoğun 60 → gerçek süre 75
     expect(h.icerik.mentorOdevleri).toEqual([]); expect(h.icerik.okuma).toBeNull(); expect(h.gorusme).toEqual(BOS_GORUSME)
   })
@@ -245,7 +245,7 @@ describe('planKopyala: kitap sayfası kaldığı yerden devam (2026-10-17)', () 
   })
   it('seviye, hedef, düzen taşınır; sonuç ve görüşme taşınmaz', () => {
     const h = planKopyala(onceki([g()]))
-    expect([h.seviye, h.soruHedefi, h.icerik.duzen]).toEqual([2, 350, 'D'])
+    expect([h.seviye, h.soruHedefi, h.icerik.duzen]).toEqual([2, 350, ''])
     expect(h.icerik.sonuclar ?? []).toEqual([]); expect(h.gorusme).toEqual(BOS_GORUSME)
   })
   it('yeni haftanın otomatik taslağı da sayfayı devam ettirir', () => {
@@ -365,5 +365,28 @@ describe('kaldığı sayfa (2026-10-17)', () => {
   it('geride kalma metni yalnız kaldığı < plan sonu iken', () => {
     expect(kaldigiMetni({ planSon: 60, kaldigi: 55 })).toBe('planlanan s. 60, kaldığı s. 55')
     expect(kaldigiMetni({ planSon: 60, kaldigi: 60 })).toBeNull(); expect(kaldigiMetni({ planSon: 60, kaldigi: null })).toBeNull()
+  })
+})
+
+describe('otomatik ödev görevleri korunur (2026-10-21)', () => {
+  const odev = (o: Partial<Gorev> = {}) => g({ id: 'o-1', ad: 'Fiz — Ödev', miktar: 30, odevId: '11111111-1111-4111-8111-111111111111', teslim: '2026-10-22', ...o })
+  const h = (gorevler: Gorev[]) => ({ seviye: 1 as const, soruHedefi: 200, icerik: icerik({ surum: 2, duzen: 'D', gorevler, gizliOdevler: ['x'] }), gorusme: BOS_GORUSME })
+  it('seviyeDegistir ödev süresini ölçeklemez', () => {
+    const y = seviyeDegistir(h([g({ id: 'e', miktar: 60 }), odev()]), 2, 9)
+    expect(y.icerik.gorevler.map(x => x.miktar)).toEqual([75, 30])
+  })
+  it('planKopyala ödev görevlerini ve gizli listeyi taşımaz', () => {
+    const y = planKopyala(h([g({ id: 'e' }), odev()]))
+    expect(y.icerik.gorevler.map(x => x.id)).toEqual(['e']); expect(y.icerik.gizliOdevler).toBeUndefined()
+  })
+  it('normalizeIcerik Pzt–Cum aynı adlı ödev görevlerini gruplamaz', () => {
+    const bes = [0, 1, 2, 3, 4].map(gun => odev({ id: `o-${gun}`, gun }))
+    expect(normalizeIcerik(icerik({ gorevler: bes }), 1).gorevler.every(x => !x.grup)).toBe(true)
+  })
+  it('sablonaDon elle görevleri şablonla değiştirir, ödevleri korur', () => {
+    const y = sablonaDon(icerik({ gorevler: [g({ id: 'e' }), odev()] }), 9, 1)
+    expect(y.filter(x => x.odevId).map(x => x.id)).toEqual(['o-1'])
+    expect(y.some(x => x.id === 'e')).toBe(false)
+    expect(elleGorevler(y).length).toBe(sinifSablonu(9).length)
   })
 })

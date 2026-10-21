@@ -39,3 +39,18 @@ describe('kaydetSchema', () => {
     expect(r.success && 'ozet' in r.data).toBe(false)
   })
 })
+
+describe('kaydetSchema — otomatik ödev görevi (2026-10-21)', () => {
+  const OID = '33333333-3333-4333-8333-333333333333'
+  it('odevId + teslim + gizliOdevler geçer', () => {
+    const v = gecerli()
+    v.icerik = { ...v.icerik, gizliOdevler: [OID], gorevler: [...v.icerik.gorevler, { ...v.icerik.gorevler[0], id: `o-${OID}`, grup: undefined, odevId: OID, teslim: '2026-10-22' }] }
+    expect(kaydetSchema.safeParse(v).success).toBe(true)
+  })
+  it('geçersiz odevId / teslim reddedilir', () => {
+    for (const ek of [{ odevId: 'x' }, { odevId: OID, teslim: '22.10.2026' }]) {
+      const v = gecerli(); v.icerik.gorevler[0] = { ...v.icerik.gorevler[0], ...ek }
+      expect(kaydetSchema.safeParse(v).success).toBe(false)
+    }
+  })
+})
