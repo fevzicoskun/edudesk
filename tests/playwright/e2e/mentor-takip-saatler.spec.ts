@@ -158,7 +158,9 @@ test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yal
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
   if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
-  expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBeLessThanOrEqual(2)
+  // Günler + öğretmen notu/veli imzası 1. sayfada; yalnız "plana girmeyen ödev" varsa 2. sayfa (2026-10-22)
+  const plandisi = await page.getByText('Plana girmeyen ödevler:').count()
+  expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(plandisi ? 2 : 1)
 })
 
 test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır uyarısı', async ({ page }) => {

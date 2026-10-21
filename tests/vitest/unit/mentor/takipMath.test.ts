@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, sablonaDon, elleGorevler, gunSirasi, gunTarihi, okulGunleri, haftaBaslangicMi, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, sablonaDon, elleGorevler, dengeliBol, gunSirasi, gunTarihi, okulGunleri, haftaBaslangicMi, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -423,5 +423,21 @@ describe('Cuma başlangıçlı hafta (2026-10-22): gün = haftanın günü (Pzt=
     expect(kitapSayfaYaz(k(4), '2026-10-23')).toBe('A s. 45–48')
     expect(kitapSayfaYaz(k(0), '2026-10-23')).toBe('A s. 49–51')
     expect(kitapSayfaYaz(k(0))).toBe('A s. 45–48') // hafta verilmezse eski (Pazartesi) sıra
+  })
+})
+
+describe('dengeliBol: günleri sırayı bozmadan iki eşit sütuna böler (kâğıt, 2026-10-22)', () => {
+  it('toplamı en eşit ayıran nokta', () => {
+    expect(dengeliBol([10, 10, 10, 10])).toBe(2)
+    expect(dengeliBol([30, 5, 5, 5, 5, 5, 5])).toBe(1)
+    expect(dengeliBol([5, 5, 5, 5, 5, 5, 30])).toBe(6)
+  })
+  it('tek gün sol sütunda, boş liste 0', () => { expect(dengeliBol([7])).toBe(1); expect(dengeliBol([])).toBe(0) })
+  it('eşitlikte sol sütun uzun olsun (okuma soldan başlar)', () => expect(dengeliBol([10, 10, 10])).toBe(2))
+  it('imza kısa sütuna eklenir: en uzun sütunu kısaltan bölme', () => {
+    // [10,10,10,10] + imza 6: k=2 → 20+6 / 20 = 26; k=3 → 30 / 10+6 = 30 → k=2
+    expect(dengeliBol([10, 10, 10, 10], 6)).toBe(2)
+    // [12,12,12,30] + imza 8: k=3 → 36 / 30+8 = 38; k=2 → 24+8 / 42 = 42 → k=3
+    expect(dengeliBol([12, 12, 12, 30], 8)).toBe(3)
   })
 })

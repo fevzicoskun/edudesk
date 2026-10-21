@@ -1,4 +1,4 @@
-import { miktarYaz, kitapSayfaYaz, okulDurumYaz, gunSirasi, gunTarihi, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { miktarYaz, kitapSayfaYaz, okulDurumYaz, gunSirasi, dengeliBol, gunTarihi, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { gorevSaatleri, kagitDuzeni, saatlerVarMi, saatYaz } from '@/src/domains/mentor/takip/calismaSaatleri'
 import { odevEtiketi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa, gunAy } from '@/src/domains/mentor/lib/bultenMath'
@@ -48,13 +48,11 @@ export function OkulOdevListesi({ baslik, liste }: { baslik: string; liste: Okul
 }
 
 /** Öğretmen notu + veli imzası başlığın hemen altında: altta dururken uzun ödev listesiyle 2. sayfaya sarkıyordu (2026-10-17). */
-export function ImzaAlanlari({ ekran = false }: { ekran?: boolean }) {
+export function ImzaAlanlari() {
   return (
     <div className="grid grid-cols-2 gap-2 mb-2 break-inside-avoid">
       <div className="border border-gray-400 h-11 p-1"><b>Öğretmen notu</b></div>
-      {/* Plan kâğıdında veli doldurur; kutunun içinde altta → kâğıt uzamaz */}
-      <div className="border border-gray-400 h-11 p-1 flex flex-col justify-between"><b>Veli imzası</b>
-        {ekran && <span>Günlük ortalama ekran süresi: ________ saat</span>}</div>
+      <div className="border border-gray-400 h-11 p-1"><b>Veli imzası</b></div>
     </div>
   )
 }
@@ -67,7 +65,19 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
   const duzen = kagitDuzeni(veri.icerik.duzen, v.saatler)
   const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
   // Plan sırası (Cuma haftasında Cum → Per); görev günü haftanın günüdür
+  const o = v.okulOdevleri
+  const ekSayfa = disarida.length > 0 || (!veri.icerik.otoOdev && o.tamamlanmamis.length + o.buHafta.length + o.gelecek.length > 0)
+  // Yaklaşık satır yükü: başlık + görev satırları (ad + etiket ~38 karakterde sarar; soru satırı küçük) + 2 "Yeni ödev"
+  const yuk = (gs: typeof veri.icerik.gorevler) => 3.2 + gs.reduce((t, g) => {
+    const etiket = g.teslim && odevEtiketi(g.teslim, v.bugun).tur !== 'tarih' ? 14 : 0
+    return t + Math.ceil((g.ad.length + etiket) / 38) + (g.soruSatiri ? 0.8 : 0)
+  }, 0)
   const gunler = gunSirasi(v.hafta).map(i => ({ ad: GUN_TAM[i], i, gorevler: veri.icerik.gorevler.filter(g => g.gun === i) })).filter(x => x.gorevler.length > 0)
+  const yukler = gunler.map(x => yuk(x.gorevler))
+  const bolum = dengeliBol(yukler, 6) // imza kutuları ≈ 6 satır
+  const t = (a: number[]) => a.reduce((x, y) => x + y, 0)
+  // Öğretmen notu + veli imzası kısa sütunun altına: 1. sayfadaki boşluğu kullanır (tam genişlikte 2. sayfaya düşüyordu)
+  const imzaSutunu = t(yukler.slice(0, bolum)) <= t(yukler.slice(bolum)) ? 0 : 1
   return (
     <article className="text-[11pt] leading-snug text-black bg-white">
       {/* header/footer etiketi DEĞİL: globals.css baskıda header'ları gizler */}
@@ -75,28 +85,30 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         <div>
           <p className="text-[9pt]">{v.okulAdi}</p>
           <h1 className="text-[15pt] font-bold leading-tight">Haftalık Çalışma Planı</h1>
-          <p>{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
+          <p className="text-[13pt] font-bold">{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
         </div>
-        <p className="font-bold text-[12pt]">{takipHaftaEtiketi(v.hafta)}</p>
+        <p className="font-extrabold text-[15pt]">{takipHaftaEtiketi(v.hafta)}</p>
       </div>
       <p className="text-[14pt] font-bold">Bu hafta hedefin: {veri.soruHedefi} soru</p>
       {duzen && <p className="text-[10pt]"><b>Günlük düzen:</b> {duzen}</p>}
 
-      {/* Sütun akışı (ızgara değil): kutu boyları farklı, satır hizası boşluk bırakıp imzayı 2. sayfaya itiyordu */}
-      <div className="columns-2 gap-2 mt-2">
-        {gunler.map(({ ad, i, gorevler }) => {
+      {/* İki açık sütun, yükü dengeli (dengeliBol): CSS columns baskıda iki sütunu da kısa kesip günleri 2. sayfaya itiyordu */}
+      <div className="grid grid-cols-2 gap-2 mt-2 items-start">
+        {[gunler.slice(0, bolum), gunler.slice(bolum)].map((sutun, si) => <div key={si}>{sutun.map(({ ad, i, gorevler }) => {
           const saat = saatlerVarMi(v.saatler) ? v.saatler!.gunler[i] : null
           return (
-            <section key={ad} aria-label={ad} className="break-inside-avoid border border-black rounded px-2 py-1 mb-2">
-              <h2 className="font-bold border-b border-black mb-0.5">
-                {ad} · {gunAy(gunTarihi(v.hafta, i))}{saat && ` · ${saatYaz(saat.bas)}–${saatYaz(saat.bit)}`}
+            <section key={ad} aria-label={ad} className="break-inside-avoid border border-black rounded px-2 py-0.5 mb-1 leading-tight">
+              <h2 className="flex items-baseline justify-between gap-2 font-bold border-b border-black mb-0.5">
+                <span>{ad} · {gunAy(gunTarihi(v.hafta, i))}{saat && ` · ${saatYaz(saat.bas)}–${saatYaz(saat.bit)}`}</span>
+                {/* Günlük ekran süresini öğrenci her gün yazar (veli imzası altındaki haftalık alan kalktı, 2026-10-22) */}
+                <span className="text-[8.5pt] font-normal whitespace-nowrap">Ekran: ___ sa</span>
               </h2>
               <ul>
                 {gorevSaatleri(saat, gorevler).map(({ gorev: g, saat: s }) => {
                   const e = g.teslim ? odevEtiketi(g.teslim, v.bugun) : null
                   const kitap = g.soruSatiri ? kitapSayfaYaz(g, v.hafta) : ''
                   return (
-                    <li key={g.id} className="py-px">
+                    <li key={g.id} className="py-[1px]">
                       <div className="flex items-baseline gap-1">
                         {saat && <span className="w-10 shrink-0 tabular-nums">{s ?? '+'}</span>}
                         <span aria-hidden className="shrink-0">☐</span>
@@ -105,20 +117,35 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
                         <span className="shrink-0 whitespace-nowrap">{miktarYaz(g)}</span>
                       </div>
                       {g.soruSatiri && (
-                        <p className={`text-[9.5pt] ${saat ? 'pl-[3.75rem]' : 'pl-4'}`}>{kitap && `${kitap} · `}Çözdüm: ____ Doğru: ____</p>
+                        <p className={`text-[9pt] ${saat ? 'pl-[3.75rem]' : 'pl-4'}`}>{kitap && `${kitap} · `}Çözdüm: ____ Doğru: ____</p>
                       )}
                     </li>
                   )
                 })}
               </ul>
               {/* Okulda yeni verilen ödevi öğrenci kendisi yazar */}
-              {[0, 1].map(k => <p key={k} className="text-[9.5pt] mt-1">Yeni ödev: ______________________ Teslim: ______</p>)}
+              {[0, 1].map(k => <p key={k} className="text-[9pt] mt-0.5">Yeni ödev: ______________________ Teslim: ______</p>)}
             </section>
           )
         })}
+          {si === imzaSutunu && (
+            <div className="break-inside-avoid space-y-1 text-[9.5pt]">
+              <div className="border border-black rounded h-16 px-2 py-0.5"><b>Öğretmen notu</b></div>
+              <div className="border border-black rounded h-12 px-2 py-0.5"><b>Veli imzası</b></div>
+            </div>
+          )}
+        </div>)}
       </div>
 
-      <div className="mt-2 text-[9.5pt] space-y-1 break-inside-avoid">
+      {/* 1. sayfa: günler + öğretmen notu / veli imzası. Ödev listeleri 2. sayfada (2026-10-22 kullanıcı) */}
+      {(veri.icerik.okuma || veri.icerik.mentorOdevleri.length > 0) && <div className="text-[9.5pt] space-y-1 break-inside-avoid">
+        {veri.icerik.okuma && <p><b>Okuma:</b> {veri.icerik.okuma.kitap} — okuduğun sayfaları her gün not et.</p>}
+        {veri.icerik.mentorOdevleri.length > 0 && (
+          <p><b>Mentör ödevleri:</b> {veri.icerik.mentorOdevleri.map(m => [m.kitapAdi, m.konu, m.sayfalar].filter(Boolean).join(' ')).join(' · ')}</p>
+        )}
+      </div>}
+
+      {ekSayfa && <div className="break-before-page text-[9.5pt] space-y-1 pt-1">
         {/* Özellikten önce elle hazırlanmış plan: ödevler göreve girmedi, eski üç liste */}
         {!veri.icerik.otoOdev && <>
           <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
@@ -128,12 +155,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         {disarida.length > 0 && (
           <p><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
         )}
-        {veri.icerik.okuma && <p><b>Okuma:</b> {veri.icerik.okuma.kitap} — okuduğun sayfaları her gün not et.</p>}
-        {veri.icerik.mentorOdevleri.length > 0 && (
-          <p><b>Mentör ödevleri:</b> {veri.icerik.mentorOdevleri.map(m => [m.kitapAdi, m.konu, m.sayfalar].filter(Boolean).join(' ')).join(' · ')}</p>
-        )}
-        <ImzaAlanlari ekran />
-      </div>
+      </div>}
     </article>
   )
 }

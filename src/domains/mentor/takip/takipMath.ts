@@ -376,3 +376,19 @@ export function dersListesi(odevDersleri: string[]): string[] {
 }
 
 const STANDART_DERSLER = ['Biyoloji', 'Coğrafya', 'Felsefe', 'Fizik', 'Geometri', 'İngilizce', 'Kimya', 'Matematik', 'Tarih', 'Türk Dili ve Edebiyatı']
+
+/** Kâğıt: günler sırası bozulmadan iki sütuna — ilk k gün solda. `ek` (imza kutuları) kısa sütunun altına girer;
+ *  en uzun sütunu en kısa yapan k seçilir (eşitlikte sol uzun). CSS columns baskıda iki sütunu da kısa kesip günleri
+ *  2. sayfaya itiyordu (2026-10-22). */
+export function dengeliBol(agirliklar: number[], ek = 0): number {
+  if (agirliklar.length <= 1) return agirliklar.length
+  const toplam = agirliklar.reduce((a, b) => a + b, 0)
+  let en = 1, enUzun = Infinity, sol = 0
+  for (let k = 1; k < agirliklar.length; k++) {
+    sol += agirliklar[k - 1]
+    const sag = toplam - sol
+    const uzun = Math.max(sol + (sol <= sag ? ek : 0), sag + (sol <= sag ? 0 : ek)) - (sol >= sag ? 0.25 : 0)
+    if (uzun < enUzun) { enUzun = uzun; en = k }
+  }
+  return en
+}
