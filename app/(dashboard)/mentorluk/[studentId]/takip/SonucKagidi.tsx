@@ -1,5 +1,5 @@
 import {
-  GUNLER, kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, ekranYaz, type HaftaVerisi, takipHaftaEtiketi,
+  GUNLER, gunSirasi, kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, sonucNet, sonucDogruluk, dersDogruluk, ekranYaz, type HaftaVerisi, takipHaftaEtiketi,
 } from '@/src/domains/mentor/takip/takipMath'
 
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
@@ -14,7 +14,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
   const satirlar = sonucSatirlari(veri.icerik, v.kitaplar)
   const net = satirlar.reduce((t, s) => t + (sonucNet(s) ?? 0), 0)
   const dersler = dersDogruluk(satirlar)
-  const yapilmayan = GUNLER.map((gun, i) => [gun, veri.icerik.gorevler.filter(g => g.gun === i && !g.yapti).map(g => g.ad)] as const)
+  const yapilmayan = gunSirasi(v.hafta).map(i => [GUNLER[i], veri.icerik.gorevler.filter(g => g.gun === i && !g.yapti).map(g => g.ad)] as const)
     .filter(([, adlar]) => adlar.length > 0)
   const moYapilmayan = veri.icerik.mentorOdevleri.filter(m => !m.yapti)
   const kutu = (baslik: string, deger: string) => (

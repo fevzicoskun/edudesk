@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { odevleriBirlestir, odevEtiketi, odevGorevAdi, odevGorevi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { odevleriBirlestir, odevEtiketi, odevGorevAdi, odevGorevi, planDisi, ilkAcikGun } from '@/src/domains/mentor/takip/odevYerlesim'
 import type { CalismaSaatleri, GunSaati } from '@/src/domains/mentor/takip/calismaSaatleri'
 import type { Gorev } from '@/src/domains/mentor/takip/takipMath'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -137,5 +137,28 @@ describe('planDisi', () => {
     const a = odev('2026-10-27'), b = odev('2026-10-22'), c = odev('2026-10-23')
     const plan = birlestir([c]).gorevler
     expect(planDisi([a, c], [b.id, a.id, 'yok'], [a, b, c], plan).map(o => o.id)).toEqual([b.id, a.id])
+  })
+})
+
+describe('Cuma başlangıçlı hafta (2026-10-22)', () => {
+  // Hafta 2026-10-23 (Cuma) … 2026-10-29 (Perşembe); bugün Cuma. gun = haftanın günü (Pzt=0)
+  const C = '2026-10-23'
+  const cuma = (os: HomeworkRecord[], o: Partial<Parameters<typeof odevleriBirlestir>[0]> = {}) =>
+    odevleriBirlestir({ gorevler: [], gizli: [], odevler: os, saatler: SAAT, hafta: C, bugun: C, ...o })
+  it('Salı teslim → Pazartesi; gelecek Cuma teslim → Perşembe; Pazartesi teslim, Pazar açık → Pazar', () => {
+    const sali = odev('2026-10-27'), gelecekCuma = odev('2026-10-30'), pzt = odev('2026-10-26')
+    const r = cuma([sali, gelecekCuma, pzt])
+    expect([sali, gelecekCuma, pzt].map(o => gunu(r, o))).toEqual([0, 3, 6])
+  })
+  it('Pazar teslim, Cumartesi kapalı → Cuma (bugün)', () => { const o = odev('2026-10-25'); expect(gunu(cuma([o]), o)).toBe(4) })
+  it('gecikmişler bugünden (Cuma) plan sırasıyla dağılır, kapalı Cumartesi atlanır', () => {
+    const os = [odev('2026-10-12'), odev('2026-10-13'), odev('2026-10-14'), odev('2026-10-15')]
+    expect(os.map(o => gunu(cuma(os), o))).toEqual([4, 4, 6, 6])
+  })
+  it('teslimi gelecek Cumadan sonra → dışarıda', () => { const o = odev('2026-10-31'); expect(cuma([o]).disarida.map(x => x.id)).toEqual([o.id]) })
+  it('hafta ortası (Salı) ilk açık gün Salı', () => {
+    const os = [odev('2026-10-15')]
+    expect(gunu(cuma(os, { bugun: '2026-10-27' }), os[0])).toBe(1)
+    expect(ilkAcikGun(C, '2026-10-27')).toBe(1)
   })
 })

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
   yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
-  planKopyala, sablonaDon, elleGorevler, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
+  planKopyala, sablonaDon, elleGorevler, gunSirasi, gunTarihi, okulGunleri, haftaBaslangicMi, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -149,10 +149,11 @@ describe('okumaGecmisi', () => {
 // studyPlan/planMath'ten taşındı (2026-10-16: eski çalışma planı kaldırıldı)
 describe('haftaBasi / haftaKaydir', async () => {
   const { haftaBasi, haftaKaydir } = await import('@/src/domains/mentor/takip/takipMath')
-  it('Pazartesi kendisi', () => expect(haftaBasi('2026-09-07')).toBe('2026-09-07'))
-  it('Çarşamba → Pazartesi', () => expect(haftaBasi('2026-09-09')).toBe('2026-09-07'))
-  it('Pazar → önceki Pazartesi (getDay=0 tuzağı)', () => expect(haftaBasi('2026-09-13')).toBe('2026-09-07'))
-  it('yıl geçişi: 2027-01-01 (Cuma) → 2026-12-28', () => expect(haftaBasi('2027-01-01')).toBe('2026-12-28'))
+  // 2026-10-22: takip haftası Cuma → Perşembe (kâğıt Cuma verilir)
+  it('Cuma kendisi', () => expect(haftaBasi('2026-10-23')).toBe('2026-10-23'))
+  it('Perşembe → önceki Cuma', () => expect(haftaBasi('2026-10-22')).toBe('2026-10-16'))
+  it('Pazar → Cuma (getDay=0 tuzağı)', () => expect(haftaBasi('2026-10-25')).toBe('2026-10-23'))
+  it('yıl geçişi: 2027-01-01 Cuma kendisi, 2027-01-03 → 2027-01-01', () => { expect(haftaBasi('2027-01-01')).toBe('2027-01-01'); expect(haftaBasi('2026-12-31')).toBe('2026-12-25') })
   it('+1 hafta', () => expect(haftaKaydir('2026-09-07', 1)).toBe('2026-09-14'))
   it('-1 hafta yıl geçişi', () => expect(haftaKaydir('2027-01-04', -1)).toBe('2026-12-28'))
 })
@@ -398,5 +399,29 @@ describe('otomatik ödev görevleri korunur (2026-10-21)', () => {
     expect(y.filter(x => x.odevId).map(x => x.id)).toEqual(['o-1'])
     expect(y.some(x => x.id === 'e')).toBe(false)
     expect(elleGorevler(y).length).toBe(sinifSablonu(9).length)
+  })
+})
+
+describe('Cuma başlangıçlı hafta (2026-10-22): gün = haftanın günü (Pzt=0), sıra ve tarih hafta başından', () => {
+  it('haftaBaslangicMi: Pazartesi (eski haftalar) ve Cuma', () => {
+    expect(haftaBaslangicMi('2026-10-19')).toBe(true); expect(haftaBaslangicMi('2026-10-23')).toBe(true)
+    expect(haftaBaslangicMi('2026-10-21')).toBe(false); expect(haftaBaslangicMi('2026-13-01')).toBe(false)
+  })
+  it('gunSirasi', () => {
+    expect(gunSirasi('2026-10-23')).toEqual([4, 5, 6, 0, 1, 2, 3])
+    expect(gunSirasi('2026-10-19')).toEqual([0, 1, 2, 3, 4, 5, 6])
+  })
+  it('gunTarihi', () => {
+    expect(gunTarihi('2026-10-23', 4)).toBe('2026-10-23'); expect(gunTarihi('2026-10-23', 0)).toBe('2026-10-26'); expect(gunTarihi('2026-10-23', 3)).toBe('2026-10-29')
+    expect(gunTarihi('2026-10-19', 4)).toBe('2026-10-23')
+  })
+  it('okulGunleri: plan sırasıyla Pzt–Cum', () => {
+    expect(okulGunleri('2026-10-23')).toEqual([4, 0, 1, 2, 3]); expect(okulGunleri('2026-10-19')).toEqual([0, 1, 2, 3, 4])
+  })
+  it('her gün görevinin sayfa payı plan sırasıyla: Cuma haftasında ilk pay Cuma', () => {
+    const k = (gun: number) => g({ gun, grup: 'h-1', kitapId: 'k', kitapAdi: 'A', sayfaBas: 45, sayfaSon: 60 })
+    expect(kitapSayfaYaz(k(4), '2026-10-23')).toBe('A s. 45–48')
+    expect(kitapSayfaYaz(k(0), '2026-10-23')).toBe('A s. 49–51')
+    expect(kitapSayfaYaz(k(0))).toBe('A s. 45–48') // hafta verilmezse eski (Pazartesi) sıra
   })
 })

@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react'
 import { haftaKapat } from '@/app/actions/mentor-takip'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import {
-  GUNLER, miktarYaz, ozetHesapla, okulDurumYaz, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
+  GUNLER, gunSirasi, miktarYaz, ozetHesapla, okulDurumYaz, programYuzde, dogrulukYuzde, fark, kitapSayfaYaz,
   sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk, ekranYaz, type Gorev, type Gorusme, type Sonuc,
 } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
@@ -154,10 +154,10 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
         <thead><tr className="text-left text-xs text-gray-500 dark:text-slate-400 border-b border-gray-300 dark:border-slate-600">
           <th className="py-1">Gün</th><th>Görev</th><th>Süre</th><th>Yaptı</th></tr></thead>
         <tbody>
-          {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
+          {veri.icerik.gorevler.slice().sort((a, b) => gunSirasi(v.hafta).indexOf(a.gun) - gunSirasi(v.hafta).indexOf(b.gun)).map(g => (
             <tr key={g.id} aria-label={`${GUNLER[g.gun]} ${g.ad}`} className={`border-b border-gray-100 dark:border-slate-700 ${g.ders === 'Matematik' ? 'font-semibold' : ''}`}>
               <td className="py-1 pr-2">{GUNLER[g.gun]}</td>
-              <td className="pr-2">{g.ad}{kitapSayfaYaz(g) && <span className="text-gray-500 dark:text-slate-400"> · {kitapSayfaYaz(g)}</span>}</td>
+              <td className="pr-2">{g.ad}{kitapSayfaYaz(g, v.hafta) && <span className="text-gray-500 dark:text-slate-400"> · {kitapSayfaYaz(g, v.hafta)}</span>}</td>
               <td className="pr-2 whitespace-nowrap">{miktarYaz(g)}</td>
               <td>{/* Okul ödevi görevi: dersin öğretmeninin işaretinden (salt okunur) */}
                 <input type="checkbox" aria-label="Yaptı" className="w-5 h-5" checked={g.yapti} disabled={!!g.odevId}

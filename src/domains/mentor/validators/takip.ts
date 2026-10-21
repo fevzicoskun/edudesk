@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { UUID } from '@/src/shared/validation'
-import { pazartesiMi } from '../lib/bultenMath'
+import { haftaBaslangicMi } from '../takip/takipMath'
 
 const metin = (n: number) => z.string().trim().max(n)
 const sayi = z.number().int().min(0).max(100_000)
@@ -48,7 +48,7 @@ export const gorusmeSchema = z.object({ not: metin(2000), rica: metin(1000), vel
 
 export const kaydetSchema = z.object({
   studentId: UUID,
-  hafta: z.string().refine(pazartesiMi, 'Hafta pazartesi olmalı'),
+  hafta: z.string().refine(haftaBaslangicMi, 'Hafta Cuma (ya da eski kayıtlarda Pazartesi) olmalı'),
   seviye: z.union([z.literal(0), z.literal(1), z.literal(2)]),
   soruHedefi: z.number().int().min(0).max(10_000),
   icerik: icerikSchema,

@@ -4,10 +4,9 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { UUID } from '@/src/shared/validation'
-import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import type { ActionResult } from '@/src/shared/types/index'
-import type { HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
+import { haftaBaslangicMi, type HaftaVerisi } from '@/src/domains/mentor/takip/takipMath'
 
 /** Otomatik kayıt: revalidate YOK (her tuşta sayfa yeniden çizilmesin); liste durumu bir sonraki gezinmede tazelenir. */
 export async function haftaKaydet(girdi: unknown): Promise<ActionResult<{ cakisma?: boolean; updatedAt?: string }>> {
@@ -44,7 +43,7 @@ export async function konuDurumu(studentId: string, konuId: string, durum: numbe
   return TakipService.konuDurumuYaz(studentId, konuId, durum as 0 | 1 | 2)
 }
 
-const haftaSchema = z.object({ studentId: UUID, hafta: z.string().refine(pazartesiMi, 'Hafta pazartesi olmalı') })
+const haftaSchema = z.object({ studentId: UUID, hafta: z.string().refine(haftaBaslangicMi, 'Hafta Cuma (ya da eski kayıtlarda Pazartesi) olmalı') })
 /** Haftayı kapat: plan + sonuç + o anki okul ödevi durumu sabitlenir, hafta salt okunur olur. */
 export async function haftaKapat(studentId: string, hafta: string): Promise<ActionResult> {
   const p = haftaSchema.safeParse({ studentId, hafta })

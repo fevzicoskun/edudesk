@@ -1,8 +1,7 @@
-import { miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { miktarYaz, kitapSayfaYaz, okulDurumYaz, gunSirasi, gunTarihi, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { gorevSaatleri, kagitDuzeni, saatlerVarMi, saatYaz } from '@/src/domains/mentor/takip/calismaSaatleri'
 import { odevEtiketi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa, gunAy } from '@/src/domains/mentor/lib/bultenMath'
-import { addDaysISO } from '@/src/shared/date'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
@@ -67,7 +66,8 @@ const GUN_TAM = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumar
 export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVerisi }) {
   const duzen = kagitDuzeni(veri.icerik.duzen, v.saatler)
   const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
-  const gunler = GUN_TAM.map((ad, i) => ({ ad, i, gorevler: veri.icerik.gorevler.filter(g => g.gun === i) })).filter(x => x.gorevler.length > 0)
+  // Plan sırası (Cuma haftasında Cum → Per); görev günü haftanın günüdür
+  const gunler = gunSirasi(v.hafta).map(i => ({ ad: GUN_TAM[i], i, gorevler: veri.icerik.gorevler.filter(g => g.gun === i) })).filter(x => x.gorevler.length > 0)
   return (
     <article className="text-[11pt] leading-snug text-black bg-white">
       {/* header/footer etiketi DEĞİL: globals.css baskıda header'ları gizler */}
@@ -89,12 +89,12 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
           return (
             <section key={ad} aria-label={ad} className="break-inside-avoid border border-black rounded px-2 py-1 mb-2">
               <h2 className="font-bold border-b border-black mb-0.5">
-                {ad} · {gunAy(addDaysISO(v.hafta, i))}{saat && ` · ${saatYaz(saat.bas)}–${saatYaz(saat.bit)}`}
+                {ad} · {gunAy(gunTarihi(v.hafta, i))}{saat && ` · ${saatYaz(saat.bas)}–${saatYaz(saat.bit)}`}
               </h2>
               <ul>
                 {gorevSaatleri(saat, gorevler).map(({ gorev: g, saat: s }) => {
                   const e = g.teslim ? odevEtiketi(g.teslim, v.bugun) : null
-                  const kitap = g.soruSatiri ? kitapSayfaYaz(g) : ''
+                  const kitap = g.soruSatiri ? kitapSayfaYaz(g, v.hafta) : ''
                   return (
                     <li key={g.id} className="py-px">
                       <div className="flex items-baseline gap-1">

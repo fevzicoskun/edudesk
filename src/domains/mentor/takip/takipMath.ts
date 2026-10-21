@@ -42,11 +42,22 @@ export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
 export type HaftaVerisi = { seviye: Seviye; soruHedefi: number; icerik: Icerik; gorusme: Gorusme }
 
-/** Haftanın pazartesisi ('YYYY-MM-DD', UTC takvim aritmetiği — saat dilimi kaydırmaz). */
+/** Haftanın günü, Pzt=0 … Paz=6 (UTC takvim aritmetiği — saat dilimi kaydırmaz). */
+const haftaninGunu = (iso: string) => { const [y, m, d] = iso.split('-').map(Number); return (new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7 }
+
+/** Takip haftası CUMA → Perşembe (2026-10-22: kâğıt Cuma verilir; haftanın ödevleri o güne kadar verilmiş olur).
+ *  Görevin `gun`u haftanın günüdür (Pzt=0); sıra ve tarih hafta başından türer → eski Pazartesi haftaları da okunur. */
 export function haftaBasi(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number)
-  return addDaysISO(iso, -((new Date(Date.UTC(y, m - 1, d)).getUTCDay() + 6) % 7))
+  return addDaysISO(iso, -((haftaninGunu(iso) + 3) % 7))
 }
+/** Geçerli hafta başı: Cuma (yeni) ya da Pazartesi (2026-10-22 öncesi kayıtlar). */
+export const haftaBaslangicMi = (iso: string) =>
+  /^\d{4}-\d{2}-\d{2}$/.test(iso) && !Number.isNaN(Date.parse(iso)) && [0, 4].includes(haftaninGunu(iso))
+/** Planın gün sırası (gun değerleri): Cuma haftasında [4,5,6,0,1,2,3]. */
+export const gunSirasi = (hafta: string) => Array.from({ length: 7 }, (_, k) => (haftaninGunu(hafta) + k) % 7)
+export const gunTarihi = (hafta: string, gun: number) => addDaysISO(hafta, (gun - haftaninGunu(hafta) + 7) % 7)
+/** Okul günleri (Pzt–Cum) plan sırasıyla — her gün görevinin sayfa payı bu sırayla dağılır. */
+export const okulGunleri = (hafta: string) => gunSirasi(hafta).filter(g => g <= 4)
 export const haftaKaydir = (pazartesi: string, delta: number) => addDaysISO(pazartesi, delta * 7)
 
 /** Takip haftası Pzt–Paz (plan hafta sonunu da kapsar). Veli bülteni/mesajı okul haftasını (Pzt–Cum, haftaEtiketi) kullanır. */
@@ -145,11 +156,12 @@ const aralikYaz = (bas: number | null, son: number | null) =>
 
 /** Görev satırının kitap/sayfa metni (kâğıt + Sonuç). Her gün görevi kendi gününün payını gösterir;
  *  güne özel görev aralığı olduğu gibi. Kitapsız görevde eski serbest `sayfa` metni. */
-export function kitapSayfaYaz(g: Gorev): string {
+export function kitapSayfaYaz(g: Gorev, hafta?: string): string {
   if (!g.kitapId) return g.sayfa
   let bas = g.sayfaBas ?? null, son = g.sayfaSon ?? null
   if (g.grup && g.gun <= 4 && bas !== null) {
-    const pay = gunlukAralik(bas, son ?? bas, g.gun)
+    // Pay planın sırasıyla (Cuma haftasında ilk pay Cuma); hafta verilmezse Pzt–Cum
+    const pay = gunlukAralik(bas, son ?? bas, hafta ? okulGunleri(hafta).indexOf(g.gun) : g.gun)
     if (!pay) return g.kitapAdi ?? ''
     ;[bas, son] = pay
   }

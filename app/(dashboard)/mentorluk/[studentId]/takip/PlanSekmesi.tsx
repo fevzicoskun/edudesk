@@ -3,7 +3,7 @@ import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import { oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
 import Link from 'next/link'
-import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, gunSirasi, okulGunleri, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { BOS_SAATLER, duzenMetni, netSure, otomatikDuzenMi, planlananDk, saatlerVarMi, sureKisa } from '@/src/domains/mentor/takip/calismaSaatleri'
 import { ilkAcikGun, odevEtiketi, odevGorevi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
@@ -59,7 +59,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
     } }), true)
   }
   const kayitlar = new Map(v.odevKayitlari.map(o => [o.id, o]))
-  const ilkGun = Math.min(6, ilkAcikGun(v.hafta, v.bugun))
+  const ilkGun = ilkAcikGun(v.hafta, v.bugun)
   const planaEkle = (o: HomeworkRecord) => degistir(h => ({ ...h, icerik: {
     ...h.icerik, gizliOdevler: (h.icerik.gizliOdevler ?? []).filter(x => x !== o.id),
     gorevler: [...h.icerik.gorevler.filter(x => x.odevId !== o.id), odevGorevi(o, ilkGun)],
@@ -93,7 +93,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
           onChange={x => gorev(g, { miktar: x.target.value ? Math.min(600, Math.max(1, Math.trunc(Number(x.target.value)))) : null })} />
         <span className="text-sm">dk</span>
         <select aria-label="Gün" className={`${hucre} w-20`} value={g.gun} onChange={x => gorev(g, { gun: Number(x.target.value) }, true)}>
-          {GUNLER.map((ad, i) => <option key={ad} value={i}>{ad}</option>)}
+          {gunSirasi(v.hafta).map(i => <option key={i} value={i}>{GUNLER[i]}</option>)}
         </select>
         {e && <span className={`text-xs ${ETIKET_RENK[e.tur]}`}>{e.metin}</span>}
         {yeniMi(g) && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">yeni</span>}
@@ -140,7 +140,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         {/* Önizleme Sil'den sonra: basis-full satırı Sil'i alt satıra itmesin (2026-10-17) */}
         {g.grup && g.soruSatiri && g.kitapId && g.sayfaBas != null && (g.sayfaSon ?? g.sayfaBas) >= g.sayfaBas && (
           <p aria-label="Günlük sayfa dağılımı" className="basis-full text-xs font-normal text-gray-500 dark:text-slate-400 pl-1">
-            {GUNLER.slice(0, 5).map((gun, i) => { const a = gunlukAralik(g.sayfaBas!, g.sayfaSon ?? g.sayfaBas!, i); return `${gun} ${a ? (a[0] === a[1] ? a[0] : `${a[0]}–${a[1]}`) : '—'}` }).join(' · ')}
+            {okulGunleri(v.hafta).map((gun, i) => { const a = gunlukAralik(g.sayfaBas!, g.sayfaSon ?? g.sayfaBas!, i); return `${GUNLER[gun]} ${a ? (a[0] === a[1] ? a[0] : `${a[0]}–${a[1]}`) : '—'}` }).join(' · ')}
           </p>
         )}
       </div>
@@ -186,7 +186,8 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         </div>
         <div>
           <h2 className="text-base font-semibold">Güne özel</h2>
-          {GUNLER.map((gunAdi, gun) => {
+          {gunSirasi(v.hafta).map(gun => {
+            const gunAdi = GUNLER[gun]
             const satirlar = veri.icerik.gorevler.filter(g => g.gun === gun && !g.grup)
             return (
               <div key={gunAdi} className="mt-2">

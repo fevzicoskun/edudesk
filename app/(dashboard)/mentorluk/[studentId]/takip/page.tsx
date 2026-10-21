@@ -3,8 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
-import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
+import { haftaBasi, haftaBaslangicMi } from '@/src/domains/mentor/takip/takipMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import TakipIstemci, { type Sekme } from './TakipIstemci'
 
@@ -18,7 +17,7 @@ export default async function TakipPage({ params, searchParams }: {
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const { studentId } = await params
   const sp = await searchParams
-  const hafta = sp.hafta && pazartesiMi(sp.hafta) ? sp.hafta : haftaBasi(todayLocalISO())
+  const hafta = sp.hafta && haftaBaslangicMi(sp.hafta) ? sp.hafta : haftaBasi(todayLocalISO())
   const sekme: Sekme = SEKMELER.find(s => s === sp.sekme) ?? 'plan'
   const v = await TakipService.sayfaVerisi(studentId, hafta, { gecmis: sekme === 'dosya' })
   if (!v) notFound() // bayrak kapalı / mentörü değil / öğrenci yok — hepsi aynı 404 (varlık sızdırma yok)

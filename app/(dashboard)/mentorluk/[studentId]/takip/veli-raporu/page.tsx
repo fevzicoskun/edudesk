@@ -3,8 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
-import { pazartesiMi, haftaEtiketi } from '@/src/domains/mentor/lib/bultenMath'
+import { haftaBasi, haftaBaslangicMi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { ozetHesapla, programYuzde, dogrulukYuzde } from '@/src/domains/mentor/takip/takipMath'
 import { takipVeliMesaji } from '@/src/domains/mentor/takip/veliMesaji'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
@@ -18,7 +17,7 @@ export default async function VeliRaporuPage({ params, searchParams }: { params:
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const { studentId } = await params
   const h = (await searchParams).hafta
-  const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : haftaBasi(todayLocalISO()))
+  const v = await TakipService.sayfaVerisi(studentId, h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO()))
   if (!v) notFound()
   const o = ozetHesapla(v.taslak.icerik), p = programYuzde(o), d = dogrulukYuzde(o)
   const mo = v.taslak.icerik.mentorOdevleri
@@ -37,7 +36,7 @@ export default async function VeliRaporuPage({ params, searchParams }: { params:
       <article className="text-sm text-black bg-white">
         <p className="text-xs">{v.okulAdi}</p>
         <h1 className="text-lg font-bold">Haftalık Mentörlük Raporu</h1>
-        <p className="mb-3">{v.ogrenci.ad} · {v.ogrenci.sinifAdi} · {haftaEtiketi(v.hafta)}</p>
+        <p className="mb-3">{v.ogrenci.ad} · {v.ogrenci.sinifAdi} · {takipHaftaEtiketi(v.hafta)}</p>
         <div className="grid grid-cols-4 gap-2 mb-4">
           {kutular.map(([b, x]) => (
             <div key={b} className="border border-gray-400 p-2"><p className="text-xs">{b}</p><p className="text-base font-bold">{x}</p></div>

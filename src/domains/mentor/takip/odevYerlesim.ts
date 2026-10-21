@@ -4,7 +4,7 @@ import { addDaysISO } from '@/src/shared/date'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { dersKisa } from '../lib/bultenMath'
 import { netSure, saatlerVarMi, type CalismaSaatleri } from './calismaSaatleri'
-import type { Gorev } from './takipMath'
+import { gunSirasi, type Gorev } from './takipMath'
 
 /** Teslimi bundan eski yapılmamış ödev plana girmez, yalnız listede (2026-10-21 kullanıcı). */
 export const ESKI_SINIR_GUN = 21
@@ -31,8 +31,10 @@ export const odevGorevi = (o: HomeworkRecord, gun: number): Gorev => ({
   konu: '', sayfa: '', yapti: false, soru: null, dogru: null, odevId: o.id, teslim: o.due_date ?? undefined,
 })
 
-/** Planın bugünden önceki günleri dolmuş sayılır: bu hafta bugünün indeksi, ileri hafta 0 (en çok 7 = hafta geçti). */
-export const ilkAcikGun = (hafta: string, bugun: string) => Math.min(7, Math.max(0, gunFarki(hafta, bugun)))
+/** Hafta başından gün farkı: bugünden önceki günler geçmiş sayılır (ileri hafta 0, en çok 7 = hafta geçti). */
+const ilkOfset = (hafta: string, bugun: string) => Math.min(7, Math.max(0, gunFarki(hafta, bugun)))
+/** Planın bugünkü (ileri haftada ilk) günü — `gun` değeri (Pzt=0); hafta geçtiyse son gün. */
+export const ilkAcikGun = (hafta: string, bugun: string) => gunSirasi(hafta)[Math.min(6, ilkOfset(hafta, bugun))]
 
 const gunFarki = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 const sira = (a: HomeworkRecord, b: HomeworkRecord) =>
@@ -55,7 +57,9 @@ export function odevleriBirlestir(a: {
   })
   const planda = new Set(gorevler.flatMap(g => (g.odevId ? [g.odevId] : [])))
   const gizli = new Set(a.gizli)
-  const ilk = ilkAcikGun(a.hafta, a.bugun)
+  // Hesap hafta başından gün farkıyla (ofset); görev günü = planGun[ofset] (Cuma haftasında ofset 0 = Cuma)
+  const planGun = gunSirasi(a.hafta)
+  const ilk = ilkOfset(a.hafta, a.bugun)
   const ileriHafta = a.hafta > a.bugun
   const alt = ileriHafta ? a.hafta : addDaysISO(a.bugun, -ESKI_SINIR_GUN)
   const ust = addDaysISO(a.hafta, 7)
@@ -83,11 +87,11 @@ export function odevleriBirlestir(a: {
 
   for (const o of yerlesecek.filter(x => x.due_date! >= a.bugun)) {
     const hedef = Math.min(6, Math.max(ilk, gunFarki(a.hafta, o.due_date!) - 1))
-    const geri = Array.from({ length: hedef - ilk + 1 }, (_, k) => hedef - k)
-    koy(o, geri.find(sigar) ?? geri.find(i => pay[i] !== null) ?? hedef)
+    const geri = Array.from({ length: hedef - ilk + 1 }, (_, k) => planGun[hedef - k])
+    koy(o, geri.find(sigar) ?? geri.find(i => pay[i] !== null) ?? planGun[hedef])
   }
   for (const o of yerlesecek.filter(x => x.due_date! < a.bugun)) {
-    const gun = Array.from({ length: 7 - ilk }, (_, k) => ilk + k).find(sigar)
+    const gun = Array.from({ length: 7 - ilk }, (_, k) => planGun[ilk + k]).find(sigar)
     if (gun === undefined) disarida.push(o)
     else koy(o, gun)
   }
