@@ -119,6 +119,12 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
       </div>
 
       <div className="mt-2 text-[9.5pt] space-y-1 break-inside-avoid">
+        {/* Özellikten önce elle hazırlanmış plan: ödevler göreve girmedi, eski üç liste */}
+        {!veri.icerik.otoOdev && <>
+          <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
+          <OkulOdevListesi baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
+          <OkulOdevListesi baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
+        </>}
         {disarida.length > 0 && (
           <p><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
         )}

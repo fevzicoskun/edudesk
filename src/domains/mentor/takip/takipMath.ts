@@ -33,7 +33,10 @@ export type Sonuc = {
 /** ekranSuresi (2026-10-18): günlük ortalama ekran süresi, saat (ondalıklı). Sonraki haftaya kopyalanmaz. */
 export type Icerik = { duzen: string; gorevler: Gorev[]; mentorOdevleri: MentorOdevi[]; okuma: Okuma | null; sonuclar?: Sonuc[]; surum?: 2; ekranSuresi?: number | null
   /** Mentörün bu hafta plandan çıkardığı otomatik ödevler (homeworks.id); tekrar eklenmez. */
-  gizliOdevler?: string[] }
+  gizliOdevler?: string[]
+  /** Okul ödevleri plana otomatik girer (2026-10-22). Yalnız yeni planlar taşır: özellikten önce elle hazırlanmış
+   *  planlara (ödevler elle göreve çevrilmiş) eklenirse aynı ödev iki kez görünürdü. */
+  otoOdev?: true }
 /** veliMesaji: mentörün düzenlediği veli mesajı; null = haftanın verisinden otomatik. */
 export type Gorusme = { not: string; rica: string; veliMesaji: string | null }
 export type Ozet = { gorev_toplam: number; gorev_yapilan: number; soru: number; dogru: number; okuma_sayfa: number; islendi: boolean }
@@ -279,7 +282,7 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
     seviye: onceki.seviye, soruHedefi: onceki.soruHedefi, gorusme: BOS_GORUSME,
     icerik: {
       // Düzen öğrencinin çalışma saatlerinden üretilir (''); ödev görevleri yeni haftada taze birleşir (2026-10-21)
-      surum: 2, duzen: '', mentorOdevleri: [],
+      surum: 2, otoOdev: true, duzen: '', mentorOdevleri: [],
       gorevler: sayfaKaydir(elleGorevler(ic.gorevler), new Map((ic.sonuclar ?? []).flatMap(s => (s.anahtar.startsWith('k:') && s.kaldigi != null ? [[s.anahtar.slice(2), s.kaldigi] as const] : [])))).map(sonucsuz),
       okuma: ok && !ok.bitti ? { kitap: ok.kitap, sayfa: null, bitti: false } : null,
     },
@@ -290,7 +293,7 @@ export function planKopyala(onceki: HaftaVerisi): HaftaVerisi {
 export function yeniHafta(onceki: HaftaVerisi | null, sinif: number): HaftaVerisi {
   if (!onceki) return {
     seviye: 0, soruHedefi: varsayilanHedef(sinif, 0), gorusme: BOS_GORUSME,
-    icerik: normalizeIcerik({ duzen: '', gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null }, 0),
+    icerik: normalizeIcerik({ duzen: '', gorevler: sinifSablonu(sinif), mentorOdevleri: [], okuma: null, otoOdev: true }, 0),
   }
   return planKopyala(onceki)
 }

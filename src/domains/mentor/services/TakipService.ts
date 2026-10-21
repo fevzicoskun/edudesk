@@ -100,8 +100,8 @@ export const TakipService = {
     // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
     const taslak = kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif)
     let disaridaOdevler: HomeworkRecord[] = []
-    // Okul ödevleri plana: yalnız açık ve bitmemiş haftada (kapalı = sabit, geçmişte "geçmemiş gün" yok)
-    if (!kayit?.kapali_at && addDaysISO(hafta, 6) >= bugun) {
+    // Okul ödevleri plana: yalnız işaretli (özellikten sonraki) plan, açık ve bitmemiş haftada (kapalı = sabit, geçmişte "geçmemiş gün" yok)
+    if (taslak.icerik.otoOdev && !kayit?.kapali_at && addDaysISO(hafta, 6) >= bugun) {
       const b = odevleriBirlestir({ gorevler: taslak.icerik.gorevler, gizli: taslak.icerik.gizliOdevler ?? [], odevler: profil.homeworks, saatler, hafta, bugun })
       taslak.icerik = { ...taslak.icerik, gorevler: b.gorevler }
       disaridaOdevler = b.disarida
@@ -201,7 +201,7 @@ export const TakipService = {
       // Ödev görevleri ve düzen öğrenciye özel: hedefin kendi ödevleri/saatleri kendi planında (2026-10-21)
       // surum 2: kaynağın süreleri gerçek değer; yoksa okunurken eski biçim sanılıp seviyeyle yeniden ölçeklenirdi
       const icerik = {
-        surum: 2 as const, duzen: '', mentorOdevleri: [], okuma: null,
+        surum: 2 as const, otoOdev: true as const, duzen: '', mentorOdevleri: [], okuma: null,
         gorevler: elleGorevler(k.icerik.gorevler).map(g => ({ ...g, yapti: false, soru: null, dogru: null, ...(g.kitapId && { kitapId: esle.get(g.kitapId)! }) })),
       }
       const r = await R.haftaEkle({

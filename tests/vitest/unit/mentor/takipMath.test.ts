@@ -368,6 +368,16 @@ describe('kaldığı sayfa (2026-10-17)', () => {
   })
 })
 
+describe('otomatik ödev işareti (2026-10-22): yalnız yeni planlar', () => {
+  it('yeni hafta taslağı ve kopyalanan plan işaretli; eski kayıt işaretsiz kalır', () => {
+    expect(yeniHafta(null, 9).icerik.otoOdev).toBe(true)
+    const eski = { seviye: 1 as const, soruHedefi: 200, icerik: icerik({ surum: 2 }), gorusme: BOS_GORUSME }
+    expect(eski.icerik.otoOdev).toBeUndefined()
+    expect(planKopyala(eski).icerik.otoOdev).toBe(true)
+    expect(normalizeIcerik(icerik({ surum: 2 }), 1).otoOdev).toBeUndefined()
+  })
+})
+
 describe('otomatik ödev görevleri korunur (2026-10-21)', () => {
   const odev = (o: Partial<Gorev> = {}) => g({ id: 'o-1', ad: 'Fiz — Ödev', miktar: 30, odevId: '11111111-1111-4111-8111-111111111111', teslim: '2026-10-22', ...o })
   const h = (gorevler: Gorev[]) => ({ seviye: 1 as const, soruHedefi: 200, icerik: icerik({ surum: 2, duzen: 'D', gorevler, gizliOdevler: ['x'] }), gorusme: BOS_GORUSME })

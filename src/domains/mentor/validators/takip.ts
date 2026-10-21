@@ -21,6 +21,7 @@ export const icerikSchema = z.object({
   ekranSuresi: z.number().min(0).max(24).nullable().optional(),
   duzen: metin(300),
   gizliOdevler: z.array(UUID).max(200).optional(),
+  otoOdev: z.literal(true).optional(),
   gorevler: z.array(gorevSchema).max(120),
   mentorOdevleri: z.array(z.object({
     id: z.string().min(1).max(64), kitapId: UUID.nullable(), kitapAdi: metin(120).min(1), konu: metin(120), sayfalar: metin(60), yapti: z.boolean(),

@@ -202,7 +202,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         </div>
       </section>
 
-      {!v.kayit?.kapaliAt && (
+      {veri.icerik.otoOdev && !v.kayit?.kapaliAt && (
         <section aria-label="Plana girmeyen ödevler">
           <h2 className="text-base font-semibold mb-1">Plana girmeyen ödevler <span className="text-xs font-normal text-gray-500 dark:text-slate-400">(silinenler, sığmayan ya da 3 haftadan eski gecikmişler, gelecek hafta teslim)</span></h2>
           {disarida.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Yok — yapılmamış ödevlerin hepsi planda.</p> : (
@@ -214,8 +214,8 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         </section>
       )}
 
-      {/* Kapalı hafta: kapatma anındaki okul ödevi görüntüsü (sabit) */}
-      {v.kayit?.kapaliAt && <section aria-label="Okul ödevleri" className="space-y-3">
+      {/* Kapalı hafta: kapatma anındaki görüntü; işaretsiz eski plan: ödevler elle takip edilir, liste olarak */}
+      {(!veri.icerik.otoOdev || v.kayit?.kapaliAt) && <section aria-label="Okul ödevleri" className="space-y-3">
         {([
           ['Tamamlanmamış ödevler', v.okulOdevleri.tamamlanmamis, 'Yapılmadı işaretli, teslimi geçmiş ödev yok.', 'öğretmen yapıldı işaretleyene kadar her hafta görünür'],
           ['Bu hafta teslim', v.okulOdevleri.buHafta, 'Bu hafta son teslimli okul ödevi yok.', null],

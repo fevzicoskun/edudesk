@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { yeniHafta } from '@/src/domains/mentor/takip/takipMath'
+import { yeniHafta, type Icerik } from '@/src/domains/mentor/takip/takipMath'
 
 vi.mock('@/src/shared/authorization/server', () => ({ requireAbility: vi.fn().mockResolvedValue({ userId: 'u1', schoolId: 's1' }) }))
 vi.mock('@/src/infrastructure/observability/logger', () => ({ logger: { error: vi.fn(), warn: vi.fn(), info: vi.fn() } }))
@@ -251,6 +251,23 @@ describe('TakipService — çalışma saatleri ve otomatik ödevler (2026-10-21)
     expect(v!.kagitBasildiAt).toBe('2026-10-19T10:00:00Z')
     expect(v!.odevKayitlari.find(h => h.id === OID)?.created_at).toBe('2026-10-20T08:00:00Z')
     expect(v!.bugun).toBe('2026-10-21')
+  })
+  it('özellikten önce kaydedilmiş (işaretsiz) planda birleşme yok — elle hazırlanmış plan korunur', async () => {
+    const { otoOdev: _, ...eski } = satir().icerik as Icerik
+    vi.mocked(R.hafta).mockResolvedValue(satir({ icerik: eski }) as never)
+    const v = await TakipService.sayfaVerisi(SID, '2026-10-19')
+    expect(odevGorevleri(v)).toEqual([]); expect(v!.disaridaOdevler).toEqual([])
+  })
+  it('kayıt yoksa (yeni hafta taslağı) birleşir', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(null as never)
+    expect(odevGorevleri(await TakipService.sayfaVerisi(SID, '2026-10-19')).map(g => g.odevId)).toEqual([OID])
+  })
+  it('herkese uygula: hedefe yazılan yeni plan işaretli', async () => {
+    vi.mocked(R.hafta).mockResolvedValue(satir() as never)
+    vi.mocked(R.mentiler).mockResolvedValue([SID, B])
+    vi.mocked(R.durumlar).mockResolvedValue([] as never)
+    await TakipService.herkeseUygula(SID, '2026-10-19')
+    expect((vi.mocked(R.haftaEkle).mock.calls[0][0].icerik as { otoOdev?: boolean }).otoOdev).toBe(true)
   })
   it('kapalı haftada birleşme yok', async () => {
     vi.mocked(R.hafta).mockResolvedValue(satir({ kapali_at: '2026-10-20T10:00:00Z' }) as never)
