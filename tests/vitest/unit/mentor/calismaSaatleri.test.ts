@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
-  netSure, sureKisa, saatYaz, duzenMetni, planlananDk, gorevSaatleri, saatlerVarMi, BOS_SAATLER, type GunSaati,
+  kagitDuzeni, netSure, sureKisa, saatYaz, duzenMetni, planlananDk, gorevSaatleri, saatlerVarMi, BOS_SAATLER, type GunSaati,
 } from '@/src/domains/mentor/takip/calismaSaatleri'
 import type { Gorev } from '@/src/domains/mentor/takip/takipMath'
+import { VARSAYILAN_DUZEN } from '@/src/domains/mentor/takip/sablonlar'
 
 const s = (bas: string, bit: string, molaBas?: string, molaBit?: string): GunSaati => ({ bas, bit, ...(molaBas && { molaBas, molaBit }) })
 const g = (o: Partial<Gorev> = {}): Gorev => ({
@@ -42,6 +43,16 @@ describe('duzenMetni', () => {
   })
   it('boş saatler + boş not → boş', () => expect(duzenMetni(BOS_SAATLER)).toBe(''))
   it('yalnız not', () => expect(duzenMetni({ ...BOS_SAATLER, not: ' Salı kurs ' })).toBe('Salı kurs'))
+})
+
+describe('kagitDuzeni', () => {
+  const sa = { gunler: [s('18:00', '20:00'), null, null, null, null, null, null], not: '' }
+  it('boş ya da eski varsayılan metin → saatlerden; mentör metni aynen', () => {
+    expect(kagitDuzeni('', sa)).toBe('Pzt 18.00–20.00')
+    expect(kagitDuzeni(VARSAYILAN_DUZEN, sa)).toBe('Pzt 18.00–20.00')
+    expect(kagitDuzeni('Kendi metnim', sa)).toBe('Kendi metnim')
+    expect(kagitDuzeni('', null)).toBe('')
+  })
 })
 
 describe('planlananDk', () => {

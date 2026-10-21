@@ -146,7 +146,7 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-base font-semibold">Görevler</h2>
         <button type="button" className="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-600 text-sm"
-          onClick={() => degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => ({ ...g, yapti: true })) } }), true)}>
+          onClick={() => degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(g => (g.odevId ? g : { ...g, yapti: true })) } }), true)}>
           Tümü yapıldı
         </button>
       </div>
@@ -159,7 +159,9 @@ export default function SonucSekmesi({ v, veri, degistir, bosalt }: SekmeProps) 
               <td className="py-1 pr-2">{GUNLER[g.gun]}</td>
               <td className="pr-2">{g.ad}{kitapSayfaYaz(g) && <span className="text-gray-500 dark:text-slate-400"> · {kitapSayfaYaz(g)}</span>}</td>
               <td className="pr-2 whitespace-nowrap">{miktarYaz(g)}</td>
-              <td><input type="checkbox" aria-label="Yaptı" className="w-5 h-5" checked={g.yapti} onChange={e => gorev(g.id, { yapti: e.target.checked }, true)} /></td>
+              <td>{/* Okul ödevi görevi: dersin öğretmeninin işaretinden (salt okunur) */}
+                <input type="checkbox" aria-label="Yaptı" className="w-5 h-5" checked={g.yapti} disabled={!!g.odevId}
+                  title={g.odevId ? 'Dersin öğretmeni işaretler' : undefined} onChange={e => gorev(g.id, { yapti: e.target.checked }, true)} /></td>
             </tr>
           ))}
         </tbody>

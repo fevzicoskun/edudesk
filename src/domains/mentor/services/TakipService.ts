@@ -40,8 +40,8 @@ export type SayfaVerisi = {
   kagitBasildiAt: string | null
   /** Plana girmeyen okul ödevleri (gizlenen, sığmayan gecikmiş, 3 haftadan eski, gelecek hafta). Kapalı/geçmiş haftada boş. */
   disaridaOdevler: HomeworkRecord[]
-  /** odevId → ödevin verildiği an ("yeni" rozeti) */
-  odevVerilis: Record<string, string>
+  /** Öğrencinin okul ödevleri (gizlenen ödevin listede gösterimi, "yeni" rozeti için created_at) */
+  odevKayitlari: HomeworkRecord[]
   bugun: string
 }
 
@@ -109,7 +109,7 @@ export const TakipService = {
     return {
       saatler, bugun, disaridaOdevler,
       kagitBasildiAt: kayit?.kagit_basildi_at ?? null,
-      odevVerilis: Object.fromEntries(profil.homeworks.flatMap(h => (h.created_at ? [[h.id, h.created_at]] : []))),
+      odevKayitlari: profil.homeworks,
       ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id, veliTelefon: o.veli_telefon },
       hafta,
       kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at, kapaliAt: kayit.kapali_at } : null,

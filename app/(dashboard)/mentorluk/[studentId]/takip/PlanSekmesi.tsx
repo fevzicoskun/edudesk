@@ -2,9 +2,12 @@
 import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
 import { oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
-import { GUNLER, SEVIYE_ADI, seviyeDegistir, normalizeIcerik, gunlukAralik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
-import { sinifSablonu } from '@/src/domains/mentor/takip/sablonlar'
+import Link from 'next/link'
+import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { BOS_SAATLER, duzenMetni, netSure, otomatikDuzenMi, planlananDk, saatlerVarMi, sureKisa } from '@/src/domains/mentor/takip/calismaSaatleri'
+import { ilkAcikGun, odevEtiketi, odevGorevi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import type { SekmeProps } from './TakipIstemci'
 
 // hucre: satır içi alan (genişlik çağrıda); kutu: tam genişlik form alanı
@@ -14,6 +17,8 @@ const yeniId = () => crypto.randomUUID()
 const bosGorev = (gun: number, grup?: string): Gorev => ({
   id: yeniId(), gun, ad: 'Yeni görev', ders: null, miktar: 30, birim: 'dk', soruSatiri: false, konu: '', sayfa: '', yapti: false, soru: null, dogru: null, ...(grup && { grup }),
 })
+// Etiket rengi ek bilgi; metin tek başına ayırt eder (gecikmiş / yarın teslim / teslim gg.aa)
+const ETIKET_RENK = { gecikmis: 'text-red-700 dark:text-red-400 font-semibold', yarin: 'text-amber-700 dark:text-amber-400 font-semibold', tarih: 'text-gray-500 dark:text-slate-400' }
 const sayfaNo = (s: string) => (s === '' ? null : Math.min(5000, Math.max(1, Math.trunc(Number(s)) || 1)))
 
 export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProps) {
@@ -44,12 +49,65 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
   const ayni = (g: Gorev) => (x: Gorev) => (g.grup ? x.grup === g.grup : x.id === g.id)
   const gorev = (g: Gorev, p: Partial<Gorev>, hemen = false) =>
     degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: h.icerik.gorevler.map(x => ayni(g)(x) ? { ...x, ...p } : x) } }), hemen)
-  const sil = (g: Gorev) => { if (confirm(`"${g.ad}" silinsin mi?${g.grup ? ' (Pzt–Cum her günden)' : ''}`)) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: h.icerik.gorevler.filter(x => !ayni(g)(x)) } }), true) }
+  // Otomatik ödev görevi silinince bu hafta tekrar gelmesin: gizli listeye girer, "Plana girmeyen ödevler"de kalır
+  const sil = (g: Gorev) => {
+    if (!confirm(`"${g.ad}" silinsin mi?${g.grup ? ' (Pzt–Cum her günden)' : ''}${g.odevId ? ' Ödev bu hafta plana tekrar gelmez.' : ''}`)) return
+    degistir(h => ({ ...h, icerik: {
+      ...h.icerik, gorevler: h.icerik.gorevler.filter(x => !ayni(g)(x)),
+      ...(g.odevId && { gizliOdevler: [...new Set([...(h.icerik.gizliOdevler ?? []), g.odevId])] }),
+    } }), true)
+  }
+  const kayitlar = new Map(v.odevKayitlari.map(o => [o.id, o]))
+  const ilkGun = Math.min(6, ilkAcikGun(v.hafta, v.bugun))
+  const planaEkle = (o: HomeworkRecord) => degistir(h => ({ ...h, icerik: {
+    ...h.icerik, gizliOdevler: (h.icerik.gizliOdevler ?? []).filter(x => x !== o.id),
+    gorevler: [...h.icerik.gorevler.filter(x => x.odevId !== o.id), odevGorevi(o, ilkGun)],
+  } }), true)
+  const plandaki = new Set(veri.icerik.gorevler.flatMap(g => (g.odevId ? [g.odevId] : [])))
+  const disarida = [...new Map([...v.disaridaOdevler, ...(veri.icerik.gizliOdevler ?? []).flatMap(id => kayitlar.get(id) ?? [])].map(o => [o.id, o])).values()]
+    .filter(o => !plandaki.has(o.id)).sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
+  // Kâğıt açıldıktan sonra VERİLMİŞ ödev (giriş zamanı değil: kaydedilmemiş birleşme her açılışta yeniden kurulur)
+  const yeniMi = (g: Gorev) => !!(g.odevId && v.kagitBasildiAt && (kayitlar.get(g.odevId)?.created_at ?? '') > v.kagitBasildiAt)
+  const yeniSayisi = veri.icerik.gorevler.filter(yeniMi).length
+  const saatVar = saatlerVarMi(v.saatler)
+  /** Gün başlığı: planlanan / müsait; aşım yalnız uyarı. Saat girilmemişse yalnız planlanan. */
+  const gunSayaci = (gun: number) => {
+    const plan = planlananDk(veri.icerik.gorevler, gun)
+    if (!saatVar) return plan ? <span className="text-xs font-normal text-gray-500 dark:text-slate-400"> · {sureKisa(plan)}</span> : null
+    const m = netSure(v.saatler!.gunler[gun])
+    const asim = plan > m
+    return (
+      <span className={`text-xs ${asim ? 'text-amber-700 dark:text-amber-400 font-semibold' : 'font-normal text-gray-500 dark:text-slate-400'}`}>
+        {' · '}{sureKisa(plan)} / {sureKisa(m)}{asim && (m === 0 ? ' · Çalışma saati yok' : ` · ${sureKisa(plan - m)} fazla`)}
+      </span>
+    )
+  }
+
+  // Okul ödevinden gelen görev: ad, süre, gün değişir; durum dersin öğretmeninin işaretinden
+  const odevSatiri = (g: Gorev) => {
+    const e = g.teslim ? odevEtiketi(g.teslim, v.bugun) : null
+    return (
+      <div key={g.id} aria-label={`Ödev: ${g.ad}`} className="flex flex-wrap items-center gap-2 py-1">
+        <input aria-label="Görev" maxLength={120} className={`${hucre} flex-1 min-w-40`} value={g.ad}
+          onChange={x => gorev(g, { ad: x.target.value })} onBlur={() => { if (!g.ad.trim()) gorev(g, { ad: 'Ödev' }, true) }} />
+        <input aria-label="Miktar" type="number" min={1} max={600} className={`${hucre} w-20`} value={g.miktar ?? ''}
+          onChange={x => gorev(g, { miktar: x.target.value ? Math.min(600, Math.max(1, Math.trunc(Number(x.target.value)))) : null })} />
+        <span className="text-sm">dk</span>
+        <select aria-label="Gün" className={`${hucre} w-20`} value={g.gun} onChange={x => gorev(g, { gun: Number(x.target.value) }, true)}>
+          {GUNLER.map((ad, i) => <option key={ad} value={i}>{ad}</option>)}
+        </select>
+        {e && <span className={`text-xs ${ETIKET_RENK[e.tur]}`}>{e.metin}</span>}
+        {yeniMi(g) && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300">yeni</span>}
+        {g.yapti && <span className="text-xs text-green-700 dark:text-green-400">✓ yapıldı (öğretmen işaretledi)</span>}
+        <button type="button" aria-label={`${g.ad} görevini sil`} className="text-red-700 dark:text-red-400 text-sm ml-auto" onClick={() => sil(g)}>Sil</button>
+      </div>
+    )
+  }
   // Her gün bloğu: grubun ilk (Pazartesi) kopyası temsil eder
   const herGun = veri.icerik.gorevler.filter((g, i, t) => g.grup && t.findIndex(x => x.grup === g.grup) === i)
 
   // Bileşen DEĞİL düz fonksiyon: render içinde tanımlı bileşen her tuşta yeniden kurulur, kutu odağı kaybolur
-  const satir = (g: Gorev) => (
+  const satir = (g: Gorev) => g.odevId ? odevSatiri(g) : (
       <div key={g.grup ?? g.id} className={`flex flex-wrap items-center gap-2 py-1 ${g.ders === 'Matematik' ? 'font-semibold' : ''}`}>
         <input aria-label="Görev" maxLength={120} required className={`${hucre} flex-1 min-w-40`} value={g.ad}
           onChange={e => gorev(g, { ad: e.target.value })} onBlur={() => { if (!g.ad.trim()) gorev(g, { ad: 'Görev' }, true) }} />
@@ -107,7 +165,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
             onChange={e => degistir(h => ({ ...h, soruHedefi: Math.max(0, Math.trunc(Number(e.target.value) || 0)) }))} />
         </label>
         <button type="button" className="text-sm text-gray-600 dark:text-slate-400 underline"
-          onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Bu haftaki görevler silinir.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: normalizeIcerik({ ...h.icerik, surum: undefined, gorevler: sinifSablonu(v.ogrenci.sinif) }, h.seviye).gorevler } }), true) }}>
+          onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Elle girilen görevler silinir; okul ödevleri kalır.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: sablonaDon(h.icerik, v.ogrenci.sinif, h.seviye) } }), true) }}>
           Sınıf şablonuna dön
         </button>
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={kopyala}>Geçen haftayı kopyala</button>
@@ -115,6 +173,8 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={kaydiZorla} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
 
+      {!saatVar && <p className="text-sm text-gray-600 dark:text-slate-400 -mt-3">Çalışma saatleri girilmemiş — <Link className="text-blue-700 dark:text-blue-400 underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${v.hafta}&sekme=dosya`}>Öğrenci dosyası&apos;ndan ekleyin</Link></p>}
+      {yeniSayisi > 0 && <p role="status" className="text-sm -mt-3 text-amber-800 dark:text-amber-300">Kâğıt yazdırıldıktan sonra {yeniSayisi} yeni ödev eklendi — tekrar yazdır.</p>}
       {(bilgi || ustHata) && <p role={ustHata ? 'alert' : 'status'} className={`text-sm -mt-3 ${ustHata ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{ustHata ?? bilgi}</p>}
       <section aria-label="Program" className="space-y-5">
         <div>
@@ -131,7 +191,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
             const satirlar = veri.icerik.gorevler.filter(g => g.gun === gun && !g.grup)
             return (
               <div key={gunAdi} className="mt-2">
-                <h3 className="text-sm font-semibold">{gunAdi}</h3>
+                <h3 className="text-sm font-semibold">{gunAdi}{gunSayaci(gun)}</h3>
                 {satirlar.map(satir)}
                 <button type="button" className="text-sm text-blue-600 hover:underline"
                   onClick={() => degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: [...h.icerik.gorevler, bosGorev(gun)] } }), true)}>
@@ -143,7 +203,20 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         </div>
       </section>
 
-      <section aria-label="Okul ödevleri" className="space-y-3">
+      {!v.kayit?.kapaliAt && (
+        <section aria-label="Plana girmeyen ödevler">
+          <h2 className="text-base font-semibold mb-1">Plana girmeyen ödevler <span className="text-xs font-normal text-gray-500 dark:text-slate-400">(silinenler, sığmayan ya da 3 haftadan eski gecikmişler, gelecek hafta teslim)</span></h2>
+          {disarida.length === 0 ? <p className="text-sm text-gray-500 dark:text-slate-400">Yok — yapılmamış ödevlerin hepsi planda.</p> : (
+            <ul className="text-sm space-y-1">{disarida.map(o => { const e = o.due_date ? odevEtiketi(o.due_date, v.bugun) : null; return (
+              <li key={o.id} className="flex flex-wrap items-center gap-2">{dersKisa(o.subject)} — {o.title}
+                {e && <span className={`text-xs ${ETIKET_RENK[e.tur]}`}>{e.metin}</span>}
+                <button type="button" className="text-xs text-blue-700 dark:text-blue-400 underline" onClick={() => planaEkle(o)}>Plana ekle</button>
+              </li>) })}</ul>)}
+        </section>
+      )}
+
+      {/* Kapalı hafta: kapatma anındaki okul ödevi görüntüsü (sabit) */}
+      {v.kayit?.kapaliAt && <section aria-label="Okul ödevleri" className="space-y-3">
         {([
           ['Tamamlanmamış ödevler', v.okulOdevleri.tamamlanmamis, 'Yapılmadı işaretli, teslimi geçmiş ödev yok.', 'öğretmen yapıldı işaretleyene kadar her hafta görünür'],
           ['Bu hafta teslim', v.okulOdevleri.buHafta, 'Bu hafta son teslimli okul ödevi yok.', null],
@@ -156,7 +229,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
               : <ul className="text-sm space-y-1">{liste.map(o => <li key={o.id} className={baslik === 'Tamamlanmamış ödevler' ? 'text-red-700 dark:text-red-400' : ''}>{dersKisa(o.subject)} — {o.title} <span className="text-gray-500 dark:text-slate-400">({o.due_date.slice(8, 10)}.{o.due_date.slice(5, 7)})</span></li>)}</ul>}
           </div>
         ))}
-      </section>
+      </section>}
 
       <section aria-label="Okuma">
         <h2 className="text-base font-semibold mb-2">Okuma</h2>
@@ -167,9 +240,16 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
       </section>
 
       <section aria-label="Hafta içi düzen">
+        {/* Boş = öğrencinin çalışma saatlerinden otomatik; mentör yazarsa o basılır */}
         <label className="text-sm">Hafta içi düzen (kâğıda basılır)
-          <input maxLength={300} className={`${kutu} block`} value={veri.icerik.duzen} onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, duzen: e.target.value } }))} />
+          <input maxLength={300} className={`${kutu} block`} value={otomatikDuzenMi(veri.icerik.duzen) ? '' : veri.icerik.duzen}
+            placeholder={duzenMetni(v.saatler ?? BOS_SAATLER) || 'Çalışma saatleri girilince otomatik oluşur'}
+            onChange={e => degistir(h => ({ ...h, icerik: { ...h.icerik, duzen: e.target.value } }))} />
         </label>
+        {!otomatikDuzenMi(veri.icerik.duzen) && (
+          <button type="button" className="text-sm text-blue-700 dark:text-blue-400 underline mt-1"
+            onClick={() => degistir(h => ({ ...h, icerik: { ...h.icerik, duzen: '' } }), true)}>Saatlerden oluştur</button>
+        )}
       </section>
     </div>
   )

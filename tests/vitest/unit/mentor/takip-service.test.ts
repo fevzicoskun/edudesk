@@ -249,7 +249,7 @@ describe('TakipService — çalışma saatleri ve otomatik ödevler (2026-10-21)
     expect(odevGorevleri(v).map(g => [g.odevId, g.gun])).toEqual([[OID, 2]])
     expect(v!.saatler).toEqual({ gunler: Array(7).fill(null), not: 'kurs' })
     expect(v!.kagitBasildiAt).toBe('2026-10-19T10:00:00Z')
-    expect(v!.odevVerilis[OID]).toBe('2026-10-20T08:00:00Z')
+    expect(v!.odevKayitlari.find(h => h.id === OID)?.created_at).toBe('2026-10-20T08:00:00Z')
     expect(v!.bugun).toBe('2026-10-21')
   })
   it('kapalı haftada birleşme yok', async () => {

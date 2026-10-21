@@ -6,6 +6,7 @@ import { konuEkle, konuDurumu, kitapEkle, kitapSil } from '@/app/actions/mentor-
 import { SEVIYE_ADI, programYuzde, dogrulukYuzde, okumaGecmisi, takipHaftaEtiketi, ekranYaz } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SekmeProps } from './TakipIstemci'
+import CalismaSaatleriKarti from './CalismaSaatleriKarti'
 
 const DURUM_AD = ['Başlanmadı', 'Çalışılıyor', 'Oturdu'] as const
 const DURUM_RENK = ['border-gray-300 dark:border-slate-600', 'border-amber-500 bg-amber-50 dark:bg-amber-950', 'border-green-600 bg-green-50 dark:bg-green-950']
@@ -66,6 +67,7 @@ export default function DosyaSekmesi({ v }: SekmeProps) {
   }
   return (
     <div className="space-y-8">
+      <CalismaSaatleriKarti v={v} />
       <KitaplarBolumu v={v} />
       <section aria-label="Konu haritası">
         <h2 className="text-base font-semibold mb-2">Konu haritası <span className="text-xs font-normal text-gray-500 dark:text-slate-400">(tıkla: başlanmadı → çalışılıyor → oturdu)</span></h2>

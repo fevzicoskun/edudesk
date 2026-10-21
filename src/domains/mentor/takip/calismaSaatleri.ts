@@ -2,6 +2,7 @@
 // Öğrenciye özel çalışma saatleri (haftaya değil öğrenciye ait): net süre, düzen metni, gün sayacı, kâğıt saatleri.
 // Spec: docs/superpowers/specs/2026-10-21-mentor-takip-saatler-odevler-kagit-design.md
 import { GUNLER, type Gorev } from './takipMath'
+import { VARSAYILAN_DUZEN } from './sablonlar'
 
 /** Saatler 'HH:MM'. Mola isteğe bağlı, ikisi birlikte. */
 export type GunSaati = { bas: string; bit: string; molaBas?: string; molaBit?: string }
@@ -46,6 +47,10 @@ export function duzenMetni(s: CalismaSaatleri): string {
   if (s.not.trim()) parcalar.push(s.not.trim())
   return parcalar.join(' · ')
 }
+
+/** Kâğıttaki "Günlük düzen": mentör yazdıysa o, boşsa (ya da eski varsayılan metinse) saatlerden. */
+export const otomatikDuzenMi = (duzen: string) => !duzen.trim() || duzen === VARSAYILAN_DUZEN
+export const kagitDuzeni = (duzen: string, s: CalismaSaatleri | null) => (otomatikDuzenMi(duzen) ? duzenMetni(s ?? BOS_SAATLER) : duzen)
 
 /** Günün planlanan süresi: yalnız dk birimli görevler (soru/serbest 0). */
 export const planlananDk = (gorevler: Gorev[], gun: number) =>

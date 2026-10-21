@@ -24,6 +24,15 @@ export function odevEtiketi(teslim: string, bugun: string): { tur: 'gecikmis' | 
   return { tur: 'tarih', metin: `teslim ${teslim.slice(8, 10)}.${teslim.slice(5, 7)}` }
 }
 
+/** Ödevden görev: 30 dk, soru satırı yok; kimlik ödevden türer (aynı ödev iki kez eklenmez). */
+export const odevGorevi = (o: HomeworkRecord, gun: number): Gorev => ({
+  id: `o-${o.id}`, gun, ad: odevGorevAdi(o.subject, o.title), ders: o.subject, miktar: ODEV_DK, birim: 'dk', soruSatiri: false,
+  konu: '', sayfa: '', yapti: false, soru: null, dogru: null, odevId: o.id, teslim: o.due_date ?? undefined,
+})
+
+/** Planın bugünden önceki günleri dolmuş sayılır: bu hafta bugünün indeksi, ileri hafta 0 (en çok 7 = hafta geçti). */
+export const ilkAcikGun = (hafta: string, bugun: string) => Math.min(7, Math.max(0, gunFarki(hafta, bugun)))
+
 const gunFarki = (a: string, b: string) => Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000)
 const sira = (a: HomeworkRecord, b: HomeworkRecord) =>
   a.due_date!.localeCompare(b.due_date!) || a.subject.localeCompare(b.subject, 'tr') || a.id.localeCompare(b.id)
@@ -45,7 +54,7 @@ export function odevleriBirlestir(a: {
   })
   const planda = new Set(gorevler.flatMap(g => (g.odevId ? [g.odevId] : [])))
   const gizli = new Set(a.gizli)
-  const ilk = Math.max(0, gunFarki(a.hafta, a.bugun))
+  const ilk = ilkAcikGun(a.hafta, a.bugun)
   const ileriHafta = a.hafta > a.bugun
   const alt = ileriHafta ? a.hafta : addDaysISO(a.bugun, -ESKI_SINIR_GUN)
   const ust = addDaysISO(a.hafta, 7)
@@ -67,10 +76,7 @@ export function odevleriBirlestir(a: {
   const sigar = (i: number) => pay[i] !== null && dolu[i] + ODEV_DK <= pay[i]!
   const koy = (o: HomeworkRecord, gun: number) => {
     dolu[gun] += ODEV_DK
-    gorevler.push({
-      id: `o-${o.id}`, gun, ad: odevGorevAdi(o.subject, o.title), ders: o.subject, miktar: ODEV_DK, birim: 'dk', soruSatiri: false,
-      konu: '', sayfa: '', yapti: false, soru: null, dogru: null, odevId: o.id, teslim: o.due_date!,
-    })
+    gorevler.push(odevGorevi(o, gun))
   }
 
   for (const o of yerlesecek.filter(x => x.due_date! >= a.bugun)) {
