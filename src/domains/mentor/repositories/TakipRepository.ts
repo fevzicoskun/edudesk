@@ -103,6 +103,14 @@ export const TakipRepository = {
     if (error && error.code !== 'P0001') throw new Error(error.message)
   },
 
+  /** Haftanın planı ve sonucu kalıcı silinir (mentör isteği, 2026-10-22). Kitaplar/saatler/konu durumu öğrenciye ait, kalır. */
+  async haftaSil(schoolId: string, studentId: string, hafta: string) {
+    const db = await createClient()
+    const { error } = await db.from('mentor_haftalari').delete()
+      .eq('school_id', schoolId).eq('student_id', studentId).eq('hafta_basi', hafta)
+    if (error) throw new Error(error.message)
+  },
+
   async kilidiAc(schoolId: string, studentId: string, hafta: string) {
     const db = await createClient()
     const { error } = await db.from('mentor_haftalari').update({ kapali_at: null, okul_odevleri: null })

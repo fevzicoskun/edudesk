@@ -8,7 +8,7 @@ vi.mock('@/src/domains/mentor/repositories/TakipRepository', () => ({
     acikMi: vi.fn(), mentoruMu: vi.fn(), haftaEkle: vi.fn(), haftaGuncelle: vi.fn(),
     ogrenci: vi.fn(), hafta: vi.fn(), oncekiHafta: vi.fn(), kitaplar: vi.fn(), konuDurumlari: vi.fn(),
     gecmis: vi.fn(), konular: vi.fn(), konuTohumla: vi.fn(), haftaKapat: vi.fn(), kilidiAc: vi.fn(), mentiler: vi.fn(), durumlar: vi.fn(), kitapEkle: vi.fn(),
-    calismaSaatleri: vi.fn(), calismaSaatleriYaz: vi.fn(), kagitBasildi: vi.fn(),
+    calismaSaatleri: vi.fn(), calismaSaatleriYaz: vi.fn(), kagitBasildi: vi.fn(), haftaSil: vi.fn(),
   },
 }))
 vi.mock('@/src/domains/homework/services/HomeworkService', () => ({
@@ -328,5 +328,18 @@ describe('TakipService — çalışma saatleri ve otomatik ödevler (2026-10-21)
     vi.mocked(R.mentoruMu).mockResolvedValue(false); vi.mocked(R.kagitBasildi).mockClear()
     await TakipService.kagitBasildi(SID, '2026-10-19')
     expect(R.kagitBasildi).not.toHaveBeenCalled()
+  })
+})
+
+describe('TakipService.haftaSil (2026-10-22)', () => {
+  it('mentörü siler', async () => {
+    vi.mocked(R.haftaSil).mockResolvedValue(undefined as never)
+    expect(await TakipService.haftaSil(SID, '2026-10-19')).toEqual({})
+    expect(R.haftaSil).toHaveBeenCalledWith('s1', SID, '2026-10-19')
+  })
+  it('mentörü değil → silmez', async () => {
+    vi.mocked(R.mentoruMu).mockResolvedValue(false)
+    expect((await TakipService.haftaSil(SID, '2026-10-19')).error).toBeTruthy()
+    expect(R.haftaSil).not.toHaveBeenCalled()
   })
 })

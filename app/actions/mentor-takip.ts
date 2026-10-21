@@ -52,6 +52,14 @@ export async function haftaKapat(studentId: string, hafta: string): Promise<Acti
   if (!r.error) revalidatePath(`/mentorluk/${studentId}`, 'layout')
   return r
 }
+/** Haftanın planını (ve sonucunu) siler; sayfa yeniden açılınca taslak görünür. */
+export async function haftaSil(studentId: string, hafta: string): Promise<ActionResult> {
+  const p = haftaSchema.safeParse({ studentId, hafta })
+  if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }
+  const r = await TakipService.haftaSil(p.data.studentId, p.data.hafta)
+  if (!r.error) revalidatePath('/mentorluk', 'layout')
+  return r
+}
 export async function haftaKilidiAc(studentId: string, hafta: string): Promise<ActionResult> {
   const p = haftaSchema.safeParse({ studentId, hafta })
   if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz veri' }

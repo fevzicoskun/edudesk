@@ -228,6 +228,13 @@ export const TakipService = {
     if (ab) await R.kagitBasildi(ab.schoolId, studentId, hafta)
   },
 
+  async haftaSil(studentId: string, hafta: string): Promise<{ error?: string }> {
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    await R.haftaSil(ab.schoolId, studentId, hafta)
+    return {}
+  },
+
   async kilidiAc(studentId: string, hafta: string): Promise<{ error?: string }> {
     const ab = await yetki(studentId)
     if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }

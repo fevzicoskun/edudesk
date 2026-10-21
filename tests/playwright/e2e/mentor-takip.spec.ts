@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
+import { addDaysISO, todayLocalISO } from '@/src/shared/date'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 const AUTH = (r: string) => path.join(process.cwd(), 'tests/playwright/.auth', `${r}.json`)
@@ -258,7 +260,7 @@ test('iki sekme: eski sekme üzerine yazamaz', async ({ page, context }) => {
   expect((data!.gorusme as { not: string }).not).toBe('Birinci sekme')
 })
 test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
-  const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
+  const bu = haftaBasi(todayLocalISO()) // takip haftası Cuma başlar (2026-10-22)
   await page.goto('/mentorluk')
   const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
   const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
@@ -314,8 +316,7 @@ test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlan�
 })
 
 test('Mentörlüğüm: Geçen hafta sütunu program % ve doğruluk % (%50 altı kırmızı)', async ({ page }) => {
-  const bu = (() => { const d = new Date(); const g = (d.getDay() + 6) % 7; d.setDate(d.getDate() - g); return d.toLocaleDateString('sv-SE', { timeZone: 'Europe/Istanbul' }) })()
-  const gecen = new Date(Date.parse(bu + 'T00:00:00Z') - 7 * 864e5).toISOString().slice(0, 10)
+  const gecen = addDaysISO(haftaBasi(todayLocalISO()), -7) // takip haftası Cuma başlar
   const { data: var_ } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', gecen)
   expect(var_).toHaveLength(0) // test kendi satırını yaratır
   await db.from('mentor_haftalari').insert({

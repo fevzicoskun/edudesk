@@ -102,7 +102,7 @@ test('okul ödevi plana gelir; silinince geri gelmez; öğretmen işaretleyince 
   const satir = page.getByRole('region', { name: 'Program' }).getByLabel('Ödev: Kimya — E2E orbital ödevi')
   await expect(satir).toBeVisible({ timeout: 20_000 })
   await expect(satir.getByText('yarın teslim')).toBeVisible()
-  await expect(satir.getByLabel('Gün')).toHaveValue(String(Math.min(6, (Date.parse(BUGUN) - Date.parse(HAFTA)) / 86_400_000)))
+  await expect(satir.getByLabel('Gün')).toHaveValue(String((new Date(BUGUN).getUTCDay() + 6) % 7)) // görev günü = haftanın günü (Pzt=0)
 
   // Görev planda KAYITLI olsun (kaydedilmemiş birleşmede yapılmış ödev hiç eklenmez — kural gereği)
   await satir.getByLabel('Miktar').fill('35')
@@ -167,7 +167,7 @@ test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır 
   await expect.poll(async () => (await db.from('mentor_haftalari').select('kagit_basildi_at').eq('student_id', A).eq('hafta_basi', HAFTA).single()).data?.kagit_basildi_at).toBeTruthy()
   await page.waitForTimeout(1000)
   const { data: hw, error } = await db.from('homeworks').insert({
-    teacher_id: mentor.id, class_id: sinifA, school_id: mentor.school_id, subject: 'Fizik', title: 'E2E sonradan verilen', due_date: addDaysISO(BUGUN, 2), assigned_date: BUGUN,
+    teacher_id: mentor.id, class_id: sinifA, school_id: mentor.school_id, subject: 'Fizik', title: 'E2E sonradan verilen', due_date: addDaysISO(BUGUN, 1), // yarın ≤ hafta sonu+1 → hep planda assigned_date: BUGUN,
   }).select('id').single()
   if (error) throw new Error(error.message)
   odevIds.push(hw!.id)
@@ -175,4 +175,15 @@ test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır 
   const satir = page.getByRole('region', { name: 'Program' }).getByLabel('Ödev: Fizik — E2E sonradan verilen')
   await expect(satir.getByText('yeni', { exact: true })).toBeVisible({ timeout: 20_000 })
   await expect(page.getByRole('status').filter({ hasText: /Kâğıt yazdırıldıktan sonra \d+ yeni ödev eklendi — tekrar yazdır\./ })).toBeVisible()
+})
+
+test('bu haftanın planını sil: satır silinir, sayfa taslağa döner; saatler kalır', async ({ page }) => {
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', A).eq('hafta_basi', HAFTA)).data).toHaveLength(1)
+  await page.goto(`/mentorluk/${A}/takip?hafta=${HAFTA}`)
+  page.once('dialog', d => d.accept())
+  await page.getByRole('button', { name: 'Bu haftanın planını sil' }).click()
+  await expect(page.getByText('Taslak, henüz kaydedilmedi')).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('button', { name: 'Bu haftanın planını sil' })).toHaveCount(0)
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', A).eq('hafta_basi', HAFTA)).data).toHaveLength(0)
+  expect((await db.from('ogrenci_calisma_saatleri').select('student_id').eq('student_id', A)).data).toHaveLength(1)
 })

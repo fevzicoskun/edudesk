@@ -1,7 +1,7 @@
 'use client'
 import { useState, useTransition } from 'react'
 import YazdirBaglantisi from './YazdirBaglantisi'
-import { oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
+import { oncekiPlan, herkeseUygula, haftaSil } from '@/app/actions/mentor-takip'
 import Link from 'next/link'
 import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, gunSirasi, okulGunleri, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { BOS_SAATLER, duzenMetni, netSure, otomatikDuzenMi, planlananDk, saatlerVarMi, sureKisa } from '@/src/domains/mentor/takip/calismaSaatleri'
@@ -169,6 +169,13 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
         </button>
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={kopyala}>Geçen haftayı kopyala</button>
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={herkese}>Bu planı tüm mentör öğrencilerime uygula</button>
+        {v.kayit && (
+          <button type="button" disabled={isliyor} className="text-sm text-red-700 dark:text-red-400 underline"
+            onClick={() => { if (confirm(`${takipHaftaEtiketi(v.hafta)} haftasının planı ve girilmiş sonuçları kalıcı olarak silinsin mi? (Kitaplar ve çalışma saatleri kalır.)`)) basla(async () => {
+              const r = await haftaSil(v.ogrenci.id, v.hafta)
+              if (r.error) setUstHata(r.error); else location.reload()
+            }) }}>Bu haftanın planını sil</button>
+        )}
         <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={kaydiZorla} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
 
