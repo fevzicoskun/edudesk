@@ -161,8 +161,9 @@ korunur). Tekli ve toplu kâğıt sayfası aynı bileşeni kullanır.
 3. **Gövde**: 2 sütunlu ızgara, görevi olan her gün bir kutu (Pzt…Paz). Başlık kalın:
    "Çarşamba · 21 Ekim · 18.00–20.30" (saat yoksa yalnız gün · tarih). Görevler alt alta:
    `18.00  ☐ Matematik — MEB s.35-36 …… 30 dk`.
-   - Saat: günün başlangıcından, sırayla `dk` sürelerine göre; molaya denk gelen ya da molayı kesen görev molanın
-     bitişinden başlar. `soru`/`serbest` görevler saatsiz, sonda "+" ile. O gün saat yoksa saat sütunu yok.
+   - Saat: günün başlangıcından, sırayla `dk` sürelerine göre; başlangıcı molaya denk gelen görev molanın bitişinden
+     başlar. Molayı ortasından kesen görev yerinde başlar ve mola içinde verilir, sonraki görev mola kadar kayar
+     (**uygulamada düzeltme**: "kesen görevi kaydır" 90 dk'lık ilk görevde günün ilk saatini boş bırakıyordu). `soru`/`serbest` görevler saatsiz, sonda "+" ile. O gün saat yoksa saat sütunu yok.
    - Gün içi sıra: ödev görevleri önce (teslim tarihine göre), sonra diğerleri mevcut sırada (**benim kararım**).
    - Ödev görevinde etiket metni (gecikmiş / yarın teslim / teslim gg.aa).
    - Yalnız `soruSatiri` görevlerde altında küçük "Çözdüm: ___ Doğru: ___" (kitap varsa kitap adı + sayfa —

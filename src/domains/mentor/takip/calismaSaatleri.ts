@@ -57,7 +57,8 @@ export const planlananDk = (gorevler: Gorev[], gun: number) =>
   gorevler.filter(g => g.gun === gun && g.birim === 'dk').reduce((t, g) => t + (g.miktar ?? 0), 0)
 
 /** Kâğıt sırası: ödev görevleri (teslime göre) → diğerleri (girdi sırası) → soru/serbest saatsiz en sonda.
- *  Saat günün başlangıcından sürelerle ilerler; molaya denk gelen ya da molayı kesen görev molanın bitişinden başlar. */
+ *  Saat günün başlangıcından sürelerle ilerler. Molaya denk gelen görev molanın bitişinden başlar; molayı ortasından
+ *  kesen görev yerinde başlar, mola içinde verilir (sonraki görev mola kadar kayar) — günün başı boş kalmasın. */
 export function gorevSaatleri(g: GunSaati | null, gorevler: Gorev[]): { gorev: Gorev; saat: string | null }[] {
   const sureli = gorevler.filter(x => x.birim === 'dk')
   const sirali = [
@@ -71,9 +72,9 @@ export function gorevSaatleri(g: GunSaati | null, gorevler: Gorev[]): { gorev: G
   return sirali.map(gorev => {
     if (gorev.birim !== 'dk') return { gorev, saat: null }
     const sure = gorev.miktar ?? 0
-    if (mb !== null && me !== null && t < me && t + sure > mb) t = Math.max(t, me)
+    if (mb !== null && me !== null && t >= mb && t < me) t = me
     const saat = hhmm(t)
-    t += sure
+    t += sure + (mb !== null && me !== null && t < mb && t + sure > mb ? me - mb : 0)
     return { gorev, saat }
   })
 }

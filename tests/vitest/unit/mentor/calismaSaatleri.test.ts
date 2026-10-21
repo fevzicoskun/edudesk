@@ -73,9 +73,11 @@ describe('gorevSaatleri', () => {
     expect(sat(s('18:00', '20:30', '18:30', '19:00'), [g({ ad: 'A', miktar: 30 }), g({ ad: 'C', miktar: 20, birim: 'soru' }), g({ ad: 'B', miktar: 60 })]))
       .toEqual([['A', '18.00'], ['B', '19.00'], ['C', null]])
   })
-  it('molayı kesen görev molanın bitişinden başlar', () => {
-    expect(sat(s('18:00', '20:30', '18:30', '19:00'), [g({ ad: 'A', miktar: 20 }), g({ ad: 'B', miktar: 30 })]))
-      .toEqual([['A', '18.00'], ['B', '19.00']])
+  it('molayı ortasından kesen görev yerinde başlar; sonraki görev mola kadar kayar (günün başı boş kalmaz)', () => {
+    expect(sat(s('18:00', '21:00', '18:30', '19:00'), [g({ ad: 'A', miktar: 20 }), g({ ad: 'B', miktar: 30 }), g({ ad: 'C', miktar: 30 })]))
+      .toEqual([['A', '18.00'], ['B', '18.20'], ['C', '19.20']])
+    expect(sat(s('18:00', '21:00', '19:00', '19:30'), [g({ ad: 'Uzun', miktar: 90 }), g({ ad: 'Sonra', miktar: 30 })]))
+      .toEqual([['Uzun', '18.00'], ['Sonra', '20.00']])
   })
   it('saatsiz günde saat yok, sıra yine uygulanır', () => {
     expect(sat(null, [g({ ad: 'A' }), g({ ad: 'S', birim: 'serbest', miktar: null })])).toEqual([['A', null], ['S', null]])

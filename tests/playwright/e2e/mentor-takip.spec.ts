@@ -69,14 +69,15 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   // Başlık KÂĞITTA da görünmeli: globals.css baskıda <header>'ları gizliyor (2026-10-16 görsel kontrolde yakalandı)
   await page.emulateMedia({ media: 'print' })
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible()
-  await expect(page.getByRole('table', { name: 'Program' })).toBeVisible()
+  await expect(page.getByRole('region', { name: 'Pazartesi' })).toBeVisible() // gün kutuları (2026-10-21)
   await expect(page.locator('.filigran img')).toHaveCount(1)
   const kenar = await page.evaluate(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules] } catch { return [] } })
     .filter((r): r is CSSPageRule => r instanceof CSSPageRule && !!r.style.margin).map(r => r.style.margin))
   expect(kenar).toEqual(['0px'])
 })
 
-test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle plan VE sonuç kâğıdı tek A4; imzalar üstte', async ({ page }) => {
+// 2026-10-21: ödevler artık plana girer (gün kutuları) → plan kâğıdı en çok 2 A4 (spec), sonuç kâğıdı tek A4
+test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle plan kâğıdı ≤ 2 A4, sonuç kâğıdı tek A4', async ({ page }) => {
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
   const odev = (title: string, due_date: string) => ({ teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik', title, due_date, assigned_date: '2026-10-01' })
   const { data: eklenen, error } = await db.from('homeworks').insert([
@@ -92,9 +93,8 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
       .eq('student_id', ogrId).in('homework_id', eklenen!.filter(h => h.title.startsWith('E2E eski')).map(h => h.id))
     if (e2) throw new Error(e2.message)
     await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-    await expect(page.getByRole('list', { name: 'Bu hafta teslim' })).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByRole('list', { name: 'Tamamlanmamış ödevler (teslimi geçti)' }).getByRole('listitem')).toHaveCount(27)
-    await expect(page.getByRole('list', { name: 'Gelecek hafta teslim' }).getByRole('listitem')).toHaveCount(8)
+    await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
+    await expect(page.getByText('Plana girmeyen ödevler:')).toBeVisible() // sığmayan gecikmişler + gelecek hafta
     await page.emulateMedia({ media: 'print' })
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
@@ -109,7 +109,7 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     expect(sonuc.numPages).toBe(1)
     if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG, fullPage: true })
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
-    expect(pdf.numPages).toBe(1)
+    expect(pdf.numPages).toBeLessThanOrEqual(2)
   } finally {
     await db.from('homework_submissions').delete().in('homework_id', eklenen!.map(h => h.id))
     await db.from('homeworks').delete().in('id', eklenen!.map(h => h.id))
@@ -131,8 +131,7 @@ test('plan: her gün görevi tek satır girilir, kâğıtta Pzt–Cum beş güne
   const kopyalar = (data!.icerik as { gorevler: { ad: string; gun: number; grup?: string }[] }).gorevler.filter(g => g.ad === 'E2E her gün')
   expect(kopyalar.map(g => g.gun)).toEqual([0, 1, 2, 3, 4]); expect(new Set(kopyalar.map(g => g.grup)).size).toBe(1)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  await expect(page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'E2E her gün' })).toHaveCount(5)
-  await expect(page.getByRole('table', { name: 'Program' }).getByRole('columnheader', { name: 'Konu' })).toHaveCount(0)
+  await expect(page.locator('article').getByRole('listitem').filter({ hasText: 'E2E her gün' })).toHaveCount(5) // Pzt–Cum kutuları
 })
 
 const KAYNAK = 'Kaynaklar (soru bankası, test)'
@@ -180,7 +179,7 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   const silDugmesi = (await program.getByRole('button', { name: 'Matematik soru bankası görevini sil' }).boundingBox())!
   expect(Math.abs((silDugmesi.y + silDugmesi.height / 2) - (gorevKutusu.y + gorevKutusu.height / 2))).toBeLessThan(6)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  const banka = page.getByRole('table', { name: 'Program' }).getByRole('row').filter({ hasText: 'Matematik soru bankası' })
+  const banka = page.locator('article').getByRole('listitem').filter({ hasText: 'Matematik soru bankası' })
   await expect(banka).toHaveCount(5)
   await expect(banka.nth(0)).toContainText('E2E Acil Mat s. 45–48')
   await expect(banka.nth(4)).toContainText('E2E Acil Mat s. 58–60')
@@ -188,7 +187,8 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
 test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç girilemez; yenilemede kalır', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
   await page.getByRole('button', { name: 'Tümü yapıldı' }).click()
-  await expect(page.getByRole('region', { name: 'Görevler' }).getByRole('checkbox', { name: 'Yaptı', checked: false })).toHaveCount(0)
+  // Okul ödevi görevleri hariç (salt okunur, dersin öğretmeni işaretler — 2026-10-21)
+  await expect(page.getByRole('region', { name: 'Görevler' }).locator('input[aria-label="Yaptı"]:not(:checked):not(:disabled)')).toHaveCount(0)
   // Görev satırlarında soru/doğru kutusu artık yok (2026-10-17)
   await expect(page.getByRole('region', { name: 'Görevler' }).getByLabel('Doğru')).toHaveCount(0)
   const satir = page.getByRole('region', { name: 'Soru sonuçları' }).getByRole('row', { name: 'Matematik', exact: true })
@@ -217,9 +217,11 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   await expect(yeni.getByLabel('Yanlış')).toHaveValue('8')
   await expect(page.getByRole('region', { name: 'Özet' }).getByText('Doğruluk', { exact: true }).locator('..')).toContainText('%75')
   await expect(page.getByLabel('Ders bazında doğruluk')).toContainText('Matematik %75')
-  const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi, gorev_yapilan, gorev_toplam').eq('student_id', ogrId).single()
+  const { data } = await db.from('mentor_haftalari').select('soru, dogru, islendi, gorev_yapilan, gorev_toplam, icerik').eq('student_id', ogrId).single()
   expect(data).toMatchObject({ soru: 40, dogru: 30, islendi: true })
-  expect(data!.gorev_yapilan).toBe(data!.gorev_toplam) // Tümü yapıldı (mentör ödevi yok: plan ekranından kalktı)
+  // Tümü yapıldı; okul ödevi görevleri öğretmen işaretine bağlı (2026-10-21)
+  const odevAcik = (data!.icerik as { gorevler: { odevId?: string; yapti: boolean }[] }).gorevler.filter(g => g.odevId && !g.yapti).length
+  expect(data!.gorev_yapilan).toBe(data!.gorev_toplam - odevAcik)
 })
 
 test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesajı, geçmiş tablosu ve plan kâğıdında', async ({ page }) => {
@@ -395,7 +397,7 @@ test('yazdır: son yazılan görev adı hemen basılan kâğıda girer (kayıt/o
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19`)
   await page.getByRole('region', { name: 'Program' }).getByLabel('Görev', { exact: true }).last().fill('E2E yarış görevi')
   const [kagit] = await Promise.all([context.waitForEvent('page'), page.getByRole('link', { name: 'Kâğıdı yazdır' }).click()])
-  await expect(kagit.getByRole('table', { name: 'Program' })).toContainText('E2E yarış görevi', { timeout: 20_000 })
+  await expect(kagit.locator('article')).toContainText('E2E yarış görevi', { timeout: 20_000 })
   await kagit.close()
 })
 

@@ -5,7 +5,7 @@ import { oncekiPlan, herkeseUygula } from '@/app/actions/mentor-takip'
 import Link from 'next/link'
 import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, type Gorev, type Seviye, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { BOS_SAATLER, duzenMetni, netSure, otomatikDuzenMi, planlananDk, saatlerVarMi, sureKisa } from '@/src/domains/mentor/takip/calismaSaatleri'
-import { ilkAcikGun, odevEtiketi, odevGorevi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { ilkAcikGun, odevEtiketi, odevGorevi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import type { SekmeProps } from './TakipIstemci'
@@ -63,9 +63,7 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
     ...h.icerik, gizliOdevler: (h.icerik.gizliOdevler ?? []).filter(x => x !== o.id),
     gorevler: [...h.icerik.gorevler.filter(x => x.odevId !== o.id), odevGorevi(o, ilkGun)],
   } }), true)
-  const plandaki = new Set(veri.icerik.gorevler.flatMap(g => (g.odevId ? [g.odevId] : [])))
-  const disarida = [...new Map([...v.disaridaOdevler, ...(veri.icerik.gizliOdevler ?? []).flatMap(id => kayitlar.get(id) ?? [])].map(o => [o.id, o])).values()]
-    .filter(o => !plandaki.has(o.id)).sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
+  const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
   // Kâğıt açıldıktan sonra VERİLMİŞ ödev (giriş zamanı değil: kaydedilmemiş birleşme her açılışta yeniden kurulur)
   const yeniMi = (g: Gorev) => !!(g.odevId && v.kagitBasildiAt && (kayitlar.get(g.odevId)?.created_at ?? '') > v.kagitBasildiAt)
   const yeniSayisi = veri.icerik.gorevler.filter(yeniMi).length

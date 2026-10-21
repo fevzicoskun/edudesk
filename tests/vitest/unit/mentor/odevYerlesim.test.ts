@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { odevleriBirlestir, odevEtiketi, odevGorevAdi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { odevleriBirlestir, odevEtiketi, odevGorevAdi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import type { CalismaSaatleri, GunSaati } from '@/src/domains/mentor/takip/calismaSaatleri'
 import type { Gorev } from '@/src/domains/mentor/takip/takipMath'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -120,5 +120,13 @@ describe('odevGorevAdi / odevEtiketi', () => {
     expect(odevEtiketi('2026-10-22', BUGUN)).toEqual({ tur: 'yarin', metin: 'yarın teslim' })
     expect(odevEtiketi('2026-10-30', BUGUN)).toEqual({ tur: 'tarih', metin: 'teslim 30.10' })
     expect(odevEtiketi('2026-10-21', BUGUN)).toEqual({ tur: 'tarih', metin: 'teslim 21.10' })
+  })
+})
+
+describe('planDisi', () => {
+  it('dışarıdakiler + gizlenenler, plandakiler hariç, teslime göre, tekrar yok', () => {
+    const a = odev('2026-10-27'), b = odev('2026-10-22'), c = odev('2026-10-23')
+    const plan = birlestir([c]).gorevler
+    expect(planDisi([a, c], [b.id, a.id, 'yok'], [a, b, c], plan).map(o => o.id)).toEqual([b.id, a.id])
   })
 })

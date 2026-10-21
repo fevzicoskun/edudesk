@@ -18,6 +18,8 @@ export default async function KagitPage({ params, searchParams }: { params: Prom
   const h = (await searchParams).hafta
   const v = await TakipService.sayfaVerisi(studentId, h && pazartesiMi(h) ? h : haftaBasi(todayLocalISO()))
   if (!v) notFound()
+  // Kâğıt açıldı = yazdırma niyeti: sonra verilen ödevler planda "yeni" görünür (kayıt yoksa/kapalıysa yazılmaz)
+  await TakipService.kagitBasildi(studentId, v.hafta)
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto print:p-0 print:max-w-none">
       <div className="flex justify-between items-center mb-4 print:hidden">

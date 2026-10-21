@@ -91,3 +91,12 @@ export function odevleriBirlestir(a: {
   }
   return { gorevler, disarida: disarida.sort(sira) }
 }
+
+/** Plan sekmesi ve kâğıdın "Plana girmeyen ödevler" listesi: sunucunun dışarıda bıraktıkları + bu hafta gizlenenler,
+ *  plana (sonradan) girenler hariç, teslime göre. */
+export function planDisi(disarida: HomeworkRecord[], gizli: string[], kayitlar: HomeworkRecord[], gorevler: Gorev[]): HomeworkRecord[] {
+  const kayit = new Map(kayitlar.map(o => [o.id, o]))
+  const plandaki = new Set(gorevler.flatMap(g => (g.odevId ? [g.odevId] : [])))
+  const tum = new Map([...disarida, ...gizli.flatMap(id => kayit.get(id) ?? [])].map(o => [o.id, o]))
+  return [...tum.values()].filter(o => !plandaki.has(o.id)).sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))
+}

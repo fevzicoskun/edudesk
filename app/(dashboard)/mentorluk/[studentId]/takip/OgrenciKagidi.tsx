@@ -1,5 +1,8 @@
-import { GUNLER, SEVIYE_ADI, miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
-import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import { miktarYaz, kitapSayfaYaz, okulDurumYaz, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { gorevSaatleri, kagitDuzeni, saatlerVarMi, saatYaz } from '@/src/domains/mentor/takip/calismaSaatleri'
+import { odevEtiketi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { dersKisa, gunAy } from '@/src/domains/mentor/lib/bultenMath'
+import { addDaysISO } from '@/src/shared/date'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
@@ -57,64 +60,74 @@ export function ImzaAlanlari({ ekran = false }: { ekran?: boolean }) {
   )
 }
 
-/** A4 dikey öğrenci kâğıdı. Matematik satırı kalın + gri zemin (siyah-beyaz baskıda okunur). */
+const GUN_TAM = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'] as const
+
+/** A4 dikey öğrenci kâğıdı (2026-10-21 yeniden tasarım): gün başına kutu, öğrencinin saatiyle sıralı görevler.
+ *  Siyah-beyaz baskıda okunur: gri dolgu yok, etiketler metinle ayırt edilir, gövde ≥ 11pt. */
 export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVerisi }) {
+  const duzen = kagitDuzeni(veri.icerik.duzen, v.saatler)
+  const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
+  const gunler = GUN_TAM.map((ad, i) => ({ ad, i, gorevler: veri.icerik.gorevler.filter(g => g.gun === i) })).filter(x => x.gorevler.length > 0)
   return (
-    <article className="text-[11px] leading-snug text-black bg-white">
+    <article className="text-[11pt] leading-snug text-black bg-white">
       {/* header/footer etiketi DEĞİL: globals.css baskıda header'ları gizler */}
-      <div className="flex justify-between items-start mb-2">
+      <div className="flex justify-between items-start border-b-2 border-black pb-1 mb-1.5">
         <div>
-          <p className="text-xs">{v.okulAdi}</p>
-          <h1 className="text-base font-bold">Haftalık Çalışma Planı</h1>
+          <p className="text-[9pt]">{v.okulAdi}</p>
+          <h1 className="text-[15pt] font-bold leading-tight">Haftalık Çalışma Planı</h1>
           <p>{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
         </div>
-        <div className="text-right">
-          <p className="font-semibold">{takipHaftaEtiketi(v.hafta)}</p>
-          <p>Seviye: {SEVIYE_ADI[veri.seviye]} · Soru hedefi: {veri.soruHedefi}</p>
-        </div>
+        <p className="font-bold text-[12pt]">{takipHaftaEtiketi(v.hafta)}</p>
       </div>
-      <ImzaAlanlari ekran />
-      {veri.icerik.duzen && <p className="mb-2"><b>Hafta içi düzen:</b> {veri.icerik.duzen}</p>}
+      <p className="text-[14pt] font-bold">Bu hafta hedefin: {veri.soruHedefi} soru</p>
+      {duzen && <p className="text-[10pt]"><b>Günlük düzen:</b> {duzen}</p>}
 
-      {/* Program tablosu sıkı (10px, dikey boşluksuz): 24 görev + 46 ödevli gerçek yükte tek A4 için (2026-10-17) */}
-      <table aria-label="Program" className="w-full border-collapse mb-2 text-[10px] leading-tight [&_td]:py-0 [&_th]:py-0">
-        <thead><tr>{['Gün', 'Görev', 'Süre', 'Kitap / sayfa', 'Soru', 'Doğru', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
-        <tbody>
-          {veri.icerik.gorevler.slice().sort((a, b) => a.gun - b.gun).map(g => (
-            <tr key={g.id} className={`break-inside-avoid ${g.ders === 'Matematik' ? 'font-bold bg-gray-100' : ''}`}>
-              <td className={td}>{GUNLER[g.gun]}</td>
-              <td className={td}>{g.ad}</td>
-              <td className={`${td} whitespace-nowrap`}>{miktarYaz(g)}</td>
-              <td className={td}>{kitapSayfaYaz(g)}</td>
-              <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />
-              <td className={`${td} w-10 ${g.soruSatiri ? '' : 'bg-gray-300'}`} />
-              <td className={`${td} w-6`} />
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* Sütun akışı (ızgara değil): kutu boyları farklı, satır hizası boşluk bırakıp imzayı 2. sayfaya itiyordu */}
+      <div className="columns-2 gap-2 mt-2">
+        {gunler.map(({ ad, i, gorevler }) => {
+          const saat = saatlerVarMi(v.saatler) ? v.saatler!.gunler[i] : null
+          return (
+            <section key={ad} aria-label={ad} className="break-inside-avoid border border-black rounded px-2 py-1 mb-2">
+              <h2 className="font-bold border-b border-black mb-0.5">
+                {ad} · {gunAy(addDaysISO(v.hafta, i))}{saat && ` · ${saatYaz(saat.bas)}–${saatYaz(saat.bit)}`}
+              </h2>
+              <ul>
+                {gorevSaatleri(saat, gorevler).map(({ gorev: g, saat: s }) => {
+                  const e = g.teslim ? odevEtiketi(g.teslim, v.bugun) : null
+                  const kitap = g.soruSatiri ? kitapSayfaYaz(g) : ''
+                  return (
+                    <li key={g.id} className="py-px">
+                      <div className="flex items-baseline gap-1">
+                        {saat && <span className="w-10 shrink-0 tabular-nums">{s ?? '+'}</span>}
+                        <span aria-hidden className="shrink-0">☐</span>
+                        <span>{g.ad}{e && e.tur !== 'tarih' && <span className={`text-[9pt] ml-1 ${e.tur === 'gecikmis' ? 'font-bold' : 'italic'}`}>({e.metin})</span>}</span>
+                        <span aria-hidden className="flex-1 border-b border-dotted border-black mb-1 min-w-2" />
+                        <span className="shrink-0 whitespace-nowrap">{miktarYaz(g)}</span>
+                      </div>
+                      {g.soruSatiri && (
+                        <p className={`text-[9.5pt] ${saat ? 'pl-[3.75rem]' : 'pl-4'}`}>{kitap && `${kitap} · `}Çözdüm: ____ Doğru: ____</p>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+              {/* Okulda yeni verilen ödevi öğrenci kendisi yazar */}
+              {[0, 1].map(k => <p key={k} className="text-[9.5pt] mt-1">Yeni ödev: ______________________ Teslim: ______</p>)}
+            </section>
+          )
+        })}
+      </div>
 
-      <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
-      {/* Üç bölüm de sıkı liste: gerçek okulda 46 ödevle tablolar kâğıdı 2. sayfaya taşıyordu (2026-10-17) */}
-      <OkulOdevListesi baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
-      <OkulOdevListesi baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
-
-      {veri.icerik.mentorOdevleri.length > 0 && (
-        <table aria-label="Mentör ödevleri" className="w-full border-collapse mb-2">
-          <thead><tr>{['Kitap', 'Konu', 'Sayfalar', '✓'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
-          <tbody>{veri.icerik.mentorOdevleri.map(m => (
-            <tr key={m.id} className="break-inside-avoid"><td className={td}>{m.kitapAdi}</td><td className={td}>{m.konu}</td><td className={td}>{m.sayfalar}</td><td className={`${td} w-6`} /></tr>
-          ))}</tbody>
-        </table>
-      )}
-
-      {veri.icerik.okuma && (
-        <table aria-label="Okuma" className="w-full border-collapse mb-2">
-          <thead><tr><th className={th}>Okuma: {veri.icerik.okuma.kitap}</th>{GUNLER.map(g => <th key={g} className={`${th} w-12 text-center`}>{g}</th>)}</tr></thead>
-          <tbody><tr><td className={td}>Okuduğum sayfa</td>{GUNLER.map(g => <td key={g} className={`${td} h-6`} />)}</tr></tbody>
-        </table>
-      )}
-
+      <div className="mt-2 text-[9.5pt] space-y-1 break-inside-avoid">
+        {disarida.length > 0 && (
+          <p><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
+        )}
+        {veri.icerik.okuma && <p><b>Okuma:</b> {veri.icerik.okuma.kitap} — okuduğun sayfaları her gün not et.</p>}
+        {veri.icerik.mentorOdevleri.length > 0 && (
+          <p><b>Mentör ödevleri:</b> {veri.icerik.mentorOdevleri.map(m => [m.kitapAdi, m.konu, m.sayfalar].filter(Boolean).join(' ')).join(' · ')}</p>
+        )}
+        <ImzaAlanlari ekran />
+      </div>
     </article>
   )
 }

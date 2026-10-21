@@ -133,3 +133,46 @@ test('okul ödevi plana gelir; silinince geri gelmez; öğretmen işaretleyince 
   await kaydedildi(page)
   await expect(satir).toBeVisible()
 })
+
+test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yalnız soru görevinde, en çok 2 A4', async ({ page }) => {
+  const gun = { bas: '18:00', bit: '21:00', molaBas: '19:00', molaBit: '19:30' }
+  await db.from('ogrenci_calisma_saatleri').update({ gunler: Array(7).fill(gun) }).eq('student_id', A)
+  await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
+  await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByText(/^Bu hafta hedefin: \d+ soru$/)).toBeVisible()
+  await expect(page.getByText('Pzt–Paz 18.00–21.00 (mola 19.00–19.30)')).toBeVisible() // günlük düzen saatlerden
+  for (const ad of ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']) {
+    const kutu = page.getByRole('region', { name: ad, exact: true })
+    await expect(kutu.getByRole('heading')).toContainText(`${ad} · `)
+    await expect(kutu.getByRole('heading')).toContainText('· 18.00–21.00')
+    const saatler = (await kutu.getByRole('listitem').allInnerTexts()).map(t => t.trim().slice(0, 5)).filter(t => /^\d\d\.\d\d$/.test(t))
+    expect(saatler[0]).toBe('18.00')
+    expect(saatler.filter(t => t >= '19.00' && t < '19.30')).toEqual([]) // mola boş
+    expect([...saatler].sort()).toEqual(saatler) // sırayla
+    await expect(kutu.getByText(/^Yeni ödev:/)).toHaveCount(2)
+  }
+  const pzt = page.getByRole('region', { name: 'Pazartesi' })
+  await expect(pzt.getByRole('listitem').filter({ hasText: 'Paragraf' })).toContainText('Çözdüm: ____ Doğru: ____')
+  await expect(pzt.getByRole('listitem').filter({ hasText: 'Okul tekrarı' })).not.toContainText('Çözdüm')
+  await page.emulateMedia({ media: 'print' })
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
+  if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
+  expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBeLessThanOrEqual(2)
+})
+
+test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır uyarısı', async ({ page }) => {
+  await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
+  await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
+  await expect.poll(async () => (await db.from('mentor_haftalari').select('kagit_basildi_at').eq('student_id', A).eq('hafta_basi', HAFTA).single()).data?.kagit_basildi_at).toBeTruthy()
+  await page.waitForTimeout(1000)
+  const { data: hw, error } = await db.from('homeworks').insert({
+    teacher_id: mentor.id, class_id: sinifA, school_id: mentor.school_id, subject: 'Fizik', title: 'E2E sonradan verilen', due_date: addDaysISO(BUGUN, 2), assigned_date: BUGUN,
+  }).select('id').single()
+  if (error) throw new Error(error.message)
+  odevIds.push(hw!.id)
+  await page.goto(`/mentorluk/${A}/takip?hafta=${HAFTA}`)
+  const satir = page.getByRole('region', { name: 'Program' }).getByLabel('Ödev: Fizik — E2E sonradan verilen')
+  await expect(satir.getByText('yeni', { exact: true })).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByRole('status').filter({ hasText: /Kâğıt yazdırıldıktan sonra \d+ yeni ödev eklendi — tekrar yazdır\./ })).toBeVisible()
+})

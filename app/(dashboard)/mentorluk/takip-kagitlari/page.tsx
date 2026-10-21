@@ -26,6 +26,7 @@ export default async function TakipKagitlariPage({ searchParams }: { searchParam
   const veriler = (await Promise.all(rows.filter(r => planli.has(r.student_id)).map(r => TakipService.sayfaVerisi(r.student_id, hafta))))
     .filter((x): x is NonNullable<typeof x> => x !== null)
     .sort((a, b) => a.ogrenci.ad.localeCompare(b.ogrenci.ad, 'tr'))
+  await Promise.all(veriler.map(v => TakipService.kagitBasildi(v.ogrenci.id, hafta))) // "yeni ödev" uyarısı için
   return (
     <div className="p-4 md:p-6 max-w-3xl mx-auto print:p-0 print:max-w-none">
       <div className="flex justify-between items-start mb-4 print:hidden">
