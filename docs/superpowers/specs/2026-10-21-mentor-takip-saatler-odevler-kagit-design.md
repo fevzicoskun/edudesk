@@ -104,6 +104,9 @@ veriyi kullanır.
 - Sıra: önce gelecek teslimliler (teslim tarihine göre), sonra gecikmişler — teslimi yakın olan yer kapmasın diye
   önce yerleşir (**benim kararım**).
 - Determinizm: aynı girdi → aynı çıktı (sıralama: due_date, sonra subject, sonra id).
+- İleri hafta (Pazartesi > bugün): yalnız teslimi o haftanın Pazartesisi ve sonrası olanlar aday; gecikmişler
+  içinde bulunulan haftanın işi (aynı ödev iki haftanın planında görünmesin — **benim kararım**, uygulama sırasında).
+- Teslimi bugün olan (hedef geçmiş): `ilk` güne girer, dışarıda kalmaz.
 
 **Durum senkronu** — her açılışta ödev görevlerinin `yapti`'si öğretmen işaretinden yeniden hesaplanır
 (yapildi/gec → true, diğer → false). Plan ekranında ödev görevinin "yapıldı" kutusu yok/salt okunur; kaynak
