@@ -13,6 +13,8 @@ export type HomeworkRecord = {
   /** işaretsiz ve son teslimi bugün/ileride — "kontrol edilmedi" değil, henüz kontrol edilemez.
    *  Kayıt kurulurken bekliyorMu ile TEK noktada hesaplanır; ekranlar yalnız bu alanı okur. */
   bekliyor: boolean
+  /** ödevin verildiği an — mentör kâğıdı "yeni" rozeti (yalnız öğrenci profili sorgusu doldurur) */
+  created_at?: string
 }
 
 /** İşaretsiz ödevin teslimi gelmedi mi? bugun = İstanbul günü (todayLocalISO). Son teslimi yoksa false. */
@@ -103,7 +105,7 @@ export function dersOzetiMetni(d: DersOzeti): string {
   return `${d.ders} ${d.yapildi}/${d.degerlendirilen}${ek ? ` (${ek})` : ''}`
 }
 
-type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null; teacher_id: string }
+type OdevSatiri = { id: string; title: string; subject: string; due_date: string | null; teacher_id: string; created_at?: string }
 type TeslimSatiri = { homework_id: string; student_id: string; status: string; note: string | null }
 
 /** Sınıfın ödevlerini + işaretli teslimleri öğrenci başına HomeworkRecord listesine çevirir.
@@ -121,6 +123,7 @@ export function sinifOdevKayitlari(
     return {
       id: hw.id, title: hw.title, subject: hw.subject, due_date: hw.due_date, teacher_id: hw.teacher_id,
       status, note: t?.note ?? null, bekliyor: bekliyorMu(status, hw.due_date, bugun),
+      ...(hw.created_at && { created_at: hw.created_at }),
     }
   })]))
 }

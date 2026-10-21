@@ -4,11 +4,15 @@ import { logger } from '@/src/infrastructure/observability/logger'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { TakipRepository as R } from '../repositories/TakipRepository'
-import { kaydetSchema } from '../validators/takip'
+import { kaydetSchema, saatlerSchema } from '../validators/takip'
+import { todayLocalISO, addDaysISO } from '@/src/shared/date'
+import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
+import type { CalismaSaatleri } from '../takip/calismaSaatleri'
+import { odevleriBirlestir } from '../takip/odevYerlesim'
 import type { Json } from '@/src/infrastructure/supabase/database.types'
 import { MATEMATIK_KONULARI } from '../takip/sablonlar'
 import {
-  yeniHafta, planKopyala, normalizeIcerik, gorusmeNormalize, dersListesi, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
+  yeniHafta, planKopyala, elleGorevler, normalizeIcerik, gorusmeNormalize, dersListesi, ozetHesapla, okulOdevBolumleri, dersDogruluk, BOS_GORUSME,
   type HaftaVerisi, type Icerik, type Ozet, type Seviye, type OkulOdevBolumleri, type Okuma,
 } from '../takip/takipMath'
 
@@ -30,6 +34,15 @@ export type SayfaVerisi = {
   gecmis: { hafta: string; seviye: Seviye; ozet: Ozet; okuma: Okuma | null; dersler: ReturnType<typeof dersDogruluk>; kapali: boolean; ekran: number | null }[]
   mentorAdi: string
   okulAdi: string
+  /** Öğrencinin çalışma saatleri (haftadan bağımsız); null = hiç girilmemiş */
+  saatler: CalismaSaatleri | null
+  /** Öğrenci kâğıdının son açılışı (2026-10-21) */
+  kagitBasildiAt: string | null
+  /** Plana girmeyen okul ödevleri (gizlenen, sığmayan gecikmiş, 3 haftadan eski, gelecek hafta). Kapalı/geçmiş haftada boş. */
+  disaridaOdevler: HomeworkRecord[]
+  /** odevId → ödevin verildiği an ("yeni" rozeti) */
+  odevVerilis: Record<string, string>
+  bugun: string
 }
 
 type Satir = NonNullable<Awaited<ReturnType<typeof R.hafta>>>
@@ -59,7 +72,7 @@ export const TakipService = {
     if (!o) return null
     const sinifBilgi = o.classes as { name: string; grade: number } | null
     const sinif = sinifBilgi?.grade ?? 9
-    const [kayit, onceki, kitaplar, profil, profile, durumlar, gecmisSat, odevDersleri] = await Promise.all([
+    const [kayit, onceki, kitaplar, profil, profile, durumlar, gecmisSat, odevDersleri, saatSatiri] = await Promise.all([
       R.hafta(ab.schoolId, studentId, hafta),
       R.oncekiHafta(ab.schoolId, studentId, hafta),
       R.kitaplar(ab.schoolId, studentId),
@@ -68,6 +81,7 @@ export const TakipService = {
       R.konuDurumlari(ab.schoolId, studentId),
       gecmis ? R.gecmis(ab.schoolId, studentId) : Promise.resolve([]),
       gecmis ? R.odevDersleri(ab.schoolId) : Promise.resolve([]),
+      R.calismaSaatleri(ab.schoolId, studentId),
     ])
     if ('error' in profil) throw new Error(profil.error)
     let konular = await R.konular(ab.schoolId, sinif)
@@ -81,12 +95,25 @@ export const TakipService = {
         logger.warn({ event: 'mentor_takip_konu_tohum_failed', userId: ab.userId, err: e instanceof Error ? e.message : String(e) }, 'Matematik konu listesi tohumlanamadı')
       }
     }
+    const saatler = saatSatiri ? { gunler: saatSatiri.gunler as unknown as CalismaSaatleri['gunler'], not: saatSatiri.not } : null
+    const bugun = todayLocalISO()
+    // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
+    const taslak = kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif)
+    let disaridaOdevler: HomeworkRecord[] = []
+    // Okul ödevleri plana: yalnız açık ve bitmemiş haftada (kapalı = sabit, geçmişte "geçmemiş gün" yok)
+    if (!kayit?.kapali_at && addDaysISO(hafta, 6) >= bugun) {
+      const b = odevleriBirlestir({ gorevler: taslak.icerik.gorevler, gizli: taslak.icerik.gizliOdevler ?? [], odevler: profil.homeworks, saatler, hafta, bugun })
+      taslak.icerik = { ...taslak.icerik, gorevler: b.gorevler }
+      disaridaOdevler = b.disarida
+    }
     return {
+      saatler, bugun, disaridaOdevler,
+      kagitBasildiAt: kayit?.kagit_basildi_at ?? null,
+      odevVerilis: Object.fromEntries(profil.homeworks.flatMap(h => (h.created_at ? [[h.id, h.created_at]] : []))),
       ogrenci: { id: o.id, ad: o.full_name, sinifAdi: sinifBilgi?.name ?? '—', sinif, classId: o.class_id, veliTelefon: o.veli_telefon },
       hafta,
       kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at, kapaliAt: kayit.kapali_at } : null,
-      // Kayıt yoksa taslak gösterilir; satır ilk düzenlemede oluşur (yalnız bakmak "Plan yok"u bozmaz)
-      taslak: kayit ? veriOf(kayit) : yeniHafta(onceki ? veriOf(onceki) : null, sinif),
+      taslak,
       onceki: onceki ? { ozet: ozetOf(onceki) } : null,
       kitaplar,
       dersler: dersListesi(odevDersleri),
@@ -171,9 +198,10 @@ export const TakipService = {
         if (error || !data) throw new Error(error?.message ?? 'Kitap tanımlanamadı')
         mevcut.push(data); esle.set(g.kitapId, data.id)
       }
+      // Ödev görevleri ve düzen öğrenciye özel: hedefin kendi ödevleri/saatleri kendi planında (2026-10-21)
       const icerik = {
-        duzen: k.icerik.duzen, mentorOdevleri: [], okuma: null,
-        gorevler: k.icerik.gorevler.map(g => ({ ...g, yapti: false, soru: null, dogru: null, ...(g.kitapId && { kitapId: esle.get(g.kitapId)! }) })),
+        duzen: '', mentorOdevleri: [], okuma: null,
+        gorevler: elleGorevler(k.icerik.gorevler).map(g => ({ ...g, yapti: false, soru: null, dogru: null, ...(g.kitapId && { kitapId: esle.get(g.kitapId)! }) })),
       }
       const r = await R.haftaEkle({
         school_id: ab.schoolId, student_id: hedef, hafta_basi: hafta, seviye: k.seviye, soru_hedefi: k.soruHedefi,
@@ -182,6 +210,21 @@ export const TakipService = {
       if (!r.cakisma) uygulanan++ // bu arada başka ekrandan plan yazıldıysa dokunulmaz
     }
     return { uygulanan, atlanan: dolu.size }
+  },
+
+  async saatleriKaydet(studentId: string, girdi: unknown): Promise<{ error?: string }> {
+    const p = saatlerSchema.safeParse(girdi)
+    if (!p.success) return { error: p.error.issues[0]?.message ?? 'Geçersiz saat' }
+    const ab = await yetki(studentId)
+    if (!ab) return { error: 'Bu öğrencinin takibine erişiminiz yok.' }
+    await R.calismaSaatleriYaz(ab.schoolId, studentId, ab.userId, p.data.gunler as unknown as Json, p.data.not)
+    return {}
+  },
+
+  /** Kâğıt açıldı: sonra verilen ödevler planda "yeni" görünür. Kayıt yoksa/kapalıysa repo sessiz geçer. */
+  async kagitBasildi(studentId: string, hafta: string): Promise<void> {
+    const ab = await yetki(studentId)
+    if (ab) await R.kagitBasildi(ab.schoolId, studentId, hafta)
   },
 
   async kilidiAc(studentId: string, hafta: string): Promise<{ error?: string }> {

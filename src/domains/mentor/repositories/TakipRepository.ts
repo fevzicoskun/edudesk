@@ -79,6 +79,30 @@ export const TakipRepository = {
     if (error) throw new Error(error.message)
   },
 
+  async calismaSaatleri(schoolId: string, studentId: string) {
+    const db = await createClient()
+    const { data, error } = await db.from('ogrenci_calisma_saatleri').select('gunler, not')
+      .eq('school_id', schoolId).eq('student_id', studentId).maybeSingle()
+    if (error) throw new Error(error.message)
+    return data
+  },
+
+  async calismaSaatleriYaz(schoolId: string, studentId: string, userId: string, gunler: Json, not: string) {
+    const db = await createClient()
+    const { error } = await db.from('ogrenci_calisma_saatleri')
+      .upsert({ school_id: schoolId, student_id: studentId, gunler, not, updated_by: userId, updated_at: new Date().toISOString() })
+    if (error) throw new Error(error.message)
+  },
+
+  /** Kâğıt açıldı damgası. updated_at DEĞİŞMEZ (açık plan sekmesinin iyimser kilidi bozulmasın).
+   *  Kapalı haftada tetikleyici reddeder (P0001) → sessiz atlanır. */
+  async kagitBasildi(schoolId: string, studentId: string, hafta: string) {
+    const db = await createClient()
+    const { error } = await db.from('mentor_haftalari').update({ kagit_basildi_at: new Date().toISOString() })
+      .eq('school_id', schoolId).eq('student_id', studentId).eq('hafta_basi', hafta).is('kapali_at', null)
+    if (error && error.code !== 'P0001') throw new Error(error.message)
+  },
+
   async kilidiAc(schoolId: string, studentId: string, hafta: string) {
     const db = await createClient()
     const { error } = await db.from('mentor_haftalari').update({ kapali_at: null, okul_odevleri: null })

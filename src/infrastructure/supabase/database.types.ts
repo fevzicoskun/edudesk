@@ -895,6 +895,7 @@ export type Database = {
           icerik: Json
           id: string
           islendi: boolean
+          kagit_basildi_at: string | null
           kapali_at: string | null
           okuma_sayfa: number
           okul_odevleri: Json | null
@@ -915,6 +916,7 @@ export type Database = {
           icerik: Json
           id?: string
           islendi?: boolean
+          kagit_basildi_at?: string | null
           kapali_at?: string | null
           okuma_sayfa?: number
           okul_odevleri?: Json | null
@@ -935,6 +937,7 @@ export type Database = {
           icerik?: Json
           id?: string
           islendi?: boolean
+          kagit_basildi_at?: string | null
           kapali_at?: string | null
           okuma_sayfa?: number
           okul_odevleri?: Json | null
@@ -1221,6 +1224,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ogrenci_calisma_saatleri: {
+        Row: {
+          gunler: Json
+          not: string
+          school_id: string
+          student_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          gunler: Json
+          not?: string
+          school_id: string
+          student_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          gunler?: Json
+          not?: string
+          school_id?: string
+          student_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       ogrenci_konu_durumu: {
         Row: {

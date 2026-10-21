@@ -229,7 +229,7 @@ export const HomeworkRepository = {
     const supabase = await createClient()
     let homeworksQuery = supabase
       .from('homeworks')
-      .select('id, title, subject, due_date, teacher_id')
+      .select('id, title, subject, due_date, teacher_id, created_at')
       .eq('class_id', classId)
       .eq('school_id', schoolId)
       .eq('is_template', false)

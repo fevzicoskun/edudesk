@@ -84,3 +84,11 @@ export async function kitapHerkeseEkle(ad: string, ders: string): Promise<Action
   if (!r.error) revalidatePath('/mentorluk', 'layout')
   return r
 }
+
+/** Öğrencinin çalışma saatleri (haftadan bağımsız); doğrulama serviste (saatlerSchema). */
+export async function calismaSaatleriKaydet(studentId: string, saatler: unknown): Promise<ActionResult> {
+  if (!UUID.safeParse(studentId).success) return { error: 'Geçersiz ID' }
+  const r = await TakipService.saatleriKaydet(studentId, saatler)
+  if (!r.error) revalidatePath(`/mentorluk/${studentId}/takip`)
+  return r
+}

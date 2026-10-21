@@ -35,6 +35,14 @@ export const icerikSchema = z.object({
   })).max(60).optional(),
 })
 
+const saat = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'Saat SS:DD olmalı')
+const gunSaatiSchema = z.object({ bas: saat, bit: saat, molaBas: saat.optional(), molaBit: saat.optional() })
+  .refine(g => g.bas < g.bit, { message: 'Bitiş saati başlangıçtan sonra olmalı', path: ['bit'] })
+  .refine(g => !g.molaBas === !g.molaBit, { message: 'Molanın başlangıç ve bitişini birlikte girin', path: ['molaBit'] })
+  .refine(g => !g.molaBas || !g.molaBit || (g.bas <= g.molaBas && g.molaBas < g.molaBit && g.molaBit <= g.bit),
+    { message: 'Mola çalışma saatlerinin içinde olmalı', path: ['molaBas'] })
+export const saatlerSchema = z.object({ gunler: z.array(gunSaatiSchema.nullable()).length(7), not: metin(300) })
+
 export const gorusmeSchema = z.object({ not: metin(2000), rica: metin(1000), veliMesaji: metin(2000).nullable() })
 
 export const kaydetSchema = z.object({
