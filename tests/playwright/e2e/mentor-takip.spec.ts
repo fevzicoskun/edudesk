@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import { addDaysISO, todayLocalISO } from '@/src/shared/date'
-import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
+import { haftaBasi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { VELI_GERI_BILDIRIM_GOSTER } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -26,6 +26,8 @@ async function sonucKagidiKontrol(page: Page, hafta: string, { uyari }: { uyari:
   const u = page.getByRole('status').filter({ hasText: 'henüz tam girilmemiş olabilir' })
   await expect(u).toHaveCount(uyari ? 1 : 0)
   await expect(page.getByLabel('Özet', { exact: true })).toContainText('Ekran süresi')
+  const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
+  await expect(page).toHaveTitle(`${o!.full_name} - Haftalık Sonuç ${takipHaftaEtiketi(hafta)}`) // PDF dosya adı
   // Adım 6: veli kimi arayacağını bilir; mentör imza satırı veli imzasıyla aynı sırada
   await expect(page.getByText(`Mentör öğretmen: ${mentor.full_name}`, { exact: true })).toBeVisible()
   const imza = page.getByRole('group', { name: 'İmzalar' })
@@ -113,7 +115,7 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   await expect(page.getByText('19–25 Ekim', { exact: true })).toBeVisible()
   // Chrome "PDF olarak kaydet" dosya adını sayfa başlığından alır (2026-10-22 kullanıcı isteği)
   const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
-  await expect(page).toHaveTitle(`${o!.full_name} - Haftalık Çalışma Planı`)
+  await expect(page).toHaveTitle(`${o!.full_name} - Haftalık Çalışma Planı 19–25 Ekim`)
   // Başlık KÂĞITTA da görünmeli: globals.css baskıda <header>'ları gizliyor (2026-10-16 görsel kontrolde yakalandı)
   await page.emulateMedia({ media: 'print' })
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible()

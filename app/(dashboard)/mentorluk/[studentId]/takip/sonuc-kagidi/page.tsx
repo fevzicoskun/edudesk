@@ -1,21 +1,32 @@
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaBasi, haftaBaslangicMi, ozetHesapla } from '@/src/domains/mentor/takip/takipMath'
+import { haftaBasi, haftaBaslangicMi, ozetHesapla, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
 import SonucKagidi from '../SonucKagidi'
 
-export const metadata = { title: 'Haftalık Sonuç' }
+type Props = { params: Promise<{ studentId: string }>; searchParams: Promise<{ hafta?: string }> }
 
-export default async function SonucKagidiPage({ params, searchParams }: { params: Promise<{ studentId: string }>; searchParams: Promise<{ hafta?: string }> }) {
+// Başlık ve sayfa aynı veriyi okur: istek başına tek sorgu
+const veri = cache((studentId: string, h?: string) =>
+  TakipService.sayfaVerisi(studentId, h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO())))
+
+// Chrome "PDF olarak kaydet" dosya adını başlıktan alır: "Ad Soyad - Haftalık Sonuç 23–29 Ekim" (okul eki yok)
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
+  const v = await veri((await params).studentId, (await searchParams).hafta)
+  return { title: v ? { absolute: `${v.ogrenci.ad} - Haftalık Sonuç ${takipHaftaEtiketi(v.hafta)}` } : 'Haftalık Sonuç' }
+}
+
+export default async function SonucKagidiPage({ params, searchParams }: Props) {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   const { studentId } = await params
-  const h = (await searchParams).hafta
-  const v = await TakipService.sayfaVerisi(studentId, h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO()))
+  const v = await veri(studentId, (await searchParams).hafta)
   if (!v) notFound()
   // Yalnız mentör görür (kâğıda çıkmaz): hafta kapatılmadı ya da hiçbir görev işaretlenmedi
   const eksik = !v.kayit?.kapaliAt || ozetHesapla(v.taslak.icerik).gorev_yapilan === 0

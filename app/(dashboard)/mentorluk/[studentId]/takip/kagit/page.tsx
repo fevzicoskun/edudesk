@@ -5,7 +5,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
 import { isTeachingRole } from '@/src/shared/types'
 import { todayLocalISO } from '@/src/shared/date'
-import { haftaBasi, haftaBaslangicMi } from '@/src/domains/mentor/takip/takipMath'
+import { haftaBasi, haftaBaslangicMi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
 import OgrenciKagidi from '../OgrenciKagidi'
@@ -16,10 +16,10 @@ type Props = { params: Promise<{ studentId: string }>; searchParams: Promise<{ h
 const veri = cache((studentId: string, h?: string) =>
   TakipService.sayfaVerisi(studentId, h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO())))
 
-// Chrome "PDF olarak kaydet" dosya adını başlıktan alır: "Ad Soyad - Haftalık Çalışma Planı" (okul eki yok)
+// Chrome "PDF olarak kaydet" dosya adını başlıktan alır: "Ad Soyad - Haftalık Çalışma Planı 23–29 Ekim" (okul eki yok)
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const v = await veri((await params).studentId, (await searchParams).hafta)
-  return { title: v ? { absolute: `${v.ogrenci.ad} - Haftalık Çalışma Planı` } : 'Haftalık Çalışma Planı' }
+  return { title: v ? { absolute: `${v.ogrenci.ad} - Haftalık Çalışma Planı ${takipHaftaEtiketi(v.hafta)}` } : 'Haftalık Çalışma Planı' }
 }
 
 export default async function KagitPage({ params, searchParams }: Props) {
