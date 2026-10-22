@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, ozetCumlesi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
+import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 describe('sayiEk', () => {
   it('sayının okunuşuna uyar', () => {
@@ -47,6 +47,14 @@ describe('aksayanlar', () => {
 describe('durum ve özet', () => {
   it('eşikler: 80 iyi, 50–79 orta, altı düşük', () => {
     expect([100, 80, 79, 50, 49, 0].map(durumOf)).toEqual(['iyi', 'iyi', 'orta', 'orta', 'dusuk', 'dusuk'])
+  })
+  it('etiket yüzdesi: program ve soru hedefinin düşüğü (97 program ama 40/200 soru → 20)', () => {
+    expect(durumYuzdesi(97, 40, 200)).toBe(20)
+    expect(durumYuzdesi(60, 300, 200)).toBe(60) // hedef aşıldı: soru 100'de kapanır, program belirler
+    expect(durumYuzdesi(null, 90, 120)).toBe(75) // görev yok → yalnız soru
+    expect(durumYuzdesi(85, 10, 0)).toBe(85) // hedef yok → yalnız program
+    expect(durumYuzdesi(null, 10, 0)).toBeNull()
+    expect(durumOf(durumYuzdesi(97, 40, 200)!)).toBe('dusuk')
   })
   it('tek cümle; doğruluk varsa eklenir', () => {
     expect(ozetCumlesi('Beren', 72, 96, 120, null)).toBe("Beren bu hafta programın %72'sini tamamladı ve 96 soru çözdü (hedef 120).")

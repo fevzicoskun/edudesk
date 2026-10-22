@@ -3,7 +3,7 @@ import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
 // ── Ayarlar (veliye giden sonuç kâğıdı, 2026-10-22) ──────────────────────────────
-/** Program tamamlama yüzdesine göre durum etiketi: ≥ IYI → iyi, ≥ ORTA → orta, altı → düşük. Kırmızı yok, dil yumuşak. */
+/** Durum etiketi (durumYuzdesi): ≥ IYI → iyi, ≥ ORTA → orta, altı → düşük. Kırmızı yok, dil yumuşak. */
 export const DURUM_ESIKLERI = { IYI: 80, ORTA: 50 } as const
 export const DURUM_ETIKETLERI = { iyi: 'İyi gidiyor', orta: 'Gelişmeli', dusuk: 'Birlikte takip edelim' } as const
 export const BOS_HAFTA_METNI = 'Bu hafta için henüz sonuç girilmedi.'
@@ -35,6 +35,12 @@ export function sayiEk(n: number, ek: 'si' | 'sini' | 'sinde'): string {
 }
 
 export type Durum = keyof typeof DURUM_ETIKETLERI
+/** Etiketin dayandığı yüzde: program tamamlama ile soru hedefine ulaşmanın DÜŞÜĞÜ (2026-10-22 veli gözü:
+ *  "%97 program, 40/200 soru" haftası "İyi gidiyor" diyordu). Hedef aşımı 100'de kapanır; ölçü yoksa null. */
+export function durumYuzdesi(program: number | null, soru: number, hedef: number): number | null {
+  const olculer = [...(program === null ? [] : [program]), ...(hedef > 0 ? [Math.min(100, Math.round((soru / hedef) * 100))] : [])]
+  return olculer.length ? Math.min(...olculer) : null
+}
 export const durumOf = (yuzde: number): Durum => (yuzde >= DURUM_ESIKLERI.IYI ? 'iyi' : yuzde >= DURUM_ESIKLERI.ORTA ? 'orta' : 'dusuk')
 
 /** "Beren bu hafta programın %72'sini tamamladı ve 96 soru çözdü (hedef 120), doğruluk %78." */
@@ -125,7 +131,8 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
     ...(buHafta.length ? [['Okul ödevleri', `${buHafta.filter(yapildiMi).length} / ${buHafta.length} yapıldı`] as [string, string]] : []),
     ['Ekran süresi', ekran == null ? 'Girilmedi' : `${ekranYaz(ekran)} saat / gün`],
   ]
-  const durum = p === null ? null : durumOf(p)
+  const dy = durumYuzdesi(p, o.soru, veri.soruHedefi)
+  const durum = dy === null ? null : durumOf(dy)
 
   return (
     <article className={`${siki ? 'text-[10pt]' : 'text-[11pt]'} leading-snug text-gray-900 bg-white`}>

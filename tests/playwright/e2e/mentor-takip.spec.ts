@@ -255,7 +255,8 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   // Sonuç kâğıdı: özet cümlesi + durum etiketi; boş satırlar ve Net/Doğruluk kartları yok; hafta kapanmadı → uyarı
   await sonucKagidiKontrol(page, '2026-10-19', { uyari: true })
   await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText(/bu hafta programın %\d+'.+ tamamladı ve 40 soru çözdü \(hedef \d+\), doğruluk %75\./)
-  await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText(/İyi gidiyor|Gelişmeli|Birlikte takip edelim/)
+  // Program ~%97 ama 40 soru (hedefin altı) → etiket düşüğe göre: "İyi gidiyor" DEĞİL (2026-10-22 veli gözü)
+  await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText('▲ Birlikte takip edelim')
   await expect(page.getByRole('table', { name: 'Soru sonuçları' }).locator('tbody tr')).toHaveCount(1) // yalnız çözüleni olan Matematik
   await expect(page.getByLabel('Özet', { exact: true })).not.toContainText('Doğruluk')
 })
