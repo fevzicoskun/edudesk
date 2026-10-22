@@ -456,6 +456,7 @@ test('toplu kâğıt: planı olan öğrenci ayrı sayfada', async ({ page }) => 
   const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
   await expect(page.getByRole('region', { name: o!.full_name })).toBeVisible({ timeout: 20_000 })
   await expect(page.locator('section.break-after-page')).not.toHaveCount(0)
+  await expect(page).toHaveTitle('Haftalık Çalışma Planları 19–25 Ekim') // PDF dosya adı
 })
 
 test('toplu kâğıt: bu haftaya dokunulmamış ama planı geçen haftadan devam eden öğrenci de çıkar', async ({ page }) => {

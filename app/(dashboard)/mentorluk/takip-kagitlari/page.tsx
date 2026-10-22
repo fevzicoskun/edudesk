@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { getCurrentProfile } from '@/src/shared/auth'
@@ -9,15 +10,20 @@ import { TakipService } from '@/src/domains/mentor/services/TakipService'
 import PrintButton from '@/components/PrintButton'
 import OgrenciKagidi from '../[studentId]/takip/OgrenciKagidi'
 
-export const metadata = { title: 'Haftalık Planlar' }
+type Props = { searchParams: Promise<{ hafta?: string }> }
+const haftaOf = (h?: string) => h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO())
+
+// Chrome "PDF olarak kaydet" dosya adını başlıktan alır: "Haftalık Çalışma Planları 23–29 Ekim" (okul eki yok)
+export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {
+  return { title: { absolute: `Haftalık Çalışma Planları ${takipHaftaEtiketi(haftaOf((await searchParams).hafta))}` } }
+}
 
 /** Planı kayıtlı tüm mentör öğrencilerinin kâğıtları, öğrenci başına bir A4. */
-export default async function TakipKagitlariPage({ searchParams }: { searchParams: Promise<{ hafta?: string }> }) {
+export default async function TakipKagitlariPage({ searchParams }: Props) {
   const profile = await getCurrentProfile()
   if (!profile?.school_id || !isTeachingRole(profile.role)) redirect('/anasayfa')
   if (!(await TakipService.acikMi())) notFound()
-  const h = (await searchParams).hafta
-  const hafta = h && haftaBaslangicMi(h) ? h : haftaBasi(todayLocalISO())
+  const hafta = haftaOf((await searchParams).hafta)
   const rows = await MentorService.getMyMentorships()
   // Bu haftaya dokunulmamış ama planı geçen haftadan devam eden öğrenci de dahil (taslak = geçen haftanın kopyası)
   const planli = await TakipService.planliOgrenciler(rows.map(r => r.student_id), hafta)
