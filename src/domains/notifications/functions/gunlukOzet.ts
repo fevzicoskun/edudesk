@@ -74,11 +74,12 @@ export const gunlukOzetFn = inngest.createFunction(
         hwByTeacher.set(h.teacher_id, list)
       }
 
-      // Mail bölümü: teslimi geçmiş, hiç işaretlenmemiş ödevler (son 7 gün) + sınıf öğrenci sayıları
+      // Mail bölümü: teslimi geçmiş, hiç işaretlenmemiş ödevler (son 7 gün) + sınıf öğrenci sayıları.
+      // marked_at şart: ödev açılınca tetikleyici her öğrenciye boş satır açar — satır var ≠ işaretlendi
       const gecmis = (homeworks.data ?? []).filter(h => h.due_date! < todayISO)
       const [subs, ogr] = await Promise.all([
         gecmis.length
-          ? fetchAllResult((f, t) => db.from('homework_submissions').select('id, homework_id').in('homework_id', gecmis.map(h => h.id)).order('id').range(f, t))
+          ? fetchAllResult((f, t) => db.from('homework_submissions').select('id, homework_id').not('marked_at', 'is', null).in('homework_id', gecmis.map(h => h.id)).order('id').range(f, t))
           : Promise.resolve({ data: [] as { homework_id: string }[], error: null }),
         fetchAllResult((f, t) => db.from('students').select('id, class_id').is('deleted_at', null).order('id').range(f, t)),
       ])
