@@ -532,7 +532,11 @@ test('taslak hafta: etiket görünür; Kâğıdı yazdır taslağı kayda dönü
 test('sonuç kâğıdı: hiç dokunulmamış hafta — "henüz sonuç girilmedi", ekran Girilmedi, uyarı ekranda, tek A4', async ({ page }) => {
   await sonucKagidiKontrol(page, '2026-11-16', { uyari: true })
   await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toHaveText('Bu hafta için henüz sonuç girilmedi.')
-  await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi')
+  // Girilmemiş veri 0 gibi basılmaz: Program ve Soru kartı "Girilmedi" (hedef korunur)
+  const kartlar = page.getByLabel('Özet', { exact: true })
+  await expect(kartlar).toContainText(/Program\s*Girilmedi/)
+  await expect(kartlar).toContainText(/Soru\s*Girilmedi\s*hedef \d+/)
+  await expect(kartlar).not.toContainText(/0 \//)
   await expect(page.getByRole('region', { name: 'Soru sonuçları' })).toContainText('Bu hafta soru sonucu girilmedi.')
   // Rica girilmemiş: veliye dönük satır yine var, elle yazmak için çizgiyle
   const rica = page.getByRole('region', { name: 'Öğretmen notu' }).getByLabel('Evde sizden ricamız')
@@ -564,6 +568,28 @@ test('sonuç kâğıdı: geçen haftayla kıyas yalnız ARDIŞIK haftada ve yaln
     await expect(await ozet('2026-12-21')).not.toContainText('Geçen haftaya göre')
   } finally {
     await db.from('mentor_haftalari').delete().eq('student_id', ogrId).in('hafta_basi', haftalar.map(h => h.hafta_basi))
+  }
+})
+
+test('sonuç kâğıdı: görevler işaretli, soru girilmemiş hafta — "0 soru" yazmaz, etiket yalnız programa bakar', async ({ page }) => {
+  const gorev = (gun: number, yapti: boolean) => ({ id: `e2e-g${gun}`, gun, ad: 'Kitap okuma', ders: null, miktar: 20, birim: 'dk', soruSatiri: false,
+    konu: '', sayfa: '', yapti, soru: null, dogru: null })
+  const { error } = await db.from('mentor_haftalari').insert({
+    school_id: mentor.school_id, student_id: ogrId, hafta_basi: '2027-01-04', seviye: 1, soru_hedefi: 120, updated_by: mentor.id,
+    icerik: { duzen: '', gorevler: [0, 1, 2, 3, 4].map(g => gorev(g, g < 4)), mentorOdevleri: [], okuma: null, surum: 2, sonuclar: [] },
+    gorusme: { not: '', rica: '', veliMesaji: null }, gorev_toplam: 5, gorev_yapilan: 4, soru: 0, dogru: 0, okuma_sayfa: 0, islendi: true,
+  })
+  if (error) throw new Error(error.message)
+  try {
+    await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2027-01-04`)
+    const ozet = page.getByRole('region', { name: 'Haftanın özeti' })
+    await expect(ozet).toContainText("programın %80'ini tamamladı.", { timeout: 20_000 })
+    await expect(ozet).not.toContainText('soru çözdü')
+    await expect(ozet).toContainText('✔ İyi gidiyor') // %80 program; girilmemiş soru %0 sayılmaz
+    await expect(page.getByLabel('Özet', { exact: true })).toContainText('4 / 5 görev')
+    await expect(page.getByLabel('Özet', { exact: true })).toContainText(/Soru\s*Girilmedi\s*hedef 120/)
+  } finally {
+    await db.from('mentor_haftalari').delete().eq('student_id', ogrId).eq('hafta_basi', '2027-01-04')
   }
 })
 

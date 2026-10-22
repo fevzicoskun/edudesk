@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi, gecenHaftaKiyasi, okulOdevKarti } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
+import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi, gecenHaftaKiyasi, okulOdevKarti, soruGirildi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 describe('sayiEk', () => {
   it('sayının okunuşuna uyar', () => {
@@ -99,5 +99,24 @@ describe('okulOdevKarti — işaretlenmemiş ödev başarısızlık gibi sayılm
   })
   it('hiçbiri kontrol edilmediyse "0 / n" yerine ödev sayısı', () => {
     expect(okulOdevKarti([od(null), od(null), od(null)])).toEqual({ deger: '3 ödev', not: 'Öğretmen kontrolünde' })
+  })
+})
+
+describe('girilmemiş soru 0 sayılmaz (2026-10-22 veli gözü, adım 5)', () => {
+  const ic = (o: object) => ({ duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, ...o }) as never
+  const sonuc = (cozulen: number | null) => ({ anahtar: 'd:Mat', ad: 'Mat', ders: 'Mat', sayfa: '', cozulen, dogru: null, yanlis: null, bos: null })
+  it('soruGirildi: sonuçta çözülen girilmişse (0 dahil) ya da eski görev bazlı soru varsa', () => {
+    expect(soruGirildi(ic({}))).toBe(false)
+    expect(soruGirildi(ic({ sonuclar: [sonuc(null)] }))).toBe(false)
+    expect(soruGirildi(ic({ sonuclar: [sonuc(0)] }))).toBe(true)
+    expect(soruGirildi(ic({ gorevler: [{ soruSatiri: true, soru: 12 }] }))).toBe(true)
+    expect(soruGirildi(ic({ gorevler: [{ soruSatiri: true, soru: null }] }))).toBe(false)
+  })
+  it('özet cümlesi: soru girilmemişse soru kısmı yok', () => {
+    expect(ozetCumlesi('Beren', 72, null, 120, null)).toBe("Beren bu hafta programın %72'sini tamamladı.")
+  })
+  it('etiket: soru girilmemişse yalnız program (0 soru %0 sayılmaz)', () => {
+    expect(durumYuzdesi(97, null, 200)).toBe(97)
+    expect(durumYuzdesi(null, null, 200)).toBeNull()
   })
 })

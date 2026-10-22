@@ -1,4 +1,4 @@
-import { kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, ekranYaz, haftaKaydir, type HaftaVerisi, type OkulOdevi, type Ozet, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, ekranYaz, haftaKaydir, type HaftaVerisi, type Icerik, type OkulOdevi, type Ozet, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
@@ -42,18 +42,26 @@ export function sayiEk(n: number, ek: 'si' | 'sini' | 'sinde'): string {
 
 export type Durum = keyof typeof DURUM_ETIKETLERI
 /** Etiketin dayandığı yüzde: program tamamlama ile soru hedefine ulaşmanın DÜŞÜĞÜ (2026-10-22 veli gözü:
- *  "%97 program, 40/200 soru" haftası "İyi gidiyor" diyordu). Hedef aşımı 100'de kapanır; ölçü yoksa null. */
-export function durumYuzdesi(program: number | null, soru: number, hedef: number): number | null {
-  const olculer = [...(program === null ? [] : [program]), ...(hedef > 0 ? [Math.min(100, Math.round((soru / hedef) * 100))] : [])]
+ *  "%97 program, 40/200 soru" haftası "İyi gidiyor" diyordu). Hedef aşımı 100'de kapanır; ölçü yoksa null.
+ *  soru null = sonuç hiç girilmedi → yalnız program (girilmemiş soru %0 sayılmaz). */
+export function durumYuzdesi(program: number | null, soru: number | null, hedef: number): number | null {
+  const olculer = [...(program === null ? [] : [program]), ...(soru !== null && hedef > 0 ? [Math.min(100, Math.round((soru / hedef) * 100))] : [])]
   return olculer.length ? Math.min(...olculer) : null
 }
 export const durumOf = (yuzde: number): Durum => (yuzde >= DURUM_ESIKLERI.IYI ? 'iyi' : yuzde >= DURUM_ESIKLERI.ORTA ? 'orta' : 'dusuk')
 
 /** "Beren bu hafta programın %72'sini tamamladı ve 96 soru çözdü (hedef 120), doğruluk %78." */
-export function ozetCumlesi(ad: string, program: number | null, soru: number, hedef: number, dogruluk: number | null): string {
-  const parca = [...(program === null ? [] : [`programın %${sayiEk(program, 'sini')} tamamladı`]), `${soru} soru çözdü${hedef ? ` (hedef ${hedef})` : ''}`]
+export function ozetCumlesi(ad: string, program: number | null, soru: number | null, hedef: number, dogruluk: number | null): string {
+  const parca = [...(program === null ? [] : [`programın %${sayiEk(program, 'sini')} tamamladı`]),
+    ...(soru === null ? [] : [`${soru} soru çözdü${hedef ? ` (hedef ${hedef})` : ''}`])]
+  if (parca.length === 0) return BOS_HAFTA_METNI
   return `${ad} bu hafta ${parca.join(' ve ')}${dogruluk === null ? '' : `, doğruluk %${dogruluk}`}.`
 }
+
+/** Soru sonucu girildi mi (çözülen 0 dahil)? Girilmemiş soru kâğıtta "0" gibi basılmaz (2026-10-22 veli gözü).
+ *  Eski kayıtlar görev bazlı soru taşır (2026-10-17 öncesi) — ozetHesapla ile aynı iki kaynak. */
+export const soruGirildi = (ic: Pick<Icerik, 'gorevler' | 'sonuclar'>) =>
+  (ic.sonuclar ?? []).some(s => s.cozulen !== null) || ic.gorevler.some(g => g.soruSatiri && g.soru !== null)
 
 /** Geçen haftayla kıyas — YALNIZ İYİLEŞME yazılır, gerileme kâğıda girmez (2026-10-22 kullanıcı kararı a).
  *  Soru artışı (somut sayı) önce; yoksa program en az KIYAS_PROGRAM_ESIGI puan arttıysa sayısız cümle. */
@@ -122,7 +130,9 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
   const ic = veri.icerik
   const o = ozetHesapla(ic)
   const p = programYuzde(o), d = dogrulukYuzde(o)
-  const hicVeri = o.gorev_yapilan === 0 && o.soru === 0
+  const sg = soruGirildi(ic)
+  const soru = sg ? o.soru : null // null: girilmedi (0 değil)
+  const hicVeri = o.gorev_yapilan === 0 && !sg
   // Yalnız hemen önceki hafta "geçen hafta"dır: arada kayıtsız hafta varsa kıyas yok
   const kiyas = !hicVeri && v.onceki && v.onceki.hafta === haftaKaydir(v.hafta, -1) ? gecenHaftaKiyasi(o, v.onceki.ozet) : null
   const parcalar = v.ogrenci.ad.trim().split(/\s+/)
@@ -149,13 +159,13 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
 
   const okulKart = okulOdevKarti(buHafta)
   const kartlar: [string, string, (string | null)?][] = [
-    ...(o.gorev_toplam ? [['Program', `${o.gorev_yapilan} / ${o.gorev_toplam} görev`] as [string, string]] : []),
-    ['Soru', `${o.soru} / hedef ${veri.soruHedefi}`],
+    ...(o.gorev_toplam ? [['Program', hicVeri ? 'Girilmedi' : `${o.gorev_yapilan} / ${o.gorev_toplam} görev`] as [string, string]] : []),
+    soru === null ? ['Soru', 'Girilmedi', `hedef ${veri.soruHedefi}`] : ['Soru', `${soru} / hedef ${veri.soruHedefi}`],
     ...(ic.okuma?.sayfa != null ? [['Okuma', `${ic.okuma.sayfa} sayfa`] as [string, string]] : []),
     ...(buHafta.length ? [['Okul ödevleri', okulKart.deger, okulKart.not] as [string, string, string | null]] : []),
     ['Ekran süresi', ekran == null ? 'Girilmedi' : `${ekranYaz(ekran)} saat / gün`],
   ]
-  const dy = durumYuzdesi(p, o.soru, veri.soruHedefi)
+  const dy = durumYuzdesi(p, soru, veri.soruHedefi)
   const durum = dy === null ? null : durumOf(dy)
 
   return (
@@ -176,7 +186,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       </div>
 
       <section aria-label="Haftanın özeti" className={`flex items-center gap-3 border-2 border-gray-300 rounded-lg ${siki ? 'p-2' : 'p-3'} ${ara}`}>
-        <p className="flex-1 text-[1.15em] font-semibold">{hicVeri ? BOS_HAFTA_METNI : ozetCumlesi(ad, p, o.soru, veri.soruHedefi, d)}{kiyas && ` ${kiyas}`}</p>
+        <p className="flex-1 text-[1.15em] font-semibold">{hicVeri ? BOS_HAFTA_METNI : ozetCumlesi(ad, p, soru, veri.soruHedefi, d)}{kiyas && ` ${kiyas}`}</p>
         {!hicVeri && durum && (
           <span className={`shrink-0 whitespace-nowrap border rounded-full px-3 py-1 font-bold ${ROZET[durum][1]}`}>
             {ROZET[durum][0]} {DURUM_ETIKETLERI[durum]}
