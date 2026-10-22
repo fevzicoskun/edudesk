@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi, gecenHaftaKiyasi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
+import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi, gecenHaftaKiyasi, okulOdevKarti } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 describe('sayiEk', () => {
   it('sayının okunuşuna uyar', () => {
@@ -85,5 +85,19 @@ describe('gecenHaftaKiyasi — yalnız iyileşme yazılır (2026-10-22 kullanıc
   })
   it('geçen hafta işlenmemişse (sonuç girilmemiş) kıyas yok', () => {
     expect(gecenHaftaKiyasi(oz(96, 10), oz(0, 0, 20, false))).toBeNull()
+  })
+})
+
+describe('okulOdevKarti — işaretlenmemiş ödev başarısızlık gibi sayılmaz (2026-10-22 veli gözü)', () => {
+  const od = (status: string | null) => ({ id: String(Math.random()), subject: 'Fizik', title: 'x', due_date: '2026-10-20', status, bekliyor: false })
+  it('payda yalnız öğretmenin kontrol ettikleri; kontrolde olanlar notta', () => {
+    expect(okulOdevKarti([od('yapildi'), od('gec'), od('yapilmadi'), od('eksik'), od(null), od(null)]))
+      .toEqual({ deger: '2 / 4 yapıldı', not: '2 ödev öğretmen kontrolünde' })
+  })
+  it('hepsi kontrol edildiyse not yok', () => {
+    expect(okulOdevKarti([od('yapildi'), od('yapilmadi')])).toEqual({ deger: '1 / 2 yapıldı', not: null })
+  })
+  it('hiçbiri kontrol edilmediyse "0 / n" yerine ödev sayısı', () => {
+    expect(okulOdevKarti([od(null), od(null), od(null)])).toEqual({ deger: '3 ödev', not: 'Öğretmen kontrolünde' })
   })
 })

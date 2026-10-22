@@ -7,6 +7,8 @@ import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 export const DURUM_ESIKLERI = { IYI: 80, ORTA: 50 } as const
 export const DURUM_ETIKETLERI = { iyi: 'İyi gidiyor', orta: 'Gelişmeli', dusuk: 'Birlikte takip edelim' } as const
 export const BOS_HAFTA_METNI = 'Bu hafta için henüz sonuç girilmedi.'
+/** Dersin öğretmeni henüz işaretlemediği okul ödevi ("Bekliyor" veliye "çocuk yapmadı" gibi okunuyordu). */
+export const KONTROLDE_METNI = 'Öğretmen kontrolünde'
 /** Öğretmen notunun altında veliye dönük tek satır ("benden ne bekleniyor?"); kayıtlı rica yoksa elle yazılır. */
 export const RICA_BASLIGI = 'Evde sizden ricamız:'
 /** Geçen haftaya göre program artışı bu kadar puandan azsa yazılmaz (1–2 puan oynama gürültüdür). */
@@ -99,12 +101,18 @@ const ROZET: Record<Durum, [string, string]> = {
   dusuk: ['▲', 'bg-orange-50 text-orange-900 border-orange-300'],
 }
 const yapildiMi = (o: OkulOdevi) => o.status === 'yapildi' || o.status === 'gec'
+/** Okul ödevleri kartı: payda yalnız öğretmenin işaretledikleri — işaretlenmemiş ödev "yapılmadı" gibi sayılmaz. */
+export function okulOdevKarti(liste: OkulOdevi[]): { deger: string; not: string | null } {
+  const isaretli = liste.filter(o => o.status), kontrolde = liste.length - isaretli.length
+  if (isaretli.length === 0) return { deger: `${liste.length} ödev`, not: KONTROLDE_METNI }
+  return { deger: `${isaretli.filter(yapildiMi).length} / ${isaretli.length} yapıldı`, not: kontrolde ? `${kontrolde} ödev öğretmen kontrolünde` : null }
+}
 const tarih = (iso: string) => `${iso.slice(8, 10)}.${iso.slice(5, 7)}`
 // Renk tek başına anlam taşımaz: her durumda ikon + metin (siyah-beyaz baskı)
 function OdevDurumu({ o }: { o: OkulOdevi }) {
   if (yapildiMi(o)) return <span className="text-green-800">✔ Yapıldı{o.status === 'gec' && ' (geç)'}</span>
   if (o.status === 'yapilmadi') return <span className="text-orange-800">✖ Yapılmadı</span>
-  if (!o.status) return <span className="text-gray-500">Bekliyor</span>
+  if (!o.status) return <span className="text-gray-600">{KONTROLDE_METNI}</span>
   return <span className="text-gray-700">{o.status === 'eksik' ? 'Eksik' : o.status === 'mazeretli' ? 'Mazeretli' : o.status}</span>
 }
 const Daha = ({ n }: { n: number }) => (n > 0 ? <p className="text-gray-600 mt-0.5">+ {n} ödev daha</p> : null)
@@ -139,11 +147,12 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
   const baslik = 'font-bold text-[1.1em] mb-1'
   const ekran = ic.ekranSuresi
 
-  const kartlar: [string, string][] = [
+  const okulKart = okulOdevKarti(buHafta)
+  const kartlar: [string, string, (string | null)?][] = [
     ...(o.gorev_toplam ? [['Program', `${o.gorev_yapilan} / ${o.gorev_toplam} görev`] as [string, string]] : []),
     ['Soru', `${o.soru} / hedef ${veri.soruHedefi}`],
     ...(ic.okuma?.sayfa != null ? [['Okuma', `${ic.okuma.sayfa} sayfa`] as [string, string]] : []),
-    ...(buHafta.length ? [['Okul ödevleri', `${buHafta.filter(yapildiMi).length} / ${buHafta.length} yapıldı`] as [string, string]] : []),
+    ...(buHafta.length ? [['Okul ödevleri', okulKart.deger, okulKart.not] as [string, string, string | null]] : []),
     ['Ekran süresi', ekran == null ? 'Girilmedi' : `${ekranYaz(ekran)} saat / gün`],
   ]
   const dy = durumYuzdesi(p, o.soru, veri.soruHedefi)
@@ -176,10 +185,11 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       </section>
 
       <div aria-label="Özet" className={`grid grid-flow-col auto-cols-fr gap-2 ${ara}`}>
-        {kartlar.map(([b, x]) => (
+        {kartlar.map(([b, x, not]) => (
           <div key={b} className="border border-gray-200 rounded-md px-2 py-1">
             <p className="text-[0.8em] text-gray-600">{b}</p>
             <p className="font-bold">{x}</p>
+            {not && <p className="text-[0.8em] text-gray-600 leading-tight">{not}</p>}
           </div>
         ))}
       </div>

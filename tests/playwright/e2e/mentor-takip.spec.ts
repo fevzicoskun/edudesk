@@ -136,6 +136,10 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     await expect(onceki.locator('li')).toHaveCount(5)
     await expect(onceki).toContainText(/\+ \d+ ödev daha/)
     await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi') // ekran süresi henüz yok
+    // Hiçbiri öğretmence işaretlenmedi: tabloda "Öğretmen kontrolünde", kartta "0 / n" değil ödev sayısı (2026-10-22 veli gözü)
+    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).toContainText('Öğretmen kontrolünde')
+    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).not.toContainText('Bekliyor')
+    await expect(page.getByLabel('Özet', { exact: true })).toContainText(/Okul ödevleri\s*\d+ ödev\s*Öğretmen kontrolünde/)
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
     // Aşırı yük (bir günde 5 uzun başlıklı ödev + tam şablon ≈ 46 satır/sütun; 11pt'de ~44 sığar): bir gün 2. sayfaya
     // taşabilir, ödev listesi ayrı sayfada (2026-10-22 kullanıcı düzeni) → en çok 3. Olağan hafta: saatler spec'i 1 sayfa.
@@ -601,6 +605,8 @@ test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddede
     await expect(page.getByText('Öğretmen notu')).toBeVisible()
     await expect(page.getByText('Veli imzası')).toBeVisible()
     await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).toContainText('✔ Yapıldı')
+    await expect(page.getByLabel('Özet', { exact: true })).toContainText('1 / 1 yapıldı')
+    await expect(page.getByLabel('Özet', { exact: true })).not.toContainText('kontrolünde')
     // Kapalı hafta: uyarı yalnız hiçbir görev işaretlenmemişse
     const { data: k } = await db.from('mentor_haftalari').select('gorev_yapilan').eq('student_id', ogrId).eq('hafta_basi', HAFTA).single()
     await sonucKagidiKontrol(page, HAFTA, { uyari: k!.gorev_yapilan === 0 })
