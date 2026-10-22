@@ -183,6 +183,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
         </div>
         <h1 className={`${siki ? 'text-[18pt]' : 'text-[21pt]'} font-extrabold tracking-wide uppercase leading-tight mt-1`}>Haftalık Sonuç</h1>
         <p className="text-[13pt] font-semibold">{v.ogrenci.ad} · {v.ogrenci.sinifAdi}</p>
+        {v.mentorAdi && <p className="text-[10pt] text-gray-700">Mentör öğretmen: {v.mentorAdi}</p>}
       </div>
 
       <section aria-label="Haftanın özeti" className={`flex items-center gap-3 border-2 border-gray-300 rounded-lg ${siki ? 'p-2' : 'p-3'} ${ara}`}>
@@ -288,9 +289,10 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
         </section>
       )}
 
-      <div className="flex justify-between gap-6 mt-3 break-inside-avoid">
-        <span>Veli imzası: ____________________</span>
-        <span>Tarih: ____________________</span>
+      <div role="group" aria-label="İmzalar" className="flex justify-between gap-4 mt-3 break-inside-avoid">
+        <span>Mentör imzası: _______________</span>
+        <span>Veli imzası: _______________</span>
+        <span>Tarih: ____________</span>
       </div>
     </article>
   )

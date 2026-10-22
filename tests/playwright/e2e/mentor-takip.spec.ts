@@ -10,12 +10,12 @@ const AUTH = (r: string) => path.join(process.cwd(), 'tests/playwright/.auth', `
 const kullanici = async (email: string) => {
   const { data } = await db.auth.admin.listUsers({ perPage: 1000 })
   const id = data.users.find(u => u.email === email)!.id
-  const { data: p } = await db.from('profiles').select('id, school_id').eq('id', id).single()
+  const { data: p } = await db.from('profiles').select('id, school_id, full_name').eq('id', id).single()
   return p!
 }
 const OGRETMEN = process.env.TEST_EMAIL_OGRETMEN ?? 'test_ogretmen@test.example'
 
-let ogrId = '', mentor = { id: '', school_id: '' }
+let ogrId = '', mentor = { id: '', school_id: '', full_name: '' }
 
 /** Veliye giden sonuç kâğıdı (2026-10-22): ekran kartı hep var, geri bildirim imzanın üstünde,
  *  eksik veri uyarısı yalnız ekranda (baskıda yok), tek A4. */
@@ -26,6 +26,10 @@ async function sonucKagidiKontrol(page: Page, hafta: string, { uyari }: { uyari:
   const u = page.getByRole('status').filter({ hasText: 'henüz tam girilmemiş olabilir' })
   await expect(u).toHaveCount(uyari ? 1 : 0)
   await expect(page.getByLabel('Özet', { exact: true })).toContainText('Ekran süresi')
+  // Adım 6: veli kimi arayacağını bilir; mentör imza satırı veli imzasıyla aynı sırada
+  await expect(page.getByText(`Mentör öğretmen: ${mentor.full_name}`, { exact: true })).toBeVisible()
+  const imza = page.getByRole('group', { name: 'İmzalar' })
+  await expect(imza).toContainText(/Mentör imzası:.*Veli imzası:.*Tarih:/)
   const geri = page.getByRole('region', { name: 'Veli geri bildirimi' })
   if (VELI_GERI_BILDIRIM_GOSTER) {
     await expect(geri).toContainText('Bu rapor anlaşılır mıydı?')
