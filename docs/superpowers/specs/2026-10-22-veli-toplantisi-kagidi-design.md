@@ -1,6 +1,6 @@
 # Veli toplantısı kâğıdı (deneme gidişi + ödev raporu) — tasarım
 
-Tarih: 2026-10-22 · Durum: taslak — kullanıcı onayı bekliyor (kurucu incelemesi yapıldı)
+Tarih: 2026-10-22 · Durum: ONAYLANDI 2026-10-23 (kurucu incelemesi yapıldı)
 
 ## Niyet ve neden
 
@@ -17,6 +17,12 @@ denemelerde **nereye gittiğini** (asıl önemli olan) ve hangi ödevleri yapmad
 - **Mentör** kendi öğrencileri için her şeyi kendisi yapar: Stoys Excel'ini yükler, kâğıdı basar.
   ("herkes kendi mentörü için uğraşacak" — kullanıcı kararı.) Okul geneli toplu yükleme YOK.
 - İdare için ayrı ekran yok, ama **müdür ve müdür yardımcısı deneme sonuçlarını okuyabilir** (kullanıcı kararı 2026-10-23; mevcut `is_mudur_or_my()` deseni). Yazma/silme yalnız güncel mentör.
+
+### Kimlere açık (kullanıcı kararı 2026-10-23)
+Şimdilik **yalnız kullanıcıya** açık; "kullanışlı olursa" sonra bütün öğretmenlere açılacak. Kapı: mentör takip
+özelliğinin mevcut kapısı (`mentor_takip_kullanicilari` + `TakipService.acikMi()`; bugün listede yalnız kullanıcı var).
+Kapı kapalıyken deneme yükleme, kâğıt sayfaları ve düğmeler görünmez, sayfalar `notFound`. Açmak = o tabloya satır
+eklemek (iki özellik birlikte açılır). Deneme tablolarının RLS'i de aynı kapı fonksiyonunu şart koşar.
 
 ## Deneme verisi
 
