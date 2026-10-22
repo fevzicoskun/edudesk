@@ -7,6 +7,8 @@ import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 export const DURUM_ESIKLERI = { IYI: 80, ORTA: 50 } as const
 export const DURUM_ETIKETLERI = { iyi: 'İyi gidiyor', orta: 'Gelişmeli', dusuk: 'Birlikte takip edelim' } as const
 export const BOS_HAFTA_METNI = 'Bu hafta için henüz sonuç girilmedi.'
+/** Öğretmen notunun altında veliye dönük tek satır ("benden ne bekleniyor?"); kayıtlı rica yoksa elle yazılır. */
+export const RICA_BASLIGI = 'Evde sizden ricamız:'
 /** Tek A4 sınırları: fazlası "+ x ödev daha" olur. */
 export const ONCEKI_ODEV_SINIRI = 5
 export const BU_HAFTA_ODEV_SINIRI = 8
@@ -112,7 +114,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
   ])
   const buHafta = v.okulOdevleri.buHafta, onceki = v.okulOdevleri.tamamlanmamis
   const not = veri.gorusme.not.trim(), rica = veri.gorusme.rica.trim()
-  const notSatir = Math.ceil(not.length / 90) + Math.ceil(rica.length / 90)
+  const notSatir = Math.ceil(not.length / 90) + Math.max(1, Math.ceil(rica.length / 90)) // rica satırı boşken de yer tutar
   // ponytail: kaba satır yükü sezgisi (soru tablosu görevlerle yan yana); 10+ kitaplı ağır haftada yine taşabilir → o zaman ölç
   const yuk = Math.max(satirlar.length, 4) + Math.min(buHafta.length, BU_HAFTA_ODEV_SINIRI + 1)
     + Math.min(onceki.length, ONCEKI_ODEV_SINIRI + 1) * 0.75 + notSatir
@@ -230,7 +232,6 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       <section aria-label="Öğretmen notu" className={`break-inside-avoid border border-gray-300 rounded-md px-3 py-2 ${ara}`}>
         <h2 className="font-bold">Öğretmen notu</h2>
         {not && <p className="whitespace-pre-line">{not}</p>}
-        {rica && <p className="whitespace-pre-line"><b>Sizden ricam:</b> {rica}</p>}
         <div className="grid grid-cols-2 gap-4 mt-1">
           {['Bu hafta güçlü yanı:', 'Gelecek hafta odak:'].map(b => (
             <div key={b}>
@@ -238,6 +239,12 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
               {[0, 1].map(k => <div key={k} className={`border-b border-gray-300 ${siki ? 'h-5' : 'h-6'}`} />)}
             </div>
           ))}
+        </div>
+        {/* Veliye dönük satır (2026-10-22 veli gözü): kayıtlı "Veliden ricam" metni ya da elle yazmak için çizgi */}
+        <div role="group" aria-label="Evde sizden ricamız" className={`mt-2 ${rica ? '' : 'flex items-end gap-2'}`}>
+          <b className="shrink-0">{RICA_BASLIGI}</b>
+          {rica ? <span className="whitespace-pre-line"> {rica}</span>
+            : <span data-cizgi aria-hidden className={`flex-1 border-b border-gray-300 ${siki ? 'h-5' : 'h-6'}`} />}
         </div>
       </section>
 

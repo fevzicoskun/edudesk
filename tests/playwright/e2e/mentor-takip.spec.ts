@@ -376,6 +376,11 @@ test('veli mesajı: haftanın verisinden dolar; düzenleme kaydedilir, rapora ge
   await page.getByLabel('Veliden ricam').fill('E2E akşam telefonu alın')
   await expect.poll(async () => ((await db.from('mentor_haftalari').select('gorusme').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
     .data!.gorusme as { rica?: string }).rica, { timeout: 15_000 }).toBe('E2E akşam telefonu alın')
+  // Sonuç kâğıdı: kayıtlı rica "Evde sizden ricamız:" satırında, boş çizgi yerine (2026-10-22 veli gözü)
+  await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
+  const rica = page.getByRole('region', { name: 'Öğretmen notu' }).getByLabel('Evde sizden ricamız')
+  await expect(rica).toHaveText('Evde sizden ricamız: E2E akşam telefonu alın', { timeout: 20_000 })
+  await expect(page.getByText('Sizden ricam:')).toHaveCount(0) // eski ayrı paragraf yok, metin tek yerde
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
   const mesaj = page.getByLabel(/Veliye gidecek mesaj/)
   await expect(mesaj).toHaveValue(/Sayın Veli, .+ için 19–25 Ekim haftasının özeti/)
@@ -525,6 +530,10 @@ test('sonuç kâğıdı: hiç dokunulmamış hafta — "henüz sonuç girilmedi"
   await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toHaveText('Bu hafta için henüz sonuç girilmedi.')
   await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi')
   await expect(page.getByRole('region', { name: 'Soru sonuçları' })).toContainText('Bu hafta soru sonucu girilmedi.')
+  // Rica girilmemiş: veliye dönük satır yine var, elle yazmak için çizgiyle
+  const rica = page.getByRole('region', { name: 'Öğretmen notu' }).getByLabel('Evde sizden ricamız')
+  await expect(rica).toHaveText('Evde sizden ricamız:')
+  await expect(rica.locator('[data-cizgi]')).toHaveCount(1)
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', '2026-11-16')).data).toHaveLength(0)
 })
 
