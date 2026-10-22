@@ -142,6 +142,7 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     await expect(page.getByRole('region', { name: 'Okul ödevleri' })).toContainText(/\+ \d+ ödev daha/)
     const onceki = page.getByRole('region', { name: 'Önceki haftalardan kalan ödevler' })
     await expect(onceki.locator('li')).toHaveCount(5)
+    await expect(onceki).toContainText('Bu ödevler tamamlanıp ders öğretmenine gösterilebilir.') // adım 8: veliye ne yapılacağı
     await expect(onceki).toContainText(/\+ \d+ ödev daha/)
     await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi') // ekran süresi henüz yok
     // Hiçbiri öğretmence işaretlenmedi: tabloda "Öğretmen kontrolünde", kartta "0 / n" değil ödev sayısı (2026-10-22 veli gözü)

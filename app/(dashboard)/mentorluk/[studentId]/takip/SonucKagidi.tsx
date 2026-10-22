@@ -261,6 +261,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
             {onceki.slice(0, ONCEKI_ODEV_SINIRI).map(x => <li key={x.id}>{dersKisa(x.subject)} – {x.title} <span className="whitespace-nowrap">({tarih(x.due_date)})</span></li>)}
           </ul>
           <Daha n={onceki.length - ONCEKI_ODEV_SINIRI} />
+          <p className="mt-1 text-[0.95em] font-semibold">Bu ödevler tamamlanıp ders öğretmenine gösterilebilir.</p>
         </section>
       )}
 
