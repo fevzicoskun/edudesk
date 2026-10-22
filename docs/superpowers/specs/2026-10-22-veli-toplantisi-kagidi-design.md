@@ -86,12 +86,18 @@ PDF adı mevcut desende: "Ad Soyad - Veli Toplantısı" (toplu: "Veli Toplantıs
    - Öğretmenin işaretlemediği ödevler yapılmadı sayılmaz (`marked_at` kuralı; 2026-10-22 sabah maili hatasının dersi).
    - Var olan "Öğrenci Ödev Özeti" (`siniflar/[id]/ogrenciler/[studentId]/odev-raporu`, `dersGruplari`/`dersOzeti`)
      ve mentör sayfasındaki `OdevDurumu` aynı hesabı yapıyor → yeniden kullanılır, yeni ödev hesabı yazılmaz.
-4. **Mentör notu:** kâğıtta elle yazmak için boş satırlar + mentör ve veli imza yeri. Sisteme not girilmez.
+4. **Haftalık plan sonuçları** (kullanıcı ekledi, 2026-10-23): dönem içindeki her mentör takip haftası için TEK SATIR —
+   tarih aralığı, programın yüzde kaçı tamamlandı, çözülen soru (hedefiyle), durum etiketi (iyi / orta / düşük).
+   Hafta içi ayrıntı (aksayan görevler, kitap) YOK ("yeterli, böyle olsun").
+   - Sonucu girilmemiş hafta "girilmedi" yazar, 0 yazmaz; soru girilmemişse soru hücresi "girilmedi".
+   - Hesaplar sonuç kâğıdındakiyle AYNI olmalı: `ozetHesapla`, `durumYuzdesi`, `durumOf`, `soruGirildi`
+     (`takipMath`, `SonucKagidi.tsx`) yeniden kullanılır — kâğıtlar arası çelişki olmasın.
+   - Hiç hafta yoksa bölüm tek satır: "Bu dönem haftalık plan sonucu yok."
+5. **Mentör notu:** kâğıtta elle yazmak için boş satırlar + mentör ve veli imza yeri. Sisteme not girilmez.
 
 ## Hedef dışı (bu sürüm)
 - Genel denemeler (ilk dosya gelince eklenecek).
 - Sınıf/okul sırası (Stoys boş veriyor).
-- Haftalık plan sonuçları (kullanıcı not alanını seçti, bunu seçmedi).
 - Veliye çevrim içi paylaşım, idare ekranı, okul geneli yükleme.
 - Stoys PDF'ini okuma (yalnız Excel).
 
