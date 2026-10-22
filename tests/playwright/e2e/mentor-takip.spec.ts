@@ -3,6 +3,7 @@ import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import { addDaysISO, todayLocalISO } from '@/src/shared/date'
 import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
+import { VELI_GERI_BILDIRIM_GOSTER } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 const AUTH = (r: string) => path.join(process.cwd(), 'tests/playwright/.auth', `${r}.json`)
@@ -15,6 +16,29 @@ const kullanici = async (email: string) => {
 const OGRETMEN = process.env.TEST_EMAIL_OGRETMEN ?? 'test_ogretmen@test.example'
 
 let ogrId = '', mentor = { id: '', school_id: '' }
+
+/** Veliye giden sonuç kâğıdı (2026-10-22): ekran kartı hep var, geri bildirim imzanın üstünde,
+ *  eksik veri uyarısı yalnız ekranda (baskıda yok), tek A4. */
+async function sonucKagidiKontrol(page: Page, hafta: string, { uyari }: { uyari: boolean }) {
+  await page.emulateMedia({ media: 'screen' })
+  await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=${hafta}`)
+  await expect(page.getByRole('heading', { name: 'Haftalık Sonuç' })).toBeVisible({ timeout: 20_000 })
+  const u = page.getByRole('status').filter({ hasText: 'henüz tam girilmemiş olabilir' })
+  await expect(u).toHaveCount(uyari ? 1 : 0)
+  await expect(page.getByLabel('Özet', { exact: true })).toContainText('Ekran süresi')
+  const geri = page.getByRole('region', { name: 'Veli geri bildirimi' })
+  if (VELI_GERI_BILDIRIM_GOSTER) {
+    await expect(geri).toContainText('Bu rapor anlaşılır mıydı?')
+    expect((await geri.boundingBox())!.y).toBeLessThan((await page.getByText('Veli imzası:').boundingBox())!.y)
+  } else await expect(geri).toHaveCount(0)
+  await page.emulateMedia({ media: 'print' })
+  await expect(u).toBeHidden()
+  const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
+  expect(pdf.numPages).toBe(1)
+  if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG.replace('.png', `-${hafta}.png`), fullPage: true })
+  await page.emulateMedia({ media: 'screen' })
+}
 
 test.describe.configure({ mode: 'serial' })
 test.use({ storageState: AUTH('ogretmen') })
@@ -102,14 +126,16 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
     if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
     if (process.env.KAGIT_PNG) { await page.setViewportSize({ width: 680, height: 1000 }); await page.screenshot({ path: process.env.KAGIT_PNG, fullPage: true }) } // A4 içerik genişliği
-    // Sonuç kâğıdı da aynı yükle (19 ödev durumlu + yapılmayan 24 görev) tek A4
-    await page.emulateMedia({ media: 'screen' })
+    // Sonuç kâğıdı aynı yükle (11 bu hafta + 27 önceki) tek A4: satır sınırları devrede, sonuç girilmemiş hafta
+    await sonucKagidiKontrol(page, '2026-10-19', { uyari: true })
     await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
-    await expect(page.getByRole('heading', { name: 'Haftalık Sonuç' })).toBeVisible({ timeout: 20_000 })
-    await page.emulateMedia({ media: 'print' })
-    const sonuc = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
-    expect(sonuc.numPages).toBe(1)
-    if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG, fullPage: true })
+    await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText('Bu hafta için henüz sonuç girilmedi.')
+    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' }).locator('tbody tr')).toHaveCount(8)
+    await expect(page.getByRole('region', { name: 'Okul ödevleri' })).toContainText(/\+ \d+ ödev daha/)
+    const onceki = page.getByRole('region', { name: 'Önceki haftalardan kalan ödevler' })
+    await expect(onceki.locator('li')).toHaveCount(5)
+    await expect(onceki).toContainText(/\+ \d+ ödev daha/)
+    await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi') // ekran süresi henüz yok
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
     // Aşırı yük (bir günde 5 uzun başlıklı ödev + tam şablon ≈ 46 satır/sütun; 11pt'de ~44 sığar): bir gün 2. sayfaya
     // taşabilir, ödev listesi ayrı sayfada (2026-10-22 kullanıcı düzeni) → en çok 3. Olağan hafta: saatler spec'i 1 sayfa.
@@ -226,6 +252,12 @@ test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç
   // Tümü yapıldı; okul ödevi görevleri öğretmen işaretine bağlı (2026-10-21)
   const odevAcik = (data!.icerik as { gorevler: { odevId?: string; yapti: boolean }[] }).gorevler.filter(g => g.odevId && !g.yapti).length
   expect(data!.gorev_yapilan).toBe(data!.gorev_toplam - odevAcik)
+  // Sonuç kâğıdı: özet cümlesi + durum etiketi; boş satırlar ve Net/Doğruluk kartları yok; hafta kapanmadı → uyarı
+  await sonucKagidiKontrol(page, '2026-10-19', { uyari: true })
+  await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText(/bu hafta programın %\d+'.+ tamamladı ve 40 soru çözdü \(hedef \d+\), doğruluk %75\./)
+  await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toContainText(/İyi gidiyor|Gelişmeli|Birlikte takip edelim/)
+  await expect(page.getByRole('table', { name: 'Soru sonuçları' }).locator('tbody tr')).toHaveCount(1) // yalnız çözüleni olan Matematik
+  await expect(page.getByLabel('Özet', { exact: true })).not.toContainText('Doğruluk')
 })
 
 test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesajı, geçmiş tablosu ve plan kâğıdında', async ({ page }) => {
@@ -248,7 +280,7 @@ test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesaj�
   await expect(page.locator('article section h2').first()).toContainText('Ekran: ___ sa')
   await expect(page.getByText('Günlük ortalama ekran süresi')).toHaveCount(0)
   await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
-  await expect(page.getByLabel('Özet')).toContainText('2,5 saat')
+  await expect(page.getByLabel('Özet', { exact: true })).toContainText('2,5 saat / gün')
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-26&sekme=dosya`)
   await expect(page.getByRole('region', { name: 'Geçmiş haftalar' }).getByRole('row', { name: /19–25 Ekim/ })).toContainText('2,5 sa')
 })
@@ -423,7 +455,8 @@ test("kaldığı sayfa: sonuçta 55 → kâğıtta/veli mesajında geride; sonra
   await expect.poll(async () => ((await db.from('mentor_haftalari').select('icerik').eq('student_id', ogrId).eq('hafta_basi', '2026-10-19').single())
     .data!.icerik as { sonuclar?: { anahtar: string; kaldigi?: number }[] }).sonuclar?.find(s => s.anahtar.startsWith('k:'))?.kaldigi, { timeout: 15_000 }).toBe(55)
   await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
-  await expect(page.getByRole('table', { name: 'Soru sonuçları' })).toContainText('planlanan s. 60, kaldığı s. 55', { timeout: 20_000 })
+  // Çözüleni girilmemiş kitap satırı veliye giden kâğıtta gizli (2026-10-22); kaldığı sayfa veli mesajında
+  await expect(page.getByRole('table', { name: 'Soru sonuçları' })).not.toContainText('E2E Acil Mat', { timeout: 20_000 })
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
   await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/• Kaynaklar: E2E Acil Mat planlanan s\. 60, kaldığı s\. 55/)
 })
@@ -486,6 +519,14 @@ test('taslak hafta: etiket görünür; Kâğıdı yazdır taslağı kayda dönü
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', HAFTA)).data).toHaveLength(1)
 })
 
+test('sonuç kâğıdı: hiç dokunulmamış hafta — "henüz sonuç girilmedi", ekran Girilmedi, uyarı ekranda, tek A4', async ({ page }) => {
+  await sonucKagidiKontrol(page, '2026-11-16', { uyari: true })
+  await expect(page.getByRole('region', { name: 'Haftanın özeti' })).toHaveText('Bu hafta için henüz sonuç girilmedi.')
+  await expect(page.getByLabel('Özet', { exact: true })).toContainText('Girilmedi')
+  await expect(page.getByRole('region', { name: 'Soru sonuçları' })).toContainText('Bu hafta soru sonucu girilmedi.')
+  expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', '2026-11-16')).data).toHaveLength(0)
+})
+
 test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddeder; sonuç kâğıdı tek A4; kilidi aç', async ({ page }) => {
   const HAFTA = '2026-11-02'
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
@@ -523,13 +564,10 @@ test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddede
     await expect(page.getByRole('heading', { name: 'Haftalık Sonuç' })).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText('Öğretmen notu')).toBeVisible()
     await expect(page.getByText('Veli imzası')).toBeVisible()
-    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).toContainText('Yapıldı')
-    await page.emulateMedia({ media: 'print' })
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
-    expect(pdf.numPages).toBe(1)
-    if (process.env.SONUC_PNG) await page.screenshot({ path: process.env.SONUC_PNG, fullPage: true })
-    await page.emulateMedia({ media: 'screen' })
+    await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).toContainText('✔ Yapıldı')
+    // Kapalı hafta: uyarı yalnız hiçbir görev işaretlenmemişse
+    const { data: k } = await db.from('mentor_haftalari').select('gorev_yapilan').eq('student_id', ogrId).eq('hafta_basi', HAFTA).single()
+    await sonucKagidiKontrol(page, HAFTA, { uyari: k!.gorev_yapilan === 0 })
 
     // Geçmiş haftalarda kilit işareti
     await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}&sekme=dosya`)
