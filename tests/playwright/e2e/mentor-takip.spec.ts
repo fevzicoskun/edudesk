@@ -350,6 +350,10 @@ test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğr
   await expect(page).toHaveURL(new RegExp(`/mentorluk/${ogrId}/takip[?]sekme=plan$`))
   await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible()
   await expect(menu.getByRole('link', { name: o!.full_name, exact: true })).toHaveAttribute('aria-current', 'page')
+  // Haftalık planlar altında ilk satır: bu haftanın tüm plan kâğıtları (2026-10-22 kullanıcı isteği)
+  await menu.getByRole('link', { name: 'Hepsini yazdır', exact: true }).click()
+  await expect(page).toHaveURL(/\/mentorluk\/takip-kagitlari$/)
+  await expect(menu.getByRole('link', { name: 'Hepsini yazdır', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 test('telefon: Daha Fazla çekmecesinde Mentörlük → Haftalık veli bülteni ve Haftalık planlar', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -363,6 +367,10 @@ test('telefon: Daha Fazla çekmecesinde Mentörlük → Haftalık veli bülteni 
   await page.getByRole('button', { name: 'Daha fazla' }).click()
   await page.getByRole('link', { name: 'Haftalık veli bülteni' }).click()
   await expect(page.getByRole('heading', { name: 'Haftalık veli bülteni' })).toBeVisible({ timeout: 15_000 })
+  await page.getByRole('button', { name: 'Daha fazla' }).click()
+  await page.locator('summary', { hasText: 'Haftalık planlar' }).click() // bülten sayfasında aynı metin içerikte de var
+  await page.getByRole('link', { name: 'Hepsini yazdır', exact: true }).click()
+  await expect(page).toHaveURL(/\/mentorluk\/takip-kagitlari$/)
 })
 test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlanır', async ({ page }) => {
   await page.goto('/mentorluk')

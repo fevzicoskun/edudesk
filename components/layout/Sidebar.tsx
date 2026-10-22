@@ -226,10 +226,14 @@ function MentorlukGrubu({ item, pathname, ogrenciler }: { item: (typeof navItems
                 className={`${altLink(false)} w-full text-left flex items-center gap-2`}>
                 <span className="flex-1 truncate">Haftalık planlar</span>{altOk(planAcik)}
               </button>
-              {planAcik && ogrenciler.map(o => (
-                <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`} aria-current={plandaki === o.id ? 'page' : undefined}
-                  className={`${altLink(plandaki === o.id, 'pl-14')} text-[13px]`}>{o.ad}</Link>
-              ))}
+              {planAcik && <>
+                <Link href="/mentorluk/takip-kagitlari" aria-current={pathname === '/mentorluk/takip-kagitlari' ? 'page' : undefined}
+                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-14')} text-[13px] font-medium`}>Hepsini yazdır</Link>
+                {ogrenciler.map(o => (
+                  <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`} aria-current={plandaki === o.id ? 'page' : undefined}
+                    className={`${altLink(plandaki === o.id, 'pl-14')} text-[13px]`}>{o.ad}</Link>
+                ))}
+              </>}
             </>
           )}
         </div>

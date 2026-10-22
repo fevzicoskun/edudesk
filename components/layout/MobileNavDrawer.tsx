@@ -81,6 +81,8 @@ export default function MobileNavDrawer({ items, role, aktif, mentor }: {
             {mentor.planOgrencileri.length > 0 && (
               <details open={mentor.planOgrencileri.some(o => pathname.startsWith(`/mentorluk/${o.id}/takip`))}>
                 <summary className={`${altLink(false)} cursor-pointer`}>Haftalık planlar</summary>
+                <Link href="/mentorluk/takip-kagitlari"
+                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-8')} font-medium`}>Hepsini yazdır</Link>
                 {mentor.planOgrencileri.map(o => (
                   <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`}
                     className={altLink(pathname.startsWith(`/mentorluk/${o.id}/takip`), 'pl-8')}>{o.ad}</Link>
