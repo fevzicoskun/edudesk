@@ -221,20 +221,21 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
           )}
         </section>
 
-        <section aria-label="Görevler" className="break-inside-avoid">
-          <h2 className={baslik}>Görevler</h2>
-          {o.gorev_toplam === 0 ? <p className="text-gray-600">Bu hafta programda görev yoktu.</p>
-            : hicVeri ? <p>Bu hafta programda {o.gorev_toplam} görev vardı.</p>
-              : o.gorev_yapilan === o.gorev_toplam ? <p>Tüm görevler tamamlandı.</p> : <>
-                <p>{o.gorev_toplam} görevden {sayiEk(o.gorev_yapilan, 'si')} tamamlandı.</p>
-                {aksayan.length > 0 && <>
-                  <p className="font-semibold mt-1.5">En çok aksayanlar</p>
+        {/* Görev sayısı Program kartında; burada tekrar edilmez. Eksik var ama aksayan grubu yoksa (ör. yalnız okul
+            ödevi eksik) söylenecek söz yok → bölüm basılmaz (2026-10-22 veli gözü, adım 7) */}
+        {(o.gorev_toplam === 0 || hicVeri || o.gorev_yapilan === o.gorev_toplam || aksayan.length > 0) && (
+          <section aria-label="Görevler" className="break-inside-avoid">
+            <h2 className={baslik}>Görevler</h2>
+            {o.gorev_toplam === 0 ? <p className="text-gray-600">Bu hafta programda görev yoktu.</p>
+              : hicVeri ? <p>Bu hafta programda {o.gorev_toplam} görev vardı.</p>
+                : o.gorev_yapilan === o.gorev_toplam ? <p>✔ Tüm görevler tamamlandı.</p> : <>
+                  <p className="font-semibold">En çok aksayanlar</p>
                   <ul aria-label="En çok aksayanlar" className="list-disc pl-5">
                     {aksayan.map(a => <li key={a.ad}>{a.ad} — {aksayanMetni(a)}</li>)}
                   </ul>
                 </>}
-              </>}
-        </section>
+          </section>
+        )}
       </div>
 
       {buHafta.length > 0 && (

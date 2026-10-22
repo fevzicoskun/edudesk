@@ -30,6 +30,10 @@ async function sonucKagidiKontrol(page: Page, hafta: string, { uyari }: { uyari:
   await expect(page.getByText(`Mentör öğretmen: ${mentor.full_name}`, { exact: true })).toBeVisible()
   const imza = page.getByRole('group', { name: 'İmzalar' })
   await expect(imza).toContainText(/Mentör imzası:.*Veli imzası:.*Tarih:/)
+  // Adım 7: görev sayısı yalnız Program kartında; bölüm ya bir şey söyler ya hiç basılmaz (boş başlık yok)
+  await expect(page.getByText(/\d+ görevden/)).toHaveCount(0)
+  const gorevler = page.getByRole('region', { name: 'Görevler' })
+  if (await gorevler.count()) await expect(gorevler).toContainText(/Tüm görevler tamamlandı|En çok aksayanlar|programda/)
   const geri = page.getByRole('region', { name: 'Veli geri bildirimi' })
   if (VELI_GERI_BILDIRIM_GOSTER) {
     await expect(geri).toContainText('Bu rapor anlaşılır mıydı?')
@@ -592,6 +596,9 @@ test('sonuç kâğıdı: görevler işaretli, soru girilmemiş hafta — "0 soru
     await expect(ozet).toContainText('✔ İyi gidiyor') // %80 program; girilmemiş soru %0 sayılmaz
     await expect(page.getByLabel('Özet', { exact: true })).toContainText('4 / 5 görev')
     await expect(page.getByLabel('Özet', { exact: true })).toContainText(/Soru\s*Girilmedi\s*hedef 120/)
+    const gorevler = page.getByRole('region', { name: 'Görevler' })
+    await expect(gorevler).toContainText(/En çok aksayanlar\s*Kitap okuma — 5 günün 4'ünde yapıldı/)
+    await expect(gorevler).not.toContainText('görevden')
   } finally {
     await db.from('mentor_haftalari').delete().eq('student_id', ogrId).eq('hafta_basi', '2027-01-04')
   }
