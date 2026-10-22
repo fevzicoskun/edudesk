@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
+import { sayiEk, gorevGrubu, aksayanlar, aksayanMetni, durumOf, durumYuzdesi, ozetCumlesi, gecenHaftaKiyasi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 describe('sayiEk', () => {
   it('sayının okunuşuna uyar', () => {
@@ -60,5 +60,30 @@ describe('durum ve özet', () => {
     expect(ozetCumlesi('Beren', 72, 96, 120, null)).toBe("Beren bu hafta programın %72'sini tamamladı ve 96 soru çözdü (hedef 120).")
     expect(ozetCumlesi('Beren', 70, 96, 120, 78)).toBe("Beren bu hafta programın %70'ini tamamladı ve 96 soru çözdü (hedef 120), doğruluk %78.")
     expect(ozetCumlesi('Ali', null, 10, 0, null)).toBe('Ali bu hafta 10 soru çözdü.')
+  })
+})
+
+describe('gecenHaftaKiyasi — yalnız iyileşme yazılır (2026-10-22 kullanıcı kararı a)', () => {
+  const oz = (soru: number, yapilan: number, toplam = 20, islendi = true) =>
+    ({ gorev_toplam: toplam, gorev_yapilan: yapilan, soru, dogru: 0, okuma_sayfa: 0, islendi })
+  it('soru arttıysa sayıyla', () => {
+    expect(gecenHaftaKiyasi(oz(96, 10), oz(81, 10))).toBe('Geçen haftaya göre 15 soru daha fazla çözdü.')
+  })
+  it('soru artmadı ama program en az 5 puan arttıysa sayısız', () => {
+    expect(gecenHaftaKiyasi(oz(50, 15), oz(60, 10))).toBe('Geçen haftaya göre programa daha çok uydu.') // %75 ← %50
+  })
+  it('ikisi de arttıysa soru (somut sayı) önce gelir', () => {
+    expect(gecenHaftaKiyasi(oz(70, 15), oz(60, 10))).toBe('Geçen haftaya göre 10 soru daha fazla çözdü.')
+  })
+  it('gerileme, eşitlik ya da 5 puandan az program artışı → yazılmaz', () => {
+    expect(gecenHaftaKiyasi(oz(40, 5), oz(81, 10))).toBeNull()
+    expect(gecenHaftaKiyasi(oz(81, 10), oz(81, 10))).toBeNull()
+    expect(gecenHaftaKiyasi(oz(81, 21, 40), oz(81, 20, 40))).toBeNull() // %53 ← %50: 3 puan, eşiğin altı
+  })
+  it('program artışı tam eşikte (5 puan) yazılır', () => {
+    expect(gecenHaftaKiyasi(oz(81, 11), oz(81, 10))).toBe('Geçen haftaya göre programa daha çok uydu.') // %55 ← %50
+  })
+  it('geçen hafta işlenmemişse (sonuç girilmemiş) kıyas yok', () => {
+    expect(gecenHaftaKiyasi(oz(96, 10), oz(0, 0, 20, false))).toBeNull()
   })
 })

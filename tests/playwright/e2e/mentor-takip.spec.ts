@@ -537,6 +537,32 @@ test('sonuç kâğıdı: hiç dokunulmamış hafta — "henüz sonuç girilmedi"
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', '2026-11-16')).data).toHaveLength(0)
 })
 
+test('sonuç kâğıdı: geçen haftayla kıyas yalnız ARDIŞIK haftada ve yalnız iyileşmede (2026-10-22 karar a)', async ({ page }) => {
+  const hafta = (hafta_basi: string, soru: number) => ({
+    school_id: mentor.school_id, student_id: ogrId, hafta_basi, seviye: 1, soru_hedefi: 120, updated_by: mentor.id,
+    icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, surum: 2,
+      sonuclar: [{ anahtar: 'd:Matematik', ad: 'Matematik', ders: 'Matematik', sayfa: '', cozulen: soru, dogru: soru, yanlis: 0, bos: 0 }] },
+    gorusme: { not: '', rica: '', veliMesaji: null }, gorev_toplam: 0, gorev_yapilan: 0, soru, dogru: soru, okuma_sayfa: 0, islendi: true,
+  })
+  // 23 Kas 20 → 30 Kas 50 (ardışık artış) · 14 Ara 80 (artış VAR ama 7 Ara boş: ardışık değil) · 21 Ara 10 (gerileme)
+  const haftalar = [hafta('2026-11-23', 20), hafta('2026-11-30', 50), hafta('2026-12-14', 80), hafta('2026-12-21', 10)]
+  const { error } = await db.from('mentor_haftalari').insert(haftalar)
+  if (error) throw new Error(error.message)
+  try {
+    const ozet = async (h: string) => {
+      await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=${h}`)
+      const r = page.getByRole('region', { name: 'Haftanın özeti' })
+      await expect(r).toContainText('soru çözdü', { timeout: 20_000 })
+      return r
+    }
+    await expect(await ozet('2026-11-30')).toContainText('Geçen haftaya göre 30 soru daha fazla çözdü.')
+    await expect(await ozet('2026-12-14')).not.toContainText('Geçen haftaya göre')
+    await expect(await ozet('2026-12-21')).not.toContainText('Geçen haftaya göre')
+  } finally {
+    await db.from('mentor_haftalari').delete().eq('student_id', ogrId).in('hafta_basi', haftalar.map(h => h.hafta_basi))
+  }
+})
+
 test('haftayı kapat: salt okunur, okul ödevi durumu sabit, DB yazımı reddeder; sonuç kâğıdı tek A4; kilidi aç', async ({ page }) => {
   const HAFTA = '2026-11-02'
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()

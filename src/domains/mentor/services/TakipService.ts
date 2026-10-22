@@ -21,7 +21,8 @@ export type SayfaVerisi = {
   hafta: string
   kayit: { veri: HaftaVerisi; updatedAt: string; kapaliAt: string | null } | null
   taslak: HaftaVerisi
-  onceki: { ozet: Ozet } | null
+  /** En son kayıtlı önceki hafta (ardışık olmayabilir: `hafta` ile kontrol edilir) */
+  onceki: { hafta: string; ozet: Ozet } | null
   kitaplar: { id: string; ad: string; ders: string }[]
   /** Kaynak eklerken ders seçenekleri (okulun ödev dersleri) — yalnız Öğrenci dosyası sekmesinde dolu */
   dersler: string[]
@@ -114,7 +115,7 @@ export const TakipService = {
       hafta,
       kayit: kayit ? { veri: veriOf(kayit), updatedAt: kayit.updated_at, kapaliAt: kayit.kapali_at } : null,
       taslak,
-      onceki: onceki ? { ozet: ozetOf(onceki) } : null,
+      onceki: onceki ? { hafta: onceki.hafta_basi, ozet: ozetOf(onceki) } : null,
       kitaplar,
       dersler: dersListesi(odevDersleri),
       // Kapalı hafta: kapatma anındaki görüntü (öğretmen işareti sonradan değişse de kayıt sabit)

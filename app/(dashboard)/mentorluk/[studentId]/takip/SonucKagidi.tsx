@@ -1,4 +1,4 @@
-import { kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, ekranYaz, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
+import { kaldigiMetni, ozetHesapla, programYuzde, dogrulukYuzde, sonucSatirlari, ekranYaz, haftaKaydir, type HaftaVerisi, type OkulOdevi, type Ozet, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 
@@ -9,6 +9,8 @@ export const DURUM_ETIKETLERI = { iyi: 'İyi gidiyor', orta: 'Gelişmeli', dusuk
 export const BOS_HAFTA_METNI = 'Bu hafta için henüz sonuç girilmedi.'
 /** Öğretmen notunun altında veliye dönük tek satır ("benden ne bekleniyor?"); kayıtlı rica yoksa elle yazılır. */
 export const RICA_BASLIGI = 'Evde sizden ricamız:'
+/** Geçen haftaya göre program artışı bu kadar puandan azsa yazılmaz (1–2 puan oynama gürültüdür). */
+export const KIYAS_PROGRAM_ESIGI = 5
 /** Tek A4 sınırları: fazlası "+ x ödev daha" olur. */
 export const ONCEKI_ODEV_SINIRI = 5
 export const BU_HAFTA_ODEV_SINIRI = 8
@@ -49,6 +51,15 @@ export const durumOf = (yuzde: number): Durum => (yuzde >= DURUM_ESIKLERI.IYI ? 
 export function ozetCumlesi(ad: string, program: number | null, soru: number, hedef: number, dogruluk: number | null): string {
   const parca = [...(program === null ? [] : [`programın %${sayiEk(program, 'sini')} tamamladı`]), `${soru} soru çözdü${hedef ? ` (hedef ${hedef})` : ''}`]
   return `${ad} bu hafta ${parca.join(' ve ')}${dogruluk === null ? '' : `, doğruluk %${dogruluk}`}.`
+}
+
+/** Geçen haftayla kıyas — YALNIZ İYİLEŞME yazılır, gerileme kâğıda girmez (2026-10-22 kullanıcı kararı a).
+ *  Soru artışı (somut sayı) önce; yoksa program en az KIYAS_PROGRAM_ESIGI puan arttıysa sayısız cümle. */
+export function gecenHaftaKiyasi(bu: Ozet, onceki: Ozet): string | null {
+  if (!onceki.islendi) return null
+  if (bu.soru > onceki.soru) return `Geçen haftaya göre ${bu.soru - onceki.soru} soru daha fazla çözdü.`
+  const a = programYuzde(bu), b = programYuzde(onceki)
+  return a !== null && b !== null && a - b >= KIYAS_PROGRAM_ESIGI ? 'Geçen haftaya göre programa daha çok uydu.' : null
 }
 
 /** Görev adının sade grubu: "Tatil: Kitap okuma (en az 20 sayfa)" → "Kitap okuma"; "İngilizce — Workbook s. 18" → "İngilizce". */
@@ -104,6 +115,8 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
   const o = ozetHesapla(ic)
   const p = programYuzde(o), d = dogrulukYuzde(o)
   const hicVeri = o.gorev_yapilan === 0 && o.soru === 0
+  // Yalnız hemen önceki hafta "geçen hafta"dır: arada kayıtsız hafta varsa kıyas yok
+  const kiyas = !hicVeri && v.onceki && v.onceki.hafta === haftaKaydir(v.hafta, -1) ? gecenHaftaKiyasi(o, v.onceki.ozet) : null
   const parcalar = v.ogrenci.ad.trim().split(/\s+/)
   const ad = parcalar.length > 1 ? parcalar.slice(0, -1).join(' ') : parcalar[0] // soyadı düşer: "Ali Kemal"
   const satirlar = sonucSatirlari(ic, v.kitaplar).filter(s => (s.cozulen ?? 0) > 0)
@@ -154,7 +167,7 @@ export default function SonucKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVe
       </div>
 
       <section aria-label="Haftanın özeti" className={`flex items-center gap-3 border-2 border-gray-300 rounded-lg ${siki ? 'p-2' : 'p-3'} ${ara}`}>
-        <p className="flex-1 text-[1.15em] font-semibold">{hicVeri ? BOS_HAFTA_METNI : ozetCumlesi(ad, p, o.soru, veri.soruHedefi, d)}</p>
+        <p className="flex-1 text-[1.15em] font-semibold">{hicVeri ? BOS_HAFTA_METNI : ozetCumlesi(ad, p, o.soru, veri.soruHedefi, d)}{kiyas && ` ${kiyas}`}</p>
         {!hicVeri && durum && (
           <span className={`shrink-0 whitespace-nowrap border rounded-full px-3 py-1 font-bold ${ROZET[durum][1]}`}>
             {ROZET[durum][0]} {DURUM_ETIKETLERI[durum]}

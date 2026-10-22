@@ -77,6 +77,14 @@ describe('TakipService.sayfaVerisi — matematik konu tohumu (2026-10-17 tarama)
     vi.mocked(R.gecmis).mockResolvedValue([] as never)
   })
 
+  it('önceki kayıtlı haftanın başlangıcı da döner (sonuç kâğıdı yalnız ardışık haftayı "geçen hafta" sayar)', async () => {
+    vi.mocked(R.konular).mockResolvedValue([MAT])
+    vi.mocked(R.oncekiHafta).mockResolvedValue({ hafta_basi: '2026-10-09', gorev_toplam: 10, gorev_yapilan: 5, soru: 50, dogru: 40, okuma_sayfa: 0, islendi: true,
+      seviye: 1, soru_hedefi: 120, icerik: yeniHafta(null, 9).icerik, gorusme: {}, updated_at: 't0', kapali_at: null } as never)
+    const v = await TakipService.sayfaVerisi(SID, '2026-10-23')
+    expect(v?.onceki).toEqual({ hafta: '2026-10-09', ozet: { gorev_toplam: 10, gorev_yapilan: 5, soru: 50, dogru: 40, okuma_sayfa: 0, islendi: true } })
+  })
+
   it('liste zaten doluysa tohum YAZILMAZ (her açılışta yazma yok)', async () => {
     vi.mocked(R.konular).mockResolvedValue([MAT])
     const v = await TakipService.sayfaVerisi(SID, '2026-10-19')
