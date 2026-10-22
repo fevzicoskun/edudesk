@@ -39,6 +39,17 @@ async function sonucKagidiKontrol(page: Page, hafta: string, { uyari }: { uyari:
     await expect(geri).toContainText('Bu rapor anlaşılır mıydı?')
     expect((await geri.boundingBox())!.y).toBeLessThan((await page.getByText('Veli imzası:').boundingBox())!.y)
   } else await expect(geri).toHaveCount(0)
+  // Koyu temada ekran önizlemesi de beyaz kâğıt: genel .dark .bg-white/.text-gray-* kuralları kâğıdı boyamaz
+  const renkler = () => page.locator('article').evaluate(a => {
+    const st = (sel: string) => { const e = a.querySelector(sel); return e ? getComputedStyle(e) : null }
+    return [getComputedStyle(a.parentElement!).backgroundColor, getComputedStyle(a).color, st('h2')?.color,
+      st('[aria-label="Özet"] > div')?.borderColor, st('[aria-label="Özet"] p')?.color]
+  })
+  const acik = await renkler()
+  expect(acik[0]).toBe('rgb(255, 255, 255)')
+  await page.evaluate(() => document.documentElement.classList.add('dark'))
+  expect(await renkler()).toEqual(acik)
+  await page.evaluate(() => document.documentElement.classList.remove('dark'))
   await page.emulateMedia({ media: 'print' })
   await expect(u).toBeHidden()
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')

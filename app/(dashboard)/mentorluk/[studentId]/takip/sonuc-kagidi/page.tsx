@@ -36,7 +36,7 @@ export default async function SonucKagidiPage({ params, searchParams }: { params
       </div>
       {/* Ekranda A4 önizleme: koyu temada da beyaz kâğıt, koyu yazı */}
       <div className="overflow-x-auto print:overflow-visible">
-        <div className="w-[210mm] min-h-[297mm] mx-auto bg-white text-gray-900 shadow-lg p-[12mm] print:w-auto print:min-h-0 print:shadow-none print:p-0">
+        <div className="kagit w-[210mm] min-h-[297mm] mx-auto bg-white text-gray-900 shadow-lg p-[12mm] print:w-auto print:min-h-0 print:shadow-none print:p-0">
           <SonucKagidi v={v} veri={v.taslak} />
         </div>
       </div>

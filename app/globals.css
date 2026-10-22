@@ -71,15 +71,16 @@ body {
 @media screen {
   .dark body { background-color: #0f172a; color: #e2e8f0; }
 
-  .dark .bg-white   { background-color: #1e293b; }
-  .dark .bg-gray-50 { background-color: #0f172a; }
-  .dark .border-gray-100,
-  .dark .border-gray-200 { border-color: #334155; }
-  .dark .text-gray-900 { color: #f1f5f9; }
-  .dark .text-gray-700 { color: #cbd5e1; }
-  .dark .text-gray-600 { color: #94a3b8; }
-  .dark .text-gray-500 { color: #64748b; }
-  .dark .text-gray-400 { color: #475569; }
+  /* .kagit: ekrandaki kâğıt önizlemesi koyu temada da beyaz kâğıt kalır (2026-10-22 sonuç kâğıdı) */
+  .dark .bg-white:not(.kagit, .kagit *)   { background-color: #1e293b; }
+  .dark .bg-gray-50:not(.kagit *) { background-color: #0f172a; }
+  .dark .border-gray-100:not(.kagit *),
+  .dark .border-gray-200:not(.kagit *) { border-color: #334155; }
+  .dark .text-gray-900:not(.kagit, .kagit *) { color: #f1f5f9; }
+  .dark .text-gray-700:not(.kagit *) { color: #cbd5e1; }
+  .dark .text-gray-600:not(.kagit *) { color: #94a3b8; }
+  .dark .text-gray-500:not(.kagit *) { color: #64748b; }
+  .dark .text-gray-400:not(.kagit *) { color: #475569; }
 }
 
 @keyframes toast-in {
