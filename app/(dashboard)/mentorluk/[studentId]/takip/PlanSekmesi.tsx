@@ -7,6 +7,7 @@ import { GUNLER, SEVIYE_ADI, seviyeDegistir, sablonaDon, gunlukAralik, gunSirasi
 import { BOS_SAATLER, duzenMetni, netSure, otomatikDuzenMi, planlananDk, saatlerVarMi, sureKisa } from '@/src/domains/mentor/takip/calismaSaatleri'
 import { ilkAcikGun, odevEtiketi, odevGorevi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa } from '@/src/domains/mentor/lib/bultenMath'
+import { planUyarilari } from '@/src/domains/mentor/takip/planKagidi'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import type { SekmeProps } from './TakipIstemci'
 
@@ -180,6 +181,13 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
       </section>
 
       {!saatVar && <p className="text-sm text-gray-600 dark:text-slate-400 -mt-3">Çalışma saatleri girilmemiş — <Link className="text-blue-700 dark:text-blue-400 underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${v.hafta}&sekme=dosya`}>Öğrenci dosyası&apos;ndan ekleyin</Link></p>}
+      {/* Kâğıtta da görünen sorunlar planı hazırlarken mentöre (2026-10-24): sığmaz sayfa aralığı, tatile yığılan gecikmiş */}
+      {(() => { const u = planUyarilari(veri.icerik.gorevler, v.hafta, v.bugun); return u.length > 0 && (
+        <div role="status" aria-label="Kâğıt uyarıları" className="-mt-3 rounded border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/40 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+          <p className="font-semibold">Kâğıtta dikkat:</p>
+          <ul className="list-disc pl-5">{u.map(x => <li key={x}>{x}</li>)}</ul>
+        </div>
+      ) })()}
       {yeniSayisi > 0 && <p role="status" className="text-sm -mt-3 text-amber-800 dark:text-amber-300">Kâğıt yazdırıldıktan sonra {yeniSayisi} yeni ödev eklendi — tekrar yazdır.</p>}
       {(bilgi || ustHata) && <p role={ustHata ? 'alert' : 'status'} className={`text-sm -mt-3 ${ustHata ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>{ustHata ?? bilgi}</p>}
       <section aria-label="Program" className="space-y-5">

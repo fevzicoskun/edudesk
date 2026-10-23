@@ -109,7 +109,7 @@ test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır
   expect(data).toEqual({ seviye: 1, soru_hedefi: expect.any(Number) })
 })
 
-test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ page }) => {
+test('kâğıt: öğrenci adı, rutin tablosu, gün kutuları, filigran yok; @page kenarı 0', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
   await expect(page.getByText('19–25 Ekim', { exact: true })).toBeVisible()
@@ -120,7 +120,8 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
   await page.emulateMedia({ media: 'print' })
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible()
   await expect(page.getByRole('region', { name: 'Pazartesi' })).toBeVisible() // gün kutuları (2026-10-21)
-  await expect(page.locator('.filigran img')).toHaveCount(1)
+  await expect(page.getByRole('table', { name: 'Her gün' })).toBeVisible() // rutinler tek tabloda (2026-10-24)
+  await expect(page.locator('.filigran')).toBeHidden() // sade kâğıt, logo filigranı basılmaz (2026-10-24 kullanıcı)
   const kenar = await page.evaluate(() => [...document.styleSheets].flatMap(s => { try { return [...s.cssRules] } catch { return [] } })
     .filter((r): r is CSSPageRule => r instanceof CSSPageRule && !!r.style.margin).map(r => r.style.margin))
   expect(kenar).toEqual(['0px'])
@@ -190,7 +191,11 @@ test('plan: her gün görevi tek satır girilir, kâğıtta Pzt–Cum beş güne
   const kopyalar = (data!.icerik as { gorevler: { ad: string; gun: number; grup?: string }[] }).gorevler.filter(g => g.ad === 'E2E her gün')
   expect(kopyalar.map(g => g.gun)).toEqual([0, 1, 2, 3, 4]); expect(new Set(kopyalar.map(g => g.grup)).size).toBe(1)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  await expect(page.locator('article').getByRole('listitem').filter({ hasText: 'E2E her gün' })).toHaveCount(5) // Pzt–Cum kutuları
+  // Her gün görevi rutin tablosunda (2026-10-24): Pzt–Cum açık, hafta sonu taralı; gün kutularında tekrar edilmez
+  const satir = page.getByRole('table', { name: 'Her gün' }).getByRole('row').filter({ hasText: 'E2E her gün' })
+  await expect(satir).toHaveCount(1)
+  await expect(satir.getByRole('cell', { name: 'yok' })).toHaveCount(2)
+  await expect(page.locator('article').getByRole('listitem').filter({ hasText: 'E2E her gün' })).toHaveCount(0)
 })
 
 const KAYNAK = 'Kaynaklar (soru bankası, test)'
@@ -238,10 +243,11 @@ test('göreve kitap + sayfa aralığı bağlanır, kâğıtta görev satırında
   const silDugmesi = (await program.getByRole('button', { name: 'Matematik soru bankası görevini sil' }).boundingBox())!
   expect(Math.abs((silDugmesi.y + silDugmesi.height / 2) - (gorevKutusu.y + gorevKutusu.height / 2))).toBeLessThan(6)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  const banka = page.locator('article').getByRole('listitem').filter({ hasText: 'Matematik soru bankası' })
-  await expect(banka).toHaveCount(5)
-  await expect(banka.nth(0)).toContainText('E2E Acil Mat s. 45–48')
-  await expect(banka.nth(4)).toContainText('E2E Acil Mat s. 58–60')
+  // Rutin tablosunda: kitap adı etikette, günün sayfa payı hücrede (Pazartesi haftası: Pt ilk, Cu son pay)
+  const banka = page.getByRole('table', { name: 'Her gün' }).getByRole('row').filter({ hasText: 'soru bankası' })
+  await expect(banka).toContainText('E2E Acil Mat')
+  await expect(banka.getByRole('cell').nth(1)).toContainText('s. 45–48')
+  await expect(banka.getByRole('cell').nth(5)).toContainText('s. 58–60')
 })
 test('sonuç: Tümü yapıldı + ders satırında D/Y/B → net, doğruluk; D>Ç girilemez; yenilemede kalır', async ({ page }) => {
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=sonuc`)
@@ -306,8 +312,8 @@ test('ekran süresi: Sonuç sekmesinde ondalık girilir, kaydedilir; veli mesaj�
   await page.goto(`/mentorluk/${ogrId}/takip?hafta=2026-10-19&sekme=veli`)
   await expect(page.getByLabel(/Veliye gidecek mesaj/)).toHaveValue(/• Ekran süresi: günlük ort\. 2,5 saat/)
   await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
-  // Ekran süresi artık her gün kutusunda (2026-10-22); veli imzası altındaki haftalık alan kalktı
-  await expect(page.locator('article section h2').first()).toContainText('Ekran: ___ sa')
+  // Ekran süresi rutin tablosunda her gün (2026-10-24); veli imzası altındaki haftalık alan kalktı
+  await expect(page.getByRole('table', { name: 'Her gün' }).getByRole('row').filter({ hasText: 'Ekran süresi' }).getByRole('cell').filter({ hasText: '___ sa' })).toHaveCount(7)
   await expect(page.getByText('Günlük ortalama ekran süresi')).toHaveCount(0)
   await page.goto(`/mentorluk/${ogrId}/takip/sonuc-kagidi?hafta=2026-10-19`)
   await expect(page.getByLabel('Özet', { exact: true })).toContainText('2,5 saat / gün')

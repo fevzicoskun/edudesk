@@ -134,29 +134,27 @@ test('okul ödevi plana gelir; silinince geri gelmez; öğretmen işaretleyince 
   await expect(satir).toBeVisible()
 })
 
-test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yalnız soru görevinde, tek A4, imza kutusu yok', async ({ page }) => {
+test('kâğıt: rutin tablosu, gün kutusunda saat aralığı başlıkta (satırda saat yok), tek Yeni ödev, tek A4, imza yok', async ({ page }) => {
   const gun = { bas: '18:00', bit: '21:00', molaBas: '19:00', molaBit: '19:30' }
   await db.from('ogrenci_calisma_saatleri').update({ gunler: Array(7).fill(gun) }).eq('student_id', A)
   await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
   await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByText(/^Bu hafta hedefin: \d+ soru$/)).toBeVisible()
-  await expect(page.getByText('Pzt–Paz 18.00–21.00 (mola 19.00–19.30)')).toBeVisible() // günlük düzen saatlerden
+  await expect(page.getByText(/^Haftalık hedef: \d+ soru · Gecikmiş: \d+$/)).toBeVisible()
+  // Rutinler tek tabloda (2026-10-24): satır başına bir kez, soru görevinde çözdüm/doğru hücresi
+  const tablo = page.getByRole('table', { name: 'Her gün' })
+  for (const r of ['Okul tekrarı', 'Paragraf', 'Ekran süresi']) await expect(tablo.getByRole('row').filter({ hasText: r })).toHaveCount(1)
+  await expect(tablo.getByRole('row').filter({ hasText: 'Paragraf' }).getByRole('cell').filter({ hasText: '___/___' })).not.toHaveCount(0)
   for (const ad of ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar']) {
     const kutu = page.getByRole('region', { name: ad, exact: true })
     await expect(kutu.getByRole('heading')).toContainText(`${ad} · `)
-    await expect(kutu.getByRole('heading')).toContainText('· 18.00–21.00')
-    const saatler = (await kutu.getByRole('listitem').allInnerTexts()).map(t => t.trim().slice(0, 5)).filter(t => /^\d\d\.\d\d$/.test(t))
-    expect(saatler[0]).toBe('18.00')
-    expect(saatler.filter(t => t >= '19.00' && t < '19.30')).toEqual([]) // mola boş
-    expect([...saatler].sort()).toEqual(saatler) // sırayla
-    await expect(kutu.getByText(/^Yeni ödev:/)).toHaveCount(2)
+    await expect(kutu.getByRole('heading')).toContainText('18.00–21.00')
+    await expect(kutu.getByRole('listitem').filter({ hasText: /^\d\d\.\d\d/ })).toHaveCount(0) // satırda saat yok
+    await expect(kutu.getByRole('listitem').filter({ hasText: /Okul tekrarı|Paragraf|Haftalık genel tekrar/ })).toHaveCount(0)
+    await expect(kutu.getByText(/^Yeni ödev:/)).toHaveCount(1)
   }
-  const pzt = page.getByRole('region', { name: 'Pazartesi' })
-  await expect(pzt.getByRole('listitem').filter({ hasText: 'Paragraf' })).toContainText('Çözdüm: ____ Doğru: ____')
-  await expect(pzt.getByRole('listitem').filter({ hasText: 'Okul tekrarı' })).not.toContainText('Çözdüm')
+  await expect(page.getByRole('region', { name: 'Hafta sonu özeti' })).toContainText('Mentör notu:')
   // Öğrenciye verilen kâğıtta imza/not kutusu yok (2026-10-24 kullanıcı)
   await expect(page.getByText('Veli imzası')).toHaveCount(0)
-  await expect(page.getByText('Öğretmen notu')).toHaveCount(0)
   await expect(page.locator('[data-olcek]')).toHaveCount(1) // TekSayfa ölçtü
   await page.emulateMedia({ media: 'print' })
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
@@ -164,6 +162,20 @@ test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yal
   if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
   // Günler her zaman tek A4 (2026-10-24: 2 sayfa zımbalanıyordu)
   expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(1)
+})
+
+test('sayfası süreye sığmayan ödev: plan ekranında uyarı, kâğıtta kırmızı satır (temiz başlıkla)', async ({ page }) => {
+  const { data: hw, error } = await db.from('homeworks').insert({
+    teacher_id: mentor.id, class_id: sinifA, school_id: mentor.school_id, subject: 'Fizik', title: 'E2E Uzun Sf.1-90 Yapalım.', due_date: addDaysISO(BUGUN, 1), assigned_date: BUGUN,
+  }).select('id').single()
+  if (error) throw new Error(error.message)
+  odevIds.push(hw!.id)
+  await page.goto(`/mentorluk/${A}/takip?hafta=${HAFTA}`)
+  await expect(page.getByRole('status', { name: 'Kâğıt uyarıları' })).toContainText("Fizik — E2E Uzun · s. 1–90: 90 sayfa · 30 dk'ya sığmaz", { timeout: 20_000 })
+  await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
+  const satir = page.locator('article').getByRole('listitem').filter({ hasText: 'Fizik — E2E Uzun' })
+  await expect(satir).toContainText('E2E Uzun · s. 1–90') // "Sf.1-90 Yapalım." çıktıda temizlenir, veri aynı
+  await expect(satir).toContainText("90 sayfa · 30 dk'ya sığmaz")
 })
 
 test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır uyarısı', async ({ page }) => {
