@@ -162,7 +162,7 @@ test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yal
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
   if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
-  // Günler + plana girmeyen ödevler her zaman tek A4 (2026-10-24: 2 sayfa zımbalanıyordu)
+  // Günler her zaman tek A4 (2026-10-24: 2 sayfa zımbalanıyordu)
   expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(1)
 })
 

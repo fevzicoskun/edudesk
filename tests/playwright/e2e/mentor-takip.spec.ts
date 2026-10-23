@@ -144,7 +144,7 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     if (e2) throw new Error(e2.message)
     await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
     await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByText('Plana girmeyen ödevler:')).toBeVisible() // sığmayan gecikmişler + gelecek hafta
+    await expect(page.getByText('Plana girmeyen ödevler')).toHaveCount(0) // ekranda kalır, kâğıda basılmaz (2026-10-24 kullanıcı)
     await expect(page.locator('[data-olcek]')).toHaveCount(1) // TekSayfa ölçtü
     await page.emulateMedia({ media: 'print' })
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')

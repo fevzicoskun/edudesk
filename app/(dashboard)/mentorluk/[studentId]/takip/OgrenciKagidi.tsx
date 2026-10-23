@@ -1,6 +1,6 @@
 import { miktarYaz, kitapSayfaYaz, okulDurumYaz, gunSirasi, dengeliBol, gunTarihi, type HaftaVerisi, type OkulOdevi, takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { gorevSaatleri, kagitDuzeni, saatlerVarMi, saatYaz } from '@/src/domains/mentor/takip/calismaSaatleri'
-import { odevEtiketi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
+import { odevEtiketi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa, gunAy } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
 import TekSayfa from './TekSayfa'
@@ -64,7 +64,6 @@ const GUN_TAM = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumar
  *  Siyah-beyaz baskıda okunur: gri dolgu yok, etiketler metinle ayırt edilir, gövde ≥ 11pt. */
 export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: HaftaVerisi }) {
   const duzen = kagitDuzeni(veri.icerik.duzen, v.saatler)
-  const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
   // Plan sırası (Cuma haftasında Cum → Per); görev günü haftanın günüdür
   const o = v.okulOdevleri
   const eskiListeler = !veri.icerik.otoOdev && o.tamamlanmamis.length + o.buHafta.length + o.gelecek.length > 0
@@ -78,7 +77,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
   const bolum = dengeliBol(yukler)
   return (
     <article className="text-[11pt] leading-snug text-black bg-white">
-      {/* Plan + plana girmeyen ödevler her zaman tek A4 (2026-10-24 kullanıcı: 2 sayfayı tek tek zımbalamak zorunda kaldı) */}
+      {/* Plan her zaman tek A4 (2026-10-24 kullanıcı: 2 sayfayı tek tek zımbalamak zorunda kaldı) */}
       <TekSayfa>
       {/* header/footer etiketi DEĞİL: globals.css baskıda header'ları gizler */}
       <div className="flex justify-between items-start border-b-2 border-black pb-1 mb-1.5">
@@ -139,9 +138,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         )}
       </div>}
 
-      {disarida.length > 0 && (
-        <p className="text-[9.5pt] mt-1"><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
-      )}
+      {/* Plana girmeyen ödevler kâğıda basılmaz, yalnız ekrandaki planda (2026-10-24 kullanıcı) */}
       </TekSayfa>
 
       {/* Özellikten önce elle hazırlanmış plan: ödevler göreve girmedi, eski üç liste 2. sayfada */}
