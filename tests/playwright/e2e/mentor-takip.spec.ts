@@ -127,7 +127,7 @@ test('kâğıt: öğrenci adı, program, filigran; @page kenarı 0', async ({ pa
 })
 
 // 2026-10-21: ödevler artık plana girer (gün kutuları) → plan kâğıdı en çok 2 A4 (spec), sonuç kâğıdı tek A4
-test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle plan kâğıdı ≤ 3 A4 (aşırı yük), sonuç kâğıdı tek A4', async ({ page }) => {
+test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle plan kâğıdı yine tek A4 (aşırı yük küçültülür), sonuç kâğıdı tek A4', async ({ page }) => {
   const { data: o } = await db.from('students').select('class_id').eq('id', ogrId).single()
   const odev = (title: string, due_date: string) => ({ teacher_id: mentor.id, class_id: o!.class_id, school_id: mentor.school_id, subject: 'Fizik', title, due_date, assigned_date: '2026-10-01' })
   const { data: eklenen, error } = await db.from('homeworks').insert([
@@ -145,6 +145,7 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     await page.goto(`/mentorluk/${ogrId}/takip/kagit?hafta=2026-10-19`)
     await expect(page.getByRole('heading', { name: 'Haftalık Çalışma Planı' })).toBeVisible({ timeout: 20_000 })
     await expect(page.getByText('Plana girmeyen ödevler:')).toBeVisible() // sığmayan gecikmişler + gelecek hafta
+    await expect(page.locator('[data-olcek]')).toHaveCount(1) // TekSayfa ölçtü
     await page.emulateMedia({ media: 'print' })
     const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
     const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
@@ -166,9 +167,8 @@ test('kâğıt: 24 görev + 27 tamamlanmamış + 11 bu hafta + 8 gelecek ödevle
     await expect(page.getByRole('table', { name: 'Bu haftanın okul ödevleri' })).not.toContainText('Bekliyor')
     await expect(page.getByLabel('Özet', { exact: true })).toContainText(/Okul ödevleri\s*\d+ ödev\s*Öğretmen kontrolünde/)
     const pdf = await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise
-    // Aşırı yük (bir günde 5 uzun başlıklı ödev + tam şablon ≈ 46 satır/sütun; 11pt'de ~44 sığar): bir gün 2. sayfaya
-    // taşabilir, ödev listesi ayrı sayfada (2026-10-22 kullanıcı düzeni) → en çok 3. Olağan hafta: saatler spec'i 1 sayfa.
-    expect(pdf.numPages).toBeLessThanOrEqual(3)
+    // Aşırı yükte bile tek A4: TekSayfa baskıda küçültür (2026-10-24 kullanıcı: 2 sayfayı zımbalamak zorunda kaldı)
+    expect(pdf.numPages).toBe(1)
   } finally {
     await db.from('homework_submissions').delete().in('homework_id', eklenen!.map(h => h.id))
     await db.from('homeworks').delete().in('id', eklenen!.map(h => h.id))

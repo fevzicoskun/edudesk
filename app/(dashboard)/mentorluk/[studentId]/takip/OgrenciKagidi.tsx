@@ -3,6 +3,7 @@ import { gorevSaatleri, kagitDuzeni, saatlerVarMi, saatYaz } from '@/src/domains
 import { odevEtiketi, planDisi } from '@/src/domains/mentor/takip/odevYerlesim'
 import { dersKisa, gunAy } from '@/src/domains/mentor/lib/bultenMath'
 import type { SayfaVerisi } from '@/src/domains/mentor/services/TakipService'
+import TekSayfa from './TekSayfa'
 
 // Satırlar sıkı (py-0.5): 24 görev + okul ödevleri + mentör ödevleri tek A4'e sığmalı (2026-10-16 kullanıcı)
 export const th = 'border border-gray-400 px-1.5 py-0.5 text-left font-semibold'
@@ -66,7 +67,7 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
   const disarida = planDisi(v.disaridaOdevler, veri.icerik.gizliOdevler ?? [], v.odevKayitlari, veri.icerik.gorevler)
   // Plan sırası (Cuma haftasında Cum → Per); görev günü haftanın günüdür
   const o = v.okulOdevleri
-  const ekSayfa = disarida.length > 0 || (!veri.icerik.otoOdev && o.tamamlanmamis.length + o.buHafta.length + o.gelecek.length > 0)
+  const eskiListeler = !veri.icerik.otoOdev && o.tamamlanmamis.length + o.buHafta.length + o.gelecek.length > 0
   // Yaklaşık satır yükü: başlık + görev satırları (ad + etiket ~38 karakterde sarar; soru satırı küçük) + 2 "Yeni ödev"
   const yuk = (gs: typeof veri.icerik.gorevler) => 3.2 + gs.reduce((t, g) => {
     const etiket = g.teslim && odevEtiketi(g.teslim, v.bugun).tur !== 'tarih' ? 14 : 0
@@ -74,12 +75,11 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
   }, 0)
   const gunler = gunSirasi(v.hafta).map(i => ({ ad: GUN_TAM[i], i, gorevler: veri.icerik.gorevler.filter(g => g.gun === i) })).filter(x => x.gorevler.length > 0)
   const yukler = gunler.map(x => yuk(x.gorevler))
-  const bolum = dengeliBol(yukler, 6) // imza kutuları ≈ 6 satır
-  const t = (a: number[]) => a.reduce((x, y) => x + y, 0)
-  // Öğretmen notu + veli imzası kısa sütunun altına: 1. sayfadaki boşluğu kullanır (tam genişlikte 2. sayfaya düşüyordu)
-  const imzaSutunu = t(yukler.slice(0, bolum)) <= t(yukler.slice(bolum)) ? 0 : 1
+  const bolum = dengeliBol(yukler)
   return (
     <article className="text-[11pt] leading-snug text-black bg-white">
+      {/* Plan + plana girmeyen ödevler her zaman tek A4 (2026-10-24 kullanıcı: 2 sayfayı tek tek zımbalamak zorunda kaldı) */}
+      <TekSayfa>
       {/* header/footer etiketi DEĞİL: globals.css baskıda header'ları gizler */}
       <div className="flex justify-between items-start border-b-2 border-black pb-1 mb-1.5">
         <div>
@@ -128,16 +128,10 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
             </section>
           )
         })}
-          {si === imzaSutunu && (
-            <div className="break-inside-avoid space-y-1 text-[9.5pt]">
-              <div className="border border-black rounded h-16 px-2 py-0.5"><b>Öğretmen notu</b></div>
-              <div className="border border-black rounded h-12 px-2 py-0.5"><b>Veli imzası</b></div>
-            </div>
-          )}
         </div>)}
       </div>
 
-      {/* 1. sayfa: günler + öğretmen notu / veli imzası. Ödev listeleri 2. sayfada (2026-10-22 kullanıcı) */}
+      {/* Öğrenciye verilen kâğıt: öğretmen notu / veli imzası YOK (2026-10-24 kullanıcı; veli imzası sonuç kâğıdında) */}
       {(veri.icerik.okuma || veri.icerik.mentorOdevleri.length > 0) && <div className="text-[9.5pt] space-y-1 break-inside-avoid">
         {veri.icerik.okuma && <p><b>Okuma:</b> {veri.icerik.okuma.kitap} — okuduğun sayfaları her gün not et.</p>}
         {veri.icerik.mentorOdevleri.length > 0 && (
@@ -145,16 +139,16 @@ export default function OgrenciKagidi({ v, veri }: { v: SayfaVerisi; veri: Hafta
         )}
       </div>}
 
-      {ekSayfa && <div className="break-before-page text-[9.5pt] space-y-1 pt-1">
-        {/* Özellikten önce elle hazırlanmış plan: ödevler göreve girmedi, eski üç liste */}
-        {!veri.icerik.otoOdev && <>
-          <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={v.okulOdevleri.tamamlanmamis} />
-          <OkulOdevListesi baslik="Bu hafta teslim" liste={v.okulOdevleri.buHafta} />
-          <OkulOdevListesi baslik="Gelecek hafta teslim" liste={v.okulOdevleri.gelecek} />
-        </>}
-        {disarida.length > 0 && (
-          <p><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
-        )}
+      {disarida.length > 0 && (
+        <p className="text-[9.5pt] mt-1"><b>Plana girmeyen ödevler:</b> {disarida.map(o => `${dersKisa(o.subject)} — ${o.title}${o.due_date ? ` (${odevEtiketi(o.due_date, v.bugun).metin})` : ''}`).join(' · ')}</p>
+      )}
+      </TekSayfa>
+
+      {/* Özellikten önce elle hazırlanmış plan: ödevler göreve girmedi, eski üç liste 2. sayfada */}
+      {eskiListeler && <div className="break-before-page text-[9.5pt] space-y-1 pt-1">
+        <OkulOdevListesi baslik="Tamamlanmamış ödevler (teslimi geçti)" liste={o.tamamlanmamis} />
+        <OkulOdevListesi baslik="Bu hafta teslim" liste={o.buHafta} />
+        <OkulOdevListesi baslik="Gelecek hafta teslim" liste={o.gelecek} />
       </div>}
     </article>
   )

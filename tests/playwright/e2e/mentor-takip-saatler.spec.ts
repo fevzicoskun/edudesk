@@ -134,7 +134,7 @@ test('okul ödevi plana gelir; silinince geri gelmez; öğretmen işaretleyince 
   await expect(satir).toBeVisible()
 })
 
-test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yalnız soru görevinde, en çok 2 A4', async ({ page }) => {
+test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yalnız soru görevinde, tek A4, imza kutusu yok', async ({ page }) => {
   const gun = { bas: '18:00', bit: '21:00', molaBas: '19:00', molaBit: '19:30' }
   await db.from('ogrenci_calisma_saatleri').update({ gunler: Array(7).fill(gun) }).eq('student_id', A)
   await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
@@ -154,13 +154,16 @@ test('kâğıt: gün kutuları, saatler sırayla ve molayı atlar, Çözdüm yal
   const pzt = page.getByRole('region', { name: 'Pazartesi' })
   await expect(pzt.getByRole('listitem').filter({ hasText: 'Paragraf' })).toContainText('Çözdüm: ____ Doğru: ____')
   await expect(pzt.getByRole('listitem').filter({ hasText: 'Okul tekrarı' })).not.toContainText('Çözdüm')
+  // Öğrenciye verilen kâğıtta imza/not kutusu yok (2026-10-24 kullanıcı)
+  await expect(page.getByText('Veli imzası')).toHaveCount(0)
+  await expect(page.getByText('Öğretmen notu')).toHaveCount(0)
+  await expect(page.locator('[data-olcek]')).toHaveCount(1) // TekSayfa ölçtü
   await page.emulateMedia({ media: 'print' })
   const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const bayt = await page.pdf({ format: 'A4', preferCSSPageSize: true })
   if (process.env.KAGIT_PDF) (await import('fs')).writeFileSync(process.env.KAGIT_PDF, bayt) // elle görsel kontrol
-  // Günler + öğretmen notu/veli imzası 1. sayfada; yalnız "plana girmeyen ödev" varsa 2. sayfa (2026-10-22)
-  const plandisi = await page.getByText('Plana girmeyen ödevler:').count()
-  expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(plandisi ? 2 : 1)
+  // Günler + plana girmeyen ödevler her zaman tek A4 (2026-10-24: 2 sayfa zımbalanıyordu)
+  expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(1)
 })
 
 test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır uyarısı', async ({ page }) => {
