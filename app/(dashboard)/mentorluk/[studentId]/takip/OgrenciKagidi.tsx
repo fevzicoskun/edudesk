@@ -42,7 +42,7 @@ function Satir({ s }: { s: KagitSatiri }) {
         <span className="flex-1 leading-[1.3]">
           <b className="font-semibold">{s.ders}</b>{s.metin && ` — ${s.metin}`}
           {s.gecikmis && <b className="text-[8.5px] font-bold"> GECİKMİŞ</b>}
-          {s.uyari && <><br /><span className="text-[8.5px] text-[#c0392b] font-semibold">{s.uyari}</span></>}
+          {/* "sığmaz" uyarısı öğrenci kâğıdında YOK: öğrenci değiştiremez; yalnız plan ekranında mentöre (2026-10-24 kullanıcı) */}
         </span>
         <span className="flex-none whitespace-nowrap text-[#333]">{s.sure}</span>
       </div>

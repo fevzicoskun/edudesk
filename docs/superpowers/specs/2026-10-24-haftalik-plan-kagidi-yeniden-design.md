@@ -23,7 +23,8 @@ yalnız öğrenci plan kâğıdı (`OgrenciKagidi.tsx`) ve plan ekranına uyarı
 - **Genel satır** (yalnız ders adlarından oluşan: "Fizik", "Kimya / Biyoloji", "Edebiyat + Tarih/Coğrafya") → "— serbest tekrar".
   Şablon satırları "Matematik tarama testi" → "Matematik — tarama testi", "Matematik tekrarı" → "Matematik — haftanın tekrarı".
 - **Tekrar**: aynı gün aynı ders+kaynak hem gecikmiş hem değilse yalnız gecikmiş kalır.
-- **Sığmaz**: tek aralık, sayfa sayısı > dakika → satır altında kırmızı "37 sayfa · 30 dk'ya sığmaz".
+- **Sığmaz**: tek aralık, sayfa sayısı > dakika → "37 sayfa · 30 dk'ya sığmaz" YALNIZ plan ekranında mentöre
+  (ilk sürümde kâğıtta da vardı; kullanıcı 2026-10-24: 9 kâğıdın 9'unda çıkıyordu, öğrenci değiştiremez → kâğıttan kalktı).
 - **Tatil**: sabit tarihli resmî tatiller + elle liste (dini bayramlar, arifeler yarım gün). 28 Ekim yarım gün, 29 Ekim bayram.
 - **Mentöre uyarı** (plan ekranı, sarı bant): sığmaz satırlar + tatil gününde > 2 gecikmiş.
 

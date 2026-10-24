@@ -164,7 +164,7 @@ test('kâğıt: rutin tablosu, gün kutusunda saat aralığı başlıkta (satır
   expect((await pdfjs.getDocument({ data: new Uint8Array(bayt) }).promise).numPages).toBe(1)
 })
 
-test('sayfası süreye sığmayan ödev: plan ekranında uyarı, kâğıtta kırmızı satır (temiz başlıkla)', async ({ page }) => {
+test('sayfası süreye sığmayan ödev: plan ekranında uyarı, öğrenci kâğıdında uyarı yok (temiz başlıkla)', async ({ page }) => {
   const { data: hw, error } = await db.from('homeworks').insert({
     teacher_id: mentor.id, class_id: sinifA, school_id: mentor.school_id, subject: 'Fizik', title: 'E2E Uzun Sf.1-90 Yapalım.', due_date: addDaysISO(BUGUN, 1), assigned_date: BUGUN,
   }).select('id').single()
@@ -175,7 +175,7 @@ test('sayfası süreye sığmayan ödev: plan ekranında uyarı, kâğıtta kır
   await page.goto(`/mentorluk/${A}/takip/kagit?hafta=${HAFTA}`)
   const satir = page.locator('article').getByRole('listitem').filter({ hasText: 'Fizik — E2E Uzun' })
   await expect(satir).toContainText('E2E Uzun · s. 1–90') // "Sf.1-90 Yapalım." çıktıda temizlenir, veri aynı
-  await expect(satir).toContainText("90 sayfa · 30 dk'ya sığmaz")
+  await expect(satir).not.toContainText('sığmaz') // öğrenci değiştiremez; uyarı yalnız mentöre (2026-10-24 kullanıcı)
 })
 
 test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır uyarısı', async ({ page }) => {
