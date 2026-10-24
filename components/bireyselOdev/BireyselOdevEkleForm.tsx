@@ -1,5 +1,6 @@
 'use client'
 import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { bireyselOdevEkle } from '@/app/actions/bireysel-odev'
 
 const kutu = 'w-full min-h-11 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100'
@@ -13,12 +14,14 @@ export default function BireyselOdevEkleForm({ ogrenciId }: { ogrenciId: string 
   const [hata, setHata] = useState('')
   const [mesaj, setMesaj] = useState('')
   const [bekliyor, basla] = useTransition()
+  const router = useRouter()
 
   const kaydet = () => basla(async () => {
     setHata(''); setMesaj('')
     const r = await bireyselOdevEkle({ ogrenciId, aciklama, teslimTarihi: teslim })
     if (r.error) { setHata(r.error); return }
     setAciklama(''); setTeslim(''); setAcik(false); setMesaj('Bireysel ödev eklendi.')
+    router.refresh() // ilk ödevde soldaki "Verdiğim Bireysel Ödevler" menüsü hemen açılsın (layout yeniden okunur)
   })
 
   if (!acik) return (

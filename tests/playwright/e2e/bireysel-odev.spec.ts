@@ -29,13 +29,20 @@ test.beforeAll(async () => {
   const uid = data.users.find(u => u.email === OGRETMEN)!.id
   ogretmen = (await db.from('profiles').select('id, school_id').eq('id', uid).single()).data!
   ogr = (await db.from('students').select('id, full_name, class_id').eq('school_id', ogretmen.school_id).is('deleted_at', null).limit(1).single()).data!
+  // Test öğretmeninin önceki koşulardan kalan kaydı olmasın: menü "hiç vermemiş" durumundan başlar
+  await db.from('bireysel_odevler').delete().eq('ogretmen_id', ogretmen.id)
 })
 test.afterAll(async () => {
   await db.from('bireysel_odevler').delete().eq('ogrenci_id', ogr.id).like('aciklama', `${ETIKET}%`)
 })
 
-test('öğrenci sayfasından ekle → listede, DB\'de öğretmenin kaydı', async ({ page }) => {
+test('öğrenci sayfasından ekle → listede, DB\'de öğretmenin kaydı; ilk ödevle menü açılır', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto(ogrenciSayfasi())
+  // Hiç bireysel ödev vermemiş öğretmende menü satırı yok (2026-10-24 kullanıcı)
+  const menu = page.locator('aside').getByRole('link', { name: 'Verdiğim Bireysel Ödevler' })
+  await expect(page.getByRole('region', { name: 'Bireysel ödevler' })).toBeVisible({ timeout: 20_000 })
+  await expect(menu).toHaveCount(0)
   const bolum = page.getByRole('region', { name: 'Bireysel ödevler' })
   await bolum.getByRole('button', { name: '+ Bireysel ödev ekle' }).click()
   await bolum.getByLabel('Açıklama').fill(`${ETIKET} Türev testi, s. 45–52`)
@@ -43,6 +50,7 @@ test('öğrenci sayfasından ekle → listede, DB\'de öğretmenin kaydı', asyn
   await bolum.getByRole('button', { name: 'Kaydet' }).click()
   await expect(bolum.getByRole('status')).toHaveText('Bireysel ödev eklendi.', { timeout: 15_000 })
   await expect(satir(page, 'Türev testi, s. 45–52')).toContainText('Bekliyor')
+  await expect(menu).toBeVisible({ timeout: 15_000 }) // sayfa yenilenmeden
   expect(await kayitlar()).toEqual([expect.objectContaining({ aciklama: `${ETIKET} Türev testi, s. 45–52`, yapildi: false, teslim_tarihi: addDaysISO(BUGUN, 3), ogretmen_id: ogretmen.id })])
 })
 

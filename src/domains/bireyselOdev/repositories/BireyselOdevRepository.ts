@@ -45,6 +45,15 @@ export const BireyselOdevRepository = {
     return data ?? []
   },
 
+  /** Menü için: öğretmen en az bir bireysel ödev vermiş mi (yalnız sayı, satır okunmaz). */
+  async varMi(ogretmenId: string, schoolId: string) {
+    const db = await createClient()
+    const { count, error } = await db.from('bireysel_odevler').select('id', { count: 'exact', head: true })
+      .eq('ogretmen_id', ogretmenId).eq('school_id', schoolId)
+    if (error) throw new Error(error.message)
+    return (count ?? 0) > 0
+  },
+
   /** Ekleme öncesi: öğrenci bu okulda ve silinmemiş mi (RLS de denetler; burada anlaşılır hata için). */
   async ogrenciVarMi(schoolId: string, ogrenciId: string) {
     const db = await createClient()

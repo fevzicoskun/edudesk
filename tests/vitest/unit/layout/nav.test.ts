@@ -130,6 +130,24 @@ describe('gorunurNav — yalnizMentor (Mentörlük yalnız mentörlüğü olana,
   })
 })
 
+describe('gorunurNav — yalnizBireysel (Bireysel ödev yalnız en az bir tane vermiş öğretmene, 2026-10-24)', () => {
+  const items = [
+    item('/anasayfa'),
+    item('/odevler/bireysel', { roles: ['ogretmen', 'zumre_baskani'], yalnizBireysel: true }),
+  ]
+  it('hiç bireysel ödev vermemiş öğretmende gizli', () => {
+    expect(gorunurNav(items, 'ogretmen').map(i => i.href)).toEqual(['/anasayfa'])
+  })
+  it('en az bir tane vermişte görünür; rol uymuyorsa görünmez', () => {
+    expect(gorunurNav(items, 'zumre_baskani', { bireyselVar: true }).map(i => i.href)).toEqual(['/anasayfa', '/odevler/bireysel'])
+    expect(gorunurNav(items, 'mudur', { bireyselVar: true }).map(i => i.href)).toEqual(['/anasayfa'])
+  })
+  it('telefon çekmecesi de aynı koşulu uygular', () => {
+    expect(mobilNavSec(items, 'ogretmen').drawer.map(i => i.href)).not.toContain('/odevler/bireysel')
+    expect(mobilNavSec(items, 'ogretmen', { bireyselVar: true }).drawer.map(i => i.href)).toContain('/odevler/bireysel')
+  })
+})
+
 describe('gorunurNav — yalnizYoklama (yoklama anahtarı, 2026-10-10)', () => {
   const items = [
     item('/anasayfa'),

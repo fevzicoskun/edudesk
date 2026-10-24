@@ -29,7 +29,7 @@ function formatName(raw: string): string {
     .join(' ') || raw
 }
 
-const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; yalnizMentor?: boolean; yalnizYoklama?: boolean; icon: ReactNode }[] = [
+const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | null; grup: NavGrup; yalnizMentor?: boolean; yalnizYoklama?: boolean; yalnizBireysel?: boolean; icon: ReactNode }[] = [
   {
     href: '/anasayfa',
     label: 'Anasayfa',
@@ -62,13 +62,14 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     grup: 'gunluk',
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>,
   },
-  // Bireysel ödev (2026-10-24): öğretmenin tek öğrenciye verdikleri; telefonda "Daha fazla" çekmecesinde (alt çubuk değişmez)
+  // Bireysel ödev (2026-10-24): yalnız en az bir tane vermiş öğretmende; telefonda "Daha fazla" çekmecesinde (alt çubuk değişmez)
   {
     href: '/odevler/bireysel',
     label: 'Verdiğim Bireysel Ödevler',
     mobile: false,
     roles: ['ogretmen', 'zumre_baskani'],
     grup: 'gunluk',
+    yalnizBireysel: true,
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7zm4-3l2 2 4-4" /></svg>,
   },
   // Yoklama yalnız okulun yoklama modülü açıkken (Ayarlar → Okul ayarları; 2026-10-10)
@@ -256,8 +257,10 @@ function MentorlukGrubu({ item, pathname, ogrenciler }: { item: (typeof navItems
   )
 }
 
-export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif = true, planOgrencileri = [] }: {
+export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif = true, bireyselVar = false, planOgrencileri = [] }: {
   profile: SidebarProfile | null; email: string; mentorMu?: boolean; yoklamaAktif?: boolean
+  /** En az bir bireysel ödev vermiş öğretmen (menüde Verdiğim Bireysel Ödevler) */
+  bireyselVar?: boolean
   /** Haftalık takip açık mentörün öğrencileri (menüde Haftalık planlar altında) */
   planOgrencileri?: { id: string; ad: string }[]
 }) {
@@ -272,7 +275,7 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
   const [collapsed, setCollapsed] = useState(false)
   const [digerAcik, setDigerAcik] = useState(false)
 
-  const filteredNav = gorunurNav(navItems, role, { mentorMu, yoklamaAktif })
+  const filteredNav = gorunurNav(navItems, role, { mentorMu, yoklamaAktif, bireyselVar })
   const { gunluk, diger } = gruplaNav(filteredNav)
   // iç içe bağlantılar (/yonetim ↔ /yonetim/odevler) için tüm menü üzerinden tek hesap
   const aktif = aktifHref(pathname, navItems.map(i => i.href))
@@ -454,7 +457,7 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
       {/* Mobile bottom nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-t border-gray-200 dark:border-slate-700 flex" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         {(() => {
-          const { altBar, drawer } = mobilNavSec(navItems, role, { mentorMu, yoklamaAktif })
+          const { altBar, drawer } = mobilNavSec(navItems, role, { mentorMu, yoklamaAktif, bireyselVar })
           const showDrawer = drawer.length > 0
           return (
             <>
