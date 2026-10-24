@@ -1,20 +1,39 @@
 import { dersOzeti, dersAnahtari, type DersOzeti, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
-import { odevSeviyesi } from '@/src/domains/classes/lib/genelDurum'
 import { RISK_ESIGI } from '@/src/domains/homework/lib/odev-takibi'
 
 export type MentorOgrenci = { id: string; full_name: string; class_name: string | null; homeworks: HomeworkRecord[] }
-export type MentorHucre = { metin: string; kirmizi: boolean }
+export type MentorHucre = { metin: string; ekler: string[]; renk: HucreRengi; aciklama: string }
 export type MentorSatir = { id: string; full_name: string; class_name: string | null; hucreler: MentorHucre[]; dersler: DersOzeti[] }
 export type DikkatSatiri = { id: string; full_name: string; toplam: number; dersler: string }
 export type MentorTablo = { dersler: string[]; satirlar: MentorSatir[]; dikkat: DikkatSatiri[] }
 
-/** "4/5", eksik varsa "2/3 (1e)". Pay/payda dersOzeti ile aynı (mazeretli + kontrol edilmemiş paydada yok). */
-export function hucreMetni(d: DersOzeti | undefined): MentorHucre {
-  if (!d || d.degerlendirilen === 0) return { metin: '—', kirmizi: false }
-  const oran = Math.round((d.yapildi / d.degerlendirilen) * 100)
+/** Hücre rengi eşikleri (yapılan / değerlendirilen) — değiştirmek için yalnız burası. Tek kural, az veride de geçerli. */
+export const KIRMIZI_ALTI = 50 // %50 altı kırmızı
+export const TURUNCU_ALTI = 80 // %50–%80 arası turuncu; %80 ve üstü normal
+
+export type HucreRengi = 'kirmizi' | 'turuncu' | null
+
+/** "6/7" + ["1 eksik", "1 girilmedi"]. Pay/payda dersOzeti ile aynı: mazeretli (sınıfta yok) ve
+ *  işaretlenmemiş ödev paydada yok — paydalar bu yüzden öğrenciden öğrenciye değişir; ikisi ayrı gösterilir. */
+export function hucreMetni(d: DersOzeti | undefined, mazeretli = 0): MentorHucre {
+  if (!d) return { metin: '—', ekler: [], renk: null, aciklama: '' }
+  const girilmedi = Math.max(0, d.toplam - d.degerlendirilen - mazeretli)
+  const ekler = [d.eksik && `${d.eksik} eksik`, girilmedi && `${girilmedi} girilmedi`].filter((x): x is string => !!x)
+  const aciklama = [
+    `${d.toplam} ödev`,
+    d.degerlendirilen && `${d.degerlendirilen} ödevden ${d.yapildi} yapıldı`,
+    d.eksik && `${d.eksik} eksik yapıldı`,
+    d.gec && `${d.gec} geç`,
+    girilmedi && `${girilmedi} henüz girilmedi`,
+    mazeretli && `${mazeretli} mazeretli (sınıfta yok)`,
+  ].filter(Boolean).join(' · ')
+  if (d.degerlendirilen === 0) return { metin: '—', ekler, renk: null, aciklama }
+  const oran = (d.yapildi / d.degerlendirilen) * 100
   return {
-    metin: `${d.yapildi}/${d.degerlendirilen}${d.eksik ? ` (${d.eksik}e)` : ''}`,
-    kirmizi: odevSeviyesi(d.degerlendirilen, oran) === 'risk',
+    metin: `${d.yapildi}/${d.degerlendirilen}`,
+    ekler,
+    renk: oran < KIRMIZI_ALTI ? 'kirmizi' : oran < TURUNCU_ALTI ? 'turuncu' : null,
+    aciklama,
   }
 }
 
@@ -28,7 +47,9 @@ export function mentorTablosu(ogrenciler: MentorOgrenci[]): MentorTablo {
 
   const satirlar = sirali.map((o, i) => {
     const m = new Map(ozetler[i].map(d => [dersAnahtari(d.ders), d]))
-    return { id: o.id, full_name: o.full_name, class_name: o.class_name, dersler: ozetler[i], hucreler: anahtarlar.map(k => hucreMetni(m.get(k))) }
+    const mazeretli = new Map<string, number>()
+    for (const h of o.homeworks) if (h.status === 'mazeretli') mazeretli.set(dersAnahtari(h.subject), (mazeretli.get(dersAnahtari(h.subject)) ?? 0) + 1)
+    return { id: o.id, full_name: o.full_name, class_name: o.class_name, dersler: ozetler[i], hucreler: anahtarlar.map(k => hucreMetni(m.get(k), mazeretli.get(k))) }
   })
 
   // /yonetim/odevler riskliler ile aynı eşik: yapılmadı + eksik toplamı

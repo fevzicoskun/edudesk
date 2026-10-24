@@ -62,6 +62,28 @@ export const HomeworkSourceService = {
     return { id: olusan.data?.id ?? null, error: null }
   },
 
+  /** Ayarlar'da "Düzenle": yalnız ad değişir (ders aynı kalır). Aynı ders içinde başka bir kitabın adına çevrilemez. */
+  async renameSource(id: string, name: string): Promise<{ error?: string }> {
+    const ability = await getAbility()
+    if (!ability) return { error: 'Giriş gerekli' }
+    if (ability.cannot(P.HOMEWORK.CREATE)) return { error: 'Bu işlem için yetkiniz yok.' }
+    const yeniAd = kaynakAdiDuzelt(name)
+    if (!yeniAd) return { error: 'Kaynak adı gerekli' }
+
+    const mevcut = await HomeworkSourceRepository.findByTeacher(ability.userId, ability.schoolId)
+    if (mevcut.error) return { error: mevcut.error.message }
+    const kaynak = (mevcut.data ?? []).find(k => k.id === id)
+    if (!kaynak) return { error: 'Kayıt bulunamadı veya yetkiniz yok.' }
+    const ders = kaynak.subject?.trim() || null
+    const ayni = (mevcut.data ?? []).find(k => k.id !== id &&
+      ayniKaynak(k.name, name) && (k.subject?.trim() ? !!ders && ayniKaynak(k.subject, ders) : !ders))
+    if (ayni) return { error: `"${ayni.name}"${ayni.subject ? ` (${ayni.subject})` : ''} zaten kaynaklarınızda var.` }
+
+    const { error } = await HomeworkSourceRepository.rename(id, ability.userId, ability.schoolId, yeniAd)
+    if (error) return { error: error.message }
+    return {}
+  },
+
   async deleteSource(id: string) {
     const ability = await getAbility()
     if (!ability) return { error: 'Giriş gerekli' }

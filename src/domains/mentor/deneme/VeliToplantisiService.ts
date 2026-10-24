@@ -17,6 +17,8 @@ export type VeliToplantisiVerisi = {
   denemeler: Record<DenemeTuru, DenemeSatiri[]>
   odevler: HomeworkRecord[]
   haftalar: HaftaSatiri[]
+  /** Dönemde (devam eden hafta dahil) en az bir plan var mı — "kâğıt üzerinden takip" metni için */
+  planVar: boolean
 }
 
 export const VeliToplantisiService = {
@@ -28,14 +30,15 @@ export const VeliToplantisiService = {
     const o = await TakipRepository.ogrenci(ab.schoolId, studentId)
     if (!o) return null
     const bas = donemBasi(), bugun = todayLocalISO()
-    const [sinavlar, sonuclar, profil, profile, haftalar] = await Promise.all([
+    const [sinavlar, sonuclar, profil, profile, tumHaftalar] = await Promise.all([
       R.sinifSinavlari(o.class_id, bas),
       R.ogrenciSonuclari([studentId]),
       HomeworkService.getStudentHomeworkProfile(studentId, o.class_id, { tumOdevler: true, bas }),
       getCurrentProfile(),
-      // Yalnız bitmiş haftalar: devam eden hafta yarım sonuçla veliye "Birlikte takip edelim" diyordu (2026-10-24)
-      R.donemHaftalari(ab.schoolId, studentId, bas, addDaysISO(bugun, -7)),
+      R.donemHaftalari(ab.schoolId, studentId, bas, bugun),
     ])
+    // Tabloda yalnız bitmiş haftalar: devam eden hafta yarım sonuçla veliye "Birlikte takip edelim" diyordu (2026-10-24)
+    const haftalar = tumHaftalar.filter(h => h.hafta_basi <= addDaysISO(bugun, -7))
     if ('error' in profil) throw new Error(profil.error)
     return {
       okulAdi: profile?.schools?.name ?? '', mentorAdi: profile?.full_name ?? '', tarih: bugun,
@@ -47,6 +50,7 @@ export const VeliToplantisiService = {
       ),
       odevler: profil.homeworks,
       haftalar: haftalar.map(h => haftaSatiri(h.hafta_basi, normalizeIcerik(h.icerik as unknown as Icerik, h.seviye as Seviye), h.soru_hedefi)),
+      planVar: tumHaftalar.length > 0,
     }
   },
 }

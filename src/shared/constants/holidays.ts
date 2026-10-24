@@ -1,6 +1,7 @@
 // Türkiye resmî tatil ve bayram takvimi.
 // Her öğretim yılı başında güncelle: dinî bayram tarihleri (Ramazan/Kurban) yıla göre değişir.
-export const SCHOOL_YEAR_HOLIDAYS: { date: string; label: string }[] = [
+// tur 'yarim' = yarım gün (arife): takvimde görünür ama tatil sayılmaz — nöbet ve günlük işler sürer.
+export const SCHOOL_YEAR_HOLIDAYS: { date: string; label: string; tur?: 'yarim' }[] = [
   // 2025–2026 öğretim yılı
   { date: '2025-04-23', label: 'Ulusal Egemenlik ve Çocuk Bayramı' },
   { date: '2025-05-01', label: 'Emek ve Dayanışma Bayramı' },
@@ -25,6 +26,7 @@ export const SCHOOL_YEAR_HOLIDAYS: { date: string; label: string }[] = [
   { date: '2026-05-30', label: 'Kurban Bayramı' },
   { date: '2026-07-15', label: 'Demokrasi ve Millî Birlik Günü' },
   { date: '2026-08-30', label: 'Zafer Bayramı' },
+  { date: '2026-10-28', label: 'Cumhuriyet Bayramı arifesi (yarım gün)', tur: 'yarim' },
   { date: '2026-10-29', label: 'Cumhuriyet Bayramı' },
 
   // 2026–2027 öğretim yılı
@@ -40,5 +42,6 @@ export const SCHOOL_YEAR_HOLIDAYS: { date: string; label: string }[] = [
   { date: '2027-05-20', label: 'Kurban Bayramı' },
   { date: '2027-07-15', label: 'Demokrasi ve Millî Birlik Günü' },
   { date: '2027-08-30', label: 'Zafer Bayramı' },
+  { date: '2027-10-28', label: 'Cumhuriyet Bayramı arifesi (yarım gün)', tur: 'yarim' },
   { date: '2027-10-29', label: 'Cumhuriyet Bayramı' },
 ]

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useTransition, useOptimistic, useState } from 'react'
 import { formGonder } from '@/src/shared/utils/formGonder'
-import { createHomeworkSource, deleteHomeworkSource } from '@/app/actions/homework-source'
+import { createHomeworkSource, deleteHomeworkSource, renameHomeworkSource } from '@/app/actions/homework-source'
 
 type Source = { id: string; name: string; subject: string | null }
 type OptimisticAction = { type: 'add'; source: Source } | { type: 'remove'; id: string }
@@ -24,6 +24,20 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
   const formRef = useRef<HTMLFormElement>(null)
   useEffect(() => { if (state && !state.error) formRef.current?.reset() }, [state])
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  // "Düzenle": yalnız ad değişir; ödevler source_id ile bağlı kalır
+  const [duzenlenen, setDuzenlenen] = useState<{ id: string; ad: string } | null>(null)
+  const [duzenHata, setDuzenHata] = useState<string | null>(null)
+  const [kaydediliyor, kaydetBasla] = useTransition()
+
+  function adKaydet() {
+    if (!duzenlenen) return
+    setDuzenHata(null)
+    kaydetBasla(async () => {
+      const r = await renameHomeworkSource(duzenlenen.id, duzenlenen.ad)
+      if (r.error) setDuzenHata(r.error)
+      else setDuzenlenen(null)
+    })
+  }
 
   function handleDelete(source: Source) {
     setDeleteError(null)
@@ -51,12 +65,36 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
       <ul className="space-y-1.5">
         {optimistic.map(s => (
           <li key={s.id} className="flex items-center justify-between gap-2 px-3 py-2.5 bg-gray-50 dark:bg-slate-700/50 rounded-xl border border-gray-200 dark:border-slate-600">
+            {duzenlenen?.id === s.id ? (
+              <form className="flex-1 min-w-0 flex flex-wrap items-center gap-2" onSubmit={e => { e.preventDefault(); adKaydet() }}>
+                <input
+                  aria-label={`${s.name} yeni adı`}
+                  value={duzenlenen.ad}
+                  onChange={e => setDuzenlenen({ id: s.id, ad: e.target.value })}
+                  maxLength={100}
+                  autoFocus
+                  className={`${inputCls} flex-1 min-w-0 text-base dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100`}
+                />
+                <button type="submit" disabled={kaydediliyor || !duzenlenen.ad.trim()} className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium disabled:opacity-50">Kaydet</button>
+                <button type="button" onClick={() => { setDuzenlenen(null); setDuzenHata(null) }} className="px-3 py-2 rounded-lg text-sm text-gray-600 dark:text-slate-300">Vazgeç</button>
+                {duzenHata && <p role="alert" className="basis-full text-xs text-red-600 dark:text-red-400">{duzenHata}</p>}
+              </form>
+            ) : <>
             <div className="min-w-0">
               <span className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate block">{s.name}</span>
               {s.subject && (
                 <span className="text-xs text-gray-500 dark:text-slate-400">{s.subject}</span>
               )}
             </div>
+            <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => { setDuzenlenen({ id: s.id, ad: s.name }); setDuzenHata(null) }}
+              className="px-2 py-1.5 text-xs font-medium text-blue-700 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-950/30"
+              aria-label={`${s.name} adını düzenle`}
+            >
+              Düzenle
+            </button>
             <button
               onClick={() => handleDelete(s)}
               className="p-1.5 text-gray-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors shrink-0"
@@ -66,6 +104,8 @@ export default function KaynakYonetimi({ initial }: { initial: Source[] }) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
+            </div>
+            </>}
           </li>
         ))}
         {optimistic.length === 0 && (

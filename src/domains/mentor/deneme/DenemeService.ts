@@ -4,14 +4,19 @@ import { addDaysISO, todayLocalISO } from '@/src/shared/date'
 import { MentorRepository } from '../repositories/MentorRepository'
 import { TakipRepository } from '../repositories/TakipRepository'
 import { DenemeRepository as R } from '../repositories/DenemeRepository'
-import { parseStoys, eslestir, type DenemeTuru, type Eslesme } from './stoys'
+import { parseStoys, eslestir, type DenemeTuru, type DersSonucu, type Eslesme } from './stoys'
 import { denemeKaydetSema, KAPALI } from './denemeSema'
 
 export type Onizleme = {
   tur: DenemeTuru; seviye: number; sinif: string; sinifId: string; eslesme: Eslesme
   ogrenciAdlari: Record<string, string>; oneri: { sinavId: string; tarih: string } | null
 }
-export type DenemeListeSatiri = { sinavId: string; tur: DenemeTuru; tarih: string; sinif: string; sinifId: string; ogrenciSayisi: number }
+export type DenemeOgrenciSonucu = { id: string; ad: string; dersler: DersSonucu[]; toplamNet: number }
+export type DenemeListeSatiri = {
+  sinavId: string; tur: DenemeTuru; tarih: string; sinif: string; sinifId: string; ogrenciSayisi: number
+  /** Öğrenci bazlı net tablosu (satıra tıklayınca açılır) — veli toplantısı kâğıdıyla aynı veri */
+  ogrenciler: DenemeOgrenciSonucu[]
+}
 
 /** Kapı açık mı + mentörün güncel öğrencileri (sınıf kimliği ve adıyla). Kapalıysa null. */
 async function baglam() {
@@ -95,10 +100,12 @@ export const DenemeService = {
       if (!o?.class_id) continue
       const k = `${s.sinav_id}|${o.class_id}`
       const g = gruplar.get(k) ?? { sinavId: s.sinav_id, tur: s.deneme_sinavlari.tur as DenemeTuru, tarih: s.deneme_sinavlari.tarih,
-        sinif: o.class_name ?? '—', sinifId: o.class_id, ogrenciSayisi: 0 }
+        sinif: o.class_name ?? '—', sinifId: o.class_id, ogrenciSayisi: 0, ogrenciler: [] }
       g.ogrenciSayisi++
+      g.ogrenciler.push({ id: o.id, ad: o.full_name, dersler: s.dersler as unknown as DersSonucu[], toplamNet: Number(s.toplam_net) })
       gruplar.set(k, g)
     }
+    for (const g of gruplar.values()) g.ogrenciler.sort((a, b) => a.ad.localeCompare(b.ad, 'tr'))
     return [...gruplar.values()].sort((a, b) => b.tarih.localeCompare(a.tarih) || a.tur.localeCompare(b.tur))
   },
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { denemeGidisi, haftaSatiri } from '@/src/domains/mentor/lib/veliToplantisi'
+import { denemeGidisi, haftaSatiri, planBolumu, degisimGoster } from '@/src/domains/mentor/lib/veliToplantisi'
 import { durumOf, durumYuzdesi } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 import type { Gorev, Icerik } from '@/src/domains/mentor/takip/takipMath'
 
@@ -47,4 +47,19 @@ describe('haftaSatiri (sonuç kâğıdıyla aynı hesap)', () => {
     const s = haftaSatiri('2026-10-23', icerik([gorev(true), gorev(true)]), 120)
     expect(s).toMatchObject({ girilmedi: false, program: 100, soru: null, durum: 'iyi' })
   })
+})
+
+describe('planBolumu', () => {
+  const h = (girilmedi: boolean) => ({ hafta: '2026-10-09', girilmedi, program: null, soru: null, hedef: 0, durum: null })
+  it('hiç plan yoksa yok', () => expect(planBolumu(false, [])).toBe('yok'))
+  it('plan var ama bitmiş hafta yok (yalnız devam eden) → kâğıt', () => expect(planBolumu(true, [])).toBe('kagit'))
+  it('bitmiş haftaların hepsi girilmedi → kâğıt', () => expect(planBolumu(true, [h(true), h(true)])).toBe('kagit'))
+  it('en az bir hafta sonuçlu → tablo', () => expect(planBolumu(true, [h(true), h(false)])).toBe('tablo'))
+})
+
+describe('degisimGoster', () => {
+  const s = (degisim: number | null) => ({ tarih: '2026-10-08', katilmadi: false, dersler: [], toplamNet: 10, degisim })
+  it('tek deneme → gizli', () => expect(degisimGoster([s(null)])).toBe(false))
+  it('iki deneme ama karşılaştırılabilir değişim yok (biri katılmadı) → gizli', () => expect(degisimGoster([s(null), { ...s(null), katilmadi: true }])).toBe(false))
+  it('değişim varsa görünür', () => expect(degisimGoster([s(null), s(2.5)])).toBe(true))
 })

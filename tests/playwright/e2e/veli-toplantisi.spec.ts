@@ -97,6 +97,12 @@ test('yükle → önizleme → kaydet: yalnız mentörün öğrencisi yazılır'
   const { data: satir } = await db.from('deneme_sonuclari').select('student_id, toplam_net').eq('sinav_id', ids[0])
   expect(satir).toEqual([{ student_id: ogr.id, toplam_net: 51.75 }]) // sahte ad saklanmadı
   await expect(page.getByRole('region', { name: 'Yüklenen denemeler' })).toContainText('TCD')
+  // Satıra tıklayınca öğrenci bazlı net tablosu açılır (2026-10-24 Aşama 3)
+  await page.reload()
+  const liste = page.getByRole('region', { name: 'Yüklenen denemeler' })
+  await expect(liste.getByRole('table')).toBeHidden()
+  await liste.locator('summary').filter({ hasText: ogr.sinif }).first().click()
+  await expect(liste.getByRole('table').first().getByRole('row').filter({ hasText: ogr.full_name })).toContainText('51,75')
 })
 
 test('tanınmayan dosya açık hata verir, hiçbir şey yazılmaz', async ({ page }) => {
@@ -159,7 +165,7 @@ test.describe('kâğıt', () => {
     }
   })
 
-  test('deneme gidişi: katılmadı 0 değil, değişim işaretli; ödev listesi; haftalık girilmedi; başlık', async ({ page }) => {
+  test('deneme gidişi: katılmadı 0 değil, değişim işaretli; ödev listesi; plan kâğıtta; başlık', async ({ page }) => {
     await page.goto(KAGIT())
     await expect(page.getByRole('heading', { name: 'Veli Toplantısı' })).toBeVisible({ timeout: 20_000 })
     await expect(page).toHaveTitle(`${ogr.full_name} - Veli Toplantısı`)
@@ -173,9 +179,10 @@ test.describe('kâğıt', () => {
     const liste = page.getByRole('table', { name: 'Yapılmayan ve eksik ödevler' })
     await expect(liste).toContainText('E2E veli yapılmadı ödevi')
     await expect(liste).not.toContainText('E2E veli işaretsiz ödevi') // işaretlenmemiş yapılmadı sayılmaz
-    await expect(page.getByRole('table', { name: 'Haftalık plan' }).getByRole('row').nth(1)).toContainText('Girilmedi')
-    // Bitmemiş hafta (bu hafta) kâğıda girmez: yarım hafta veliye "Birlikte takip edelim" diyordu (2026-10-24)
-    await expect(page.getByRole('table', { name: 'Haftalık plan' }).getByRole('row')).toHaveCount(2)
+    // Plan var, bitmiş haftada sonuç girilmemiş (bu hafta henüz bitmedi) → tablo yerine "kâğıt üzerinden" (2026-10-24 Aşama 3)
+    await expect(page.getByText('Haftalık plan kâğıt üzerinden takip ediliyor.')).toBeVisible()
+    await expect(page.getByRole('table', { name: 'Haftalık plan' })).toHaveCount(0)
+    await expect(tcd.getByRole('columnheader', { name: 'Değişim' })).toBeVisible() // 3 deneme → karşılaştırma var
     await expect(page.getByText('Mentör imzası')).toBeVisible()
   })
 

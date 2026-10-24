@@ -8,6 +8,7 @@ vi.mock('@/src/domains/homework/repositories/HomeworkSourceRepository', () => ({
     findByTeacher:      vi.fn(),
     insert:             vi.fn(),
     deactivate:         vi.fn(),
+    rename:             vi.fn(),
     findHomeworkDates:  vi.fn(),
   },
 }))
@@ -124,6 +125,35 @@ describe('findOrCreateByName() — ödev formundan yazılan kaynak', () => {
 })
 
 // ─── deleteSource — RBAC ─────────────────────────────────────
+
+describe('renameSource() — Ayarlar "Düzenle"', () => {
+  const ORJ = { id: 'k1', name: 'Mikro Orjinal', subject: 'Matematik' }
+  const DIGER = { id: 'k2', name: 'Mikro Orijinal', subject: 'Matematik' }
+  beforeEach(() => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility(['homework:create']) as never)
+    vi.mocked(HomeworkSourceRepository.findByTeacher).mockResolvedValue({ data: [ORJ, DIGER], error: null } as never)
+    vi.mocked(HomeworkSourceRepository.rename).mockResolvedValue({ error: null } as never)
+  })
+  it('ad düzeltilip yalnız kendi kaydında güncellenir', async () => {
+    const r = await HomeworkSourceService.renameSource('k1', '  mikro   ORİJİNAL geo')
+    expect(r).toEqual({})
+    expect(HomeworkSourceRepository.rename).toHaveBeenCalledWith('k1', TEACHER_ID, SCHOOL_ID, 'Mikro Orijinal Geo')
+  })
+  it('aynı ders içinde başka kitabın adına çevrilemez', async () => {
+    const r = await HomeworkSourceService.renameSource('k1', 'mikro orijinal')
+    expect(r.error).toMatch(/zaten kaynaklarınızda var/i)
+    expect(HomeworkSourceRepository.rename).not.toHaveBeenCalled()
+  })
+  it('listede olmayan kaynak → hata, güncelleme yok', async () => {
+    const r = await HomeworkSourceService.renameSource('yok', 'Yeni Ad')
+    expect(r.error).toBeTruthy()
+    expect(HomeworkSourceRepository.rename).not.toHaveBeenCalled()
+  })
+  it('yetki yoksa güncelleme yok', async () => {
+    vi.mocked(getAbility).mockResolvedValue(makeAbility([]) as never)
+    expect((await HomeworkSourceService.renameSource('k1', 'X')).error).toMatch(/yetkiniz yok/)
+  })
+})
 
 describe('HomeworkSourceService.deleteSource()', () => {
   it('giriş yapılmamışsa → error', async () => {

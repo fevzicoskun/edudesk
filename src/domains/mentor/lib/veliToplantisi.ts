@@ -39,3 +39,13 @@ export function haftaSatiri(haftaBasi: string, icerik: Icerik, soruHedefi: numbe
   const y = durumYuzdesi(program, soru, soruHedefi)
   return { hafta: haftaBasi, girilmedi, program, soru, hedef: soruHedefi, durum: y === null ? null : durumOf(y) }
 }
+
+/** "Değişim" sütunu yalnız en az bir karşılaştırma varsa: türde tek deneme (ya da öncekine katılmamış) → sütun gizli. */
+export const degisimGoster = (satirlar: Pick<DenemeSatiri, 'degisim'>[]) => satirlar.some(s => s.degisim !== null)
+
+/** Haftalık plan bölümü: hiç plan yok → 'yok'; plan var ama bitmiş haftalarda sonuç girilmemiş → 'kagit'
+ *  (mentör kâğıtla takip ediyor); en az bir hafta sonuçlu → 'tablo'. */
+export function planBolumu(planVar: boolean, haftalar: Pick<HaftaSatiri, 'girilmedi'>[]): 'yok' | 'kagit' | 'tablo' {
+  if (haftalar.some(h => !h.girilmedi)) return 'tablo'
+  return planVar ? 'kagit' : 'yok'
+}

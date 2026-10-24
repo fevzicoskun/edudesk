@@ -342,6 +342,8 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
   const sayfa = page.locator('main')
   await expect(sayfa.getByRole('link', { name: 'Tüm planları yazdır', exact: true })).toHaveAttribute('href', '/mentorluk/takip-kagitlari')
+  // Tablo altındaki açıklama: "(1e)" yerine açık yazım + tek renk kuralı (2026-10-24 Aşama 3)
+  await expect(sayfa.getByText(/5\/7 = değerlendirilen 7 ödevden 5'i yapıldı/)).toBeVisible()
   await expect(sayfa.getByRole('link', { name: 'Ödev özetlerini yazdır', exact: true })).toHaveAttribute('href', /^\/mentorluk\/yazdir\?bas=/)
 })
 test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğrenci Haftalık planlar', async ({ page }) => {

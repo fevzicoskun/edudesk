@@ -7,22 +7,34 @@ const hw = (subject: string, status: HomeworkRecord['status'], i = Math.random()
 })
 
 describe('hucreMetni', () => {
-  it('ödev yoksa —', () => expect(hucreMetni(undefined)).toEqual({ metin: '—', kirmizi: false }))
-  it('yapılan/değerlendirilen, eksik parantezde', () => {
-    expect(hucreMetni({ ders: 'Fizik', yapildi: 2, eksik: 1, gec: 0, degerlendirilen: 3, toplam: 3 }).metin).toBe('2/3 (1e)')
+  const d = (yapildi: number, degerlendirilen: number, eksik = 0, toplam = degerlendirilen) =>
+    ({ ders: 'M', yapildi, eksik, gec: 0, degerlendirilen, toplam })
+  it('ödev yoksa —', () => expect(hucreMetni(undefined)).toMatchObject({ metin: '—', ekler: [], renk: null }))
+  it('hiç kontrol edilmemişse —, ama girilmedi yazar', () => {
+    expect(hucreMetni(d(0, 0, 0, 2))).toMatchObject({ metin: '—', ekler: ['2 girilmedi'] })
   })
-  it('mazeretli ve kontrol edilmemiş ödev paydaya girmez (dersOzeti tanımı)', () => {
+  it('yapılan/değerlendirilen; eksik ve girilmedi açık yazılır', () => {
+    expect(hucreMetni(d(6, 7, 1, 8))).toMatchObject({ metin: '6/7', ekler: ['1 eksik', '1 girilmedi'] })
+  })
+  it('mazeretli girilmedi sayılmaz, açıklamada yazar', () => {
+    const h = hucreMetni(d(8, 8, 0, 9), 1)
+    expect(h.ekler).toEqual([])
+    expect(h.aciklama).toContain('1 mazeretli')
+  })
+  it('tek renk kuralı: %50 altı kırmızı, %50–%80 turuncu, üstü normal (az veride de)', () => {
+    expect(hucreMetni(d(2, 7)).renk).toBe('kirmizi')  // %29
+    expect(hucreMetni(d(0, 1)).renk).toBe('kirmizi')  // %0 — eskiden "az veri" diye renksizdi
+    expect(hucreMetni(d(4, 8)).renk).toBe('turuncu') // %50 — eskiden renksizdi
+    expect(hucreMetni(d(6, 8)).renk).toBe('turuncu') // %75
+    expect(hucreMetni(d(7, 8)).renk).toBeNull()      // %88
+    expect(hucreMetni(d(4, 5)).renk).toBeNull()      // %80 sınırı normal
+  })
+  it('mentorTablosu mazeretli ve kontrol edilmemiş ödevi paydaya katmaz, ayrı sayar', () => {
     const t = mentorTablosu([{ id: 'a', full_name: 'Ali', class_name: null, homeworks: [
       hw('Fizik', 'yapildi'), hw('Fizik', 'yapildi'), hw('Fizik', 'eksik'), hw('Fizik', 'mazeretli'), hw('Fizik', null),
     ] }])
-    expect(t.satirlar[0].hucreler[0].metin).toBe('2/3 (1e)')
-  })
-  it('hiç kontrol edilmemişse —', () => {
-    expect(hucreMetni({ ders: 'Fizik', yapildi: 0, eksik: 0, gec: 0, degerlendirilen: 0, toplam: 2 }).metin).toBe('—')
-  })
-  it('kırmızı eşiği odevSeviyesi ile aynı: 5 değerlendirilenden 1 yapıldı = risk', () => {
-    expect(hucreMetni({ ders: 'M', yapildi: 1, eksik: 0, gec: 0, degerlendirilen: 5, toplam: 5 }).kirmizi).toBe(true)
-    expect(hucreMetni({ ders: 'M', yapildi: 0, eksik: 0, gec: 0, degerlendirilen: 2, toplam: 2 }).kirmizi).toBe(false) // az veri
+    expect(t.satirlar[0].hucreler[0]).toMatchObject({ metin: '2/3', ekler: ['1 eksik', '1 girilmedi'] })
+    expect(t.satirlar[0].hucreler[0].aciklama).toContain('1 mazeretli')
   })
 })
 
@@ -33,7 +45,7 @@ describe('mentorTablosu', () => {
       { id: 'b', full_name: 'Ayşe', class_name: '11-A', homeworks: [hw('matematik ', 'yapildi'), hw('Kimya', 'yapildi')] },
     ])
     expect(t.dersler).toEqual(['Fizik', 'Kimya', 'Matematik'])
-    expect(t.satirlar[0].hucreler.map(h => h.metin)).toEqual(['0/1 (1e)', '—', '1/1'])
+    expect(t.satirlar[0].hucreler.map(h => h.metin)).toEqual(['0/1', '—', '1/1'])
     expect(t.satirlar[1].hucreler.map(h => h.metin)).toEqual(['—', '1/1', '1/1'])
   })
   it('satırlar Türkçe ada göre sıralı', () => {

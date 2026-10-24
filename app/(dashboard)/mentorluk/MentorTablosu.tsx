@@ -1,8 +1,11 @@
 import Link from 'next/link'
-import { dersOzetiMetni } from '@/src/domains/homework/lib/stats'
-import type { MentorTablo } from '@/src/domains/mentor/lib/mentorTablosu'
+import { KIRMIZI_ALTI, TURUNCU_ALTI, type MentorTablo, type HucreRengi } from '@/src/domains/mentor/lib/mentorTablosu'
 
-/** Öğrenci × ders. Renk yalnız rakamda (kırmızı = geride). Telefonda satır + ders metni. */
+/** Öğrenci × ders. Renk yalnız rakamda (tek kural: KIRMIZI_ALTI / TURUNCU_ALTI). Telefonda satır + ders metni. */
+const RENK: Record<NonNullable<HucreRengi>, string> = {
+  kirmizi: 'text-red-700 dark:text-red-400 font-semibold',
+  turuncu: 'text-orange-700 dark:text-orange-400 font-semibold',
+}
 type GecenHafta = { program: number | null; dogruluk: number | null } | null
 const yuzde = (ad: string, n: number | null) => n === null ? null
   : <span className={n < 50 ? 'text-red-700 dark:text-red-400 font-semibold' : ''}>{ad} %{n}</span>
@@ -41,7 +44,11 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
                 <td className="py-2 pr-3">{ad(s.id, s.full_name)}</td>
                 <td className="py-2 pr-3 text-gray-600 dark:text-slate-400">{s.class_name ?? '—'}</td>
                 {s.hucreler.map((h, i) => (
-                  <td key={tablo.dersler[i]} className={`py-2 px-2 text-center tabular-nums ${h.kirmizi ? 'text-red-700 dark:text-red-400 font-semibold' : 'text-gray-800 dark:text-slate-200'}`}>{h.metin}</td>
+                  <td key={tablo.dersler[i]} title={h.aciklama || undefined} className="py-2 px-2 text-center tabular-nums align-top">
+                    <span className={h.renk ? RENK[h.renk] : 'text-gray-800 dark:text-slate-200'}>{h.metin}</span>
+                    {/* dar sütunda tek satıra sığmıyor → her ek kendi satırında */}
+                    {h.ekler.map(e => <span key={e} className="block text-[11px] leading-tight text-gray-600 dark:text-slate-400 print:text-gray-700 whitespace-nowrap">{e}</span>)}
+                  </td>
                 ))}
                 {takip && <td className="py-2 px-2 whitespace-nowrap">{takip[s.id]}</td>}
                 {gecen && <td className="py-2 px-2 whitespace-nowrap text-xs">{<Gecen g={gecen[s.id] ?? null} />}</td>}
@@ -49,6 +56,10 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
             ))}
           </tbody>
         </table>
+        <p className="mt-2 text-xs text-gray-600 dark:text-slate-400 print:text-gray-700">
+          5/7 = değerlendirilen 7 ödevden 5&apos;i yapıldı · &quot;eksik&quot; = eksik yapıldı · &quot;girilmedi&quot; = öğretmen henüz işaretlemedi (paydaya girmez) ·
+          {' '}<span className={RENK.kirmizi}>%{KIRMIZI_ALTI} altı</span>, <span className={RENK.turuncu}>%{KIRMIZI_ALTI}–{TURUNCU_ALTI}</span> · ayrıntı için hücrenin üzerine gelin
+        </p>
       </div>
       <ul className="md:hidden print:hidden space-y-2">
         {tablo.satirlar.map(s => (
@@ -57,7 +68,9 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
             {takip && <p className="text-xs mt-0.5">Bu hafta: {takip[s.id]}</p>}
             {gecen && <p className="text-xs mt-0.5">Geçen hafta: <Gecen g={gecen[s.id] ?? null} /></p>}
             <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-gray-700 dark:text-slate-300">
-              {s.dersler.length === 0 ? 'Bu aralıkta ödev yok' : s.dersler.map(d => <span key={d.ders}>{dersOzetiMetni(d)}</span>)}
+              {s.dersler.length === 0 ? 'Bu aralıkta ödev yok' : s.hucreler.map((h, i) => h.metin === '—' && h.ekler.length === 0 ? null : (
+                <span key={tablo.dersler[i]}>{tablo.dersler[i]} <span className={h.renk ? RENK[h.renk] : ''}>{h.metin}</span>{h.ekler.length > 0 && ` (${h.ekler.join(', ')})`}</span>
+              ))}
             </p>
           </li>
         ))}

@@ -4,6 +4,7 @@ import { takipHaftaEtiketi } from '@/src/domains/mentor/takip/takipMath'
 import { gunAy } from '@/src/domains/mentor/lib/bultenMath'
 import type { VeliToplantisiVerisi } from '@/src/domains/mentor/deneme/VeliToplantisiService'
 import { DURUM_ETIKETLERI } from '../takip/SonucKagidi'
+import { degisimGoster, planBolumu } from '@/src/domains/mentor/lib/veliToplantisi'
 
 const TUR_ADI: Record<DenemeTuru, string> = { TM: 'TM (Türkçe, Matematik)', FKB: 'FKB (Fizik, Kimya, Biyoloji)', TCD: 'TCD (Tarih, Coğrafya, Din)' }
 const DERS_SIRASI: Record<DenemeTuru, string[]> = { TM: ['TÜR', 'MAT'], FKB: ['FİZ', 'KİM', 'BİY'], TCD: ['TAR', 'COĞ', 'DİN'] }
@@ -39,6 +40,7 @@ export default function VeliToplantisiKagidi({ v }: { v: VeliToplantisiVerisi })
         {turler.length === 0 ? <p>Bu dönem için deneme sonucu yüklenmedi.</p> : turler.map(t => {
           const satirlar = v.denemeler[t]
           const kodlar = DERS_SIRASI[t].filter(k => satirlar.some(s => s.dersler.some(d => d.kod === k)))
+          const degisim = degisimGoster(satirlar) // tek deneme → karşılaştıracak bir şey yok, sütun gizli
           return (
             <table key={t} aria-label={`${t} denemeleri`} className="w-full border-collapse mb-2 break-inside-avoid">
               <caption className="text-left font-semibold">{TUR_ADI[t]}</caption>
@@ -47,17 +49,17 @@ export default function VeliToplantisiKagidi({ v }: { v: VeliToplantisiVerisi })
                 <th className={th}>Sınav</th>
                 {kodlar.map(k => <th key={k} className={`${th} text-right`}>{DERS_ADLARI[k] ?? k}</th>)}
                 <th className={`${th} text-right`}>Toplam net</th>
-                <th className={`${th} text-right`}>Değişim</th>
+                {degisim && <th className={`${th} text-right`}>Değişim</th>}
               </tr></thead>
               <tbody>{satirlar.map(s => (
                 <tr key={s.tarih}>
                   <td className={`${td} whitespace-nowrap`}>{gunAy(s.tarih)}</td>
                   {s.katilmadi
-                    ? <td className={`${td} italic`} colSpan={kodlar.length + 2}>Katılmadı</td>
+                    ? <td className={`${td} italic`} colSpan={kodlar.length + (degisim ? 2 : 1)}>Katılmadı</td>
                     : <>
                         {kodlar.map(k => { const d = s.dersler.find(x => x.kod === k); return <td key={k} className={`${td} text-right tabular-nums`}>{d ? netYaz(d.n) : '—'}</td> })}
                         <td className={`${td} text-right tabular-nums font-semibold`}>{netYaz(s.toplamNet!)}</td>
-                        <td className={`${td} text-right tabular-nums`}>{degisimYaz(s.degisim)}</td>
+                        {degisim && <td className={`${td} text-right tabular-nums`}>{degisimYaz(s.degisim)}</td>}
                       </>}
                 </tr>
               ))}</tbody>
@@ -86,7 +88,8 @@ export default function VeliToplantisiKagidi({ v }: { v: VeliToplantisiVerisi })
 
       <section aria-label="Haftalık plan sonuçları" className="mb-3 break-inside-avoid">
         <h2 className="text-[12pt] font-bold mb-1">Haftalık plan</h2>
-        {v.haftalar.length === 0 ? <p>Bu dönem haftalık plan sonucu yok.</p> : (
+        {planBolumu(v.planVar, v.haftalar) === 'yok' ? <p>Bu dönem haftalık plan sonucu yok.</p>
+          : planBolumu(v.planVar, v.haftalar) === 'kagit' ? <p>Haftalık plan kâğıt üzerinden takip ediliyor.</p> : (
           <table aria-label="Haftalık plan" className="w-full border-collapse">
             <thead><tr>{['Hafta', 'Program', 'Soru', 'Durum'].map(h => <th key={h} className={th}>{h}</th>)}</tr></thead>
             <tbody>{v.haftalar.map(h => (

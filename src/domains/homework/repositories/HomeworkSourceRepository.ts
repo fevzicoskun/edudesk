@@ -38,6 +38,22 @@ export const HomeworkSourceRepository = {
     return { error: null }
   },
 
+  /** Yalnız adı değişir; ödevler source_id ile bağlı kalır. Satır sahibi değilse 0 satır → hata. */
+  async rename(id: string, teacherId: string, schoolId: string, name: string) {
+    const supabase = await createClient()
+    const { data: rows, error } = await supabase
+      .from('homework_sources')
+      .update({ name })
+      .eq('id', id)
+      .eq('teacher_id', teacherId)
+      .eq('school_id', schoolId)
+      .eq('active', true)
+      .select('id')
+    if (error) return { error }
+    if (!rows || rows.length === 0) return { error: { message: 'Kayıt bulunamadı veya yetkiniz yok.' } }
+    return { error: null }
+  },
+
   async findHomeworkDates(teacherId: string, schoolId: string, since: string) {
     const supabase = await createClient()
     return supabase

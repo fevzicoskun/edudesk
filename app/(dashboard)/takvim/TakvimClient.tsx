@@ -10,6 +10,7 @@ const GUN_BASLIKLARI = ['Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt', 'Paz']
 // Kategori işaret renkleri (dataviz uyumlu, açık/koyu temada okunur).
 const TYPE_STYLE: Record<CalendarEvent['type'], { dot: string; label: string }> = {
   tatil:    { dot: 'bg-rose-500',    label: 'Tatil' },
+  yarim:    { dot: 'bg-violet-500',  label: 'Yarım gün' },
   nobet:    { dot: 'bg-amber-500',   label: 'Nöbet' },
   odev:     { dot: 'bg-emerald-500', label: 'Ödev teslimi' },
 }

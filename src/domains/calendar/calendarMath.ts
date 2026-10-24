@@ -1,7 +1,7 @@
 // Takvim birleştirme çekirdeği — saf fonksiyonlar, DB/IO yok.
 // Tarih konvansiyonu: her yerde 'YYYY-MM-DD' string; Date yalnız yerel y/m/d ile kurulur (tz güvenli).
 
-export type CalendarEventType = 'tatil' | 'nobet' | 'odev'
+export type CalendarEventType = 'tatil' | 'yarim' | 'nobet' | 'odev'
 
 export interface CalendarEvent {
   date: string
@@ -28,7 +28,18 @@ export interface DutyInput {
 }
 
 const TYPE_ORDER: Record<CalendarEventType, number> = {
-  tatil: 0, nobet: 1, odev: 2,
+  tatil: 0, yarim: 1, nobet: 2, odev: 3,
+}
+
+/** Aralıktaki tatiller takvim olayına; tamGunler yalnız tam gün tatiller (yarım günde nöbet düşmez). */
+export function takvimTatilleri(
+  liste: { date: string; label: string; tur?: 'yarim' }[], from: string, to: string,
+): { olaylar: CalendarEvent[]; tamGunler: Set<string> } {
+  const aralik = liste.filter(h => h.date >= from && h.date <= to)
+  return {
+    olaylar: aralik.map(h => ({ date: h.date, type: h.tur === 'yarim' ? 'yarim' as const : 'tatil' as const, title: h.label })),
+    tamGunler: new Set(aralik.filter(h => h.tur !== 'yarim').map(h => h.date)),
+  }
 }
 
 export function toDateStr(year: number, month: number, day: number): string {

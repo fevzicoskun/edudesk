@@ -11,6 +11,7 @@ import type { DersSecenekleri } from '@/src/domains/homework/dersSecimi'
 
 type ClassItem  = { id: string; name: string; grade: number }
 type SourceItem = { id: string; name: string; subject: string | null }
+const YENI_KAYNAK = '__yeni__'
 
 export type Defaults = {
   title?: string
@@ -53,6 +54,9 @@ export default function HomeworkForm({
   // Öğretmenin dili "hangi kitaptan hangi sayfalar" — başlık ondan türer.
   // Öğretmen başlığa elle dokunursa öneri devreden çıkar.
   const [kaynak, setKaynak]         = useState(defaults?.source_name ?? '')
+  // Önce listeden seçim; listede yoksa "yeni yaz" ile serbest metin (2026-10-24). Kayıtlı ad listede yoksa yazı modunda açılır.
+  const [kaynakId, setKaynakId]     = useState(() => sources.find(s => s.name === defaults?.source_name)?.id ?? '')
+  const [kaynakYaz, setKaynakYaz]   = useState(() => sources.length === 0 || (!!defaults?.source_name && !sources.some(s => s.name === defaults.source_name)))
   const [sayfa, setSayfa]           = useState('')
   const [baslik, setBaslik]         = useState(defaults?.title ?? '')
   const [baslikElle, setBaslikElle] = useState(!!defaults?.title)
@@ -189,17 +193,38 @@ export default function HomeworkForm({
               </Link>
             </div>
             <div className="flex gap-2">
-              <input
-                id="hw-source"
-                name="source_name"
-                type="text"
-                list="hw-kaynak-listesi"
-                maxLength={100}
-                value={kaynak}
-                onChange={e => setKaynak(e.target.value)}
-                placeholder="Kitap veya kaynak adı"
-                className={`${fieldFlex} flex-1 min-w-0`}
-              />
+              {kaynakYaz ? (
+                <input
+                  id="hw-source"
+                  name="source_name"
+                  type="text"
+                  list="hw-kaynak-listesi"
+                  maxLength={100}
+                  value={kaynak}
+                  onChange={e => setKaynak(e.target.value)}
+                  placeholder="Kitap veya kaynak adı"
+                  autoFocus={sources.length > 0}
+                  className={`${fieldFlex} flex-1 min-w-0`}
+                />
+              ) : <>
+                <select
+                  id="hw-source"
+                  aria-label="Kaynak"
+                  value={kaynakId}
+                  onChange={e => {
+                    if (e.target.value === YENI_KAYNAK) { setKaynakYaz(true); setKaynak(''); setKaynakId(''); return }
+                    setKaynakId(e.target.value)
+                    setKaynak(sources.find(s => s.id === e.target.value)?.name ?? '')
+                  }}
+                  className={`${fieldFlex} flex-1 min-w-0`}
+                >
+                  <option value="">— Kaynak seçin —</option>
+                  {/* Aynı adlı kitap farklı derste olabilir (Mikro Orjinal Matematik / Geometri): ders ekte; sunucu ödevin dersine uyanı bağlar */}
+                  {sources.map(s => <option key={s.id} value={s.id}>{s.name}{s.subject ? ` · ${s.subject}` : ''}</option>)}
+                  <option value={YENI_KAYNAK}>✎ Listede yok, yeni yaz…</option>
+                </select>
+                <input type="hidden" name="source_name" value={kaynak} />
+              </>}
               <input
                 id="hw-sayfa"
                 type="text"
@@ -217,7 +242,9 @@ export default function HomeworkForm({
               ))}
             </datalist>
             <p className="text-xs text-gray-500 dark:text-slate-400 pt-0.5">
-              Listede yoksa yazmanız yeter — kaynaklarınıza eklenir.
+              {kaynakYaz && sources.length > 0
+                ? <>Yazdığınız kaynak listenize eklenir. <button type="button" className="text-blue-600 dark:text-blue-400 underline" onClick={() => { setKaynakYaz(false); setKaynak(''); setKaynakId('') }}>Listeden seç</button></>
+                : 'Listede yoksa "Listede yok, yeni yaz…" seçin — kaynaklarınıza eklenir.'}
             </p>
           </div>
 

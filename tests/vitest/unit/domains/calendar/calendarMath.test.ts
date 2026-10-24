@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
-  parseAyParam, toDateStr, buildMonthCells, expandDuties, groupByDay,
+  parseAyParam, toDateStr, buildMonthCells, expandDuties, groupByDay, expandDutiesRange, takvimTatilleri,
   type CalendarEvent,
 } from '@/src/domains/calendar/calendarMath'
+import { SCHOOL_YEAR_HOLIDAYS } from '@/src/shared/constants/holidays'
 
 describe('parseAyParam', () => {
   const today = new Date(2026, 6, 5) // 5 Temmuz 2026
@@ -91,5 +92,29 @@ describe('groupByDay', () => {
 
   it('boş liste → boş nesne', () => {
     expect(groupByDay([])).toEqual({})
+  })
+})
+
+describe('takvimTatilleri — yarım gün (2026-10-24)', () => {
+  const liste = [
+    { date: '2026-10-28', label: 'Cumhuriyet Bayramı arifesi (yarım gün)', tur: 'yarim' as const },
+    { date: '2026-10-29', label: 'Cumhuriyet Bayramı' },
+    { date: '2026-11-30', label: 'Aralık dışı' },
+  ]
+  it('yarım gün ayrı türde görünür; nöbet düşürmede yalnız tam gün tatiller sayılır', () => {
+    const { olaylar, tamGunler } = takvimTatilleri(liste, '2026-10-01', '2026-10-31')
+    expect(olaylar.map(o => [o.date, o.type])).toEqual([['2026-10-28', 'yarim'], ['2026-10-29', 'tatil']])
+    expect([...tamGunler]).toEqual(['2026-10-29'])
+  })
+  it('28 Ekim nöbeti takvimden düşmez, 29 Ekim düşer', () => {
+    const { tamGunler } = takvimTatilleri(liste, '2026-10-26', '2026-10-30')
+    const nobet = expandDutiesRange([
+      { day_of_week: 3, time_range: '08:00-12:00', location: 'Bahçe' }, // Çarşamba 28 Ekim
+      { day_of_week: 4, time_range: '08:00-12:00', location: 'Bahçe' }, // Perşembe 29 Ekim
+    ], '2026-10-26', '2026-10-30', tamGunler)
+    expect(nobet.map(n => n.date)).toEqual(['2026-10-28'])
+  })
+  it('ortak listede 28 Ekim yarım gün', () => {
+    expect(SCHOOL_YEAR_HOLIDAYS.find(h => h.date === '2026-10-28')).toMatchObject({ tur: 'yarim' })
   })
 })

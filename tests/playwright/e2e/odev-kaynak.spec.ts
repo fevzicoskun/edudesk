@@ -60,8 +60,9 @@ test('ödev formunda yazılan kaynak, ödevin dersine uyan kitaba bağlanır', a
   await formHazir(page)
 
   await page.locator('select[name="subject"]').selectOption('Geometri')
-  // harf ve boşluk farkıyla yazılır — yine aynı kitap olmalı
-  await page.locator('#hw-source').fill(`${ETIKET}  mikro ORJİNAL `)
+  // Listede yok yolu: "yeni yaz" seçilir, harf ve boşluk farkıyla yazılır — yine aynı kitap olmalı
+  await page.locator('select#hw-source').selectOption('__yeni__')
+  await page.locator('input#hw-source').fill(`${ETIKET}  mikro ORJİNAL `)
   await page.locator('input[name="title"]').fill(baslik)
   const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
   await page.getByLabel('Son Teslim Tarihi').fill(bugun)
@@ -117,4 +118,44 @@ test('Romen rakamı ve rakam tekrarı içeren başlık kaydedilir ("Ünite III �
   await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
   const { data } = await db.from('homeworks').select('title').eq('title', kayitli).single()
   expect(data?.title).toBe(kayitli)
+})
+
+test('kitap önce listeden seçilir: seçilen kitap ödeve bağlanır, başlık önerisi gelir', async ({ page }) => {
+  const kayitli = `${ETIKET} Mikro Orjinal · S.12-14`
+  await page.goto('/odevler/yeni')
+  const gonder = page.locator('button[type="submit"]').last()
+  await expect(async () => {
+    await page.getByRole('button', { name: /9-A/ }).first().click({ timeout: 2_000 })
+    await expect(gonder).toBeEnabled({ timeout: 2_000 })
+  }).toPass({ timeout: 30_000 })
+  await formHazir(page)
+
+  await page.locator('select[name="subject"]').selectOption('Geometri')
+  // Aynı adlı iki kitap dersle ayrışır; seçim kutusu seçileni gösterir (ilkini değil)
+  await page.locator('select#hw-source').selectOption({ label: `${ETIKET} Mikro Orjinal · Geometri` })
+  await expect(page.locator('select#hw-source')).toHaveValue(geoId)
+  await page.getByLabel('Sayfa aralığı').fill('12-14')
+  const bugun = new Intl.DateTimeFormat('fr-CA', { timeZone: 'Europe/Istanbul' }).format(new Date())
+  await page.getByLabel('Son Teslim Tarihi').fill(bugun)
+  await expect(page.locator('input[name="title"]')).toHaveValue(`${ETIKET} Mikro Orjinal · s.12-14`)
+
+  await gonder.click()
+  await expect(page).toHaveURL(/\/odevler\/[0-9a-f-]{36}/, { timeout: 30_000 })
+  const { data } = await db.from('homeworks').select('source_id').eq('title', kayitli).single()
+  expect(data).toEqual({ source_id: geoId })
+})
+
+test('Ayarlar → Düzenle: kitabın adı değişir, ödev aynı kitaba (id) bağlı kalır', async ({ page }) => {
+  await page.goto('/ayarlar')
+  const liste = page.locator('#kaynaklar')
+  await liste.getByRole('button', { name: `${KITAP} adını düzenle` }).first().click()
+  const kutu = liste.getByRole('textbox', { name: `${KITAP} yeni adı` })
+  await kutu.fill(`${ETIKET} mikro orijinal`)
+  await liste.getByRole('button', { name: 'Kaydet' }).click()
+  await expect(liste.getByText(`${ETIKET} Mikro Orijinal`, { exact: true })).toBeVisible({ timeout: 15_000 })
+  const { data } = await db.from('homework_sources').select('id, name').like('name', `${ETIKET}%`).order('created_at')
+  expect(data!.map(k => k.name)).toContain(`${ETIKET} Mikro Orijinal`)
+  // Bağ id ile: yeniden adlandırılan kitaba bağlı ödevler hâlâ bağlı (başlıktaki kopya ad değişmez)
+  const { count } = await db.from('homeworks').select('id', { count: 'exact', head: true }).in('source_id', data!.map(k => k.id))
+  expect(count).toBeGreaterThan(0)
 })

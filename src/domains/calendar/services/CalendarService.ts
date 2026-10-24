@@ -6,7 +6,7 @@ import { SCHOOL_YEAR_HOLIDAYS } from '@/src/shared/constants/holidays'
 import { createClient } from '@/src/infrastructure/supabase/server'
 import { DutyRepository } from '@/src/domains/schedule/repositories/DutyRepository'
 import { CalendarRepository, type CalendarDb } from '../repositories/CalendarRepository'
-import { expandDutiesRange, groupByDay, toDateStr, type CalendarEvent, type DutyInput } from '../calendarMath'
+import { expandDutiesRange, groupByDay, toDateStr, takvimTatilleri, type CalendarEvent, type DutyInput } from '../calendarMath'
 import type { FeedScope } from '../feedAccess'
 
 export const CalendarService = {
@@ -48,8 +48,7 @@ export const CalendarService = {
       }
     }
 
-    const holidays = SCHOOL_YEAR_HOLIDAYS.filter(h => h.date >= from && h.date <= to)
-    const holidayDates = new Set(holidays.map(h => h.date))
+    const { olaylar: tatiller, tamGunler } = takvimTatilleri(SCHOOL_YEAR_HOLIDAYS, from, to)
 
     const duties: DutyInput[] = dutiesRes.data ?? []
     const invalid = duties.filter(d => !Number.isInteger(d.day_of_week) || d.day_of_week < 1 || d.day_of_week > 5)
@@ -58,8 +57,8 @@ export const CalendarService = {
     }
 
     return [
-      ...holidays.map(h => ({ date: h.date, type: 'tatil' as const, title: h.label })),
-      ...expandDutiesRange(duties, from, to, holidayDates),
+      ...tatiller,
+      ...expandDutiesRange(duties, from, to, tamGunler),
       ...(homeworksRes.data ?? []).flatMap(h =>
         h.due_date
           ? [{ date: h.due_date, type: 'odev' as const, id: h.id, title: `Ödev teslimi — ${h.title}`, detail: h.classes?.name ?? undefined }]

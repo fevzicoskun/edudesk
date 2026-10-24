@@ -23,6 +23,16 @@ export async function createHomeworkSource(_: unknown, formData: FormData) {
   return { data: result.data, error: null }
 }
 
+export async function renameHomeworkSource(id: string, name: string): Promise<{ error?: string }> {
+  const parsed = createHomeworkSourceSchema.pick({ name: true }).safeParse({ name })
+  if (!UUID.safeParse(id).success || !parsed.success) return { error: parsed.error?.issues[0]?.message ?? 'Geçersiz veri' }
+  const result = await HomeworkSourceService.renameSource(id, parsed.data.name)
+  if (result.error) return result
+  revalidatePath('/ayarlar')
+  revalidatePath('/odevler/yeni')
+  return {}
+}
+
 export async function deleteHomeworkSource(id: string) {
   UUID.parse(id)
   const result = await HomeworkSourceService.deleteSource(id)
