@@ -114,3 +114,113 @@ test('sil iki adımlı: sonuç silinir', async ({ page }) => {
   await expect.poll(async () => (await db.from('deneme_sonuclari').select('student_id').eq('student_id', ogr.id).in('sinav_id', await sinavIdleri())).data!.length,
     { timeout: 15_000 }).toBe(0)
 })
+
+// ── Kâğıt (Task 6) ────────────────────────────────────────────────────────────
+const KAGIT = () => `/mentorluk/${ogr.id}/veli-toplantisi`
+const odevIds: string[] = []
+/** Öğrencinin sınıfına ödev ekler; durum verilirse öğretmen işaretlemiş sayılır (marked_at). */
+async function odev(title: string, durum: string | null) {
+  const { data, error } = await db.from('homeworks').insert({ teacher_id: mentor.id, class_id: ogr.class_id, school_id: mentor.school_id,
+    subject: 'Fizik', title, due_date: '2026-10-01', assigned_date: '2026-09-20' }).select('id').single()
+  if (error) throw new Error(error.message)
+  odevIds.push(data!.id)
+  if (durum) await db.from('homework_submissions').update({ status: durum, marked_at: new Date().toISOString() }).eq('homework_id', data!.id).eq('student_id', ogr.id)
+}
+
+test.describe('kâğıt', () => {
+  test.beforeAll(async () => {
+    // Üç TCD (sınıf yüklendi ×3); öğrenci 1. ve 3.'de var, 2.'de yok → Katılmadı
+    await db.from('deneme_sinavlari').upsert(TARIHLER.map(tarih => ({ school_id: mentor.school_id, tur: 'TCD', seviye: 9, tarih })),
+      { onConflict: 'school_id,tur,seviye,tarih', ignoreDuplicates: true })
+    const { data: s } = await db.from('deneme_sinavlari').select('id, tarih').eq('school_id', mentor.school_id).in('tarih', TARIHLER).order('tarih')
+    await db.from('deneme_sinav_siniflari').upsert(s!.map(x => ({ sinav_id: x.id, class_id: ogr.class_id, school_id: mentor.school_id })), { ignoreDuplicates: true })
+    const sonuc = (i: number, net: number) => ({ sinav_id: s![i].id, student_id: ogr.id, school_id: mentor.school_id,
+      dersler: [{ kod: 'TAR', ss: 26, d: 20, y: 4, n: net - 10 }, { kod: 'COĞ', ss: 26, d: 10, y: 0, n: 10 }], toplam_net: net, puan: null })
+    await db.from('deneme_sonuclari').delete().eq('student_id', ogr.id)
+    await db.from('deneme_sonuclari').insert([sonuc(0, 30), sonuc(2, 33.5)])
+    await odev('E2E veli yapılmadı ödevi', 'yapilmadi')
+    await odev('E2E veli işaretsiz ödevi', null)
+    // Sonucu girilmemiş hafta (Cuma başı)
+    await db.from('mentor_haftalari').insert({ school_id: mentor.school_id, student_id: ogr.id, hafta_basi: '2026-10-02', seviye: 1, soru_hedefi: 120,
+      icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, surum: 2 }, updated_by: mentor.id })
+  })
+  test.afterAll(async () => {
+    await db.from('mentor_haftalari').delete().eq('student_id', ogr.id)
+    if (odevIds.length) {
+      await db.from('homework_submissions').delete().in('homework_id', odevIds)
+      await db.from('homeworks').delete().in('id', odevIds)
+    }
+  })
+
+  test('deneme gidişi: katılmadı 0 değil, değişim işaretli; ödev listesi; haftalık girilmedi; başlık', async ({ page }) => {
+    await page.goto(KAGIT())
+    await expect(page.getByRole('heading', { name: 'Veli Toplantısı' })).toBeVisible({ timeout: 20_000 })
+    await expect(page).toHaveTitle(`${ogr.full_name} - Veli Toplantısı`)
+    const tcd = page.getByRole('table', { name: 'TCD denemeleri' })
+    await expect(tcd.getByRole('row')).toHaveCount(4) // başlık + 3 sınav
+    await expect(tcd.getByRole('row').nth(2)).toContainText('Katılmadı')
+    await expect(tcd.getByRole('row').nth(2)).not.toContainText(',') // hiç net yok: 0,00 basılmaz
+    await expect(tcd.getByRole('row').nth(3)).toContainText('+3,50')
+    const liste = page.getByRole('table', { name: 'Yapılmayan ve eksik ödevler' })
+    await expect(liste).toContainText('E2E veli yapılmadı ödevi')
+    await expect(liste).not.toContainText('E2E veli işaretsiz ödevi') // işaretlenmemiş yapılmadı sayılmaz
+    await expect(page.getByRole('table', { name: 'Haftalık plan' }).getByRole('row').nth(1)).toContainText('Girilmedi')
+    await expect(page.getByText('Mentör imzası')).toBeVisible()
+  })
+
+  test('koyu temada kâğıt beyaz kalır', async ({ page }) => {
+    await page.goto(KAGIT())
+    await expect(page.getByRole('heading', { name: 'Veli Toplantısı' })).toBeVisible({ timeout: 20_000 })
+    const renkler = () => page.locator('article').evaluate(a => [getComputedStyle(a.parentElement!).backgroundColor, getComputedStyle(a).color])
+    const acik = await renkler()
+    expect(acik[0]).toBe('rgb(255, 255, 255)')
+    await page.evaluate(() => document.documentElement.classList.add('dark'))
+    expect(await renkler()).toEqual(acik)
+  })
+
+  test('uzun ödev listesi iki sayfaya taşar, satır bölünmez', async ({ page }) => {
+    for (let i = 0; i < 40; i++) await odev(`E2E uzun liste ödevi ${i + 1} biraz uzunca bir başlık`, 'yapilmadi')
+    await page.goto(KAGIT())
+    await expect(page.getByRole('heading', { name: 'Veli Toplantısı' })).toBeVisible({ timeout: 20_000 })
+    const satir = page.getByRole('table', { name: 'Yapılmayan ve eksik ödevler' }).getByRole('row').nth(5)
+    expect(await satir.evaluate(e => getComputedStyle(e).breakInside)).toBe('avoid')
+    await page.emulateMedia({ media: 'print' })
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs')
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(await page.pdf({ format: 'A4', preferCSSPageSize: true })) }).promise
+    expect(pdf.numPages).toBeGreaterThanOrEqual(2)
+  })
+
+  test('toplu sayfa: başlık ve öğrenci bölümü', async ({ page }) => {
+    await page.goto('/mentorluk/veli-toplantisi')
+    await expect(page.getByRole('region', { name: ogr.full_name })).toBeVisible({ timeout: 20_000 })
+    await expect(page).toHaveTitle('Veli Toplantısı Kâğıtları')
+  })
+
+  test('menü: Veli toplantısı bağlantısı', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/anasayfa')
+    await page.waitForLoadState('networkidle')
+    const menu = page.locator('aside')
+    await menu.getByRole('button', { name: 'Mentörlük alt menüsünü aç' }).click()
+    await menu.getByRole('link', { name: 'Veli toplantısı', exact: true }).click()
+    await expect(page).toHaveURL(/\/mentorluk\/veli-toplantisi$/)
+    await expect(menu.getByRole('link', { name: 'Denemeler', exact: true })).toBeVisible()
+  })
+
+  test('kapı kapalıyken iki sayfa da bulunamadı; MY kâğıdı göremez', async ({ page, browser }) => {
+    await db.from('mentor_takip_kullanicilari').delete().eq('user_id', mentor.id)
+    try {
+      await bulunamadi(page, KAGIT())
+      await bulunamadi(page, '/mentorluk/veli-toplantisi')
+    } finally {
+      await db.from('mentor_takip_kullanicilari').upsert({ user_id: mentor.id, school_id: mentor.school_id })
+    }
+    const ctx = await browser.newContext({ storageState: AUTH('mudur_yardimcisi') })
+    const p = await ctx.newPage()
+    // MY öğretmen rolü değil → kâğıt sayfaları ana sayfaya yönlendirir (diğer kâğıtlarla aynı); kâğıt görünmez
+    await p.goto(KAGIT())
+    await expect(p).toHaveURL(/\/anasayfa/, { timeout: 20_000 })
+    await expect(p.getByRole('heading', { name: 'Veli Toplantısı' })).toHaveCount(0)
+    await ctx.close()
+  })
+})

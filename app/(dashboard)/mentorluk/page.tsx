@@ -96,6 +96,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
             <Link href="/mentorluk/bulten" className={ikincilButon}>Haftalık veli bülteni</Link>
             {takipAcik && <Link href="/mentorluk/takip-kagitlari" className={ikincilButon}>Bu haftanın planları</Link>}
             {takipAcik && <Link href="/mentorluk/denemeler" className={ikincilButon}>Denemeler</Link>}
+            {takipAcik && <Link href="/mentorluk/veli-toplantisi" className={ikincilButon}>Veli toplantısı kâğıtları</Link>}
           </div>
         </div>
       )}

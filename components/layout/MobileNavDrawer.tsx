@@ -89,6 +89,10 @@ export default function MobileNavDrawer({ items, role, aktif, mentor }: {
                 ))}
               </details>
             )}
+            {mentor.planOgrencileri.length > 0 && <>
+              <Link href="/mentorluk/denemeler" className={altLink(pathname === '/mentorluk/denemeler')}>Denemeler</Link>
+              <Link href="/mentorluk/veli-toplantisi" className={altLink(pathname === '/mentorluk/veli-toplantisi')}>Veli toplantısı</Link>
+            </>}
           </div>
         )}
       </div>

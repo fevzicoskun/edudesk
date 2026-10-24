@@ -55,6 +55,9 @@ export default async function MentorlukDetayPage({
           {takipAcik && (
             <Link href={`/mentorluk/${studentId}/takip`} className="px-3 py-1.5 text-sm font-medium rounded-lg bg-blue-600 text-white hover:bg-blue-700">Haftalık takip</Link>
           )}
+          {takipAcik && (
+            <Link href={`/mentorluk/${studentId}/veli-toplantisi`} className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700">Veli toplantısı</Link>
+          )}
           <Link
             href={`/siniflar/${classId}/ogrenciler/${studentId}/odev-raporu?bas=${bas}`}
             className="px-3 py-1.5 text-sm font-medium rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700"

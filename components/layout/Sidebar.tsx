@@ -234,6 +234,11 @@ function MentorlukGrubu({ item, pathname, ogrenciler }: { item: (typeof navItems
                     className={`${altLink(plandaki === o.id, 'pl-14')} text-[13px]`}>{o.ad}</Link>
                 ))}
               </>}
+              {/* Takip kapısı açık mentör (Haftalık planlar ile aynı koşul): deneme yükleme + veli toplantısı kâğıtları */}
+              <Link href="/mentorluk/denemeler" aria-current={pathname === '/mentorluk/denemeler' ? 'page' : undefined}
+                className={altLink(pathname === '/mentorluk/denemeler')}>Denemeler</Link>
+              <Link href="/mentorluk/veli-toplantisi" aria-current={pathname === '/mentorluk/veli-toplantisi' ? 'page' : undefined}
+                className={altLink(pathname === '/mentorluk/veli-toplantisi')}>Veli toplantısı</Link>
             </>
           )}
         </div>
