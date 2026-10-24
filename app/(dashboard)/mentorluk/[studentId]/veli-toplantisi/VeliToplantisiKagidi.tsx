@@ -43,7 +43,8 @@ export default function VeliToplantisiKagidi({ v }: { v: VeliToplantisiVerisi })
             <table key={t} aria-label={`${t} denemeleri`} className="w-full border-collapse mb-2 break-inside-avoid">
               <caption className="text-left font-semibold">{TUR_ADI[t]}</caption>
               <thead><tr>
-                <th className={th}>Tarih</th>
+                {/* "Tarih" değil: TCD'de Tarih dersi sütunuyla karışıyordu (2026-10-24) */}
+                <th className={th}>Sınav</th>
                 {kodlar.map(k => <th key={k} className={`${th} text-right`}>{DERS_ADLARI[k] ?? k}</th>)}
                 <th className={`${th} text-right`}>Toplam net</th>
                 <th className={`${th} text-right`}>Değişim</th>

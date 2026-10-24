@@ -1,7 +1,7 @@
 // src/domains/mentor/deneme/VeliToplantisiService.ts
 import { requireAbility } from '@/src/shared/authorization/server'
 import { getCurrentProfile } from '@/src/shared/auth'
-import { todayLocalISO } from '@/src/shared/date'
+import { addDaysISO, todayLocalISO } from '@/src/shared/date'
 import { donemBasi } from '@/src/shared/utils'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
@@ -20,7 +20,8 @@ export type VeliToplantisiVerisi = {
 }
 
 export const VeliToplantisiService = {
-  /** Kâğıt verisi: kapı açık + çağıran öğrencinin güncel mentörü değilse null (sayfa notFound). Aralık dönem başı → bugün. */
+  /** Kâğıt verisi: kapı açık + çağıran öğrencinin güncel mentörü değilse null (sayfa notFound). Aralık dönem başı → bugün
+   *  (haftalık plan: dönem başı → son BİTMİŞ hafta). */
   async veri(studentId: string): Promise<VeliToplantisiVerisi | null> {
     const ab = await requireAbility()
     if (!(await TakipRepository.acikMi()) || !(await TakipRepository.mentoruMu(ab.userId, ab.schoolId, studentId))) return null
@@ -32,7 +33,8 @@ export const VeliToplantisiService = {
       R.ogrenciSonuclari([studentId]),
       HomeworkService.getStudentHomeworkProfile(studentId, o.class_id, { tumOdevler: true, bas }),
       getCurrentProfile(),
-      R.donemHaftalari(ab.schoolId, studentId, bas, bugun),
+      // Yalnız bitmiş haftalar: devam eden hafta yarım sonuçla veliye "Birlikte takip edelim" diyordu (2026-10-24)
+      R.donemHaftalari(ab.schoolId, studentId, bas, addDaysISO(bugun, -7)),
     ])
     if ('error' in profil) throw new Error(profil.error)
     return {

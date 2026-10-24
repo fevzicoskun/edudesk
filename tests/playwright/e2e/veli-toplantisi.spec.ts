@@ -3,6 +3,8 @@ import { test, expect, type Page } from '@playwright/test'
 import path from 'path'
 import os from 'os'
 import { createClient } from '@supabase/supabase-js'
+import { todayLocalISO } from '@/src/shared/date'
+import { haftaBasi } from '@/src/domains/mentor/takip/takipMath'
 
 const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 const AUTH = (r: string) => path.join(process.cwd(), 'tests/playwright/.auth', `${r}.json`)
@@ -141,8 +143,13 @@ test.describe('kâğıt', () => {
     await odev('E2E veli yapılmadı ödevi', 'yapilmadi')
     await odev('E2E veli işaretsiz ödevi', null)
     // Sonucu girilmemiş hafta (Cuma başı)
-    await db.from('mentor_haftalari').insert({ school_id: mentor.school_id, student_id: ogr.id, hafta_basi: '2026-10-02', seviye: 1, soru_hedefi: 120,
-      icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, surum: 2 }, updated_by: mentor.id })
+    await db.from('mentor_haftalari').insert([
+      { school_id: mentor.school_id, student_id: ogr.id, hafta_basi: '2026-10-02', seviye: 1, soru_hedefi: 120,
+        icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, surum: 2 }, updated_by: mentor.id },
+      // Devam eden hafta: kâğıtta görünmemeli
+      { school_id: mentor.school_id, student_id: ogr.id, hafta_basi: haftaBasi(todayLocalISO()), seviye: 1, soru_hedefi: 120,
+        icerik: { duzen: '', gorevler: [], mentorOdevleri: [], okuma: null, surum: 2 }, updated_by: mentor.id },
+    ])
   })
   test.afterAll(async () => {
     await db.from('mentor_haftalari').delete().eq('student_id', ogr.id)
@@ -157,6 +164,8 @@ test.describe('kâğıt', () => {
     await expect(page.getByRole('heading', { name: 'Veli Toplantısı' })).toBeVisible({ timeout: 20_000 })
     await expect(page).toHaveTitle(`${ogr.full_name} - Veli Toplantısı`)
     const tcd = page.getByRole('table', { name: 'TCD denemeleri' })
+    // Tarih (ders) sütunuyla karışmasın: sınav tarihi sütunu "Sınav" (2026-10-24 gerçek kâğıtta "Tarih | Tarih")
+    await expect(tcd.getByRole('columnheader').first()).toHaveText('Sınav')
     await expect(tcd.getByRole('row')).toHaveCount(4) // başlık + 3 sınav
     await expect(tcd.getByRole('row').nth(2)).toContainText('Katılmadı')
     await expect(tcd.getByRole('row').nth(2)).not.toContainText(',') // hiç net yok: 0,00 basılmaz
@@ -165,6 +174,8 @@ test.describe('kâğıt', () => {
     await expect(liste).toContainText('E2E veli yapılmadı ödevi')
     await expect(liste).not.toContainText('E2E veli işaretsiz ödevi') // işaretlenmemiş yapılmadı sayılmaz
     await expect(page.getByRole('table', { name: 'Haftalık plan' }).getByRole('row').nth(1)).toContainText('Girilmedi')
+    // Bitmemiş hafta (bu hafta) kâğıda girmez: yarım hafta veliye "Birlikte takip edelim" diyordu (2026-10-24)
+    await expect(page.getByRole('table', { name: 'Haftalık plan' }).getByRole('row')).toHaveCount(2)
     await expect(page.getByText('Mentör imzası')).toBeVisible()
   })
 
