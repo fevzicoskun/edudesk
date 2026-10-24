@@ -25,6 +25,7 @@ import { donemBasi } from '@/src/shared/utils'
 import MentorlugumeEkle from './MentorlugumeEkle'
 import { isTeachingRole } from '@/src/shared/types'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import BireyselOdevlerBolumu from './BireyselOdevlerBolumu'
 
 export const revalidate = 60
 
@@ -158,6 +159,9 @@ export default async function OgrenciDetayPage({
           okulAdi={currentProfile.schools?.name}
         />
       </div>
+
+      {/* Bireysel ödev (2026-10-24): yalnız öğretmen rollerine görünür, mevcut bölümlere dokunmaz */}
+      <BireyselOdevlerBolumu ogrenciId={studentId} />
 
       {/* Performans özeti */}
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-5">

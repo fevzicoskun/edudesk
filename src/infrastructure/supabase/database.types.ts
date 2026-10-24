@@ -209,6 +209,50 @@ export type Database = {
         }
         Relationships: []
       }
+      bireysel_odevler: {
+        Row: {
+          aciklama: string
+          id: string
+          ogrenci_id: string
+          ogretmen_id: string
+          olusturma_tarihi: string
+          school_id: string
+          teslim_tarihi: string | null
+          yapildi: boolean
+          yapildi_tarihi: string | null
+        }
+        Insert: {
+          aciklama: string
+          id?: string
+          ogrenci_id: string
+          ogretmen_id: string
+          olusturma_tarihi?: string
+          school_id: string
+          teslim_tarihi?: string | null
+          yapildi?: boolean
+          yapildi_tarihi?: string | null
+        }
+        Update: {
+          aciklama?: string
+          id?: string
+          ogrenci_id?: string
+          ogretmen_id?: string
+          olusturma_tarihi?: string
+          school_id?: string
+          teslim_tarihi?: string | null
+          yapildi?: boolean
+          yapildi_tarihi?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bireysel_odevler_ogrenci_id_fkey"
+            columns: ["ogrenci_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bulten_gonderimleri: {
         Row: {
           created_at: string
