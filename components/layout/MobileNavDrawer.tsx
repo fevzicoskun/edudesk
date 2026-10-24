@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Role } from '@/src/shared/types'
+import { logout } from '@/src/domains/auth/actions'
 
 type NavItem = {
   href: string
@@ -82,7 +83,7 @@ export default function MobileNavDrawer({ items, role, aktif, mentor }: {
               <details open={mentor.planOgrencileri.some(o => pathname.startsWith(`/mentorluk/${o.id}/takip`))}>
                 <summary className={`${altLink(false)} cursor-pointer`}>Haftalık planlar</summary>
                 <Link href="/mentorluk/takip-kagitlari"
-                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-8')} font-medium`}>Hepsini yazdır</Link>
+                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-8')} font-medium`}>Tüm planları yazdır</Link>
                 {mentor.planOgrencileri.map(o => (
                   <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`}
                     className={altLink(pathname.startsWith(`/mentorluk/${o.id}/takip`), 'pl-8')}>{o.ad}</Link>
@@ -95,6 +96,13 @@ export default function MobileNavDrawer({ items, role, aktif, mentor }: {
             </>}
           </div>
         )}
+        {/* Telefonda masaüstü kenar menüsü yok; çıkış menünün altında (Profil sayfasındaki düğme kalktı, 2026-10-24) */}
+        <form action={logout} className="px-4 pt-1 pb-safe-or-4 border-t border-gray-100 dark:border-slate-800">
+          <button type="submit" className="w-full flex items-center gap-2 min-h-[44px] px-3 rounded-xl text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-slate-800">
+            <svg aria-hidden className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Çıkış Yap
+          </button>
+        </form>
       </div>
     </>
   )

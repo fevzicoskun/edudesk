@@ -11,9 +11,10 @@ interface Props {
   warnDays: number
   limitDays: number
   viewCounts?: Record<string, number>
+  sonOdevler?: Record<string, { bakilan: number; eksik: number }>
 }
 
-export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays, viewCounts }: Props) {
+export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays, viewCounts, sonOdevler }: Props) {
   const [q, setQ] = useState('')
 
   const filtered = q.trim()
@@ -59,6 +60,7 @@ export default function OgrenciListesi({ students, classId, canDelete, absenceCo
               warnDays={warnDays}
               limitDays={limitDays}
               viewCount={viewCounts?.[s.id] ?? 0}
+              sonOdev={sonOdevler?.[s.id]}
             />
           ))}
         </div>

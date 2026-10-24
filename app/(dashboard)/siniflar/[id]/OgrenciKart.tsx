@@ -23,10 +23,12 @@ function waLink(telefon: string): string {
 }
 
 export default function OgrenciKart({
-  s, classId, canDelete, index, absenceCount, warnDays, limitDays, viewCount,
+  s, classId, canDelete, index, absenceCount, warnDays, limitDays, viewCount, sonOdev,
 }: {
   s: Student; classId: string; canDelete: boolean; index: number
   absenceCount: number; warnDays: number; limitDays: number; viewCount: number
+  /** Giriş yapan öğretmenin bu sınıfa verdiği işaretli son ödevler (yoksa satır gösterilmez) */
+  sonOdev?: { bakilan: number; eksik: number }
 }) {
   const [open, setOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -87,8 +89,11 @@ export default function OgrenciKart({
               </span>
             )}
           </div>
-          {s.student_number && (
-            <p className="text-xs text-gray-400">No: {s.student_number}</p>
+          {/* Okul numarası satırı kalktı (2026-10-24); yerine bu öğretmenin son ödevleri */}
+          {sonOdev && sonOdev.bakilan > 0 && (
+            <p className={`text-xs ${sonOdev.eksik > 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+              Son {sonOdev.bakilan} ödev: {sonOdev.eksik > 0 ? `${sonOdev.eksik} eksik` : <span aria-label="eksik yok">✓</span>}
+            </p>
           )}
         </div>
 

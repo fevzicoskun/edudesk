@@ -3,7 +3,6 @@
 import { useActionState } from 'react'
 import { formGonder } from '@/src/shared/utils/formGonder'
 import { updateProfile } from '@/src/domains/users/actions'
-import { logout } from '@/src/domains/auth/actions'
 import { BRANS_LISTESI } from '@/src/shared/constants/branslar'
 import AvatarUpload from './AvatarUpload'
 
@@ -35,13 +34,15 @@ export default function ProfilForm({
   const inputCls = 'w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg text-base bg-white dark:bg-slate-700 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-gray-400 dark:placeholder:text-slate-400'
 
   return (
-    <div className="p-4 md:p-6 max-w-lg mx-auto">
-      <div className="mb-6 flex items-center gap-4">
+    // Ayarlar sayfasının en üst bölümü (2026-10-24: /profil → /ayarlar). Çıkış yalnız menünün altında.
+    <section aria-labelledby="profil-baslik">
+      <h2 id="profil-baslik" className="sr-only">Profil</h2>
+      <div className="mb-4 flex items-center gap-4">
         <AvatarUpload name={defaultFullName || email} initialUrl={avatarUrl} />
         <div className="min-w-0">
-          <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 truncate">
+          <p className="text-lg font-bold text-gray-900 dark:text-slate-100 truncate">
             {defaultFullName || 'Profilim'}
-          </h1>
+          </p>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">
             {defaultSubject ? `${defaultSubject} · ` : ''}Bilgilerini güncelle
           </p>
@@ -121,17 +122,6 @@ export default function ProfilForm({
         </form>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-200 dark:border-slate-700">
-        <form action={logout}>
-          <button
-            type="submit"
-            className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-slate-700 hover:text-red-600 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-            Çıkış Yap
-          </button>
-        </form>
-      </div>
-    </div>
+    </section>
   )
 }

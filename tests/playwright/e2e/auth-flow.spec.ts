@@ -49,7 +49,7 @@ test.describe('Giriş akışı', () => {
 })
 
 test.describe('Çıkış akışı', () => {
-  test('giriş → profil → çıkış yap → /login', async ({ browser }) => {
+  test('giriş → menüden çıkış yap → /login', async ({ browser }) => {
     const context = await browser.newContext()
     const page    = await context.newPage()
 
@@ -59,10 +59,10 @@ test.describe('Çıkış akışı', () => {
     await page.click('button[type="submit"]')
     await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 60_000 })
 
-    await page.goto('/profil')
+    await page.goto('/anasayfa')
     await expect(page).not.toHaveURL(/login/)
 
-    const logoutBtn = page.locator('button:has-text("Çıkış Yap")').first()
+    const logoutBtn = page.locator('button:has-text("Çıkış Yap"):visible').first()
     await expect(logoutBtn).toBeVisible({ timeout: 5_000 })
     await logoutBtn.click()
     await page.waitForURL(/login/, { timeout: 10_000 })
@@ -81,8 +81,8 @@ test.describe('Çıkış akışı', () => {
     await page.click('button[type="submit"]')
     await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 60_000 })
 
-    await page.goto('/profil')
-    const logoutBtn = page.locator('button:has-text("Çıkış Yap")').first()
+    await page.goto('/anasayfa')
+    const logoutBtn = page.locator('button:has-text("Çıkış Yap"):visible').first()
     if (await logoutBtn.count() > 0) {
       await logoutBtn.click()
       await page.waitForURL(/login/, { timeout: 10_000 })

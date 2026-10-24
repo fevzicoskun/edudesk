@@ -17,6 +17,8 @@ import MentorDagilimiKarti from './MentorDagilimiKarti'
 import SunucuFormu from '../../SunucuFormu'
 import { MentorService } from '@/src/domains/mentor/services/MentorService'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
+import { sonOdevEksik } from '@/src/domains/classes/lib/sonOdevEksik'
+import { todayLocalISO } from '@/src/shared/date'
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -46,7 +48,22 @@ export default async function SinifDetayPage({
 
   const yearStart = schoolYearStart()
 
-  const [clsResult, studentsResult, absenceResult, viewCounts, teachersResult] = await Promise.all([
+  // "Son 5 ödev: X eksik" — yalnız giriş yapan öğretmenin bu sınıfa verdiği, teslimi gelmiş ödevler
+  const { data: benimOdevlerim } = await supabase
+    .from('homeworks')
+    .select('id')
+    .eq('class_id', id)
+    .eq('teacher_id', profile?.id ?? '')
+    .eq('school_id', schoolId)
+    .eq('is_template', false)
+    .is('deleted_at', null)
+    .lte('due_date', todayLocalISO())
+    .order('due_date', { ascending: false })
+    .order('id')
+    .limit(60) // öğrenci başına işaretli son 5 yeter; çok eski ödevler gereksiz
+  const odevIds = (benimOdevlerim ?? []).map(h => h.id)
+
+  const [clsResult, studentsResult, absenceResult, viewCounts, teachersResult, odevSubsResult] = await Promise.all([
     supabase
       .from('classes')
       .select('name')
@@ -79,7 +96,16 @@ export default async function SinifDetayPage({
       // Mentör adayları: mentörlük ekranı yalnız öğretmen + zümre başkanına açık
       .in('role', ['ogretmen', 'zumre_baskani'])
       .order('full_name'),
+    odevIds.length === 0 ? Promise.resolve({ data: [] as { homework_id: string; student_id: string; status: string }[] }) : fetchAllResult((f, t) => supabase
+      .from('homework_submissions')
+      .select('homework_id, student_id, status')
+      .in('homework_id', odevIds)
+      .eq('school_id', schoolId)
+      .not('marked_at', 'is', null) // işaretlenmemiş otomatik satır varsayılan 'yapilmadi' — sayılmaz
+      .order('id')
+      .range(f, t)),
   ])
+  const sonOdevler = Object.fromEntries(sonOdevEksik(odevIds, odevSubsResult.data ?? []))
 
   if (!clsResult.data) notFound()
 
@@ -184,6 +210,7 @@ export default async function SinifDetayPage({
           warnDays={ATTENDANCE_WARN_DAYS}
           limitDays={ATTENDANCE_LIMIT_DAYS}
           viewCounts={viewCounts}
+          sonOdevler={sonOdevler}
         />
       )}
     </div>

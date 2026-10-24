@@ -18,7 +18,10 @@ export default async function BugunProgramWidget() {
 
   const nameById = new Map(classes.map(c => [c.id, c.name]))
   // İstanbul haftagünü (1=Pzt..5=Cum, slot'lar hafta içi) — UTC getDay() gece kayar
-  const lessons = todaysLessons(slots, periods, todayWeekdayTR())
+  const gun = todayWeekdayTR()
+  const lessons = todaysLessons(slots, periods, gun)
+  const haftaSonu = gun === 6 || gun === 7
+  const pazartesi = haftaSonu ? todaysLessons(slots, periods, 1).length : 0
 
   return (
     <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl p-4 mb-4">
@@ -43,7 +46,10 @@ export default async function BugunProgramWidget() {
           ))}
         </ol>
       ) : (
-        <p className="text-sm text-gray-500 dark:text-slate-400">Bugün dersin görünmüyor.</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
+          {!haftaSonu ? 'Bugün dersin görünmüyor.'
+            : pazartesi > 0 ? `Hafta sonu — Pazartesi ${pazartesi} dersin var.` : 'Hafta sonu — Pazartesi dersin yok.'}
+        </p>
       )}
     </section>
   )

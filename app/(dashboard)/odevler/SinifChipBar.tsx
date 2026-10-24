@@ -7,6 +7,10 @@ interface Props {
   params: FilterParams
 }
 
+/** Turuncu nokta = o sınıfta "Kontrol bekliyor" sütununa düşen ödev var (kategorizeOdev: son tarihi geçmiş,
+ *  öğrencilerin yarısından azı işaretli, son 30 gün içinde). Yalnız bu sayfadaki ödevler sayılır. */
+const NOKTA_ACIKLAMA = 'Bu sınıfta kontrol bekleyen (son tarihi geçmiş, işaretlenmemiş) ödev var'
+
 /** Sınıf filtresi — tek yerden sınıf seçimi (eski "Tüm sınıflar" açılır menüsünün yerine). */
 export default function SinifChipBar({ classes, pendingByClass, params }: Props) {
   if (!classes.length) return null
@@ -43,11 +47,17 @@ export default function SinifChipBar({ classes, pendingByClass, params }: Props)
           return (
             <Link key={cls.id} href={href(cls.id)} className={chip(aktif)} aria-current={aktif ? 'page' : undefined}>
               {cls.name}
-              {bekleyen && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-label="kontrol bekleyen ödev var" />}
+              {bekleyen && <span className="w-1.5 h-1.5 rounded-full bg-amber-500" title={NOKTA_ACIKLAMA} role="img" aria-label={NOKTA_ACIKLAMA} />}
             </Link>
           )
         })}
       </nav>
+      {/* Telefonda title (üzerine gelme) yok → nokta görünürken kısa açıklama satırı */}
+      {pendingByClass.size > 0 && (
+        <p className="mt-1 text-xs text-gray-500 dark:text-slate-400 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" aria-hidden /> {NOKTA_ACIKLAMA}
+        </p>
+      )}
       {secili && (
         <Link
           href={`/odevler/sinif/${secili.id}`}

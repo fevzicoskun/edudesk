@@ -20,7 +20,7 @@ const STATIC_PAGES: SearchResult[] = [
   { type: 'page', id: 'odevler-takvim', title: 'Ödev Takvimi', subtitle: 'Ödevler', href: '/odevler/takvim' },
   { type: 'page', id: 'siniflar', title: 'Sınıflar', subtitle: 'Sayfa', href: '/siniflar' },
   { type: 'page', id: 'yoklama', title: 'Yoklama', subtitle: 'Sayfa', href: '/yoklama' },
-  { type: 'page', id: 'profil', title: 'Profil', subtitle: 'Sayfa', href: '/profil' },
+  { type: 'page', id: 'profil', title: 'Profil', subtitle: 'Ayarlar', href: '/ayarlar' },
   { type: 'page', id: 'ayarlar', title: 'Ayarlar', subtitle: 'Sayfa', href: '/ayarlar' },
 ]
 

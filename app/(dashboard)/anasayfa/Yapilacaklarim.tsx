@@ -75,7 +75,7 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
       </div>
 
       {/* Capture kutusu */}
-      <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700/60">
+      <div className={`px-4 py-3 ${tasks.length > 0 ? 'border-b border-gray-100 dark:border-slate-700/60' : ''}`}>
         <div className="flex gap-2">
           <input
             type="text"
@@ -99,9 +99,7 @@ export default function Yapilacaklarim({ initial }: { initial: Task[] }) {
       </div>
 
       {/* Liste */}
-      {tasks.length === 0 ? (
-        <p className="px-4 py-4 text-center text-sm text-gray-500 dark:text-slate-400">Bekleyen işin yok.</p>
-      ) : (
+      {tasks.length === 0 ? null : (
         <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
           {tasks.map(t => (
             <li key={t.id} className="px-4 py-2.5 flex items-center gap-2">

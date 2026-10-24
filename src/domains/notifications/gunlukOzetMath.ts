@@ -76,7 +76,7 @@ a{color:#1d4ed8}.k{color:#6b7280;font-size:14px}
 </style></head><body><div class="box">
 <h2>Günaydın, ${esc(g.ad)}</h2>
 ${bolum.join('\n')}
-<p class="k" style="font-size:11px;margin-top:24px">Bu e-postaları durdurmak için <a href="${u}/profil" style="color:#9ca3af">Profil → Bildirim Tercihleri</a>'nden e-posta bildirimini kapatabilirsiniz.</p>
+<p class="k" style="font-size:11px;margin-top:24px">Bu e-postaları durdurmak için <a href="${u}/ayarlar" style="color:#9ca3af">Ayarlar → Bildirim Tercihleri</a>'nden e-posta bildirimini kapatabilirsiniz.</p>
 </div></body></html>`,
   }
 }

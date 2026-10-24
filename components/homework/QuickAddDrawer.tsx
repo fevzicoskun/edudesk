@@ -46,7 +46,8 @@ export default function QuickAddDrawer() {
 
   // Yoklama ekranında ödev FAB'ı hem alakasız hem de satır aksiyon butonlarını kapatıyor → gizle.
   // Ödev oluşturma formunda zaten formdasın; FAB sabit "Ödev Oluştur" düğmesinin üstüne biniyordu.
-  const hidden = (pathname?.startsWith('/yoklama') || pathname === '/odevler/yeni') ?? false
+  // Anasayfada ortadaki "+ Yeni Ödev" düğmesi var; ikinci + kalabalık ediyordu (2026-10-24).
+  const hidden = (pathname?.startsWith('/yoklama') || pathname === '/odevler/yeni' || pathname === '/anasayfa') ?? false
 
   useEffect(() => {
     if (!open || classes.length > 0) return

@@ -149,36 +149,42 @@ export default function PlanSekmesi({ v, veri, degistir, kaydiZorla }: SekmeProp
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end gap-4">
-        <fieldset>
-          <legend className="text-sm font-medium mb-1">Seviye</legend>
-          <div className="flex gap-1">
-            {SEVIYE_ADI.map((ad, i) => (
-              <button key={ad} type="button" aria-pressed={veri.seviye === i}
-                onClick={() => degistir(h => seviyeDegistir(h, i as Seviye, v.ogrenci.sinif), true)}
-                className={`px-3 py-1.5 rounded border text-sm ${veri.seviye === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-slate-600'}`}>{ad}</button>
-            ))}
-          </div>
-        </fieldset>
-        <label className="text-sm">Soru hedefi
-          <input type="number" min={0} inputMode="numeric" className={`${kutu} w-24 block`} value={veri.soruHedefi}
-            onChange={e => degistir(h => ({ ...h, soruHedefi: Math.max(0, Math.trunc(Number(e.target.value) || 0)) }))} />
-        </label>
-        <button type="button" className="text-sm text-gray-600 dark:text-slate-400 underline"
-          onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Elle girilen görevler silinir; okul ödevleri kalır.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: sablonaDon(h.icerik, v.ogrenci.sinif, h.seviye) } }), true) }}>
-          Sınıf şablonuna dön
-        </button>
+      {/* Sık kullanılanlar görünür; seyrek ayarlar "Diğer seçenekler" içinde (2026-10-24, sayfa kalabalıktı) */}
+      <section className="flex flex-wrap items-center gap-4">
         <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={kopyala}>Geçen haftayı kopyala</button>
-        <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={herkese}>Bu planı tüm mentör öğrencilerime uygula</button>
-        {v.kayit && (
-          <button type="button" disabled={isliyor} className="text-sm text-red-700 dark:text-red-400 underline"
-            onClick={() => { if (confirm(`${takipHaftaEtiketi(v.hafta)} haftasının planı ve girilmiş sonuçları kalıcı olarak silinsin mi? (Kitaplar ve çalışma saatleri kalır.)`)) basla(async () => {
-              const r = await haftaSil(v.ogrenci.id, v.hafta)
-              if (r.error) setUstHata(r.error); else location.reload()
-            }) }}>Bu haftanın planını sil</button>
-        )}
-        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={kaydiZorla} className="ml-auto px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
+        <YazdirBaglantisi href={`/mentorluk/${v.ogrenci.id}/takip/kagit?hafta=${v.hafta}`} bosalt={kaydiZorla} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium">Kâğıdı yazdır</YazdirBaglantisi>
       </section>
+      <details className="-mt-3 group">
+        <summary className="text-sm text-gray-700 dark:text-slate-300 cursor-pointer select-none w-fit">Diğer seçenekler <span aria-hidden className="inline-block group-open:rotate-180 transition-transform">▾</span></summary>
+        <div className="mt-3 flex flex-wrap items-end gap-4">
+          <fieldset>
+            <legend className="text-sm font-medium mb-1">Seviye</legend>
+            <div className="flex gap-1">
+              {SEVIYE_ADI.map((ad, i) => (
+                <button key={ad} type="button" aria-pressed={veri.seviye === i}
+                  onClick={() => degistir(h => seviyeDegistir(h, i as Seviye, v.ogrenci.sinif), true)}
+                  className={`px-3 py-1.5 rounded border text-sm ${veri.seviye === i ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-300 dark:border-slate-600'}`}>{ad}</button>
+              ))}
+            </div>
+          </fieldset>
+          <label className="text-sm">Soru hedefi
+            <input type="number" min={0} inputMode="numeric" className={`${kutu} w-24 block`} value={veri.soruHedefi}
+              onChange={e => degistir(h => ({ ...h, soruHedefi: Math.max(0, Math.trunc(Number(e.target.value) || 0)) }))} />
+          </label>
+          <button type="button" className="text-sm text-gray-600 dark:text-slate-400 underline"
+            onClick={() => { if (confirm('Program sınıf şablonuna dönsün mü? Elle girilen görevler silinir; okul ödevleri kalır.')) degistir(h => ({ ...h, icerik: { ...h.icerik, gorevler: sablonaDon(h.icerik, v.ogrenci.sinif, h.seviye) } }), true) }}>
+            Sınıf şablonuna dön
+          </button>
+          <button type="button" disabled={isliyor} className="text-sm text-blue-700 dark:text-blue-400 underline" onClick={herkese}>Bu planı tüm mentör öğrencilerime uygula</button>
+          {v.kayit && (
+            <button type="button" disabled={isliyor} className="text-sm text-red-700 dark:text-red-400 underline"
+              onClick={() => { if (confirm(`${takipHaftaEtiketi(v.hafta)} haftasının planı ve girilmiş sonuçları kalıcı olarak silinsin mi? (Kitaplar ve çalışma saatleri kalır.)`)) basla(async () => {
+                const r = await haftaSil(v.ogrenci.id, v.hafta)
+                if (r.error) setUstHata(r.error); else location.reload()
+              }) }}>Bu haftanın planını sil</button>
+          )}
+        </div>
+      </details>
 
       {!saatVar && <p className="text-sm text-gray-600 dark:text-slate-400 -mt-3">Çalışma saatleri girilmemiş — <Link className="text-blue-700 dark:text-blue-400 underline" href={`/mentorluk/${v.ogrenci.id}/takip?hafta=${v.hafta}&sekme=dosya`}>Öğrenci dosyası&apos;ndan ekleyin</Link></p>}
       {/* Kâğıtta da görünen sorunlar planı hazırlarken mentöre (2026-10-24): sığmaz sayfa aralığı, tatile yığılan gecikmiş */}

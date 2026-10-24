@@ -65,6 +65,7 @@ test('saatler öğrenciye ait: "tüm mentör öğrencilerime uygula" saatlere do
   const once = (await db.from('ogrenci_calisma_saatleri').select('student_id, gunler').in('student_id', [A, B]).order('student_id')).data
 
   await page.goto(`/mentorluk/${A}/takip?hafta=${HAFTA}`)
+  await page.locator('summary', { hasText: 'Diğer seçenekler' }).click() // seyrek ayarlar katlanır bölümde
   await page.getByRole('button', { name: 'Normal' }).click()
   await kaydedildi(page)
   page.once('dialog', d => d.accept())
@@ -197,6 +198,7 @@ test('kâğıt açıldıktan sonra verilen ödev planda "yeni" + tekrar yazdır 
 test('bu haftanın planını sil: satır silinir, sayfa taslağa döner; saatler kalır', async ({ page }) => {
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', A).eq('hafta_basi', HAFTA)).data).toHaveLength(1)
   await page.goto(`/mentorluk/${A}/takip?hafta=${HAFTA}`)
+  await page.locator('summary', { hasText: 'Diğer seçenekler' }).click() // seyrek ayarlar katlanır bölümde
   page.once('dialog', d => d.accept())
   await page.getByRole('button', { name: 'Bu haftanın planını sil' }).click()
   await expect(page.getByText('Taslak, henüz kaydedilmedi')).toBeVisible({ timeout: 20_000 })

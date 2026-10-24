@@ -27,10 +27,11 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
     sonTeslim: h.due_date,
   }))
   // Sınıf başına ayrı liste — her sınıfın kendi veli/öğrenci grubuna ayrı yapıştırılır
+  if (!error && odevler.length === 0) return null // boşken kart hiç görünmesin
   const siniflar = [...new Set(odevler.map(o => o.sinif))].sort((a, b) => a.localeCompare(b, 'tr', { numeric: true }))
 
   return (
-    <section className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
+    <section className="mb-4 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-2">
         <h2 className="text-sm font-semibold text-gray-700 dark:text-slate-300">
           Bugün Verdiğim Ödevler{odevler.length > 0 && <span className="text-gray-500 dark:text-slate-400 font-normal"> · {odevler.length}</span>}
@@ -39,10 +40,6 @@ export default async function BugunVerdiklerimWidget({ teacherId, schoolId }: { 
       </div>
       {error ? (
         <p className="px-4 py-6 text-sm text-red-600 dark:text-red-400">Ödevler yüklenemedi.</p>
-      ) : odevler.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-gray-500 dark:text-slate-400">
-          Bugün henüz ödev vermedin. <Link href="/odevler/yeni" className="text-blue-600 dark:text-blue-400 hover:underline">Ödev ver →</Link>
-        </p>
       ) : (
         <div className="divide-y divide-gray-100 dark:divide-slate-700/60">
           {siniflar.map(sinif => {

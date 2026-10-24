@@ -61,7 +61,7 @@ a{color:#1d4ed8}.k{color:#6b7280;font-size:14px}.btn{display:inline-block;backgr
 <h2>Günaydın, ${esc(g.ad)}</h2><p class="k">Bu haftanın kısa özeti.</p>
 ${bolumler.join('\n')}
 <a class="btn" href="${esc(g.baseUrl)}/anasayfa">EduDesk'i aç</a>
-<p class="k" style="font-size:11px;margin-top:24px">Bu e-postaları durdurmak için <a href="${esc(g.baseUrl)}/profil" style="color:#9ca3af">Profil → Bildirim Tercihleri</a>'nden e-posta bildirimini kapatabilirsiniz.</p>
+<p class="k" style="font-size:11px;margin-top:24px">Bu e-postaları durdurmak için <a href="${esc(g.baseUrl)}/ayarlar" style="color:#9ca3af">Ayarlar → Bildirim Tercihleri</a>'nden e-posta bildirimini kapatabilirsiniz.</p>
 </div></body></html>`,
   }
 }

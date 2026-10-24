@@ -35,7 +35,7 @@ export async function uploadAvatar(formData: FormData): Promise<{ error?: string
   const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user.id)
   if (error) return { error: error.message }
 
-  revalidatePath('/profil')
+  revalidatePath('/ayarlar')
   revalidatePath('/anasayfa')
   return { url }
 }
@@ -61,7 +61,7 @@ export async function removeAvatar(): Promise<{ error?: string }> {
   const { error } = await supabase.from('profiles').update({ avatar_url: null }).eq('id', user.id)
   if (error) return { error: error.message }
 
-  revalidatePath('/profil')
+  revalidatePath('/ayarlar')
   revalidatePath('/anasayfa')
   return {}
 }

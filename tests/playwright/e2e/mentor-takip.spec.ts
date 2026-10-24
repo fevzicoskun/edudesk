@@ -100,10 +100,12 @@ test('yalnız bakmak satır yaratmaz; düzenleme kaydedilir ve yenilemede kalır
   expect((await db.from('mentor_haftalari').select('id').eq('student_id', ogrId)).data).toHaveLength(0)
   await expect(page.getByText('Taslak, henüz kaydedilmedi')).toBeVisible()
 
+  await page.locator('summary', { hasText: 'Diğer seçenekler' }).click() // seyrek ayarlar katlanır bölümde
   await page.getByRole('button', { name: 'Normal' }).click()
   await kaydedildi(page)
   await expect(page.getByText('Taslak, henüz kaydedilmedi')).toHaveCount(0) // ilk değişiklikle kayda döndü
   await page.reload()
+  await page.locator('summary', { hasText: 'Diğer seçenekler' }).click()
   await expect(page.getByRole('button', { name: 'Normal' })).toHaveAttribute('aria-pressed', 'true')
   const { data } = await db.from('mentor_haftalari').select('seviye, soru_hedefi').eq('student_id', ogrId).single()
   expect(data).toEqual({ seviye: 1, soru_hedefi: expect.any(Number) })
@@ -338,7 +340,9 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
   const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
   await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
-  await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toBeVisible()
+  const sayfa = page.locator('main')
+  await expect(sayfa.getByRole('link', { name: 'Tüm planları yazdır', exact: true })).toHaveAttribute('href', '/mentorluk/takip-kagitlari')
+  await expect(sayfa.getByRole('link', { name: 'Ödev özetlerini yazdır', exact: true })).toHaveAttribute('href', /^\/mentorluk\/yazdir\?bas=/)
 })
 test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğrenci Haftalık planlar', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
@@ -357,9 +361,9 @@ test('sol menü: Mentörlük altında Haftalık veli bülteni ve öğrenci öğr
   await expect(page.getByRole('heading', { name: 'Haftalık Takip' })).toBeVisible()
   await expect(menu.getByRole('link', { name: o!.full_name, exact: true })).toHaveAttribute('aria-current', 'page')
   // Haftalık planlar altında ilk satır: bu haftanın tüm plan kâğıtları (2026-10-22 kullanıcı isteği)
-  await menu.getByRole('link', { name: 'Hepsini yazdır', exact: true }).click()
+  await menu.getByRole('link', { name: 'Tüm planları yazdır', exact: true }).click()
   await expect(page).toHaveURL(/\/mentorluk\/takip-kagitlari$/)
-  await expect(menu.getByRole('link', { name: 'Hepsini yazdır', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(menu.getByRole('link', { name: 'Tüm planları yazdır', exact: true })).toHaveAttribute('aria-current', 'page')
 })
 test('telefon: Daha Fazla çekmecesinde Mentörlük → Haftalık veli bülteni ve Haftalık planlar', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
@@ -374,8 +378,9 @@ test('telefon: Daha Fazla çekmecesinde Mentörlük → Haftalık veli bülteni 
   await page.getByRole('link', { name: 'Haftalık veli bülteni' }).click()
   await expect(page.getByRole('heading', { name: 'Haftalık veli bülteni' })).toBeVisible({ timeout: 15_000 })
   await page.getByRole('button', { name: 'Daha fazla' }).click()
-  await page.locator('summary', { hasText: 'Haftalık planlar' }).click() // bülten sayfasında aynı metin içerikte de var
-  await page.getByRole('link', { name: 'Hepsini yazdır', exact: true }).click()
+  const cekmece = page.locator('details').filter({ has: page.locator('summary', { hasText: 'Haftalık planlar' }) })
+  await cekmece.locator('summary').click() // bülten sayfasında aynı metin içerikte de var
+  await cekmece.getByRole('link', { name: 'Tüm planları yazdır', exact: true }).click()
   await expect(page).toHaveURL(/\/mentorluk\/takip-kagitlari$/)
 })
 test('Mentörlüğüm: kitap ekle (tüm mentör öğrencilerime) — olan atlanır', async ({ page }) => {
@@ -539,6 +544,7 @@ test('bu planı tüm mentör öğrencilerime uygula: planı olmayan öğrenciye 
   const oncedenVar = new Set((once ?? []).map(r => r.student_id))
   try {
     await page.goto(`/mentorluk/${ogrId}/takip?hafta=${HAFTA}`)
+    await page.locator('summary', { hasText: 'Diğer seçenekler' }).click() // seyrek ayarlar katlanır bölümde
     page.on('dialog', d => d.accept())
     await page.getByRole('button', { name: 'Bu planı tüm mentör öğrencilerime uygula' }).click()
     await expect(page.getByRole('status').filter({ hasText: /\d+ öğrenciye uygulandı/ })).toBeVisible({ timeout: 20_000 })
@@ -720,7 +726,7 @@ test.describe('erişim', () => {
       await page.goto(`/mentorluk/${ogrId}`)
       await expect(page.getByRole('link', { name: 'Haftalık takip' })).toHaveCount(0)
       await page.goto('/mentorluk')
-      await expect(page.getByRole('link', { name: 'Bu haftanın planları' })).toHaveCount(0)
+      await expect(page.locator('main').getByRole('link', { name: 'Tüm planları yazdır' })).toHaveCount(0)
       // Sol menüde bülten var, Haftalık planlar yok
       await page.setViewportSize({ width: 1280, height: 900 })
       await page.reload()

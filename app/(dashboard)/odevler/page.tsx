@@ -60,7 +60,7 @@ export default async function OdevlerPage({
           <h1 className="order-1 text-xl font-bold text-gray-900 dark:text-slate-100">Ödevler</h1>
           {/* İkincil eylemler — hepsi aynı biçim, yazılı etiket (simge tek başına anlaşılmıyordu) */}
           <div className="order-3 sm:order-2 w-full sm:w-auto flex flex-wrap items-center gap-1 -mx-2">
-            <Link href="/odevler/takvim" className={IKINCIL}>Takvim</Link>
+            <Link href="/odevler/takvim" className={IKINCIL}>Ödev takvimi</Link>
             <Link href="/odevler/analitik" className={IKINCIL}>Başarı haritası</Link>
             <RaporButton classes={classes} />
             {canWrite && <BulkModeToggle canWrite={canWrite} />}

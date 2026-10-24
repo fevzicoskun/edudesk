@@ -8,6 +8,7 @@ import { isTeachingRole, isMudurOrAbove } from '@/src/shared/types'
 import { okulYoklamaAktif } from '@/src/domains/school/okulYoklama'
 import YoklamaAnahtari from './YoklamaAnahtari'
 import BildirimTercihleri from '@/app/(dashboard)/profil/BildirimTercihleri'
+import ProfilForm from '@/app/(dashboard)/profil/ProfilForm'
 import PasswordForm from './PasswordForm'
 import KaynakYonetimi from './KaynakYonetimi'
 import OkulBilgileri from './OkulBilgileri'
@@ -39,8 +40,16 @@ export default async function AyarlarPage() {
     <div className="p-4 md:p-6 max-w-lg mx-auto space-y-6">
       <div className="mb-1">
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Ayarlar</h1>
-        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Uygulama tercihleri</p>
+        <p className="text-sm text-gray-500 dark:text-slate-400 mt-0.5">Profil ve uygulama tercihleri</p>
       </div>
+      <ProfilForm
+        defaultFullName={profile.full_name ?? ''}
+        defaultSubject={profile.subject ?? ''}
+        schoolName={profile.schools?.name ?? null}
+        email={user.email ?? ''}
+        role={profile.role ?? 'ogretmen'}
+        avatarUrl={profile.avatar_url ?? null}
+      />
       <BildirimTercihleri
         defaultDays={prefs?.days_before ?? 1}
         defaultEmailOn={prefs?.email_on ?? true}

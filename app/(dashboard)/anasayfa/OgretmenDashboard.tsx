@@ -128,11 +128,10 @@ export default async function OgretmenDashboard() {
       <Yapilacaklarim initial={myTasks} />
 
       {/* Gün sonu için bugün verilen ödevler */}
-      <div className="mb-4">
-        <Suspense fallback={<div className="h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
-          <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
-        </Suspense>
-      </div>
+      {/* boşsa kendini çizmez — sarmalayıcı div boşluk bırakmasın diye mb-4 kartın kendisinde */}
+      <Suspense fallback={<div className="mb-4 h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
+        <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
+      </Suspense>
 
       {/* Kontrol bekliyor — kendi ödevlerim, Ödev Tamamlanma'nın hemen üstünde; boşsa çizilmez */}
       <Suspense fallback={null}>

@@ -129,14 +129,6 @@ const navItems: { href: string; label: string; mobile: boolean; roles: Role[] | 
     icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>,
   },
   {
-    href: '/profil',
-    label: 'Profil',
-    mobile: false,
-    roles: null,
-    grup: 'diger',
-    icon: <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
-  },
-  {
     href: '/ayarlar',
     label: 'Ayarlar',
     mobile: false,
@@ -238,7 +230,7 @@ function MentorlukGrubu({ item, pathname, ogrenciler }: { item: (typeof navItems
               </button>
               {planAcik && <>
                 <Link href="/mentorluk/takip-kagitlari" aria-current={pathname === '/mentorluk/takip-kagitlari' ? 'page' : undefined}
-                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-14')} text-[13px] font-medium`}>Hepsini yazdır</Link>
+                  className={`${altLink(pathname === '/mentorluk/takip-kagitlari', 'pl-14')} text-[13px] font-medium`}>Tüm planları yazdır</Link>
                 {ogrenciler.map(o => (
                   <Link key={o.id} href={`/mentorluk/${o.id}/takip?sekme=plan`} aria-current={plandaki === o.id ? 'page' : undefined}
                     className={`${altLink(plandaki === o.id, 'pl-14')} text-[13px]`}>{o.ad}</Link>
@@ -335,7 +327,7 @@ export default function Sidebar({ profile, email, mentorMu = false, yoklamaAktif
           </button>
           <NotificationBell align="right" userId={profile?.id} />
           <ThemeToggle />
-          <Link href="/profil" aria-label="Profilim" className="ml-1">
+          <Link href="/ayarlar" aria-label="Profil ve ayarlar" className="ml-1">
             <Avatar name={displayName} size="sm" src={profile?.avatar_url} />
           </Link>
         </div>

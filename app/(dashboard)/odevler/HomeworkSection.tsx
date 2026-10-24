@@ -134,6 +134,7 @@ export default async function HomeworkSection({
               statusMap={statusMap}
               classStudentMap={classStudentMap}
               now={now}
+              userId={userId}
             />
             {active.length > 0 && (
               <section>

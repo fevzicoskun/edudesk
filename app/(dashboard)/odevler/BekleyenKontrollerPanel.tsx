@@ -9,6 +9,8 @@ interface Homework {
   due_date: string | null
   class_id: unknown
   classes: { name: string } | null
+  teacher_id: string
+  teacher?: unknown
 }
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   statusMap: Map<string, StatusCounts>
   classStudentMap: Map<string, number>
   now: Date
+  userId: string
 }
 
 function dueDateStr(due: string | null): string {
@@ -31,7 +34,7 @@ function daysSinceDue(due: string | null, now: Date): number {
   return Math.floor((now.getTime() - new Date(due).getTime()) / 86_400_000)
 }
 
-export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, classStudentMap, now }: Props) {
+export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, classStudentMap, now, userId }: Props) {
   if (!pendingCheck.length) return null
   return (
     <section>
@@ -47,6 +50,8 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
           const progressLabel = total > 0
             ? `${checked}/${total} girildi`
             : checked === 0 ? 'Hiç girilmedi' : `${checked} girildi`
+          // HomeworkCard ile aynı: kendi ödevinde ad yazılmaz
+          const ogretmen = hw.teacher_id === userId ? undefined : (hw.teacher as { full_name: string } | null | undefined)?.full_name
           return (
             <Link
               key={hw.id}
@@ -59,6 +64,7 @@ export default function BekleyenKontrollerPanel({ pendingCheck, statusMap, class
                 </p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5 flex flex-wrap gap-x-1.5">
                   <span className="whitespace-nowrap">{hw.classes?.name ?? '—'} · {dueDateStr(hw.due_date)}</span>
+                  {ogretmen && <span className="whitespace-nowrap">· {ogretmen}</span>}
                   <span className="whitespace-nowrap">· {progressLabel}</span>
                 </p>
               </div>

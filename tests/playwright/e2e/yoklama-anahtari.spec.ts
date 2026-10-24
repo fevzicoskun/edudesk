@@ -11,11 +11,11 @@ test.afterAll(async () => {
 // Spec: docs/superpowers/specs/2026-10-10-yoklama-anahtari-design.md — test okulu her durumda AÇIK bırakılır.
 const AUTH_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 
-/** "Diğer" grubundaki bir sayfada (Profil) grup kendiliğinden açıktır — tıklamak localStorage geri yüklemesiyle yarışır */
+/** "Diğer" grubundaki bir sayfada (Ayarlar; Profil menüden 2026-10-24'te kalktı) grup kendiliğinden açıktır — tıklamak localStorage geri yüklemesiyle yarışır */
 async function menuLinki(page: Page, ad: string) {
-  await page.goto('/profil')
+  await page.goto('/ayarlar')
   const menu = page.locator('aside').first()
-  await expect(menu.getByRole('link', { name: 'Profil' })).toBeVisible({ timeout: 15_000 })
+  await expect(menu.getByRole('link', { name: 'Ayarlar', exact: true })).toBeVisible({ timeout: 15_000 })
   return menu.getByRole('link', { name: ad })
 }
 
