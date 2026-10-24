@@ -345,6 +345,13 @@ export function gecenHaftaOzeti(s: (Pick<Ozet, 'islendi' | 'gorev_toplam' | 'gor
 export type HaftaDurumu = 'yok' | 'kagitta' | 'islendi'
 export const haftaDurumu = (s: { islendi: boolean } | null): HaftaDurumu => (!s ? 'yok' : s.islendi ? 'islendi' : 'kagitta')
 
+/** Mentörlüğüm "Bu hafta" sütunu. Hafta henüz bitmediği için işaretleme başlamışsa "İşlendi · %" değil
+ *  "Devam ediyor · yapılan/toplam görev" (2026-10-24: tek işaret "İşlendi · %2" diye okunuyordu). */
+export function buHaftaEtiketi(s: { islendi: boolean; gorev_toplam: number; gorev_yapilan: number } | null): string {
+  const d = haftaDurumu(s)
+  return d === 'yok' ? 'Plan yok' : d === 'kagitta' ? 'Kâğıtta' : `Devam ediyor · ${s!.gorev_yapilan}/${s!.gorev_toplam} görev`
+}
+
 export function okumaGecmisi(haftalar: { hafta: string; okuma: Okuma | null }[]) {
   const out: { kitap: string; bas: string; son: string; sayfa: number; bitti: boolean }[] = []
   for (const { hafta, okuma } of haftalar) {

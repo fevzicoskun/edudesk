@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   seviyeMiktar, sureYaz, miktarYaz, varsayilanHedef, ozetHesapla, programYuzde, dogrulukYuzde, fark,
-  yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
+  yeniHafta, okulOdevleri, okulOdevBolumleri, okulDurumYaz, haftaDurumu, buHaftaEtiketi, okumaGecmisi, kitapSayfaYaz, sonucSatirlari, sonucNet, sonucDogruluk, sonucUyarisi, dersDogruluk,
   planKopyala, sablonaDon, elleGorevler, dengeliBol, gunSirasi, gunTarihi, okulGunleri, haftaBaslangicMi, takipHaftaEtiketi, gecenHaftaOzeti, normalizeIcerik, seviyeDegistir, gorusmeNormalize, dersListesi, gunlukAralik, kaldigiMetni, BOS_GORUSME, type Icerik, type Gorev,
 } from '@/src/domains/mentor/takip/takipMath'
 import { sinifSablonu, VARSAYILAN_DUZEN, MATEMATIK_KONULARI } from '@/src/domains/mentor/takip/sablonlar'
@@ -439,5 +439,15 @@ describe('dengeliBol: günleri sırayı bozmadan iki eşit sütuna böler (kâğ
     expect(dengeliBol([10, 10, 10, 10], 6)).toBe(2)
     // [12,12,12,30] + imza 8: k=3 → 36 / 30+8 = 38; k=2 → 24+8 / 42 = 42 → k=3
     expect(dengeliBol([12, 12, 12, 30], 8)).toBe(3)
+  })
+})
+
+describe('buHaftaEtiketi (Mentörlüğüm "Bu hafta" sütunu)', () => {
+  it('plan yok / kâğıtta', () => {
+    expect(buHaftaEtiketi(null)).toBe('Plan yok')
+    expect(buHaftaEtiketi({ islendi: false, gorev_toplam: 42, gorev_yapilan: 0 })).toBe('Kâğıtta')
+  })
+  it('hafta sürerken işaret başladıysa "Devam ediyor · yapılan/toplam görev" — "İşlendi · %2" değil (2026-10-24)', () => {
+    expect(buHaftaEtiketi({ islendi: true, gorev_toplam: 42, gorev_yapilan: 1 })).toBe('Devam ediyor · 1/42 görev')
   })
 })

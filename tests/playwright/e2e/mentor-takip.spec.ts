@@ -339,7 +339,7 @@ test('Mentörlüğüm listesinde bu haftanın durumu', async ({ page }) => {
   const { data: o } = await db.from('students').select('full_name').eq('id', ogrId).single()
   const satir = page.locator('table').getByRole('row', { name: new RegExp(o!.full_name) })
   const { data: h } = await db.from('mentor_haftalari').select('id').eq('student_id', ogrId).eq('hafta_basi', bu)
-  await expect(satir).toContainText(h?.length ? /Kâğıtta|İşlendi/ : /Plan yok/)
+  await expect(satir).toContainText(h?.length ? /Kâğıtta|Devam ediyor · \d+\/\d+ görev/ : /Plan yok/)
   const sayfa = page.locator('main')
   await expect(sayfa.getByRole('link', { name: 'Tüm planları yazdır', exact: true })).toHaveAttribute('href', '/mentorluk/takip-kagitlari')
   // Tablo altındaki açıklama: "(1e)" yerine açık yazım + tek renk kuralı (2026-10-24 Aşama 3)
