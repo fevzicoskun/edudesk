@@ -54,3 +54,12 @@ test('Ödevler kartı: eksik ve girilmedi yazılır; toplam = sınıf mevcudu', 
   const toplam = [...metin.matchAll(/(\d+) (?:yaptı|eksik|geç|yapmadı|mazeretli|girilmedi)/g)].reduce((t, m) => t + Number(m[1]), 0)
   expect(toplam).toBe(mevcut)
 })
+
+test('Anasayfa Ödev Tamamlanma: Ödevler sayfasıyla aynı parçalar (eksik ve girilmedi dahil)', async ({ page }) => {
+  await page.goto('/anasayfa')
+  const satir = page.getByRole('listitem').filter({ hasText: BASLIK })
+  await expect(satir).toBeVisible({ timeout: 20_000 })
+  await expect(satir).toContainText('1 eksik')
+  await expect(satir).toContainText(`${mevcut - 1} girilmedi`)
+  await expect(satir).not.toContainText(/\d+\/\d+ yaptı/) // eski "9/24 yaptı" biçimi
+})
