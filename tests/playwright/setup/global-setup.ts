@@ -84,31 +84,41 @@ export default async function globalSetup() {
     const statePath = AUTH_PATHS[role as keyof typeof AUTH_PATHS]
     if (!statePath) continue
 
-    try {
+    // 2026-10-24: soğuk sunucuda giriş 30 sn'yi bir kez aştı; hata yutulunca o rolün ESKİ oturumu kaldı ve
+    // 21 test "ERR_TOO_MANY_REDIRECTS" ile yanıltıcı kırmızı verdi → bir kez daha dene, yine olmazsa koşuyu durdur.
+    for (let deneme = 1; ; deneme++) {
       const context = await browser.newContext()
-      const page    = await context.newPage()
+      try {
+        const page = await context.newPage()
 
-      await page.goto(`${BASE_URL}/login`)
-      await page.fill('#email',    creds.email)
-      await page.fill('#password', creds.password)
-      await page.click('button[type="submit"]')
+        await page.goto(`${BASE_URL}/login`)
+        await page.fill('#email',    creds.email)
+        await page.fill('#password', creds.password)
+        await page.click('button[type="submit"]')
 
-      // Auth cookie'ler login action'da set edilir; /login'den herhangi bir yere geçmesi yeterli
-      await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 30_000 })
+        // Auth cookie'ler login action'da set edilir; /login'den herhangi bir yere geçmesi yeterli
+        await page.waitForURL(url => !url.pathname.startsWith('/login'), { timeout: 30_000 })
 
-      // Warmup /anasayfa'yı compile etmiş olmalı; direkt goto ile doğrula
-      await page.goto(`${BASE_URL}/anasayfa`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
+        // Warmup /anasayfa'yı compile etmiş olmalı; direkt goto ile doğrula
+        await page.goto(`${BASE_URL}/anasayfa`, { waitUntil: 'domcontentloaded', timeout: 90_000 })
 
-      const finalUrl = page.url()
-      if (finalUrl.includes('onboarding')) {
-        console.error(`[playwright] ${role} onboarding'e düştü — profil eksik! URL: ${finalUrl}`)
+        const finalUrl = page.url()
+        if (finalUrl.includes('onboarding')) {
+          console.error(`[playwright] ${role} onboarding'e düştü — profil eksik! URL: ${finalUrl}`)
+        }
+
+        await context.storageState({ path: statePath })
+        console.log(`[playwright] ${role} auth state kaydedildi (${finalUrl})`)
+        break
+      } catch (e) {
+        console.error(`[playwright] ${role} giriş yapılamadı (deneme ${deneme}):`, e)
+        if (deneme >= 2) {
+          await browser.close()
+          throw new Error(`[playwright] ${role} iki denemede giriş yapamadı — eski oturumla koşmak yanıltıcı kırmızı üretir, durduruldu.`)
+        }
+      } finally {
+        await context.close()
       }
-
-      await context.storageState({ path: statePath })
-      await context.close()
-      console.log(`[playwright] ${role} auth state kaydedildi (${finalUrl})`)
-    } catch (e) {
-      console.error(`[playwright] ${role} giriş yapılamadı:`, e)
     }
   }
 
