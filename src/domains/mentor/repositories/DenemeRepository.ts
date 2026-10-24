@@ -61,6 +61,20 @@ export const DenemeRepository = {
     ok(await db.from('deneme_sonuclari').delete().eq('sinav_id', sinavId).in('student_id', studentIds))
   },
 
+  /** Sınıfın dosyası yüklenmiş sınavlar (`enAz` tarihinden beri) — katılmadı çıkarımı bunlara dayanır. */
+  async sinifSinavlari(classId: string, enAz: string) {
+    const db = await createClient()
+    return ok(await db.from('deneme_sinav_siniflari').select('class_id, deneme_sinavlari!inner(id, tur, tarih)')
+      .eq('class_id', classId).gte('deneme_sinavlari.tarih', enAz))
+  },
+
+  /** Öğrencinin dönem içindeki haftalık plan kayıtları, eskiden yeniye. */
+  async donemHaftalari(schoolId: string, studentId: string, bas: string, son: string) {
+    const db = await createClient()
+    return ok(await db.from('mentor_haftalari').select('hafta_basi, seviye, soru_hedefi, icerik')
+      .eq('school_id', schoolId).eq('student_id', studentId).gte('hafta_basi', bas).lte('hafta_basi', son).order('hafta_basi'))
+  },
+
   /** Öğrencilerin bütün sonuçları sınav bilgisiyle (mentör ≤ ~60 öğrenci × dönemde ~10 sınav: 1000 satır sınırının altında). */
   async ogrenciSonuclari(studentIds: string[]) {
     if (studentIds.length === 0) return []

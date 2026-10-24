@@ -349,7 +349,15 @@ export type Database = {
           school_id?: string
           sinav_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "deneme_sinav_siniflari_sinav_id_fkey"
+            columns: ["sinav_id"]
+            isOneToOne: false
+            referencedRelation: "deneme_sinavlari"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deneme_sinavlari: {
         Row: {
