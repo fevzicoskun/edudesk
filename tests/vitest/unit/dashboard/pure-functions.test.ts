@@ -137,122 +137,69 @@ describe('buildAbsenceMap()', () => {
 })
 
 // ─── computeAlerts ───────────────────────────────────────────
-// En kritik davranış: RISK_HW_LOOKBACK (=5) per-class penceresi.
+// Kural: öğrencinin İŞARETLİ son 5 ödevi; 4-5 "yapılmadı" = yüksek, 3 = orta, daha azı listede yok.
 
 describe('computeAlerts()', () => {
   const makeStudent = (id: string, classId = 'cls1') => ({
     id, full_name: `Öğrenci ${id}`, class_id: classId, classes: { name: 'Test Sınıfı' },
   })
+  // repo ödevleri teslim tarihi YENİDEN eskiye verir: hw1 en yeni
+  const odevler = (n: number) => Array.from({ length: n }, (_, i) => ({
+    id: `hw${i + 1}`, title: '', subject: '', due_date: `2026-10-${String(30 - i).padStart(2, '0')}`, class_id: 'cls1', classes: null,
+  }))
+  const durumlar = (stu: string, liste: string[]) =>
+    liste.map((status, i) => ({ homework_id: `hw${i + 1}`, student_id: stu, status }))
 
-  it('sorunsuz öğrenci alert listesinde yer almaz', () => {
-    const alerts = computeAlerts(
-      [{ id: 'hw1', title: 'Ödev', subject: 'Mat', due_date: '2026-01-01', class_id: 'cls1', classes: null }],
-      [{ homework_id: 'hw1', student_id: 'stu1', status: 'yapildi' }],
-      [{ student_id: 'stu1', status: 'present' }],
-      [makeStudent('stu1')],
-    )
+  it('2 yapmadı listeye girmez', () => {
+    const alerts = computeAlerts(odevler(5), durumlar('s', ['yapilmadi', 'yapilmadi', 'yapildi', 'yapildi', 'yapildi']), [], [makeStudent('s')])
     expect(alerts).toHaveLength(0)
   })
 
-  it('eksik ödev olan öğrenci alert\'e girer', () => {
-    const alerts = computeAlerts(
-      [{ id: 'hw1', title: 'Ödev', subject: 'Mat', due_date: '2026-01-01', class_id: 'cls1', classes: null }],
-      [{ homework_id: 'hw1', student_id: 'stu1', status: 'eksik' }],
-      [],
-      [makeStudent('stu1')],
-    )
-    expect(alerts).toHaveLength(1)
-    expect(alerts[0].studentId).toBe('stu1')
-    expect(alerts[0].hwMisses).toBe(1)
+  it('3 yapmadı = orta, 4 = yüksek, 5 = yüksek', () => {
+    const alerts = computeAlerts(odevler(5), [
+      ...durumlar('uc',   ['yapilmadi', 'yapilmadi', 'yapilmadi', 'yapildi', 'yapildi']),
+      ...durumlar('dort', ['yapilmadi', 'yapilmadi', 'yapilmadi', 'yapilmadi', 'yapildi']),
+      ...durumlar('bes',  ['yapilmadi', 'yapilmadi', 'yapilmadi', 'yapilmadi', 'yapilmadi']),
+    ], [], [makeStudent('uc'), makeStudent('dort'), makeStudent('bes')])
+    expect(alerts.map(a => [a.studentId, a.riskLevel])).toEqual([['bes', 'high'], ['dort', 'high'], ['uc', 'medium']])
+    expect(alerts[2].reasons[0]).toBe('Son 5 ödevden 3 yapılmadı')
   })
 
-  it('devamsız öğrenci alert\'e girer', () => {
-    const alerts = computeAlerts(
-      [],
-      [],
-      [{ student_id: 'stu1', status: 'absent' }],
-      [makeStudent('stu1')],
-    )
-    expect(alerts).toHaveLength(1)
-    expect(alerts[0].absences).toBe(1)
+  it('eksik ve geç "yapılmadı" sayılmaz', () => {
+    const alerts = computeAlerts(odevler(5), durumlar('s', ['eksik', 'gec', 'eksik', 'gec', 'eksik']), [], [makeStudent('s')])
+    expect(alerts).toHaveLength(0)
   })
 
-  it('high risk önce sıralanır', () => {
-    const alerts = computeAlerts(
-      [
-        { id: 'hw1', title: '', subject: '', due_date: '', class_id: 'cls1', classes: null },
-        { id: 'hw2', title: '', subject: '', due_date: '', class_id: 'cls1', classes: null },
-        { id: 'hw3', title: '', subject: '', due_date: '', class_id: 'cls1', classes: null },
-      ],
-      [
-        // stu1: 1 miss (low), stu2: 3 miss (high)
-        { homework_id: 'hw1', student_id: 'stu1', status: 'eksik' },
-        { homework_id: 'hw1', student_id: 'stu2', status: 'eksik' },
-        { homework_id: 'hw2', student_id: 'stu2', status: 'eksik' },
-        { homework_id: 'hw3', student_id: 'stu2', status: 'eksik' },
-      ],
-      [],
-      [makeStudent('stu1'), makeStudent('stu2')],
-    )
-    expect(alerts[0].studentId).toBe('stu2')
-    expect(alerts[0].riskLevel).toBe('high')
-    expect(alerts[1].studentId).toBe('stu1')
-    expect(alerts[1].riskLevel).toBe('low')
-  })
-
-  it('aynı seviyede en çok kaçıran önce, eşitlikte devamsızlığı fazla olan', () => {
-    // Ana sayfa yalnız ilk 5'i gösterir: 31 yüksek riskliden rastgele 5 değil, en ağır 5 görünmeli
-    const homeworks = Array.from({ length: 5 }, (_, i) => ({
-      id: `hw${i + 1}`, title: '', subject: '', due_date: '', class_id: 'cls1', classes: null,
-    }))
-    const kacir = (stu: string, n: number) =>
-      homeworks.slice(0, n).map(hw => ({ homework_id: hw.id, student_id: stu, status: 'yapilmadi' }))
-    const alerts = computeAlerts(
-      homeworks,
-      [...kacir('uc', 3), ...kacir('bes', 5), ...kacir('ucDevamsiz', 3)],
-      [{ student_id: 'ucDevamsiz', status: 'absent' }],
-      [makeStudent('uc'), makeStudent('bes'), makeStudent('ucDevamsiz')],
-    )
-    expect(alerts.map(a => a.studentId)).toEqual(['bes', 'ucDevamsiz', 'uc'])
-  })
-
-  it('RISK_HW_LOOKBACK (5): 6. ödev pencere dışında kalır — miss sayılmaz', () => {
-    // 6 ödev, öğrenci hepsinde eksik — ama limit 5 olduğu için max 5 miss sayılmalı
-    const homeworks = Array.from({ length: 6 }, (_, i) => ({
-      id: `hw${i + 1}`, title: '', subject: '', due_date: '', class_id: 'cls1', classes: null,
-    }))
-    const submissions = homeworks.map(hw => ({
-      homework_id: hw.id, student_id: 'stu1', status: 'eksik',
-    }))
-
-    const alerts = computeAlerts(homeworks, submissions, [], [makeStudent('stu1')])
-
-    expect(alerts).toHaveLength(1)
-    expect(alerts[0].hwMisses).toBe(5) // 6. ödev pencere dışı
-  })
-
-  it('per-class RISK_HW_LOOKBACK: iki sınıf bağımsız pencereye sahip', () => {
-    // cls1: 3 ödev, cls2: 3 ödev — her sınıf kendi 5-penceresiyle sayılır
-    const homeworks = [
-      { id: 'c1h1', title: '', subject: '', due_date: '', class_id: 'cls1', classes: null },
-      { id: 'c1h2', title: '', subject: '', due_date: '', class_id: 'cls1', classes: null },
-      { id: 'c2h1', title: '', subject: '', due_date: '', class_id: 'cls2', classes: null },
-      { id: 'c2h2', title: '', subject: '', due_date: '', class_id: 'cls2', classes: null },
+  it('işaretlenmemiş ödev pencereyi doldurmaz: işaretli en yeni 5 sayılır', () => {
+    // hw1-hw2 işaretlenmedi (satır yok); hw3-hw7 işaretli → 4 yapmadı
+    const subs = [
+      { homework_id: 'hw3', student_id: 's', status: 'yapilmadi' },
+      { homework_id: 'hw4', student_id: 's', status: 'yapilmadi' },
+      { homework_id: 'hw5', student_id: 's', status: 'yapilmadi' },
+      { homework_id: 'hw6', student_id: 's', status: 'yapilmadi' },
+      { homework_id: 'hw7', student_id: 's', status: 'yapildi' },
     ]
-    const submissions = homeworks.map(hw => ({
-      homework_id: hw.id, student_id: hw.class_id === 'cls1' ? 'stu1' : 'stu2', status: 'eksik',
-    }))
+    const alerts = computeAlerts(odevler(7), subs, [], [makeStudent('s')])
+    expect(alerts[0].riskLevel).toBe('high')
+  })
 
-    const alerts = computeAlerts(
-      homeworks,
-      submissions,
-      [],
-      [makeStudent('stu1', 'cls1'), makeStudent('stu2', 'cls2')],
-    )
+  it('6. (en eski) işaretli ödev pencere dışında', () => {
+    // en yeni 5'te 2 yapmadı, en eski ödevde 1 daha → yine 2 sayılır, listede yok
+    const alerts = computeAlerts(odevler(6), durumlar('s', ['yapilmadi', 'yapilmadi', 'yapildi', 'yapildi', 'yapildi', 'yapilmadi']), [], [makeStudent('s')])
+    expect(alerts).toHaveLength(0)
+  })
 
-    const s1 = alerts.find(a => a.studentId === 'stu1')!
-    const s2 = alerts.find(a => a.studentId === 'stu2')!
-    expect(s1.hwMisses).toBe(2)
-    expect(s2.hwMisses).toBe(2)
+  it('mazeretli pencereye girmez', () => {
+    const alerts = computeAlerts(odevler(6), durumlar('s', ['mazeretli', 'yapilmadi', 'yapilmadi', 'yapilmadi', 'yapilmadi', 'yapildi']), [], [makeStudent('s')])
+    expect(alerts[0].riskLevel).toBe('high')
+    expect(alerts[0].hwMisses).toBe(4)
+  })
+
+  it('yalnız devamsızlık listeye sokmaz; listedeyse sebep olarak eklenir', () => {
+    const alerts = computeAlerts(odevler(5), durumlar('s', ['yapilmadi', 'yapilmadi', 'yapilmadi', 'yapildi', 'yapildi']),
+      [{ student_id: 's', status: 'absent' }, { student_id: 'd', status: 'absent' }, { student_id: 'd', status: 'absent' }],
+      [makeStudent('s'), makeStudent('d')])
+    expect(alerts.map(a => a.studentId)).toEqual(['s'])
+    expect(alerts[0].reasons).toEqual(['Son 5 ödevden 3 yapılmadı', 'Son 14 günde 1 gün devamsız'])
   })
 })

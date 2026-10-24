@@ -2,7 +2,6 @@ import { DashboardRepository } from '../repositories/DashboardRepository'
 import { computeRiskLevel } from '../risk'
 import { subDays } from '@/src/shared/date'
 import { turkeyDate } from '@/src/lib/email-utils'
-import { RISK_HW_LOOKBACK } from '@/src/shared/constants/limits'
 import { logger } from '@/src/infrastructure/observability/logger'
 import type { RiskAlert } from '../types'
 
@@ -83,30 +82,53 @@ function buildRiskAlerts(
     || b.absences - a.absences)
 }
 
+/** Ana sayfa Risk Uyarıları (ve Pazartesi özet maili) eşikleri — değiştirmek için yalnız burası.
+ *  Öğrencinin İŞARETLİ son RISK_SON_ODEV ödevinde kaç "yapılmadı" olduğuna bakılır. */
+export const RISK_SON_ODEV    = 5
+export const RISK_YUKSEK_ESIK = 4 // ≥ bu kadar yapılmadı → Yüksek Risk
+export const RISK_ORTA_ESIK   = 3 // ≥ bu kadar yapılmadı → Orta Risk; daha azı listeye girmez
+
+/** homeworks teslim tarihi yeniden eskiye gelir (getTeacherHomeworks). İşaretlenmemiş ödevin satırı yoktur
+ *  (submissions yalnız marked_at dolu) → pencereyi doldurmaz; mazeretli (sınıfta yok) da sayılmaz.
+ *  Eksik/geç "yapılmadı" değildir. Devamsızlık tek başına listeye sokmaz (ayrı Devamsızlık Riski kartı var). */
 export function computeAlerts(
   homeworks:      HwRow[],
   submissions:    SubmissionRow[],
   attendanceRows: { student_id: string; status: string }[],
   students:       StudentRow[],
 ): RiskAlert[] {
-  const limitHwIds = new Set<string>()
-  const lastHwByClass = new Map<string, number>()
-  for (const hw of homeworks) {
-    const seen = lastHwByClass.get(hw.class_id) ?? 0
-    if (seen < RISK_HW_LOOKBACK) {
-      limitHwIds.add(hw.id)
-      lastHwByClass.set(hw.class_id, seen + 1)
-    }
+  const sira = new Map(homeworks.map((h, i) => [h.id, i]))
+  const ogrenciDurumlari = new Map<string, { sira: number; status: string }[]>()
+  for (const s of submissions) {
+    const i = sira.get(s.homework_id)
+    if (i === undefined || s.status === 'mazeretli') continue
+    const liste = ogrenciDurumlari.get(s.student_id) ?? []
+    liste.push({ sira: i, status: s.status })
+    ogrenciDurumlari.set(s.student_id, liste)
   }
-  return buildRiskAlerts(
-    buildHwMissMap(submissions, limitHwIds),
-    buildAbsenceMap(attendanceRows),
-    students,
-    (hw, ab) => [
-      ...(hw >= 1 ? [`Son ${RISK_HW_LOOKBACK} ödevde ${hw} eksik`] : []),
-      ...(ab >= 1 ? [`Son 14 günde ${ab} gün devamsız`]           : []),
-    ],
-  )
+  const absenceMap = buildAbsenceMap(attendanceRows)
+
+  const alerts: RiskAlert[] = []
+  for (const student of students) {
+    const son = (ogrenciDurumlari.get(student.id) ?? []).sort((a, b) => a.sira - b.sira).slice(0, RISK_SON_ODEV)
+    const hwMisses = son.filter(d => d.status === 'yapilmadi').length
+    if (hwMisses < RISK_ORTA_ESIK) continue
+    const absences = absenceMap.get(student.id) ?? 0
+    alerts.push({
+      studentId:   student.id,
+      studentName: student.full_name,
+      classId:     student.class_id,
+      className:   student.classes?.name ?? '—',
+      riskLevel:   hwMisses >= RISK_YUKSEK_ESIK ? 'high' : 'medium',
+      reasons:     [`Son ${son.length} ödevden ${hwMisses} yapılmadı`, ...(absences >= 1 ? [`Son 14 günde ${absences} gün devamsız`] : [])],
+      hwMisses,
+      absences,
+    })
+  }
+  return alerts.sort((a, b) =>
+    RISK_SORT_ORDER[a.riskLevel] - RISK_SORT_ORDER[b.riskLevel]
+    || b.hwMisses - a.hwMisses
+    || b.absences - a.absences)
 }
 
 export function computeClassRisk(

@@ -5,6 +5,7 @@ import { HomeworkService } from '@/src/domains/homework/services/HomeworkService
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import HomeworkCalendar from './HomeworkCalendar'
+import { odevIlerleme, ilerlemeMetni } from '@/src/domains/homework/lib/ilerleme'
 
 export const revalidate = 60
 
@@ -20,7 +21,7 @@ export default async function OdevTakvimPage() {
 
   let query = supabase
     .from('homeworks')
-    .select('id, title, subject, due_date, classes(name)')
+    .select('id, title, subject, due_date, class_id, classes(name)')
     .eq('school_id', sid)
     .is('deleted_at', null)
     .eq('is_template', false)
@@ -56,12 +57,23 @@ export default async function OdevTakvimPage() {
       })
     : { data: [] as { homework_id: string; status: string }[] }
 
-  const completionMap: Record<string, { yapildi: number; total: number }> = {}
+  // Sınıf mevcudu "· X girilmedi" için (öğrenci sayısı 1000'i aşabilir → sayfalı)
+  const { data: ogrenciRows } = await fetchAllResult((f, t) => supabase
+    .from('students').select('class_id').eq('school_id', sid).is('deleted_at', null).order('id').range(f, t))
+  const mevcut = new Map<string, number>()
+  for (const s of ogrenciRows ?? []) if (s.class_id) mevcut.set(s.class_id, (mevcut.get(s.class_id) ?? 0) + 1)
+
+  const sayimlar = new Map<string, Record<string, number>>()
   for (const row of subRows ?? []) {
-    const cur = completionMap[row.homework_id] ?? { yapildi: 0, total: 0 }
-    cur.total++
-    if (row.status === 'yapildi') cur.yapildi++
-    completionMap[row.homework_id] = cur
+    const cur = sayimlar.get(row.homework_id) ?? {}
+    cur[row.status] = (cur[row.status] ?? 0) + 1
+    sayimlar.set(row.homework_id, cur)
+  }
+  const completionMap: Record<string, string> = {}
+  for (const hw of homeworks) {
+    const sayim = sayimlar.get(hw.id)
+    const metin = sayim && ilerlemeMetni(odevIlerleme(sayim, mevcut.get(hw.class_id) ?? 0))
+    if (metin) completionMap[hw.id] = metin
   }
 
   return (

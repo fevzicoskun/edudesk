@@ -46,7 +46,7 @@ describe('getDashboardMetrics', () => {
     })
     ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: Array.from({ length: 3 }, (_, i) => ({
-        homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'eksik',
+        homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'yapilmadi',
       })),
     })
     ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
@@ -69,7 +69,7 @@ describe('getRiskAlerts', () => {
     })
     ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: Array.from({ length: 3 }, (_, i) => ({
-        homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'eksik',
+        homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'yapilmadi',
       })),
     })
     ;(DashboardRepository.getAttendanceRows as ReturnType<typeof vi.fn>).mockResolvedValue({ data: [] })
@@ -79,7 +79,7 @@ describe('getRiskAlerts', () => {
 
     const alerts = await TeacherDashboardService.getRiskAlerts(TEACHER_ID)
     expect(alerts).toHaveLength(1)
-    expect(alerts[0].riskLevel).toBe('high')
+    expect(alerts[0].riskLevel).toBe('medium') // 3 yapılmadı = orta (4-5 yüksek)
   })
 
   it('risk olmayan öğrencileri döndürmez', async () => {
@@ -146,7 +146,7 @@ describe('yoklama kapalı okul', () => {
       data: Array.from({ length: 5 }, (_, i) => ({ id: `hw-${i}`, title: 'T', subject: 'Mat', due_date: '2020-01-01', class_id: CLASS_ID, classes: null })),
     })
     ;(DashboardRepository.getSubmissions as ReturnType<typeof vi.fn>).mockResolvedValue({
-      data: Array.from({ length: 3 }, (_, i) => ({ homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'eksik' })),
+      data: Array.from({ length: 3 }, (_, i) => ({ homework_id: `hw-${i}`, student_id: STUDENT_ID, status: 'yapilmadi' })),
     })
     ;(DashboardRepository.getStudentsByClasses as ReturnType<typeof vi.fn>).mockResolvedValue({
       data: [{ id: STUDENT_ID, full_name: 'Ahmet', class_id: CLASS_ID, classes: { name: '10-A' } }],

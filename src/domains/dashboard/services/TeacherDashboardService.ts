@@ -21,6 +21,12 @@ import {
 export { mondayOf } from '../lib/riskEngine'
 export { buildHwMissMap, buildAbsenceMap, computeAlerts } from '../lib/riskEngine'
 
+function mevcutlar(students: StudentRow[]): Map<string, number> {
+  const m = new Map<string, number>()
+  for (const s of students) m.set(s.class_id, (m.get(s.class_id) ?? 0) + 1)
+  return m
+}
+
 export const TeacherDashboardService = {
   async getDashboardMetrics(teacherId: string): Promise<DashboardMetrics> {
     const today = todayLocalISO()
@@ -34,7 +40,7 @@ export const TeacherDashboardService = {
 
     return {
       homeworks: homeworks as HomeworkLite[],
-      tamamlanmaData: tamamlanmaSatirlari(homeworks, submissions, today),
+      tamamlanmaData: tamamlanmaSatirlari(homeworks, submissions, today, mevcutlar(students)),
       // en az bir öğrencisi işaretlenmiş ödevler = kontrol edilmiş
       kontrolEdilenHwIds: [...new Set(submissions.map(s => s.homework_id))],
       riskAlerts: computeAlerts(homeworks, submissions, attendanceRows, students),

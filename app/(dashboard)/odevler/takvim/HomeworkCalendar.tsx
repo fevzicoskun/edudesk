@@ -50,7 +50,7 @@ export default function HomeworkCalendar({
   completionMap = {},
 }: {
   homeworks: HwItem[]
-  completionMap?: Record<string, { yapildi: number; total: number }>
+  completionMap?: Record<string, string>
 }) {
   const today = new Date()
   const todayStr = toISO(today.getFullYear(), today.getMonth(), today.getDate())

@@ -9,7 +9,7 @@ const SINIF_BASINA = 6
 /** Ana sayfa "Ödev Tamamlanma": teslimi gelmiş ödevler, en yeni üstte, sınıf başına en fazla 6.
  *  submissions yalnız İŞARETLİ satırlar olmalı (marked_at dolu) — isaretli 0 = henüz kontrol edilmedi.
  *  Her durum ayrı sayılır: eskiden geç/mazeretli "Yapılmadı" diliminde kırmızı görünüyordu. */
-export function tamamlanmaSatirlari(homeworks: Hw[], submissions: Sub[], bugun: string): OdevTamamlanmaItem[] {
+export function tamamlanmaSatirlari(homeworks: Hw[], submissions: Sub[], bugun: string, mevcutlar: Map<string, number> = new Map()): OdevTamamlanmaItem[] {
   const sinifSayisi = new Map<string, number>()
   const secilen = homeworks
     .filter(h => h.due_date <= bugun)
@@ -36,6 +36,7 @@ export function tamamlanmaSatirlari(homeworks: Hw[], submissions: Sub[], bugun: 
       dueDate:   h.due_date,
       sayim,
       isaretli:  Object.values(sayim).reduce((a, b) => a + b, 0),
+      mevcut:    mevcutlar.get(h.class_id) ?? 0,
     }
   })
 }

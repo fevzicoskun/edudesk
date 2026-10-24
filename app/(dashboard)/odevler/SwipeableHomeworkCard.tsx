@@ -4,6 +4,7 @@ import { useState, useTransition, useEffect } from 'react'
 import { useSwipeable } from 'react-swipeable'
 import Link from 'next/link'
 import { useBulk } from './BulkContext'
+import { odevIlerleme, ilerlemeMetni } from '@/src/domains/homework/lib/ilerleme'
 
 type StatusCounts = { yapildi: number; eksik: number; yapilmadi: number; gec: number; mazeretli: number }
 
@@ -148,9 +149,7 @@ export default function SwipeableHomeworkCard({
   }
 
   // Kaç öğrencinin yaptığı — hiç işaretlenmemişse boş (aktif ödevde henüz söyleyecek bir şey yok)
-  const ilerleme = entered === 0 ? null
-    : allEntered ? `${statusCounts?.yapildi ?? 0}/${totalStu} yaptı`
-    : `${statusCounts?.yapildi ?? 0}/${totalStu} yaptı · ${unrecorded} girilmedi`
+  const ilerleme = entered === 0 ? null : ilerlemeMetni(odevIlerleme(statusCounts ?? {}, totalStu))
 
   return (
     <div className="relative overflow-hidden">

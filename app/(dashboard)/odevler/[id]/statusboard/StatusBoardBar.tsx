@@ -4,6 +4,7 @@ import { WeekLoadBadge } from '@/components/homework/WeekLoadBadge'
 import type { ClassWeekLoad } from '@/src/domains/homework/lib/week-load'
 import { LABELS, BAR_COLORS } from './types'
 import type { OzetKalemi } from '@/src/domains/homework/lib/odev-rapor'
+import { odevIlerleme, ilerlemeMetni } from '@/src/domains/homework/lib/ilerleme'
 
 /** ⋮ menüsündeki toplu seçenekler — "Hepsi yaptı" birincil olduğu için burada yok */
 const IKINCIL_TOPLU: SubmissionStatus[] = ['yapilmadi', 'eksik']
@@ -41,10 +42,11 @@ export default function StatusBoardBar({
   const menuRef  = useRef<HTMLDivElement>(null)
   const aramaRef = useRef<HTMLInputElement>(null)
 
-  const yuzde        = totalStudents === 0 ? 0 : Math.round(recordedCount / totalStudents * 100)
   const pct          = (n: number) => totalStudents === 0 ? 0 : (n / totalStudents) * 100
   const girilmedi    = Math.max(0, totalStudents - recordedCount)
   const hepsiIsaretli = girilmedi === 0 && totalStudents > 0
+  // counts işaretlenmemişleri varsayılan 'yapilmadi' olarak taşır → ortak hesaba yalnız işaretliler gider
+  const ozetMetni = ilerlemeMetni(odevIlerleme({ ...counts, yapilmadi: Math.max(0, counts.yapilmadi - girilmedi) }, totalStudents))
 
   useEffect(() => {
     if (!menuAcik) return
@@ -62,19 +64,11 @@ export default function StatusBoardBar({
         {/* Sol: ilerleme özeti */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-sm font-semibold text-gray-700 dark:text-slate-200 tabular-nums">
-              {recordedCount}/{totalStudents}
-            </span>
-            <span className={`text-xs font-bold tabular-nums ${
-              hepsiIsaretli ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-slate-400'
+            <span className={`text-sm font-semibold tabular-nums truncate ${
+              hepsiIsaretli ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-slate-200'
             }`}>
-              %{yuzde}
+              {ozetMetni ?? `${recordedCount}/${totalStudents} girildi`}
             </span>
-            {girilmedi > 0 && (
-              <span className="text-xs text-gray-500 dark:text-slate-400 truncate">
-                · {girilmedi} öğrenci bekliyor
-              </span>
-            )}
           </div>
           {/* İnce ilerleme çubuğu */}
           <div className="h-1.5 mt-1 bg-gray-200 dark:bg-slate-700 rounded-full overflow-hidden flex">

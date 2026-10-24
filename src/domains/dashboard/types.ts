@@ -21,6 +21,8 @@ export type OdevTamamlanmaItem = {
   sayim:     Record<SubmissionStatus, number>
   /** 0 = henüz kontrol edilmedi */
   isaretli:  number
+  /** sınıf mevcudu (0 = bilinmiyor) — "· X girilmedi" için */
+  mevcut:    number
 }
 
 export type DashboardMetrics = {

@@ -25,7 +25,7 @@ export default function CalendarEventCard({
   completionInfo,
 }: {
   hw: HwItem
-  completionInfo?: { yapildi: number; total: number }
+  completionInfo?: string
 }) {
   return (
     <li>
@@ -43,11 +43,8 @@ export default function CalendarEventCard({
           {hw.subject && (
             <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{hw.subject}</p>
           )}
-          {completionInfo && completionInfo.total > 0 && (
-            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-              %{Math.round((completionInfo.yapildi / completionInfo.total) * 100)} tamamlandı
-              ({completionInfo.yapildi}/{completionInfo.total})
-            </p>
+          {completionInfo && (
+            <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{completionInfo}</p>
           )}
         </div>
         <svg className="w-3.5 h-3.5 text-gray-300 group-hover:text-blue-400 shrink-0 mt-1 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>

@@ -127,17 +127,17 @@ export default async function OgretmenDashboard() {
       {/* Yapılacaklarım — kişisel aksiyon katmanı */}
       <Yapilacaklarim initial={myTasks} />
 
-      {/* Gecikmiş Ödev Uyarısı */}
-      <Suspense fallback={null}>
-        <OdevCockpit schoolId={profile.school_id ?? ''} />
-      </Suspense>
-
       {/* Gün sonu için bugün verilen ödevler */}
       <div className="mb-4">
         <Suspense fallback={<div className="h-32 rounded-xl bg-gray-100 dark:bg-slate-800 animate-pulse" />}>
           <BugunVerdiklerimWidget teacherId={user.id} schoolId={profile.school_id ?? ''} />
         </Suspense>
       </div>
+
+      {/* Kontrol bekliyor — kendi ödevlerim, Ödev Tamamlanma'nın hemen üstünde; boşsa çizilmez */}
+      <Suspense fallback={null}>
+        <OdevCockpit schoolId={profile.school_id ?? ''} />
+      </Suspense>
 
       {/* Ödev Tamamlanma Widget */}
       <div className="mb-4">

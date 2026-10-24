@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
 import type { OdevTamamlanmaItem } from '@/src/domains/dashboard/types'
+import { odevIlerleme, girilmediMetni } from '@/src/domains/homework/lib/ilerleme'
 
 /** Yazdırma raporuyla aynı renk dili: mavi yapıldı, sarı eksik, kırmızı yapılmadı */
 const SERIT: { kod: SubmissionStatus; cls: string }[] = [
@@ -37,7 +38,8 @@ function TabButton({ id, label, selected, onSelect }: {
 }
 
 function Satir({ o }: { o: OdevTamamlanmaItem }) {
-  const yuzde = o.isaretli > 0 ? Math.round((o.sayim.yapildi / o.isaretli) * 100) : null
+  const i = odevIlerleme(o.sayim, o.mevcut)
+  const yuzde = i.yuzde
   return (
     <li>
       <Link href={`/odevler/${o.id}`} className="block px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-slate-700/40 transition-colors">
@@ -51,8 +53,9 @@ function Satir({ o }: { o: OdevTamamlanmaItem }) {
           <span className="truncate">{o.className} · {format(parseISO(o.dueDate), 'd MMM')}</span>
           <span className="shrink-0 tabular-nums">
             {yuzde === null ? 'Henüz kontrol edilmedi' : <>
-              {o.sayim.yapildi}/{o.isaretli} yaptı
+              {i.yapildi}/{i.payda} yaptı
               {o.sayim.yapilmadi > 0 && <span className="text-red-600 dark:text-red-400"> · {o.sayim.yapilmadi} yapmadı</span>}
+              {girilmediMetni(i.girilmedi)}
             </>}
           </span>
         </div>
