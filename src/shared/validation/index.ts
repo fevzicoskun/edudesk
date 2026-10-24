@@ -104,3 +104,12 @@ export function safeParseFormData<T>(schema: z.ZodSchema<T>, formData: FormData)
   const raw = Object.fromEntries(formData.entries())
   return schema.safeParse(raw)
 }
+
+const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024 // 2 MB
+
+/** Excel içe aktarma dosyası (öğrenci listesi, Stoys deneme): yalnız .xlsx, ≤ 2 MB. */
+export const excelImportFileSchema = z
+  .instanceof(File, { message: 'Lütfen bir Excel dosyası seç.' })
+  .refine((f) => f.size > 0, 'Dosya boş görünüyor.')
+  .refine((f) => f.size <= MAX_IMPORT_FILE_BYTES, "Dosya boyutu 2 MB sınırını aşıyor.")
+  .refine((f) => f.name.toLowerCase().endsWith('.xlsx'), 'Sadece .xlsx dosyaları destekleniyor.')

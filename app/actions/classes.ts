@@ -1,8 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { z } from 'zod'
-import { UUID, veliContactSchema } from '@/src/shared/validation'
+import { UUID, veliContactSchema, excelImportFileSchema } from '@/src/shared/validation'
 import { createClassSchema, addStudentSchema, studentNoteSchema } from '@/src/domains/classes/validators'
 import { ClassService } from '@/src/domains/classes/services/ClassService'
 import { parseStudentRows, excelCellToString } from '@/src/domains/classes/services/studentImportParser'
@@ -61,14 +60,6 @@ export async function addStudentsBulk(
   await ClassService.addStudentsBulk(classId, students)
   revalidatePath(`/siniflar/${classId}`)
 }
-
-const MAX_IMPORT_FILE_BYTES = 2 * 1024 * 1024 // 2 MB
-
-const excelImportFileSchema = z
-  .instanceof(File, { message: 'Lütfen bir Excel dosyası seç.' })
-  .refine((f) => f.size > 0, 'Dosya boş görünüyor.')
-  .refine((f) => f.size <= MAX_IMPORT_FILE_BYTES, "Dosya boyutu 2 MB sınırını aşıyor.")
-  .refine((f) => f.name.toLowerCase().endsWith('.xlsx'), 'Sadece .xlsx dosyaları destekleniyor.')
 
 export type ExcelImportResult = {
   added: number

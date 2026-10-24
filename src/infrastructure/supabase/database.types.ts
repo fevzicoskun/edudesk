@@ -333,6 +333,95 @@ export type Database = {
           },
         ]
       }
+      deneme_sinav_siniflari: {
+        Row: {
+          class_id: string
+          school_id: string
+          sinav_id: string
+        }
+        Insert: {
+          class_id: string
+          school_id: string
+          sinav_id: string
+        }
+        Update: {
+          class_id?: string
+          school_id?: string
+          sinav_id?: string
+        }
+        Relationships: []
+      }
+      deneme_sinavlari: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          school_id: string
+          seviye: number
+          tarih: string
+          tur: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          school_id: string
+          seviye: number
+          tarih: string
+          tur: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          school_id?: string
+          seviye?: number
+          tarih?: string
+          tur?: string
+        }
+        Relationships: []
+      }
+      deneme_sonuclari: {
+        Row: {
+          dersler: Json
+          puan: number | null
+          school_id: string
+          sinav_id: string
+          student_id: string
+          toplam_net: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          dersler: Json
+          puan?: number | null
+          school_id: string
+          sinav_id: string
+          student_id: string
+          toplam_net: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          dersler?: Json
+          puan?: number | null
+          school_id?: string
+          sinav_id?: string
+          student_id?: string
+          toplam_net?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deneme_sonuclari_sinav_id_fkey"
+            columns: ["sinav_id"]
+            isOneToOne: false
+            referencedRelation: "deneme_sinavlari"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           category: string
