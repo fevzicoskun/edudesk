@@ -32,7 +32,7 @@ export function parseStoys(rows: string[][]):
   const veri = rows.slice(bi + 1).filter(r => (r[kol('Adı Soyadı')] ?? '').trim() !== '')
   if (veri.length === 0) return { error: 'Dosyada öğrenci satırı yok.' }
   const sinif = (veri[0][kol('SINIF')] ?? '').trim()
-  const seviye = Number(/^(\d+)/.exec(sinif)?.[1])
+  const seviye = Number(/(\d+)/.exec(sinif)?.[1]) // sınıf adındaki ilk sayı ("9-A", "__PW_TEST__ 9-A")
   if (!(seviye >= 9 && seviye <= 12)) return { error: `Dosyadaki sınıf (${sinif || 'boş'}) 9–12. sınıf değil.` }
 
   const satirlar = veri.map((r): StoysSatir => {
@@ -71,3 +71,6 @@ export function eslestir(satirlar: StoysSatir[], ogrenciler: { id: string; full_
     eslesmeyenSatirlar: satirlar.filter(s => !alinan.has(s)),
   }
 }
+
+/** Net: "51,75", "−2,00" (gerçek eksi işareti; kâğıt ve önizleme aynı biçim). */
+export const netYaz = (n: number) => (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
