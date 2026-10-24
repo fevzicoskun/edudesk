@@ -11,7 +11,7 @@ interface Props {
   warnDays: number
   limitDays: number
   viewCounts?: Record<string, number>
-  sonOdevler?: Record<string, { bakilan: number; eksik: number }>
+  sonOdevler?: Record<string, { bakilan: number; yapilmadi: number; eksik: number }>
 }
 
 export default function OgrenciListesi({ students, classId, canDelete, absenceCounts, warnDays, limitDays, viewCounts, sonOdevler }: Props) {

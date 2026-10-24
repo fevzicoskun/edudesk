@@ -64,7 +64,7 @@ export default function StatusBoardBar({
         {/* Sol: ilerleme özeti */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <span className={`text-sm font-semibold tabular-nums truncate ${
+            <span className={`text-sm font-semibold tabular-nums leading-snug ${
               hepsiIsaretli ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-700 dark:text-slate-200'
             }`}>
               {ozetMetni ?? `${recordedCount}/${totalStudents} girildi`}

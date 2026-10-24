@@ -10,11 +10,15 @@ describe('hucreMetni', () => {
   const d = (yapildi: number, degerlendirilen: number, eksik = 0, toplam = degerlendirilen) =>
     ({ ders: 'M', yapildi, eksik, gec: 0, degerlendirilen, toplam })
   it('ödev yoksa —', () => expect(hucreMetni(undefined)).toMatchObject({ metin: '—', ekler: [], renk: null }))
-  it('hiç kontrol edilmemişse —, ama girilmedi yazar', () => {
-    expect(hucreMetni(d(0, 0, 0, 2))).toMatchObject({ metin: '—', ekler: ['2 girilmedi'] })
+  it('hiç kontrol edilmemişse —; girilmedi hücrede değil, açıklamada', () => {
+    const h = hucreMetni(d(0, 0, 0, 2))
+    expect(h).toMatchObject({ metin: '—', ekler: [] })
+    expect(h.aciklama).toContain('2 henüz girilmedi')
   })
-  it('yapılan/değerlendirilen; eksik ve girilmedi açık yazılır', () => {
-    expect(hucreMetni(d(6, 7, 1, 8))).toMatchObject({ metin: '6/7', ekler: ['1 eksik', '1 girilmedi'] })
+  it('yapılan/değerlendirilen; "eksik" hücrede, "girilmedi" yalnız açıklamada (2026-10-24)', () => {
+    const h = hucreMetni(d(6, 7, 1, 8))
+    expect(h).toMatchObject({ metin: '6/7', ekler: ['1 eksik'] })
+    expect(h.aciklama).toContain('1 henüz girilmedi')
   })
   it('mazeretli girilmedi sayılmaz, açıklamada yazar', () => {
     const h = hucreMetni(d(8, 8, 0, 9), 1)
@@ -33,7 +37,8 @@ describe('hucreMetni', () => {
     const t = mentorTablosu([{ id: 'a', full_name: 'Ali', class_name: null, homeworks: [
       hw('Fizik', 'yapildi'), hw('Fizik', 'yapildi'), hw('Fizik', 'eksik'), hw('Fizik', 'mazeretli'), hw('Fizik', null),
     ] }])
-    expect(t.satirlar[0].hucreler[0]).toMatchObject({ metin: '2/3', ekler: ['1 eksik', '1 girilmedi'] })
+    expect(t.satirlar[0].hucreler[0]).toMatchObject({ metin: '2/3', ekler: ['1 eksik'] })
+    expect(t.satirlar[0].hucreler[0].aciklama).toContain('1 henüz girilmedi')
     expect(t.satirlar[0].hucreler[0].aciklama).toContain('1 mazeretli')
   })
 })

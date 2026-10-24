@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { format, parseISO } from '@/src/shared/date'
 import type { SubmissionStatus } from '@/src/shared/types'
 import type { OdevTamamlanmaItem } from '@/src/domains/dashboard/types'
-import { odevIlerleme, girilmediMetni } from '@/src/domains/homework/lib/ilerleme'
+import { odevIlerleme, durumParcalari } from '@/src/domains/homework/lib/ilerleme'
 
 /** Yazdırma raporuyla aynı renk dili: mavi yapıldı, sarı eksik, kırmızı yapılmadı */
 const SERIT: { kod: SubmissionStatus; cls: string }[] = [
@@ -49,13 +49,15 @@ function Satir({ o }: { o: OdevTamamlanmaItem }) {
             <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-slate-200 shrink-0">%{yuzde}</span>
           )}
         </div>
-        <div className="flex items-baseline justify-between gap-3 text-xs text-gray-500 dark:text-slate-400 mt-0.5">
-          <span className="truncate">{o.className} · {format(parseISO(o.dueDate), 'd MMM')}</span>
-          <span className="shrink-0 tabular-nums">
+        {/* Dar ekranda sayılar alt satıra kayar (5 parçaya kadar uzayabiliyor) */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+          <span className="shrink-0">{o.className} · {format(parseISO(o.dueDate), 'd MMM')}</span>
+          <span className="tabular-nums">
             {yuzde === null ? 'Henüz kontrol edilmedi' : <>
-              {i.yapildi}/{i.payda} yaptı
-              {o.sayim.yapilmadi > 0 && <span className="text-red-600 dark:text-red-400"> · {o.sayim.yapilmadi} yapmadı</span>}
-              {girilmediMetni(i.girilmedi)}
+              {/* Ortak parçalar: toplamı sınıf mevcudu (yaptı · eksik · geç · yapmadı · mazeretli · girilmedi) */}
+              {durumParcalari(i).map((p, k) => (
+                <span key={p.kod} className={p.kod === 'yapilmadi' ? 'text-red-600 dark:text-red-400' : undefined}>{k > 0 && ' · '}{p.metin}</span>
+              ))}
             </>}
           </span>
         </div>

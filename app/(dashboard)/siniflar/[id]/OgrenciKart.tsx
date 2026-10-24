@@ -28,7 +28,7 @@ export default function OgrenciKart({
   s: Student; classId: string; canDelete: boolean; index: number
   absenceCount: number; warnDays: number; limitDays: number; viewCount: number
   /** Giriş yapan öğretmenin bu sınıfa verdiği işaretli son ödevler (yoksa satır gösterilmez) */
-  sonOdev?: { bakilan: number; eksik: number }
+  sonOdev?: { bakilan: number; yapilmadi: number; eksik: number }
 }) {
   const [open, setOpen] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -91,8 +91,10 @@ export default function OgrenciKart({
           </div>
           {/* Okul numarası satırı kalktı (2026-10-24); yerine bu öğretmenin son ödevleri */}
           {sonOdev && sonOdev.bakilan > 0 && (
-            <p className={`text-xs ${sonOdev.eksik > 0 ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
-              Son {sonOdev.bakilan} ödev: {sonOdev.eksik > 0 ? `${sonOdev.eksik} eksik` : <span aria-label="eksik yok">✓</span>}
+            <p className={`text-xs ${sonOdev.yapilmadi > 0 ? 'text-red-700 dark:text-red-400' : sonOdev.eksik > 0 ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'}`}>
+              Son {sonOdev.bakilan} ödev: {sonOdev.yapilmadi + sonOdev.eksik === 0
+                ? <span aria-label="sorun yok">✓</span>
+                : [sonOdev.yapilmadi > 0 && `${sonOdev.yapilmadi} yapılmadı`, sonOdev.eksik > 0 && `${sonOdev.eksik} eksik`].filter(Boolean).join(' · ')}
             </p>
           )}
         </div>

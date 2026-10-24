@@ -13,12 +13,13 @@ export const TURUNCU_ALTI = 80 // %50–%80 arası turuncu; %80 ve üstü normal
 
 export type HucreRengi = 'kirmizi' | 'turuncu' | null
 
-/** "6/7" + ["1 eksik", "1 girilmedi"]. Pay/payda dersOzeti ile aynı: mazeretli (sınıfta yok) ve
- *  işaretlenmemiş ödev paydada yok — paydalar bu yüzden öğrenciden öğrenciye değişir; ikisi ayrı gösterilir. */
+/** "6/7" + ["1 eksik"]. Pay/payda dersOzeti ile aynı: mazeretli (sınıfta yok) ve işaretlenmemiş ödev paydada yok —
+ *  paydalar bu yüzden öğrenciden öğrenciye değişir. "Girilmedi" ve mazeretli hücrede değil, yalnız açıklamada (title)
+ *  — kullanıcı kararı 2026-10-24: hücre kalabalıklaşıyordu. */
 export function hucreMetni(d: DersOzeti | undefined, mazeretli = 0): MentorHucre {
   if (!d) return { metin: '—', ekler: [], renk: null, aciklama: '' }
   const girilmedi = Math.max(0, d.toplam - d.degerlendirilen - mazeretli)
-  const ekler = [d.eksik && `${d.eksik} eksik`, girilmedi && `${girilmedi} girilmedi`].filter((x): x is string => !!x)
+  const ekler = d.eksik ? [`${d.eksik} eksik`] : []
   const aciklama = [
     `${d.toplam} ödev`,
     d.degerlendirilen && `${d.degerlendirilen} ödevden ${d.yapildi} yapıldı`,

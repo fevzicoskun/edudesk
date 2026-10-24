@@ -183,7 +183,10 @@ export default function SwipeableHomeworkCard({
             <span className="whitespace-nowrap">{className} · {subject}</span>
             <span className="whitespace-nowrap">· {dueDateStr}</span>
             {teacherName && <span className="whitespace-nowrap">· {teacherName}</span>}
-            {ilerleme && <span className={`whitespace-nowrap ${allEntered ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>· {ilerleme}</span>}
+            {/* Her parça bölünmez, parçalar arası satır kayabilir (toplamı sınıf mevcudu, 6 parçaya kadar) */}
+            {ilerleme?.split(' · ').map(p => (
+              <span key={p} className={`whitespace-nowrap ${allEntered ? 'text-emerald-700 dark:text-emerald-400' : ''}`}>· {p}</span>
+            ))}
           </p>
         </div>
         {/* Yalnız yaklaşan teslimde rozet — "Aktif" rozeti bu bölümde bilgi taşımıyordu */}

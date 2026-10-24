@@ -57,8 +57,9 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
           </tbody>
         </table>
         <p className="mt-2 text-xs text-gray-600 dark:text-slate-400 print:text-gray-700">
-          5/7 = değerlendirilen 7 ödevden 5&apos;i yapıldı · &quot;eksik&quot; = eksik yapıldı · &quot;girilmedi&quot; = öğretmen henüz işaretlemedi (paydaya girmez) ·
-          {' '}<span className={RENK.kirmizi}>%{KIRMIZI_ALTI} altı</span>, <span className={RENK.turuncu}>%{KIRMIZI_ALTI}–{TURUNCU_ALTI}</span> · ayrıntı için hücrenin üzerine gelin
+          5/7 = değerlendirilen 7 ödevden 5&apos;i yapıldı · &quot;eksik&quot; = eksik yapıldı ·
+          {' '}<span className={RENK.kirmizi}>%{KIRMIZI_ALTI} altı</span>, <span className={RENK.turuncu}>%{KIRMIZI_ALTI}–{TURUNCU_ALTI}</span> ·
+          {' '}henüz girilmeyen ve mazeretli ödevler paydaya girmez; sayıları için hücrenin üzerine gelin
         </p>
       </div>
       <ul className="md:hidden print:hidden space-y-2">
