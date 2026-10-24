@@ -5,15 +5,13 @@ import { MentorRepository } from '../repositories/MentorRepository'
 import { TakipRepository } from '../repositories/TakipRepository'
 import { DenemeRepository as R } from '../repositories/DenemeRepository'
 import { parseStoys, eslestir, type DenemeTuru, type Eslesme } from './stoys'
-import { denemeKaydetSema } from './denemeSema'
+import { denemeKaydetSema, KAPALI } from './denemeSema'
 
 export type Onizleme = {
   tur: DenemeTuru; seviye: number; sinif: string; sinifId: string; eslesme: Eslesme
   ogrenciAdlari: Record<string, string>; oneri: { sinavId: string; tarih: string } | null
 }
 export type DenemeListeSatiri = { sinavId: string; tur: DenemeTuru; tarih: string; sinif: string; sinifId: string; ogrenciSayisi: number }
-
-const KAPALI = 'Bu özellik henüz açık değil.'
 
 /** Kapı açık mı + mentörün güncel öğrencileri (sınıf kimliği ve adıyla). Kapalıysa null. */
 async function baglam() {

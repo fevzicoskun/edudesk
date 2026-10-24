@@ -6,9 +6,13 @@ import { UUID, excelImportFileSchema } from '@/src/shared/validation'
 import { excelCellToString } from '@/src/domains/classes/services/studentImportParser'
 import { logger } from '@/src/infrastructure/observability/logger'
 import { DenemeService, type Onizleme } from '@/src/domains/mentor/deneme/DenemeService'
+import { KAPALI } from '@/src/domains/mentor/deneme/denemeSema'
+import { TakipService } from '@/src/domains/mentor/services/TakipService'
 
 /** Stoys Excel'i → önizleme. Hiçbir şey yazmaz. */
 export async function denemeOnizle(formData: FormData): Promise<{ error: string } | Onizleme> {
+  // Kapı Excel okunmadan önce: kapalı kullanıcı dosya ayrıştırtamasın (servis yine ayrıca denetler)
+  if (!(await TakipService.acikMi())) return { error: KAPALI }
   const dosya = excelImportFileSchema.safeParse(formData.get('file'))
   if (!dosya.success) return { error: dosya.error.issues[0]?.message ?? 'Geçersiz dosya' }
   // exceljs lazy-load — bundle'a girmesin (classes.ts ile aynı kalıp)

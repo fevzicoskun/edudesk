@@ -2,6 +2,9 @@ import { z } from 'zod'
 import { UUID } from '@/src/shared/validation'
 import { todayLocalISO } from '@/src/shared/date'
 
+/** Mentör takip kapısı kapalıyken deneme aksiyonlarının yanıtı (servis ve aksiyon aynı metni döner). */
+export const KAPALI = 'Bu özellik henüz açık değil.'
+
 const dersSonucu = z.object({ kod: z.string().min(1).max(4), ss: z.number(), d: z.number(), y: z.number(), n: z.number() })
 
 /** denemeKaydet girdisi (trust boundary): onizlemeden gelir ama istemciden geçtiği için tamamen doğrulanır. */
