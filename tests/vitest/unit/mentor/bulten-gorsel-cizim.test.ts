@@ -21,7 +21,7 @@ const bulten = (title: string) => ({
     gunler: [{ gun: '2026-10-26', etiket: 'Pazartesi', odevler: [{ id: 'h', subject: 'Tarih', title, teacher_id: 't', ogretmen: 'Öğretmen' }] }],
     ozet: [{ id: 'h', subject: 'Tarih', title, due_date: '2026-10-21', toplam: 3, yapildi: 1, eksik: 1, yapilmadi: 1 }],
   }],
-  ogrenciler: [{ student_id: OGR, full_name: 'Ali', class_id: SINIF, class_name: '11-A', telefon: null, mesaj: '',
+  ogrenciler: [{ student_id: OGR, full_name: 'Ali', class_id: SINIF, class_name: '11-A', telefon: null, mesaj: '', gecenHafta: { toplam: 3, yapildi: 2, eksik: 1, yapilmadi: 0 },
     eksikler: [{ id: 'h', subject: 'Tarih', title, due_date: '2026-10-21', durum: 'eksik' }] }],
 })
 

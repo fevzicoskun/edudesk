@@ -75,6 +75,15 @@ export function grupOzeti(ogrenciKayitlari: HomeworkRecord[][], pazartesi: strin
   return [...satir.values()].sort((x, y) => x.due_date.localeCompare(y.due_date) || x.subject.localeCompare(y.subject, 'tr'))
 }
 
+export type GecenHafta = { toplam: number; yapildi: number; eksik: number; yapilmadi: number }
+
+/** Tek öğrencinin geçen haftası (kişisel kart özeti "4/10"): grupOzeti ile aynı kural, ödevler toplanır. */
+export function ogrenciGecenHafta(kayitlar: HomeworkRecord[], pazartesi: string): GecenHafta {
+  return grupOzeti([kayitlar], pazartesi).reduce((t, s) => ({
+    toplam: t.toplam + s.toplam, yapildi: t.yapildi + s.yapildi, eksik: t.eksik + s.eksik, yapilmadi: t.yapilmadi + s.yapilmadi,
+  }), { toplam: 0, yapildi: 0, eksik: 0, yapilmadi: 0 })
+}
+
 export function veliMesaji(g: { ogrenciAdi: string; sinif: string; pazartesi: string; eksikler: Eksik[]; gunler: GunOdevleri[]; mentorAdi: string }): string {
   const gecen = haftaEtiketi(addDaysISO(g.pazartesi, -7)), bu = haftaEtiketi(g.pazartesi)
   const odevSatirlari = g.gunler.flatMap(d => d.odevler.map(o =>

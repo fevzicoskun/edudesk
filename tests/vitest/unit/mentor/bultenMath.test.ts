@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import {
-  haftaSec, pazartesiMi, haftaEtiketi, gunAy, gunAdi, ogrenciEksikleri, haftaOdevleri, grupOzeti,
+  haftaSec, pazartesiMi, haftaEtiketi, gunAy, gunAdi, ogrenciEksikleri, haftaOdevleri, grupOzeti, ogrenciGecenHafta,
   veliMesaji, telefonNormalize, whatsappLink, dersKisa, dersRengi, kisalt,
 } from '@/src/domains/mentor/lib/bultenMath'
 
@@ -81,6 +81,24 @@ describe('grupOzeti', () => {
     expect(g1.toplam + g2.toplam).toBe(hepsi.toplam)
     expect(g1.yapildi + g2.yapildi).toBe(hepsi.yapildi)
   })
+})
+
+describe('ogrenciGecenHafta', () => {
+  it('öğrencinin geçen haftası: grupOzeti kuralıyla (işaretli, mazeretsiz; gec = yapıldı), toplamı eksiklerle tutarlı', () => {
+    const k = [
+      kayit({ id: 'a', due_date: '2026-10-05', status: 'yapildi' }),
+      kayit({ id: 'b', due_date: '2026-10-06', status: 'gec' }),
+      kayit({ id: 'c', due_date: '2026-10-07', status: 'eksik' }),
+      kayit({ id: 'd', due_date: '2026-10-08', status: 'yapilmadi' }),
+      kayit({ id: 'e', due_date: '2026-10-08', status: 'mazeretli' }),
+      kayit({ id: 'f', due_date: '2026-10-09', status: null }),
+      kayit({ id: 'g', due_date: '2026-10-04', status: 'yapilmadi' }),   // önceki hafta
+      kayit({ id: 'h', due_date: '2026-10-12', status: 'yapildi' }),     // bu hafta
+    ]
+    expect(ogrenciGecenHafta(k, P)).toEqual({ toplam: 4, yapildi: 2, eksik: 1, yapilmadi: 1 })
+    expect(ogrenciEksikleri(k, P)).toHaveLength(2)
+  })
+  it('hiç kontrol yok → 0/0', () => expect(ogrenciGecenHafta([], P)).toEqual({ toplam: 0, yapildi: 0, eksik: 0, yapilmadi: 0 }))
 })
 
 describe('veliMesaji', () => {

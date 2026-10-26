@@ -7,6 +7,7 @@ import { getAbility } from '@/src/shared/authorization/server'
 import { P } from '@/src/shared/permissions'
 import { BultenService } from '@/src/domains/mentor/services/BultenService'
 import { pazartesiMi } from '@/src/domains/mentor/lib/bultenMath'
+import { metinGenisligi } from '@/src/domains/mentor/lib/fontOlcu'
 import { OdevlerGorseli, OzetGorseli, OgrenciGorseli } from '@/src/domains/mentor/lib/bultenGorselleri'
 import { logger } from '@/src/infrastructure/observability/logger'
 
@@ -33,21 +34,25 @@ export async function GET(req: Request) {
 
   try {
     const bulten = await BultenService.getBulten(q.data.hafta)
+    const [normal, kalin, logo] = await Promise.all([font('BricolageGrotesque-Regular.ttf'), font('BricolageGrotesque-ExtraBold.ttf'), filigran()])
     let el: React.ReactElement
     if (q.data.tur === 'ogrenci') {
       const ogrenciId = q.data.ogrenci
       const ogrenci = bulten.ogrenciler.find(o => o.student_id === ogrenciId)
       if (!ogrenci) return Response.json({ error: 'Yetki yok' }, { status: 403 })
       const sinif = bulten.siniflar.find(s => s.class_id === ogrenci.class_id)!
-      el = <OgrenciGorseli ogrenci={ogrenci} sinif={sinif} bulten={bulten} />
+      // Ders adı (34px kalın) + 12px ara kadar bölünmez boşluk, normal fontta ölçülür
+      const NBSP = ' '
+      el = <OgrenciGorseli ogrenci={ogrenci} sinif={sinif} bulten={bulten}
+        girinti={d => NBSP.repeat(Math.ceil((metinGenisligi(kalin, d, 34) + 12) / metinGenisligi(normal, NBSP, 34)))} />
     } else {
       const sinifId = q.data.sinif
       const sinif = bulten.siniflar.find(s => s.class_id === sinifId)
       if (!sinif) return Response.json({ error: 'Yetki yok' }, { status: 403 })
       el = q.data.tur === 'odevler' ? <OdevlerGorseli sinif={sinif} bulten={bulten} /> : <OzetGorseli sinif={sinif} bulten={bulten} />
     }
-    const [normal, kalin, logo] = await Promise.all([font('BricolageGrotesque-Regular.ttf'), font('BricolageGrotesque-ExtraBold.ttf'), filigran()])
-    el = (
+    // Filigran yalnız sınıf görsellerinde; veliye giden kişisel kart filigransız (2026-10-26 isteği)
+    if (q.data.tur !== 'ogrenci') el = (
       <div style={{ display: 'flex', position: 'relative', width: '100%' }}>
         {el}
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori yalnız <img> çizer */}

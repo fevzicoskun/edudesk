@@ -2,11 +2,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // Gerçek ImageResponse çizimi akış içinde (ReadableStream.start) yapar: hata ancak gövde okunurken çıkar.
-const cizim = vi.hoisted(() => ({ hata: false }))
+const cizim = vi.hoisted(() => ({ hata: false, el: null as unknown }))
 vi.mock('next/og', () => ({
   ImageResponse: class extends Response {
-    constructor(_el: unknown, opt: { headers?: Record<string, string>; width?: number; height?: number }) {
+    constructor(el: unknown, opt: { headers?: Record<string, string>; width?: number; height?: number }) {
       super('png', { headers: { 'content-type': 'image/png', ...(opt.headers ?? {}), 'x-h': String(opt.height) } })
+      cizim.el = el
     }
     async arrayBuffer(): Promise<ArrayBuffer> {
       if (cizim.hata) throw new Error('satori çizim hatası')
@@ -30,7 +31,7 @@ const istek = (q: string) => GET(new Request(`http://x/api/bulten/gorsel?${q}`) 
 const bulten = {
   hafta: '2026-10-12', okulAdi: 'Okul', mentorAdi: 'M', mentorUnvani: 'Matematik Öğretmeni M',
   siniflar: [{ class_id: SINIF, class_name: '9-A', gunler: [], ozet: [] }],
-  ogrenciler: [{ student_id: OGR, full_name: 'Ali', class_id: SINIF, class_name: '9-A', eksikler: [], telefon: null, mesaj: '' }],
+  ogrenciler: [{ student_id: OGR, full_name: 'Ali', class_id: SINIF, class_name: '9-A', eksikler: [], gecenHafta: { toplam: 0, yapildi: 0, eksik: 0, yapilmadi: 0 }, telefon: null, mesaj: '' }],
 }
 
 beforeEach(() => {
@@ -87,5 +88,15 @@ describe('çizim hatası', () => {
     const r = await istek(`tur=ozet&hafta=2026-10-12&sinif=${SINIF}`)
     expect(r.status).toBe(500)
     expect(logger.error).toHaveBeenCalledWith(expect.objectContaining({ event: 'bulten_gorsel_hatasi' }), expect.any(String))
+  })
+})
+
+describe('filigran', () => {
+  it('sınıf görsellerinde var, veliye giden kişisel kartta yok', async () => {
+    const { renderToStaticMarkup } = await import('react-dom/server')
+    const html = async (q: string) => { await istek(q); return renderToStaticMarkup(cizim.el as React.ReactElement) }
+    expect(await html(`tur=ozet&hafta=2026-10-12&sinif=${SINIF}`)).toContain('<img')
+    expect(await html(`tur=odevler&hafta=2026-10-12&sinif=${SINIF}`)).toContain('<img')
+    expect(await html(`tur=ogrenci&hafta=2026-10-12&ogrenci=${OGR}`)).not.toContain('<img')
   })
 })

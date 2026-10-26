@@ -3,6 +3,7 @@
 import { addDaysISO } from '@/src/shared/date'
 import { haftaEtiketi, gunAy, dersKisa, dersRengi } from './bultenMath'
 import type { Bulten, BultenSinifi, BultenOgrencisi } from '../services/BultenService'
+import { sayiEk } from '@/app/(dashboard)/mentorluk/[studentId]/takip/SonucKagidi'
 
 // Yükseklik içerikten: route height vermez, Satori ölçer. Ödev başlığı kesilmez, alt satıra kayar
 // (veliye giden sayfa bilgisi çoğu zaman başlığın sonunda). Tek satır yalnız ad/ünvan gibi kısa alanlarda.
@@ -108,28 +109,73 @@ export const OzetGorseli = ({ sinif, bulten }: { sinif: BultenSinifi; bulten: Bu
   </Kart>
 )
 
-export const OgrenciGorseli = ({ ogrenci, sinif, bulten }: { ogrenci: BultenOgrencisi; sinif: BultenSinifi; bulten: Bulten }) => {
+/** girinti: kısa ders adı kadar bölünmez boşluk (route: fontOlcu ile ölçülür). textIndent kullanılmaz: Satori çizer ama satır kırarken saymaz → 1. satır taşar. */
+export const OgrenciGorseli = ({ ogrenci, sinif, bulten, girinti }: { ogrenci: BultenOgrencisi; sinif: BultenSinifi; bulten: Bulten; girinti: (ders: string) => string }) => {
   const bolum = (t: string, a: string) => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '36px 0 8px' }}>
       <span style={{ fontSize: 34, fontWeight: 800 }}>{t}</span><span style={{ fontSize: 26, color: C.soft }}>{a}</span>
     </div>
   )
+  const g = ogrenci.gecenHafta, eksikVar = ogrenci.eksikler.length > 0
+  const tamamlanmadi = g.eksik + g.yapilmadi
   return (
     <Kart>
       <Baslik sinif={ogrenci.class_name} ust={ogrenci.full_name} alt={['Haftalık ödev bilgilendirmesi']} />
-      {bolum('Geçen hafta tamamlanmayanlar', haftaEtiketi(addDaysISO(bulten.hafta, -7)))}
-      {ogrenci.eksikler.length === 0
-        ? <div style={{ display: 'flex', background: C.wash, borderLeft: `8px solid ${C.ok}`, padding: '22px 26px', fontSize: 29 }}>Kontrol edilen ödevlerin tamamını yaptı. Tebrikler!</div>
-        : ogrenci.eksikler.map(e => (
-          <div key={e.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '10px 0', borderBottom: `2px solid ${C.rule}` }}>
-            <DersSatiri subject={e.subject} title={e.title} alt={`${gunAy(e.due_date)} kontrolü`} />
-            <span style={{ fontSize: 25, fontWeight: 600, padding: '4px 18px', borderRadius: 20, marginTop: 8, marginLeft: 16, flexShrink: 0,
-              background: e.durum === 'eksik' ? '#FFF1CC' : '#FBE1E0', color: e.durum === 'eksik' ? '#8A5A00' : '#A12A26' }}>{e.durum}</span>
+      {/* Özet: tamamlanan / kontrol edilen; noktalar yeşil → sarı → kırmızı */}
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: 32, background: '#F1F3F8', borderRadius: 20, padding: '26px 32px' }}>
+        {g.toplam > 0 ? <span style={{ fontSize: 72, fontWeight: 800, lineHeight: 1, marginRight: 32, flexShrink: 0 }}>{`${g.yapildi}/${g.toplam}`}</span> : null}
+        <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }}>
+          {g.toplam === 0
+            ? <span style={{ fontSize: 30, color: C.soft }}>Geçen hafta kontrol edilen ödev yok.</span>
+            : tamamlanmadi === 0
+              ? <span style={{ fontSize: 30, fontWeight: 800, color: C.ok }}>Geçen haftanın tüm ödevleri tamamlandı.</span>
+              // Satori iç içe span'ı satır içi akıtmaz (üst üste biner): parçalar ayrı kutu, kırılma parça arasında
+              : <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: 30, columnGap: 9 }}>
+                  <span>{`Geçen hafta ${g.toplam} ödevden`}</span>
+                  <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.ok }}>{`${sayiEk(g.yapildi, 'si')} tamamlandı`}</span><span>,</span></div>
+                  <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.yok }}>{`${sayiEk(tamamlanmadi, 'si')} tamamlanmadı`}</span><span>.</span></div>
+                </div>}
+          {g.toplam > 0
+            ? <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 14 }}>
+                {[...Array(g.yapildi).fill(C.ok), ...Array(g.eksik).fill(C.eks), ...Array(g.yapilmadi).fill(C.yok)].map((r, i) => (
+                  <div key={i} style={{ width: 20, height: 20, borderRadius: 10, background: r, margin: '0 8px 8px 0' }} />
+                ))}
+              </div>
+            : null}
+        </div>
+      </div>
+      {eksikVar ? bolum('Geçen hafta tamamlanmayanlar', haftaEtiketi(addDaysISO(bulten.hafta, -7))) : null}
+      {ogrenci.eksikler.map(e => (
+        // Ders adı + ödev tek akan metin görünümü: ders adı sol üstte, ödev metninin 1. satırı ders adı kadar girintili
+        // (Satori iç içe span'ı akıtmaz) → 2. satır ders adının altından başlar; en çok 2 satır. Yalnız "eksik" etiketlenir.
+        <div key={e.id} style={{ display: 'flex', alignItems: 'flex-start', padding: '12px 0', borderBottom: `2px solid ${C.rule}` }}>
+          <div style={{ width: 20, height: 20, borderRadius: 10, background: dersRengi(e.subject), marginTop: 13, marginRight: 20, flexShrink: 0 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }}>
+            <div style={{ display: 'flex', position: 'relative', fontSize: 34, lineHeight: 1.25 }}>
+              <span style={{ display: 'block', lineClamp: 2, flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 }}>{girinti(dersKisa(e.subject)) + e.title}</span>
+              <span style={{ position: 'absolute', left: 0, top: 0, fontWeight: 800, color: dersRengi(e.subject) }}>{dersKisa(e.subject)}</span>
+            </div>
+            <span style={{ fontSize: 25, color: C.soft }}>{`${gunAy(e.due_date)} kontrolü`}</span>
           </div>
-        ))}
+          {e.durum === 'eksik'
+            ? <span style={{ fontSize: 25, fontWeight: 600, padding: '4px 18px', borderRadius: 20, marginTop: 8, marginLeft: 16, flexShrink: 0, background: '#FFF1CC', color: '#8A5A00' }}>eksik</span>
+            : null}
+        </div>
+      ))}
       {bolum('Bu hafta kontrol edilecek ödevler', haftaEtiketi(bulten.hafta))}
       <Gunler sinif={{ ...sinif, gunler: sinif.gunler.filter(g => g.odevler.length) }} ogretmenli={false} />
-      <Alt okul={bulten.okulAdi} />
+      {eksikVar
+        ? <div style={{ display: 'flex', marginTop: 32, background: '#FFF8DC', borderLeft: `8px solid ${C.sun}`, padding: '22px 26px', fontSize: 29 }}>
+            Eksik ödevlerin tamamlanması için desteğinizi rica ederiz.
+          </div>
+        : null}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 28, fontSize: 25, color: C.soft }}>
+        <div style={{ display: 'flex', columnGap: 9 }}>
+          <span style={{ fontWeight: 800, color: C.ink }}>{bulten.mentorAdi}</span>
+          <span>{`· ${ogrenci.class_name} Mentör Öğretmeni`}</span>
+        </div>
+        <span>{bulten.okulAdi}</span>
+      </div>
     </Kart>
   )
 }

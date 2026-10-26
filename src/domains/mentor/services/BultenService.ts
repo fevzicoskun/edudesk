@@ -6,8 +6,8 @@ import { MentorService } from './MentorService'
 import { HomeworkService } from '@/src/domains/homework/services/HomeworkService'
 import { BultenRepository } from '../repositories/BultenRepository'
 import {
-  pazartesiMi, ogrenciEksikleri, haftaOdevleri, grupOzeti, veliMesaji, dersKisa,
-  type Eksik, type GunOdevleri, type OzetSatiri,
+  pazartesiMi, ogrenciEksikleri, ogrenciGecenHafta, haftaOdevleri, grupOzeti, veliMesaji, dersKisa,
+  type Eksik, type GecenHafta, type GunOdevleri, type OzetSatiri,
 } from '../lib/bultenMath'
 
 export type BultenSinifi = {
@@ -15,7 +15,7 @@ export type BultenSinifi = {
   gunler: (Omit<GunOdevleri, 'odevler'> & { odevler: (GunOdevleri['odevler'][number] & { ogretmen: string })[] })[]
   ozet: OzetSatiri[]
 }
-export type BultenOgrencisi = { student_id: string; full_name: string; class_id: string; class_name: string; eksikler: Eksik[]; telefon: string | null; mesaj: string }
+export type BultenOgrencisi = { student_id: string; full_name: string; class_id: string; class_name: string; eksikler: Eksik[]; gecenHafta: GecenHafta; telefon: string | null; mesaj: string }
 export type Bulten = { hafta: string; okulAdi: string; mentorAdi: string; mentorUnvani: string; siniflar: BultenSinifi[]; ogrenciler: BultenOgrencisi[] }
 
 export const BultenService = {
@@ -56,7 +56,7 @@ export const BultenService = {
       const eksikler = ogrenciEksikleri(o.homeworks, hafta)
       const sinifAdi = o.class_name ?? '—'
       return {
-        student_id: o.id, full_name: o.full_name, class_id: o.class_id, class_name: sinifAdi, eksikler,
+        student_id: o.id, full_name: o.full_name, class_id: o.class_id, class_name: sinifAdi, eksikler, gecenHafta: ogrenciGecenHafta(o.homeworks, hafta),
         telefon: ek.telefonlar.get(o.id) ?? null,
         mesaj: veliMesaji({ ogrenciAdi: o.full_name, sinif: sinifAdi, pazartesi: hafta, eksikler,
           gunler: haftaOdevleri(o.homeworks, hafta), mentorAdi }),
