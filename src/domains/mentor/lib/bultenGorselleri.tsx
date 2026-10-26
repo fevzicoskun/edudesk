@@ -1,26 +1,15 @@
 // src/domains/mentor/lib/bultenGorselleri.tsx
 // next/og (Satori) şablonları — yalnız flexbox. Ölçüler 1080px genişlik için.
 import { addDaysISO } from '@/src/shared/date'
-import { haftaEtiketi, gunAy, dersKisa, dersRengi, kisalt } from './bultenMath'
+import { haftaEtiketi, gunAy, dersKisa, dersRengi } from './bultenMath'
 import type { Bulten, BultenSinifi, BultenOgrencisi } from '../services/BultenService'
 
-/** Değişken uzunluktaki metin tek satır: Satori kaydırırsa satır uzar, önceden hesaplanan yükseklik taşar. */
+// Yükseklik içerikten: route height vermez, Satori ölçer. Ödev başlığı kesilmez, alt satıra kayar
+// (veliye giden sayfa bilgisi çoğu zaman başlığın sonunda). Tek satır yalnız ad/ünvan gibi kısa alanlarda.
 // Satori (Yoga) flexShrink varsayılanı 0'dır — daralabilmesi için açıkça 1 verilir.
 const TEK_SATIR = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1, minWidth: 0 } as const
+const KAYAN = { flexShrink: 1, minWidth: 0 } as const
 const C = { ink: '#1D2B5F', soft: '#5A6485', rule: '#DCE3F0', sun: '#FFD23F', wash: '#F5F7FC', ok: '#2E9E6B', eks: '#F2B233', yok: '#D9534F' }
-// Yükseklikler 2026-10-09 gerçek çizimden ölçüldü (px, 1080 genişlik). Satori içerik yüksekliğini bilmez; önceden hesaplanır.
-const BASLIK = 230, ALT = 105, PAY = 30, BOLUM = 90, EKSIK = 105, TEBRIK = 90, OZET = 116, LEJANT = 60, NOT = 108
-/** Bir gün satırı: dolgu 48 + en az etiket yüksekliği (72) ya da ödev satırları (öğretmen adıyla 83, adsız 56). */
-const gunSatiri = (n: number, ogretmenli: boolean) => 48 + Math.max(72, n * (ogretmenli ? 83 : 56))
-
-/** gunler: gün başına ödev sayısı (görselde gösterilen günler sırasıyla). */
-export function gorselYuksekligi(tur: 'odevler' | 'ozet' | 'ogrenci', s: { gunler?: number[]; eksik?: number; ozet?: number }): number {
-  const gunler = s.gunler ?? []
-  if (tur === 'odevler') return BASLIK + gunler.reduce((a, n) => a + gunSatiri(n, true), 0) + ALT + PAY
-  if (tur === 'ozet') return BASLIK + Math.max(100, (s.ozet ?? 0) * OZET) + LEJANT + NOT + ALT + PAY
-  const eksik = s.eksik ?? 0
-  return BASLIK + BOLUM * 2 + (eksik ? eksik * EKSIK : TEBRIK) + gunler.reduce((a, n) => a + gunSatiri(n, false), 0) + ALT + PAY
-}
 
 /** Büyük sınıf adı punto: "9-A" 156px; uzun adlar (~440px başlık bloğuna) sığacak kadar küçülür. */
 export const sinifPuntosu = (ad: string) => Math.min(156, Math.floor(440 / (0.62 * Math.max(1, ad.length))))
@@ -39,7 +28,7 @@ const Alt = ({ okul }: { okul: string }) => (
   <div style={{ display: 'flex', marginTop: 28, fontSize: 25, color: C.soft }}>{okul}</div>
 )
 const Kart = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', padding: '60px 60px 44px', background: '#fff', color: C.ink, fontFamily: 'Bricolage' }}>{children}</div>
+  <div style={{ display: 'flex', flexDirection: 'column', width: '100%', padding: '60px 60px 44px', background: '#fff', color: C.ink, fontFamily: 'Bricolage' }}>{children}</div>
 )
 const DersSatiri = ({ subject, title, alt }: { subject: string; title: string; alt?: string }) => (
   <div style={{ display: 'flex', alignItems: 'flex-start', padding: '6px 0', flexGrow: 1, flexShrink: 1, minWidth: 0 }}>
@@ -47,7 +36,7 @@ const DersSatiri = ({ subject, title, alt }: { subject: string; title: string; a
     <div style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, flexShrink: 1, minWidth: 0 }}>
       <div style={{ display: 'flex', fontSize: 34, flexShrink: 1, minWidth: 0 }}>
         <span style={{ fontWeight: 800, color: dersRengi(subject), marginRight: 10, flexShrink: 0 }}>{dersKisa(subject)}</span>
-        <span style={TEK_SATIR}>{kisalt(title, 44)}</span>
+        <span style={KAYAN}>{title}</span>
       </div>
       {alt ? <div style={{ fontSize: 25, color: C.soft, ...TEK_SATIR }}>{alt}</div> : null}
     </div>
@@ -89,7 +78,7 @@ export const OzetGorseli = ({ sinif, bulten }: { sinif: BultenSinifi; bulten: Bu
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <div style={{ display: 'flex', fontSize: 32, flex: 1, minWidth: 0, marginRight: 16 }}>
               <span style={{ fontWeight: 800, color: dersRengi(o.subject), marginRight: 10, flexShrink: 0 }}>{dersKisa(o.subject)}</span>
-              <span style={TEK_SATIR}>{kisalt(o.title, 34)}</span>
+              <span style={KAYAN}>{o.title}</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline' }}>
               <span style={{ fontSize: 32, fontWeight: 800 }}>{`${o.yapildi}/${o.toplam}`}</span>

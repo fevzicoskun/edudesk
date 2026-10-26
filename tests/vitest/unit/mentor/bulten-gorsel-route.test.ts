@@ -22,7 +22,6 @@ vi.mock('node:fs/promises', () => ({ readFile: vi.fn().mockResolvedValue(Buffer.
 const { getAbility } = await import('@/src/shared/authorization/server')
 const { BultenService } = await import('@/src/domains/mentor/services/BultenService')
 const { GET } = await import('@/app/api/bulten/gorsel/route')
-const { gorselYuksekligi } = await import('@/src/domains/mentor/lib/bultenGorselleri')
 
 const SINIF = '11111111-1111-4111-8111-111111111111'
 const OGR = '22222222-2222-4222-8222-222222222222'
@@ -67,27 +66,6 @@ describe('GET /api/bulten/gorsel', () => {
     expect(r.status).toBe(200)
     expect(r.headers.get('content-type')).toBe('image/png')
     expect(r.headers.get('cache-control')).toBe('private, no-store')
-  })
-})
-
-describe('gorselYuksekligi', () => {
-  // Beklenen aralıklar 2026-10-09 gerçek next/og çiziminden ölçüldü (9-A, hafta 2026-10-12):
-  // içerik kesilmemeli (alt sınır) ve altta ~120px'ten fazla boşluk kalmamalı (üst sınır).
-  it('ödevler görseli gün başına ödev sayısına göre: [2,0,3,1,0] ≈ 1220px', () => {
-    const h = gorselYuksekligi('odevler', { gunler: [2, 0, 3, 1, 0] })
-    expect(h).toBeGreaterThanOrEqual(1220); expect(h).toBeLessThanOrEqual(1340)
-  })
-  it('öğrenci kartı: 7 eksik + [2,3,1] ≈ 1680px', () => {
-    const h = gorselYuksekligi('ogrenci', { eksik: 7, gunler: [2, 3, 1] })
-    expect(h).toBeGreaterThanOrEqual(1680); expect(h).toBeLessThanOrEqual(1800)
-  })
-  it('özet: 8 satır ≈ 1424px', () => {
-    const h = gorselYuksekligi('ozet', { ozet: 8 })
-    expect(h).toBeGreaterThanOrEqual(1424); expect(h).toBeLessThanOrEqual(1544)
-  })
-  it('tebrikli öğrenci, eksikli olandan kısa; boş gün de satır tutar', () => {
-    expect(gorselYuksekligi('ogrenci', { eksik: 0, gunler: [2] })).toBeLessThan(gorselYuksekligi('ogrenci', { eksik: 3, gunler: [2] }))
-    expect(gorselYuksekligi('odevler', { gunler: [0, 0, 0, 0, 0] })).toBeGreaterThan(gorselYuksekligi('odevler', { gunler: [0] }))
   })
 })
 
