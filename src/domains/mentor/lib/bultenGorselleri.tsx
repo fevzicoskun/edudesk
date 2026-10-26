@@ -8,7 +8,9 @@ import type { Bulten, BultenSinifi, BultenOgrencisi } from '../services/BultenSe
 // (veliye giden sayfa bilgisi çoğu zaman başlığın sonunda). Tek satır yalnız ad/ünvan gibi kısa alanlarda.
 // Satori (Yoga) flexShrink varsayılanı 0'dır — daralabilmesi için açıkça 1 verilir.
 const TEK_SATIR = { whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flexShrink: 1, minWidth: 0 } as const
-const KAYAN = { flexShrink: 1, minWidth: 0 } as const
+// Kayan metin genişliği kalan alandan (basis 0 + grow). basis auto'da Satori metni tek satırlık doğal genişlikte ölçüp
+// sonra daraltır: yükseklik bir genişliğe, çizim başkasına göre olur → yazı sağa/etiketin altına taşar, boş satır kalır.
+const KAYAN = { flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0 } as const
 const C = { ink: '#1D2B5F', soft: '#5A6485', rule: '#DCE3F0', sun: '#FFD23F', wash: '#F5F7FC', ok: '#2E9E6B', eks: '#F2B233', yok: '#D9534F' }
 
 /** Büyük sınıf adı punto: "9-A" 156px; uzun adlar (~440px başlık bloğuna) sığacak kadar küçülür. */
