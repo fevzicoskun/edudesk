@@ -131,9 +131,12 @@ export const OgrenciGorseli = ({ ogrenci, sinif, bulten, girinti }: { ogrenci: B
               ? <span style={{ fontSize: 30, fontWeight: 800, color: C.ok }}>Geçen haftanın tüm ödevleri tamamlandı.</span>
               // Satori iç içe span'ı satır içi akıtmaz (üst üste biner): parçalar ayrı kutu, kırılma parça arasında
               : <div style={{ display: 'flex', flexWrap: 'wrap', fontSize: 30, columnGap: 9 }}>
-                  <span>{`Geçen hafta ${g.toplam} ödevden`}</span>
-                  <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.ok }}>{`${sayiEk(g.yapildi, 'si')} tamamlandı`}</span><span>,</span></div>
-                  <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.yok }}>{`${sayiEk(tamamlanmadi, 'si')} tamamlanmadı`}</span><span>.</span></div>
+                  {/* hiç tamamlanan yoksa yeşil "0'ı tamamlandı" yerine "hiçbiri tamamlanmadı" */}
+                  <span>{g.yapildi ? `Geçen hafta ${g.toplam} ödevden` : `Geçen hafta ${g.toplam} ödevin`}</span>
+                  {g.yapildi
+                    ? <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.ok }}>{`${sayiEk(g.yapildi, 'si')} tamamlandı`}</span><span>,</span></div>
+                    : null}
+                  <div style={{ display: 'flex' }}><span style={{ fontWeight: 800, color: C.yok }}>{g.yapildi ? `${sayiEk(tamamlanmadi, 'si')} tamamlanmadı` : 'hiçbiri tamamlanmadı'}</span><span>.</span></div>
                 </div>}
           {g.toplam > 0
             ? <div style={{ display: 'flex', flexWrap: 'wrap', marginTop: 14 }}>
@@ -163,7 +166,9 @@ export const OgrenciGorseli = ({ ogrenci, sinif, bulten, girinti }: { ogrenci: B
         </div>
       ))}
       {bolum('Bu hafta kontrol edilecek ödevler', haftaEtiketi(bulten.hafta))}
-      <Gunler sinif={{ ...sinif, gunler: sinif.gunler.filter(g => g.odevler.length) }} ogretmenli={false} />
+      {sinif.gunler.some(g => g.odevler.length)
+        ? <Gunler sinif={{ ...sinif, gunler: sinif.gunler.filter(g => g.odevler.length) }} ogretmenli={false} />
+        : <span style={{ fontSize: 28, color: '#A2A9BF', padding: '16px 0' }}>Kontrol edilecek ödev yok.</span>}
       {eksikVar
         ? <div style={{ display: 'flex', marginTop: 32, background: '#FFF8DC', borderLeft: `8px solid ${C.sun}`, padding: '22px 26px', fontSize: 29 }}>
             Eksik ödevlerin tamamlanması için desteğinizi rica ederiz.

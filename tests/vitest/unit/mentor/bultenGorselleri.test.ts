@@ -62,6 +62,15 @@ describe('öğrenci kartı (2026-10-26 yeni görünüm)', () => {
     expect(html).toContain('8/8'); expect(html).toContain('Geçen haftanın tüm ödevleri tamamlandı.')
     expect(html).not.toContain('Geçen hafta tamamlanmayanlar'); expect(html).not.toContain('desteğinizi rica')
   })
+  it('hiç tamamlanan yok → "0\'ı tamamlandı" değil "hiçbiri tamamlanmadı" (canlı 12-B Kerem)', () => {
+    const html = kart({ gecenHafta: { toplam: 3, yapildi: 0, eksik: 0, yapilmadi: 3 } })
+    expect(html).toContain('0/3'); expect(html).toContain('Geçen hafta 3 ödevin'); expect(html).toContain('hiçbiri tamamlanmadı')
+    expect(html).not.toContain('tamamlandı<')
+  })
+  it('bu hafta ödev yok → başlık boş kalmaz', () => {
+    const html = renderToStaticMarkup(h(OgrenciGorseli, { ogrenci, sinif: { ...sinif, gunler: [] }, bulten, girinti: () => '' }))
+    expect(html).toContain('Bu hafta kontrol edilecek ödevler'); expect(html).toContain('Kontrol edilecek ödev yok.')
+  })
   it('kontrol edilen ödev yok → 0/0 yazılmaz', () => {
     const html = kart({ gecenHafta: { toplam: 0, yapildi: 0, eksik: 0, yapilmadi: 0 }, eksikler: [] })
     expect(html).toContain('Geçen hafta kontrol edilen ödev yok.'); expect(html).not.toContain('0/0')
