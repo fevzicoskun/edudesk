@@ -1,16 +1,18 @@
 /** Stoys AGİS Excel'i (spec 2026-10-22): 1. satır " Stoys Rapor ", sonra başlık ve öğrenciler.
  *  Sınav adı/tarihi dosyada YOK; tür ders sütunlarından anlaşılır. Saf: hücreler string gelir. */
 
-export type DenemeTuru = 'TM' | 'FKB' | 'TCD'
+export type DenemeTuru = 'TM' | 'FKB' | 'TCD' | 'NH' | 'GENEL'
 export type DersSonucu = { kod: string; ss: number; d: number; y: number; n: number }
 export type StoysSatir = { ad: string; dersler: DersSonucu[]; toplamNet: number; puan: number | null }
 
 export const DERS_ADLARI: Record<string, string> = {
   TÜR: 'Türkçe', MAT: 'Matematik', FİZ: 'Fizik', KİM: 'Kimya', BİY: 'Biyoloji', TAR: 'Tarih', COĞ: 'Coğrafya', DİN: 'Din',
+  'T.C': 'İnkılap', FEN: 'Fen',
 }
 
-const TURLER: [DenemeTuru, string[]][] = [['TM', ['TÜR', 'MAT']], ['FKB', ['FİZ', 'KİM', 'BİY']], ['TCD', ['TAR', 'COĞ', 'DİN']]]
-export const TANINMAYAN_DOSYA = 'Bu dosya Stoys AGİS raporuna benzemiyor (TM, FKB ya da TCD bulunamadı).'
+const TURLER: [DenemeTuru, string[]][] = [['TM', ['TÜR', 'MAT']], ['FKB', ['FİZ', 'KİM', 'BİY']], ['TCD', ['TAR', 'COĞ', 'DİN']],
+  ['NH', ['TÜR', 'T.C', 'MAT', 'FEN']], ['GENEL', ['TÜR', 'TAR', 'COĞ', 'DİN', 'MAT', 'FİZ', 'KİM', 'BİY']]]
+export const TANINMAYAN_DOSYA = 'Bu dosya Stoys AGİS raporuna benzemiyor (TM, FKB, TCD, Neler Hatırlıyorum ya da genel deneme bulunamadı).'
 
 const sayi = (x: string | undefined): number | null => {
   const t = (x ?? '').trim().replace(',', '.')
@@ -44,7 +46,7 @@ export function parseStoys(rows: string[][]):
     return {
       ad: r[kol('Adı Soyadı')].trim(), dersler,
       toplamNet: sayi(r[kol('TOP-N')]) ?? dersler.reduce((t, d) => t + d.n, 0),
-      puan: sayi(r[kol('AGIS-Puan')]),
+      puan: sayi(r[kol('AGIS-Puan')] ?? r[kol('PUAN-Puan')]), // NH ve genel denemede PUAN-Puan
     }
   })
   return { tur, sinif, seviye, satirlar }

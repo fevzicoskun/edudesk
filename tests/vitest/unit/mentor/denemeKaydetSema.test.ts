@@ -14,12 +14,12 @@ describe('denemeKaydetSema', () => {
   })
   it('gelecek tarih, bilinmeyen tür, 61 sonuç reddedilir', () => {
     expect(denemeKaydetSema.safeParse({ ...gecerli, tarih: '2099-01-01' }).success).toBe(false)
-    expect(denemeKaydetSema.safeParse({ ...gecerli, tur: 'GENEL' }).success).toBe(false)
+    expect(denemeKaydetSema.safeParse({ ...gecerli, tur: 'XYZ' }).success).toBe(false)
     expect(denemeKaydetSema.safeParse({ ...gecerli, sonuclar: Array(61).fill(gecerli.sonuclar[0]) }).success).toBe(false)
   })
-  it('sıfır sonuç kabul (herkes katılmadı), 4 ders reddedilir', () => {
+  it('sıfır sonuç kabul (herkes katılmadı), 9 ders reddedilir', () => {
     expect(denemeKaydetSema.safeParse({ ...gecerli, sonuclar: [] }).success).toBe(true)
     const d = gecerli.sonuclar[0].dersler[0]
-    expect(denemeKaydetSema.safeParse({ ...gecerli, sonuclar: [{ ...gecerli.sonuclar[0], dersler: [d, d, d, d] }] }).success).toBe(false)
+    expect(denemeKaydetSema.safeParse({ ...gecerli, sonuclar: [{ ...gecerli.sonuclar[0], dersler: Array(9).fill(d) }] }).success).toBe(false)
   })
 })

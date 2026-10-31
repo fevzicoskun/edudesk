@@ -6,8 +6,10 @@ import type { VeliToplantisiVerisi } from '@/src/domains/mentor/deneme/VeliTopla
 import { DURUM_ETIKETLERI } from '../takip/SonucKagidi'
 import { degisimGoster, planBolumu } from '@/src/domains/mentor/lib/veliToplantisi'
 
-const TUR_ADI: Record<DenemeTuru, string> = { TM: 'TM (Türkçe, Matematik)', FKB: 'FKB (Fizik, Kimya, Biyoloji)', TCD: 'TCD (Tarih, Coğrafya, Din)' }
-const DERS_SIRASI: Record<DenemeTuru, string[]> = { TM: ['TÜR', 'MAT'], FKB: ['FİZ', 'KİM', 'BİY'], TCD: ['TAR', 'COĞ', 'DİN'] }
+const TUR_ADI: Record<DenemeTuru, string> = { TM: 'TM (Türkçe, Matematik)', FKB: 'FKB (Fizik, Kimya, Biyoloji)', TCD: 'TCD (Tarih, Coğrafya, Din)',
+  NH: 'Neler Hatırlıyorum (Türkçe, İnkılap, Matematik, Fen)', GENEL: 'Genel deneme (8 ders)' }
+const DERS_SIRASI: Record<DenemeTuru, string[]> = { TM: ['TÜR', 'MAT'], FKB: ['FİZ', 'KİM', 'BİY'], TCD: ['TAR', 'COĞ', 'DİN'],
+  NH: ['TÜR', 'T.C', 'MAT', 'FEN'], GENEL: ['TÜR', 'TAR', 'COĞ', 'DİN', 'MAT', 'FİZ', 'KİM', 'BİY'] }
 const DURUM_YAZ: Record<string, string> = { yapilmadi: 'Yapılmadı', eksik: 'Eksik' }
 const th = 'border border-gray-400 px-1.5 py-0.5 text-left font-semibold'
 const td = 'border border-gray-400 px-1.5 py-0.5 align-top'

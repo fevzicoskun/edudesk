@@ -24,7 +24,7 @@ export default async function DenemelerPage() {
         <Link href="/mentorluk" className="text-sm text-gray-600 dark:text-slate-400 hover:text-blue-600">← Mentörlüğüm</Link>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mt-1">Denemeler</h1>
         <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">
-          Stoys&apos;tan indirdiğin AGİS Excel&apos;ini (TM, FKB ya da TCD) yükle. Yalnız kendi öğrencilerinin sonuçları kaydedilir; dosyadaki diğer satırlar saklanmaz.
+          Stoys&apos;tan indirdiğin AGİS Excel&apos;ini (TM, FKB, TCD, Neler Hatırlıyorum ya da 8 dersli genel deneme) yükle. Yalnız kendi öğrencilerinin sonuçları kaydedilir; dosyadaki diğer satırlar saklanmaz.
         </p>
       </div>
       <DenemeYukleForm bugun={todayLocalISO()} />

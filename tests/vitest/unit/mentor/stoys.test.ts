@@ -30,6 +30,13 @@ describe('parseStoys', () => {
     expect(parseStoys([baslik(['TÜR', 'MAT']), satir(2)])).toMatchObject({ tur: 'TM', seviye: 10 })
     expect(parseStoys([baslik(['FİZ', 'KİM', 'BİY']), satir(3)])).toMatchObject({ tur: 'FKB' })
   })
+  it('NH (4 ders, PUAN-Puan) ve GENEL (8 ders) türleri; puan PUAN-Puan sütunundan', () => {
+    const b = (kodlar: string[]) => ['OKUL', 'SINIF', 'Öğrenci No', 'Adı Soyadı', ...kodlar.flatMap(blok), ...blok('TOP'), 'PUAN-Puan', 'PUAN-Sınıf']
+    const satir = (n: number) => ['BKD', '9-A', '1', 'A B', ...Array(n * 5 + 5).fill('1'), '421.218', '']
+    const nh = parseStoys([b(['TÜR', 'T.C', 'MAT', 'FEN']), satir(4)])
+    expect(nh).toMatchObject({ tur: 'NH', satirlar: [{ puan: 421.218 }] })
+    expect(parseStoys([b(['TÜR', 'TAR', 'COĞ', 'DİN', 'MAT', 'FİZ', 'KİM', 'BİY']), satir(8)])).toMatchObject({ tur: 'GENEL' })
+  })
   it('seviye sınıf adındaki ilk sayıdan ("__PW_TEST__ 9-A" → 9)', () => {
     expect(parseStoys([TCD[1], ['BKD', '__PW_TEST__ 9-A', ...TCD[2].slice(2)]])).toMatchObject({ sinif: '__PW_TEST__ 9-A', seviye: 9 })
   })

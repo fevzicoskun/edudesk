@@ -15,7 +15,7 @@ export function denemeGidisi(
   ogrenciSinifId: string,
 ): Record<DenemeTuru, DenemeSatiri[]> {
   const sonuc = new Map(sonuclar.map(s => [s.sinavId, s]))
-  const gidis: Record<DenemeTuru, DenemeSatiri[]> = { TM: [], FKB: [], TCD: [] }
+  const gidis: Record<DenemeTuru, DenemeSatiri[]> = { TM: [], FKB: [], TCD: [], NH: [], GENEL: [] }
   for (const s of [...sinavlar].filter(x => x.siniflar.includes(ogrenciSinifId)).sort((a, b) => a.tarih.localeCompare(b.tarih))) {
     const r = sonuc.get(s.id)
     const onceki = [...gidis[s.tur]].reverse().find(x => !x.katilmadi)
