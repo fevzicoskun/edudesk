@@ -20,6 +20,9 @@ export default function DenemeYukleForm({ bugun }: { bugun: string }) {
 
   const onizle = (fd: FormData) => basla(async () => {
     setHata(''); setMesaj(''); setOn(null); setEslek({})
+    // Tarih, ekranda görünen değerden: hydration'dan önce seçilen tarih onChange tetiklemez,
+    // state 'bugun'da kalırsa sınav sessizce bugünün tarihiyle kaydediliyordu (e2e prod, 2026-11-03).
+    setTarih(String(fd.get('tarih') || bugun))
     const r = await denemeOnizle(fd)
     if ('error' in r) { setHata(r.error); return }
     setOn(r); setAyni(!!r.oneri)
@@ -44,7 +47,7 @@ export default function DenemeYukleForm({ bugun }: { bugun: string }) {
           <input type="file" name="file" accept=".xlsx" required className={kutu} />
         </label>
         <label className="text-sm text-gray-700 dark:text-slate-300">Sınav tarihi
-          <input type="date" value={tarih} max={bugun} onChange={e => setTarih(e.target.value)} required className={kutu} />
+          <input type="date" name="tarih" value={tarih} max={bugun} onChange={e => setTarih(e.target.value)} required className={kutu} />
         </label>
         <button className={birincil} disabled={bekliyor}>{bekliyor && !on ? 'Okunuyor…' : 'Önizle'}</button>
       </form>
