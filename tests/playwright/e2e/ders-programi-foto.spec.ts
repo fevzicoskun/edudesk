@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { writeFileSync } from 'node:fs'
+import { createClient } from '@supabase/supabase-js'
 
 // Öğretmen isteği 2026-10-19: ders programı telefonda Fotoğraflar'a. Resmi sunucu çizer (/api/ders-programi/gorsel).
 // Test öğretmeninin programı doldurulup kaydedilir, sonda boşaltılır (test okulu).
@@ -21,10 +22,13 @@ async function programiKaydet(page: Page, doldur: boolean) {
   await expect(page.getByText('Ders programın kaydedildi.')).toBeVisible()
 }
 
-test.afterAll(async ({ browser }) => {
-  const ctx = await browser.newContext({ storageState: 'tests/playwright/.auth/ogretmen.json' })
-  await programiKaydet(await ctx.newPage(), false)
-  await ctx.close()
+// Boş kaydetmek satırı bırakıyordu → odev-ders-secimi "gerçek programı var" diye duruyordu (2026-11-03). Satırı sil.
+test.afterAll(async () => {
+  const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+  const { data: u } = await db.auth.admin.listUsers({ perPage: 1000 })
+  const id = u.users.find(x => x.email === (process.env.TEST_EMAIL_OGRETMEN ?? 'test_ogretmen@test.example'))!.id
+  const { error } = await db.from('lesson_schedules').delete().eq('teacher_id', id)
+  if (error) throw error
 })
 
 test('telefonda Fotoğraflara kaydet sunucunun çizdiği PNG paylaşır', async ({ page }, testInfo) => {

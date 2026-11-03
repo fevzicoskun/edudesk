@@ -2,9 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { chromium } from '@playwright/test'
 import fs from 'fs'
 import path from 'path'
-import dotenv from 'dotenv'
-
-dotenv.config({ path: '.env.local' })
+import '../../testEnv'
 
 const STORAGE_DIR = path.join(process.cwd(), 'tests/playwright/.auth')
 

@@ -3,10 +3,8 @@
  * Next.js / React özelliklerini Node.js ortamı için mock'lar.
  */
 import { vi } from 'vitest'
-import dotenv from 'dotenv'
-
-// .env.local dosyasını yükle (CI'da gerçek env değişkenleri kullanılır)
-dotenv.config({ path: '.env.local' })
+// .env.local + doluysa .env.test (test Supabase projesi) — CI'da gerçek env değişkenleri kullanılır
+import '../../testEnv'
 
 // ── React cache → testlerde passthrough ──────────────────────
 vi.mock('react', async (importOriginal) => {

@@ -42,9 +42,13 @@ const gorunenZemin = (page: Page, secici: string) => page.locator(secici).first(
   }
   return 'rgb(255, 255, 255)'
 })
-/** Yazı rengi koyu mu (kağıtta okunur)? r+g+b < 300 */
+/** Yazı rengi koyu mu (kağıtta okunur)? r+g+b < 300.
+ *  Production build renkleri lab()/oklch() verir (dev rgb) → canvas ile rgb'ye çevir. */
 const koyuYazi = (page: Page, secici: string) => page.locator(secici).first().evaluate(el => {
-  const [r, g, b] = getComputedStyle(el).color.match(/\d+/g)!.map(Number)
+  const ctx = document.createElement('canvas').getContext('2d')!
+  ctx.fillStyle = getComputedStyle(el).color
+  ctx.fillRect(0, 0, 1, 1)
+  const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data
   return r + g + b < 300
 })
 
@@ -58,7 +62,8 @@ for (const tema of ['light', 'dark'] as const) {
     expect(await gorunenZemin(page, 'body')).toBe(BEYAZ)
     expect(await gorunenZemin(page, 'main')).toBe(BEYAZ)
     // yazdırılan rapor başlığı: beyaz zemin + koyu yazı
-    const rapor = `h1:text-is("${BASLIK}")`
+    // ekran başlığı (print:hidden) DOM'da önce gelir → yazdırmada görünen başlığı seç
+    const rapor = `h1:text-is("${BASLIK}") >> visible=true`
     expect(await gorunenZemin(page, rapor)).toBe(BEYAZ)
     expect(await koyuYazi(page, rapor)).toBe(true)
 

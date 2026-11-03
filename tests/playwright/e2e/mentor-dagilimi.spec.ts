@@ -67,6 +67,8 @@ test.describe.serial('Mentör dağılımı', () => {
     const ctx = await browser.newContext({ storageState: AUTH('ogretmen') })
     const page = await ctx.newPage()
     await page.goto('/mentorluk/yazdir')
+    // prod'da içerik önce gizli Suspense kabında (div#S:0) gelir, React kısa gecikmeyle yerine koyar → görünmesini bekle
+    await expect(page.locator('section[aria-label]').first()).toBeVisible({ timeout: 20_000 })
     const n = await page.locator('section[aria-label]').count()
     await page.emulateMedia({ media: 'print' })
     const pdf = await page.pdf({ preferCSSPageSize: true })

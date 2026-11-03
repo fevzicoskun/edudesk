@@ -1,9 +1,11 @@
 import { defineConfig, devices } from '@playwright/test'
-import dotenv from 'dotenv'
-
-dotenv.config({ path: '.env.local' })
+import './tests/testEnv' // .env.local + doluysa .env.test (test Supabase projesi)
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
+// E2E_SUNUCU=prod → build alıp production sunucusuna karşı koşar (dev'in soğuk derleme gürültüsü yok).
+// Build burada alınır: NEXT_PUBLIC_* build'e gömülür, elle alınmış build canlı adresi taşıyabilir.
+// Upstash yoksa login fail-closed olmasın diye RATE_LIMIT_FAIL_MODE=open (yalnız bu yerel sunucu).
+const PROD = process.env.E2E_SUNUCU === 'prod'
 
 export default defineConfig({
   testDir: './tests/playwright/e2e',
@@ -40,9 +42,10 @@ export default defineConfig({
   globalSetup: './tests/playwright/setup/global-setup.ts',
 
   webServer: {
-    command: 'next dev --webpack',    // turbopack bu Next sürümünde asılıp çöküyordu (2026-07-04, 52 test timeout) — npm run dev ile aynı mod
+    command: PROD ? 'next build && next start' : 'next dev --webpack',    // turbopack bu Next sürümünde asılıp çöküyordu (2026-07-04, 52 test timeout) — npm run dev ile aynı mod
+    env: PROD ? { RATE_LIMIT_FAIL_MODE: 'open' } : {},
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,                 // sunucu hazır olana kadar max 2 dak
+    timeout: PROD ? 600_000 : 120_000, // sunucu hazır olana kadar (prod: build dahil)
   },
 })

@@ -46,7 +46,11 @@ function testIp(suffix: number) {
 }
 
 test.describe('Rate limiting', () => {
+  // proxy.ts: bellek içi sayaç yalnız development'ta; production'da sınır Upstash'tan gelir.
+  const sinirYok = process.env.E2E_SUNUCU === 'prod' && !process.env.UPSTASH_REDIS_REST_URL
+
   test('/kayit POST — 3 izin, 4. istek 429 döner', async ({ request }) => {
+    test.skip(sinirYok, 'yerel production sunucusunda Upstash yok → hız sınırı yok')
     const headers = { 'X-Forwarded-For': testIp(1) }
 
     for (let i = 0; i < 3; i++) {
@@ -65,6 +69,7 @@ test.describe('Rate limiting', () => {
   })
 
   test('/sifremi-unuttum POST — 3 izin, 4. istek 429 döner', async ({ request }) => {
+    test.skip(sinirYok, 'yerel production sunucusunda Upstash yok → hız sınırı yok')
     const headers = { 'X-Forwarded-For': testIp(2) }
 
     for (let i = 0; i < 3; i++) {
