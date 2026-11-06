@@ -24,6 +24,7 @@ export default function RoleSelector({
   const [dropPos, setDropPos] = useState({ top: 0, left: 0 })
   const [open, setOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  const [bekleyen, setBekleyen] = useState<Role | null>(null) // yanlış satıra tıklayıp yetki vermeyi önler
   const [, startTransition] = useTransition()
   const btnRef = useRef<HTMLButtonElement>(null)
 
@@ -41,8 +42,12 @@ export default function RoleSelector({
   }
 
   const handleSelect = (newRole: Role) => {
-    if (newRole === role) { setOpen(false); return }
     setOpen(false)
+    if (newRole !== role) setBekleyen(newRole)
+  }
+
+  const uygula = (newRole: Role) => {
+    setBekleyen(null)
     const prev = role
     setRole(newRole)
     startTransition(async () => {
@@ -62,6 +67,26 @@ export default function RoleSelector({
         setTimeout(() => setErrorMsg(null), 3000)
       }
     })
+  }
+
+  if (bekleyen) {
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <span className="text-xs text-gray-600 dark:text-slate-300">{ROLE_LABELS[bekleyen] ?? bekleyen} yapılsın mı?</span>
+        <button
+          onClick={() => uygula(bekleyen)}
+          className="text-xs px-2 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+        >
+          Evet
+        </button>
+        <button
+          onClick={() => setBekleyen(null)}
+          className="text-xs px-2 py-1 border border-gray-300 dark:border-slate-600 rounded-md text-gray-600 dark:text-slate-400 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          İptal
+        </button>
+      </div>
+    )
   }
 
   return (

@@ -25,7 +25,7 @@ export default function DeleteButton({ userId, userName }: { userId: string; use
   if (confirm) {
     return (
       <div className="flex items-center gap-1.5">
-        <span className="text-xs text-gray-500 dark:text-slate-400 hidden sm:inline">Emin misin?</span>
+        <span className="text-xs text-gray-500 dark:text-slate-400">{userName} silinsin mi? Geri alınamaz.</span>
         <button
           onClick={handleDelete}
           disabled={isPending}
