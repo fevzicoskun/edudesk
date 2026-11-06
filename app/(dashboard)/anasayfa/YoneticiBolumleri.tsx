@@ -53,7 +53,10 @@ export async function BugunBolumu() {
     supabase.from('homeworks').select('id', { count: 'exact', head: true })
       .eq('school_id', sid).is('deleted_at', null).eq('is_template', false).eq('due_date', bugun),
   ])
-  const nobetci = nobetler.filter(n => n.day_of_week === gun).sort((a, b) => a.teacherName.localeCompare(b.teacherName, 'tr'))
+  const nobetci = nobetler.filter(n => n.day_of_week === gun).sort((a, b) => a.location.localeCompare(b.location, 'tr') || a.teacherName.localeCompare(b.teacherName, 'tr'))
+  // saat dilimine göre sütun (08:30-13:15 | 13:15-16:30); ad sırası sabah/öğleyi karıştırıyordu
+  const dilimler = new Map<string, typeof nobetci>()
+  for (const n of nobetci) dilimler.set(n.time_range, [...(dilimler.get(n.time_range) ?? []), n])
 
   return (
     <Bolum baslik="Bugün">
@@ -68,14 +71,21 @@ export async function BugunBolumu() {
           {gun > 5 ? <p className={`text-sm ${soluk}`}>Hafta sonu, nöbet yok.</p>
             : nobetci.length === 0 ? <p className={`text-sm ${soluk}`}>Bugün için nöbet bilgisi yok.</p>
             : (
-              <ul className="flex flex-wrap gap-2">
-                {nobetci.map((n, i) => (
-                  <li key={`${n.teacher_id}-${i}`} className="text-sm rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/50 px-2.5 py-1">
-                    <span className="font-medium text-gray-900 dark:text-slate-100">{n.teacherName}</span>
-                    <span className={soluk}> · {n.location} · {n.time_range}</span>
-                  </li>
+              <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                {[...dilimler].sort(([a], [b]) => a.localeCompare(b)).map(([dilim, liste]) => (
+                  <div key={dilim}>
+                    <p className="text-xs font-medium text-gray-700 dark:text-slate-300 mb-1">{dilim}</p>
+                    <ul className="divide-y divide-gray-100 dark:divide-slate-700/60">
+                      {liste.map((n, i) => (
+                        <li key={`${n.teacher_id}-${i}`} className="flex gap-3 py-1 text-sm">
+                          <span className={`w-24 shrink-0 ${soluk}`}>{n.location}</span>
+                          <span className="font-medium text-gray-900 dark:text-slate-100">{n.teacherName}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           <Link href="/nobet" className={`${bag} inline-block mt-1.5`}>Tüm çizelge →</Link>
         </div>
