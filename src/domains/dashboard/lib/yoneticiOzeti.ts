@@ -12,7 +12,13 @@ export type OgretmenTakipSatiri = {
   enEskiBekleyen: number | null
   sonGun: string | null
   aktif: boolean
+  /** branşı ödev vermez (PDR, Beden Eğitimi) — sorunlu sayılmaz, en altta */
+  odevVermez: boolean
 }
+
+// 2026-11-07 kullanıcı: PDR ve Beden Eğitimi ödev vermiyor
+const ODEV_VERMEYEN_BRANS = /^(pdr|rehberlik|beden eğitimi)/
+export const odevVermezBrans = (brans: string | null) => !!brans && ODEV_VERMEYEN_BRANS.test(brans.trim().toLocaleLowerCase('tr'))
 
 /** Öğretmen listesi + Ödev Takibi'nin öğretmen satırları + son kullanım → tek tablo, sorunlular üstte. */
 export function ogretmenTakibi(p: {
@@ -23,7 +29,7 @@ export function ogretmenTakibi(p: {
 }): OgretmenTakipSatiri[] {
   // ponytail: odevTakibi öğretmeni adla gruplar; aynı adlı iki öğretmen birleşir — olursa odevTakibi'ne id eklenir
   const odev = new Map(p.odevSatirlari.map(o => [o.ad, o]))
-  const sorun = (r: OgretmenTakipSatiri) => (r.enEskiBekleyen != null ? 0 : !r.aktif ? 1 : r.odev === 0 ? 2 : 3)
+  const sorun = (r: OgretmenTakipSatiri) => (r.odevVermez ? 4 : r.enEskiBekleyen != null ? 0 : !r.aktif ? 1 : r.odev === 0 ? 2 : 3)
   return p.ogretmenler
     .map(t => {
       const ad = t.full_name ?? '—'
@@ -32,7 +38,7 @@ export function ogretmenTakibi(p: {
       return {
         id: t.id, ad, brans: t.subject,
         odev: o?.odev ?? 0, kontrolOrani: o?.kontrolOrani ?? null, enEskiBekleyen: o?.enEskiBekleyen ?? null,
-        sonGun, aktif: aktifMi(sonGun, p.bugun),
+        sonGun, aktif: aktifMi(sonGun, p.bugun), odevVermez: odevVermezBrans(t.subject),
       }
     })
     .sort((a, b) => sorun(a) - sorun(b) || (b.enEskiBekleyen ?? 0) - (a.enEskiBekleyen ?? 0) || a.ad.localeCompare(b.ad, 'tr'))

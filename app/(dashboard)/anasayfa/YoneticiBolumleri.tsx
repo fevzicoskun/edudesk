@@ -172,7 +172,7 @@ export async function OgretmenBolumu() {
                     <p className="font-medium text-gray-900 dark:text-slate-100 whitespace-nowrap">{t.ad}</p>
                     <p className={`text-xs ${soluk}`}>{t.brans ?? '—'}</p>
                   </td>
-                  <td className={`px-2 py-2 text-right ${t.odev === 0 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-gray-800 dark:text-slate-200'}`}>{t.odev}</td>
+                  <td className={`px-2 py-2 text-right ${t.odevVermez ? soluk : t.odev === 0 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-gray-800 dark:text-slate-200'}`}>{t.odevVermez && t.odev === 0 ? '—' : t.odev}</td>
                   <td className="px-2 py-2 text-right text-gray-800 dark:text-slate-200">{t.kontrolOrani == null ? '—' : `%${t.kontrolOrani}`}</td>
                   <td className={`px-2 py-2 text-right whitespace-nowrap ${t.enEskiBekleyen != null && t.enEskiBekleyen > GECIKME_GUNU ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-gray-800 dark:text-slate-200'}`}>
                     {t.enEskiBekleyen == null ? '—' : `${t.enEskiBekleyen} gün`}

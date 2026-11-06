@@ -34,6 +34,18 @@ describe('ogretmenTakibi', () => {
     expect(r.map(x => x.ad)).toEqual(['Bora', 'Deniz', 'Cem', 'Ayşe'])
     expect(r.find(x => x.id === 'd')!.aktif).toBe(false)
   })
+
+  it('ödev vermeyen branş (PDR, Beden Eğitimi) en altta, pasif olsa da sorunlu sayılmaz', () => {
+    const r = ogretmenTakibi({
+      ogretmenler: [...ogretmenler,
+        { id: 'e', full_name: 'Ece', subject: 'PDR' },
+        { id: 'f', full_name: 'Filiz', subject: 'Beden Eğitimi ve Spor' }],
+      odevSatirlari, kullanim, bugun: BUGUN,
+    })
+    expect(r.map(x => x.ad)).toEqual(['Bora', 'Deniz', 'Cem', 'Ayşe', 'Ece', 'Filiz'])
+    expect(r.find(x => x.id === 'e')).toMatchObject({ odevVermez: true })
+    expect(r.find(x => x.id === 'a')).toMatchObject({ odevVermez: false })
+  })
 })
 
 describe('bultenIlerlemesi', () => {
