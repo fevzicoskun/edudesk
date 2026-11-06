@@ -2,11 +2,17 @@ import Link from 'next/link'
 import { requireSchoolId } from '@/src/shared/auth'
 import { getSchoolTrends } from '@/src/domains/dashboard/queries/schoolTrends'
 import { computeEarlyWarnings, hasEnoughBaseline } from '@/src/domains/dashboard/lib/earlyWarning'
+import { getKontrolBekleyen } from '@/src/domains/dashboard/queries/kontrolBekleyen'
+import { KONTROL_UYARI_GUNU } from '@/src/domains/dashboard/lib/kontrolBekleyen'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default async function ErkenUyarilarWidget() {
   const school_id = await requireSchoolId()
-  const { absence, activity, coverage, classAbs, now } = await getSchoolTrends(school_id)
+  const [{ absence, activity, coverage, classAbs, now }, kontrol] = await Promise.all([
+    getSchoolTrends(school_id),
+    getKontrolBekleyen(school_id),
+  ])
+  const kontrolOdev = kontrol.reduce((s, o) => s + o.odev, 0)
 
   const warnings = computeEarlyWarnings(absence, activity, coverage, classAbs, now)
 
@@ -24,7 +30,23 @@ export default async function ErkenUyarilarWidget() {
         </p>
       </CardHeader>
       <CardContent className="pt-2 pb-4">
+        {kontrol.length > 0 && (
+          <Link href="/yonetim/odevler" className={`block hover:opacity-80 ${warnings.length || yetersiz ? 'mb-2.5' : ''}`}>
+            <div className="flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 bg-amber-400" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
+                  {kontrolOdev} ödev {KONTROL_UYARI_GUNU} günden uzun süredir kontrol bekliyor
+                </p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">
+                  {kontrol.map(o => `${o.ad} ${o.odev} ödev (${o.enEskiGun} gün)`).join(' · ')}
+                </p>
+              </div>
+            </div>
+          </Link>
+        )}
         {warnings.length === 0 ? (
+          kontrol.length > 0 && !yetersiz ? null :
           yetersiz ? (
             <p className="text-sm text-gray-500 dark:text-slate-400 py-2">
               Trend uyarıları için veri birikiyor.
