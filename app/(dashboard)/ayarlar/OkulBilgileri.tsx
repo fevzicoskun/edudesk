@@ -29,7 +29,8 @@ export default async function OkulBilgileri() {
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .eq('school_id', profile.school_id),
+      .eq('school_id', profile.school_id)
+      .in('role', ['ogretmen', 'zumre_baskani']), // anasayfa getSchoolTeachers ile aynı tanım; yöneticiler sayılmaz
     supabase
       .from('students')
       .select('id', { count: 'exact', head: true })

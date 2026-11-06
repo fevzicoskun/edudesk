@@ -66,7 +66,7 @@ export const aylikBultenFn = inngest.createFunction(
 
         const sonuclar = await Promise.all([
           db.from('students').select('id', { count: 'exact', head: true }).eq('school_id', sid).is('deleted_at', null),
-          db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani', 'mudur_yardimcisi']),
+          db.from('profiles').select('id', { count: 'exact', head: true }).eq('school_id', sid).in('role', ['ogretmen', 'zumre_baskani']),
           db.from('classes').select('id, name').eq('school_id', sid).is('deleted_at', null),
           db.rpc('get_class_attendance_rates', { p_school_id: sid, p_start: monthStart, p_end: monthEnd }),
           // Sayım DB'de: satır çekip JS'te saymak max_rows=1000'de sessizce keserdi

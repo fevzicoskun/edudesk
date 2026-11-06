@@ -90,7 +90,7 @@ export function computeEarlyWarnings(
     const d = t.baselineMean - t.last
     out.push({
       id: 'activity-drop', metric: 'aktivite', severity: severityFor(d, ACTIVITY_DROP),
-      title: 'Öğretmen aktivitesi düşüyor',
+      title: 'Ödev veren öğretmen oranı düşüyor',
       detail: `Son hafta %${pct(t.last)} · dönem ort. %${pct(t.baselineMean)} (−${pct(d)} puan)`,
     })
   }

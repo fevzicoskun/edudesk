@@ -133,7 +133,7 @@ export async function createHomework(_: unknown, formData: FormData) {
 
   const logProfile = await getCurrentProfile()
   if (logProfile?.id) {
-    await TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title })
+    await TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title, homework_ids: succeeded })
   }
 
   revalidatePath('/odevler')
@@ -218,7 +218,7 @@ export async function quickCreateHomework(
 
   const logProfile = await getCurrentProfile()
   if (logProfile?.id) {
-    void TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title }).catch(() => {})
+    void TeacherDashboardService.logActivity(logProfile.id, 'odev_eklendi', { title: parsed.data.title, homework_ids: ids }).catch(() => {})
   }
 
   return { ids }
@@ -264,7 +264,7 @@ export async function updateHomework(_: unknown, formData: FormData) {
 
   const logProfile = await getCurrentProfile()
   if (logProfile?.id) {
-    await TeacherDashboardService.logActivity(logProfile.id, 'odev_guncellendi', { title: parsed.data.title })
+    await TeacherDashboardService.logActivity(logProfile.id, 'odev_guncellendi', { title: parsed.data.title, homework_ids: [id] })
   }
 
   revalidatePath(`/odevler/${id}`)

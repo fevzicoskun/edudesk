@@ -25,7 +25,7 @@ export default async function MudurTrendWidget() {
   // Verisi biriken trendler tek, küçük bir bilgi satırında toplanır.
   const trendler = [
     { ad: 'Devamsızlık oranı', yeter: enoughAbsence, hafta: filledWeekCount(absenceTrend), data: absenceTrend, renk: '#ef4444', yoklamali: true },
-    { ad: 'Öğretmen aktivite oranı', yeter: enoughActivity, hafta: filledWeekCount(activityTrend), data: activityTrend, renk: '#10b981', yoklamali: false },
+    { ad: 'Ödev veren öğretmen oranı', yeter: enoughActivity, hafta: filledWeekCount(activityTrend), data: activityTrend, renk: '#10b981', yoklamali: false },
     { ad: 'Yoklama kapsama oranı', yeter: enoughCoverage, hafta: coverageTrend.filter(p => p.expected > 0).length, data: coverageTrend, renk: '#3b82f6', yoklamali: true },
   ].filter(t => yoklama || !t.yoklamali)
   const grafikler = trendler.filter(t => t.yeter)

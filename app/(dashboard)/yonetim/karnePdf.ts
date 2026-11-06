@@ -13,7 +13,7 @@ const GRI: [number, number, number] = [90, 90, 90]
 const METRIC_LABEL = {
   devamsizlik: 'Devamsızlık',
   kapsama:     'Yoklama kapsama',
-  aktivite:    'Öğretmen aktivitesi',
+  aktivite:    'Ödev veren öğretmen oranı',
 } as const
 
 /** Sayfa sonuna yakınsa yeni sayfa açar; yazılacak y'yi döner */
