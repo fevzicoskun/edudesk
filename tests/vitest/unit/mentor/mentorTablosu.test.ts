@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mentorTablosu, hucreMetni, basTarihi } from '@/src/domains/mentor/lib/mentorTablosu'
+import { mentorTablosu, hucreMetni, basTarihi, haftaUyarisi } from '@/src/domains/mentor/lib/mentorTablosu'
 import type { HomeworkRecord } from '@/src/domains/homework/lib/stats'
 
 const hw = (subject: string, status: HomeworkRecord['status'], i = Math.random()): HomeworkRecord => ({
@@ -78,4 +78,33 @@ describe('basTarihi', () => {
   it('dizi gelirse ilki', () => expect(basTarihi(['2026-09-20', 'x'], DB, BUGUN)).toBe('2026-09-20'))
   it('çok eski yıl (Postgres reddeder) dönem başı', () => expect(basTarihi('0000-01-01', DB, BUGUN)).toBe(DB))
   it('geçerliyse aynen', () => expect(basTarihi('2026-09-20', DB, BUGUN)).toBe('2026-09-20'))
+})
+
+describe('haftaUyarisi — son 7 günde yapılmayan ödevler (2026-11-10)', () => {
+  const BUGUN = '2026-11-10'
+  const g = (subject: string, status: HomeworkRecord['status'], due: string | null): HomeworkRecord =>
+    ({ ...hw(subject, status), due_date: due })
+  it('pencere: bugün dahil geriye 7 gün, teslim tarihine göre', () => {
+    const u = haftaUyarisi([g('Matematik', 'yapilmadi', '2026-11-04'), g('Fizik', 'yapilmadi', '2026-11-10'), g('Kimya', 'yapilmadi', '2026-11-03')], BUGUN)
+    expect(u).toEqual({ toplam: 2, metin: 'Son 7 günde 2 ödev yapılmadı · Fizik 1, Matematik 1' })
+  })
+  it('eksik sayılır; yapıldı/geç/mazeretli/işaretsiz sayılmaz', () => {
+    const u = haftaUyarisi([
+      g('Matematik', 'eksik', BUGUN), g('Matematik', 'yapildi', BUGUN), g('Tarih', 'gec', BUGUN),
+      g('Tarih', 'mazeretli', BUGUN), g('Tarih', null, BUGUN), g('Tarih', null, null),
+    ], BUGUN)
+    expect(u).toEqual({ toplam: 1, metin: 'Son 7 günde 1 ödev yapılmadı/eksik · Matematik 1' })
+  })
+  it('ders sıralaması: çok olan önce, eşitse alfabetik (tr)', () => {
+    const u = haftaUyarisi([g('Çevre', 'yapilmadi', BUGUN), g('Coğrafya', 'yapilmadi', BUGUN), g('Coğrafya', 'yapilmadi', BUGUN), g('Biyoloji', 'yapilmadi', BUGUN)], BUGUN)
+    expect(u?.metin).toBe('Son 7 günde 4 ödev yapılmadı · Coğrafya 2, Biyoloji 1, Çevre 1')
+  })
+  it('hiç yoksa null — satırda boş yer kaplamaz', () => {
+    expect(haftaUyarisi([g('M', 'yapildi', BUGUN), g('M', 'yapilmadi', '2026-11-03')], BUGUN)).toBeNull()
+  })
+  it('mentorTablosu bugün verilince satıra işler, verilmezse null', () => {
+    const o = [{ id: 'a', full_name: 'A', class_name: null, homeworks: [g('M', 'yapilmadi', BUGUN)] }]
+    expect(mentorTablosu(o, BUGUN).satirlar[0].haftaUyari).toBe('Son 7 günde 1 ödev yapılmadı · M 1')
+    expect(mentorTablosu(o).satirlar[0].haftaUyari).toBeNull()
+  })
 })

@@ -41,7 +41,10 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
           <tbody>
             {tablo.satirlar.map(s => (
               <tr key={s.id} className="border-b border-gray-100 dark:border-slate-700 break-inside-avoid">
-                <td className="py-2 pr-3">{ad(s.id, s.full_name)}</td>
+                <td className="py-2 pr-3">
+                  {ad(s.id, s.full_name)}
+                  {s.haftaUyari && <span className="block text-[11px] leading-tight text-red-700 dark:text-red-400">{s.haftaUyari}</span>}
+                </td>
                 <td className="py-2 pr-3 text-gray-600 dark:text-slate-400">{s.class_name ?? '—'}</td>
                 {s.hucreler.map((h, i) => (
                   <td key={tablo.dersler[i]} title={h.aciklama || undefined} className="py-2 px-2 text-center tabular-nums align-top">
@@ -66,6 +69,7 @@ export default function MentorTablosu({ tablo, bas, baglanti = true, takip, gece
         {tablo.satirlar.map(s => (
           <li key={s.id} className="p-3 rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800">
             <span>{ad(s.id, s.full_name)} <span className="text-xs text-gray-500 dark:text-slate-400">· {s.class_name ?? '—'}</span></span>
+            {s.haftaUyari && <p className="text-xs mt-0.5 text-red-700 dark:text-red-400">{s.haftaUyari}</p>}
             {takip && <p className="text-xs mt-0.5">Bu hafta: {takip[s.id]}</p>}
             {gecen && <p className="text-xs mt-0.5">Geçen hafta: <Gecen g={gecen[s.id] ?? null} /></p>}
             <p className="mt-1 flex flex-wrap gap-x-2 text-xs text-gray-700 dark:text-slate-300">

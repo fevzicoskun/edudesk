@@ -54,7 +54,7 @@ export default async function MentorlukPage({ searchParams }: { searchParams: Pr
 
   const tablo = mentorTablosu(sonuc.ogrenciler.map(o => ({
     id: o.id, full_name: o.full_name, class_name: o.class_name, homeworks: o.homeworks,
-  })))
+  })), bugun)
   // Haftalık takip açık mentörde: bu haftanın durumu (Plan yok / Kâğıtta / Devam ediyor · x/y görev)
   const takipAcik = await TakipService.acikMi()
   const ids = rows.map(r => r.student_id)

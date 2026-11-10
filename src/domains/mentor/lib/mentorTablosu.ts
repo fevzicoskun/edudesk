@@ -1,9 +1,14 @@
 import { dersOzeti, dersAnahtari, type DersOzeti, type HomeworkRecord } from '@/src/domains/homework/lib/stats'
 import { RISK_ESIGI } from '@/src/domains/homework/lib/odev-takibi'
+import { addDaysISO } from '@/src/shared/date'
 
 export type MentorOgrenci = { id: string; full_name: string; class_name: string | null; homeworks: HomeworkRecord[] }
 export type MentorHucre = { metin: string; ekler: string[]; renk: HucreRengi; aciklama: string }
-export type MentorSatir = { id: string; full_name: string; class_name: string | null; hucreler: MentorHucre[]; dersler: DersOzeti[] }
+export type MentorSatir = {
+  id: string; full_name: string; class_name: string | null; hucreler: MentorHucre[]; dersler: DersOzeti[]
+  /** "Son 7 günde 3 ödev yapılmadı · Matematik 2, Fizik 1" — dönem tablosu birikimi gizler, bu satır bu haftayı gösterir */
+  haftaUyari: string | null
+}
 export type DikkatSatiri = { id: string; full_name: string; toplam: number; dersler: string }
 export type MentorTablo = { dersler: string[]; satirlar: MentorSatir[]; dikkat: DikkatSatiri[] }
 
@@ -38,8 +43,31 @@ export function hucreMetni(d: DersOzeti | undefined, mazeretli = 0): MentorHucre
   }
 }
 
-/** Mentörün grubu: öğrenci × ders. Sütunlar grubun dersleri (dersAnahtari ile tekil), alfabetik. */
-export function mentorTablosu(ogrenciler: MentorOgrenci[]): MentorTablo {
+/** Son 7 günde (bugün dahil) teslimi gelen ve yapılmadı/eksik işaretlenen ödevler. Pencere teslim tarihine göre —
+ *  mentör görüşmesinde "bu hafta ne oldu" sorusunun cevabı; dönem tablosunda 2 ay sonra herkes kırmızıya döner, bu dönmez.
+ *  Hiç yoksa null: satırda boş yer kaplamaz. */
+export function haftaUyarisi(homeworks: HomeworkRecord[], bugun: string): { toplam: number; metin: string } | null {
+  const bas = addDaysISO(bugun, -6)
+  const sayac = new Map<string, number>()
+  let eksikVar = false
+  for (const h of homeworks) {
+    if (!h.due_date || h.due_date < bas || h.due_date > bugun) continue
+    if (h.status !== 'yapilmadi' && h.status !== 'eksik') continue
+    if (h.status === 'eksik') eksikVar = true
+    const ad = h.subject.trim() || 'Diğer'
+    sayac.set(ad, (sayac.get(ad) ?? 0) + 1)
+  }
+  const toplam = [...sayac.values()].reduce((a, b) => a + b, 0)
+  if (toplam === 0) return null
+  const dersler = [...sayac.entries()]
+    .sort(([a, n], [b, m]) => m - n || a.localeCompare(b, 'tr'))
+    .map(([d, n]) => `${d} ${n}`).join(', ')
+  return { toplam, metin: `Son 7 günde ${toplam} ödev yapılmadı${eksikVar ? '/eksik' : ''} · ${dersler}` }
+}
+
+/** Mentörün grubu: öğrenci × ders. Sütunlar grubun dersleri (dersAnahtari ile tekil), alfabetik.
+ *  bugun verilirse satırlara haftaUyari işlenir (ana sayfa); verilmezse null (yazdırma sayfası dönem tablosu). */
+export function mentorTablosu(ogrenciler: MentorOgrenci[], bugun?: string): MentorTablo {
   const sirali = [...ogrenciler].sort((a, b) => a.full_name.localeCompare(b.full_name, 'tr'))
   const ozetler = sirali.map(o => dersOzeti(o.homeworks))
   const sutun = new Map<string, string>() // anahtar → ilk görülen görünen ad
@@ -50,7 +78,11 @@ export function mentorTablosu(ogrenciler: MentorOgrenci[]): MentorTablo {
     const m = new Map(ozetler[i].map(d => [dersAnahtari(d.ders), d]))
     const mazeretli = new Map<string, number>()
     for (const h of o.homeworks) if (h.status === 'mazeretli') mazeretli.set(dersAnahtari(h.subject), (mazeretli.get(dersAnahtari(h.subject)) ?? 0) + 1)
-    return { id: o.id, full_name: o.full_name, class_name: o.class_name, dersler: ozetler[i], hucreler: anahtarlar.map(k => hucreMetni(m.get(k), mazeretli.get(k))) }
+    return {
+      id: o.id, full_name: o.full_name, class_name: o.class_name, dersler: ozetler[i],
+      hucreler: anahtarlar.map(k => hucreMetni(m.get(k), mazeretli.get(k))),
+      haftaUyari: bugun ? haftaUyarisi(o.homeworks, bugun)?.metin ?? null : null,
+    }
   })
 
   // /yonetim/odevler riskliler ile aynı eşik: yapılmadı + eksik toplamı
